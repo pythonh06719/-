@@ -16,6 +16,23 @@ import SafetyBanner from '@/components/feedback/SafetyBanner';
 
 type AiTab = 'daily' | 'plan' | 'ask';
 
+/** Agent 工具名 → 用户可读的标签（可观测性：告诉用户"我查了什么"）。 */
+const TOOL_LABELS: Record<string, string> = {
+  get_today_status: '今日看板',
+  search_food: '食物库',
+  estimate_exercise: '运动换算',
+  get_weekly_report: '周报',
+  log_meal: '记录饮食',
+};
+
+/** `POST /ai/agent/confirm` 的响应（确认执行待办写操作）。 */
+interface AgentConfirmResult {
+  status: 'answered';
+  answer: string;
+  result: { logged?: boolean; kcal?: number };
+  traceId: number;
+}
+
 const TABS: ReadonlyArray<{ key: AiTab; label: string }> = [
   { key: 'daily', label: COPY.aiDailyTab },
   { key: 'plan', label: COPY.aiPlanTab },
@@ -166,11 +183,25 @@ function FoodRecognizePanel(): ReactElement {
 /** AI 助手页（`/ai`，三期）：三个 tab + 食物识别入口。 */
 export default function AiPage(): ReactElement {
   const date = todayKey();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<AiTab>('daily');
   const [dailyTrigger, setDailyTrigger] = useState(0);
   const [planTrigger, setPlanTrigger] = useState(0);
   const [question, setQuestion] = useState('');
   const [askSubmitted, setAskSubmitted] = useState('');
+  /** 已确认的 Agent 待办轨迹 id（用于隐藏确认卡片并展示成功态） */
+  const [confirmedTraceId, setConfirmedTraceId] = useState<number | null>(null);
+
+  /** 确认执行 Agent 的待办写操作（human-in-the-loop 第二半）。 */
+  const confirmMutation = useMutation({
+    mutationFn: (payload: { traceId: number }) =>
+      api.post<AgentConfirmResult>('/ai/agent/confirm', payload),
+    onSuccess: () => {
+      // 记录落库 → 看板 / 日记 / 预算都要刷新
+      void queryClient.invalidateQueries({ queryKey: ['meals'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
 
   const dailyQuery = useQuery({
     queryKey: queryKeys.aiDailySummary(date),
@@ -274,7 +305,7 @@ export default function AiPage(): ReactElement {
         </div>
       )}
 
-      {/* 自由提问（R9.3） */}
+      {/* 自由提问（R9.3 + Agent P0）：确定性回答或 Agent 多步工具链；写操作需确认 */}
       {tab === 'ask' && (
         <div className="flex flex-col gap-3" aria-live="polite">
           <div className="flex gap-2">
@@ -289,7 +320,10 @@ export default function AiPage(): ReactElement {
             />
             <button
               type="button"
-              onClick={() => setAskSubmitted(question.trim())}
+              onClick={() => {
+                setConfirmedTraceId(null);
+                setAskSubmitted(question.trim());
+              }}
               disabled={question.trim().length === 0 || askQuery.isFetching}
               className="shrink-0 rounded-xl bg-teal-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
@@ -308,7 +342,57 @@ export default function AiPage(): ReactElement {
               {askQuery.data.available === false && <UnavailableNotice />}
               <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
                 <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQuery.data.answer}</p>
+                {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
+                {askQuery.data.tools !== undefined && askQuery.data.tools.length > 0 && (
+                  <p className="mt-3 text-xs text-slate-400">
+                    我查了：{askQuery.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
+                  </p>
+                )}
               </div>
+              {/* Agent 写操作待确认卡片（human-in-the-loop）：确认后才落库 */}
+              {askQuery.data.pending !== null &&
+                askQuery.data.pending !== undefined &&
+                askQuery.data.traceId !== undefined &&
+                confirmedTraceId !== askQuery.data.traceId && (
+                  <div
+                    role="status"
+                    className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/50 dark:bg-amber-900/20"
+                  >
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">需要你确认</p>
+                    <p className="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-100">
+                      {askQuery.data.pending.describe}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          confirmMutation.mutate({ traceId: askQuery.data!.traceId as number })
+                        }
+                        disabled={confirmMutation.isPending}
+                        className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+                      >
+                        {confirmMutation.isPending ? '记录中…' : '确认记录'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmedTraceId(askQuery.data!.traceId as number)}
+                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-300"
+                      >
+                        先不记
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-amber-600/70 dark:text-amber-200/60">
+                      确认后才会记入饮食日记。
+                    </p>
+                  </div>
+                )}
+              {confirmedTraceId !== null &&
+                askQuery.data.traceId === confirmedTraceId &&
+                confirmMutation.isSuccess && (
+                  <p className="rounded-2xl bg-teal-50 px-4 py-3 text-sm text-teal-700 dark:bg-teal-900/30 dark:text-teal-200">
+                    已按确认记录好了，去饮食日记看看吧。
+                  </p>
+                )}
             </>
           )}
         </div>
