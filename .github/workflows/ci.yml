@@ -36,8 +36,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: 生成 Prisma 客户端
-        run: npx prisma generate --schema apps/api/prisma/schema.prisma
       - name: 准备测试数据库（建表）
         run: npx prisma db push --schema apps/api/prisma/schema.prisma --skip-generate
       - name: 构建后端
