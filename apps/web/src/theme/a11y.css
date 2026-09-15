@@ -1,0 +1,66 @@
+/**
+ * 无障碍样式（theme/a11y.css）。
+ *
+ * 覆盖 NFR-7 / TC-48：焦点环可见、`prefers-reduced-motion` 尊重、
+ * 屏幕阅读器专用文本、跳过导航链接、触控目标尺寸。
+ */
+
+/* 键盘焦点环：任何交互元素聚焦时都可见（AA 对比度） */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #1c6a51;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+html.dark :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: #8cc9ab;
+}
+
+/* 尊重用户的「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 仅供屏幕阅读器朗读的文本 */
+.qsh-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 「跳到主内容」链接：键盘 Tab 首次聚焦时出现 */
+.qsh-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 60;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  background-color: #1c6a51;
+  color: #ffffff;
+  font-size: 0.875rem;
+  transition: top 0.15s ease-out;
+}
+
+.qsh-skip-link:focus {
+  top: 0.75rem;
+}
+
+/* 触控目标不小于 44×44（WCAG 2.5.5 建议值） */
+.qsh-touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}

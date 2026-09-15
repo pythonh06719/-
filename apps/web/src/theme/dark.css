@@ -1,0 +1,47 @@
+/**
+ * 深色模式样式（theme/dark.css）。
+ *
+ * 策略：Tailwind `darkMode: 'class'` —— `<html class="dark">` 时启用（AC-48 / NFR-8）。
+ * 颜色对比度按 WCAG AA（正文 ≥ 4.5:1）选取，避免「红色恐吓」语义（PRD §7）。
+ */
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* 应用外壳：深色下的基底与文字色 */
+html.dark body {
+  background-color: #0f1a16;
+  color: #e6f0eb;
+}
+
+/* 卡片 / 面板：深色下用低饱和墨绿，保持温和观感 */
+html.dark .qsh-surface {
+  background-color: #16241f;
+  border-color: #24443a;
+}
+
+/* 次级文字：保证在深底上仍达 AA */
+html.dark .qsh-text-muted {
+  color: #9db3a9;
+}
+
+/* 输入控件：深色下不刺眼，聚焦时用品牌色边框 */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #16241f;
+  border-color: #2f4a40;
+  color: #e6f0eb;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #7d9489;
+}
+
+/* 表格 / 分隔线 */
+html.dark hr,
+html.dark .qsh-divider {
+  border-color: #24443a;
+}

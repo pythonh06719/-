@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "description": "内置习惯模板种子（R7.3，用户可自定义扩展）",
+    "dataSource": "产品定义（PRD §4.7：喝水、早睡、步数、不点外卖等）",
+    "precision": "targetPerDay 为每日打卡目标次数",
+    "itemCount": 6
+  },
+  "habits": [
+    { "code": "water", "name": "喝水达标", "icon": "💧", "targetPerDay": 1 },
+    { "code": "early_sleep", "name": "早睡", "icon": "🌙", "targetPerDay": 1 },
+    { "code": "steps", "name": "走够 6000 步", "icon": "🚶", "targetPerDay": 1 },
+    { "code": "no_takeout", "name": "没点外卖", "icon": "🍱", "targetPerDay": 1 },
+    { "code": "veggie", "name": "吃了蔬菜", "icon": "🥬", "targetPerDay": 1 },
+    { "code": "record_meals", "name": "记了三餐", "icon": "📝", "targetPerDay": 1 }
+  ]
+}

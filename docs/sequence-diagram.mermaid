@@ -1,0 +1,52 @@
+%% ===========================================================================
+%% ① 首次引导 -> 计算预算 -> 写入 users -> 看板展示（PRD US-03 / US-05 / TC-12）
+%% ===========================================================================
+sequenceDiagram
+  autonumber
+  participant U as 用户浏览器
+  participant W as Web(React)
+  participant C as Core引擎
+  participant A as API(NestJS)
+  participant G as JwtAuthGuard
+  participant R as UsersRepo(Prisma)
+  participant D as DB
+
+  U->>W: 填写引导问卷(性别/生日/身高/体重/目标/活动量/偏好/疾病)
+  W->>C: validateCalorieInput(input)
+  alt 校验失败
+    C-->>W: ValidationError[]
+    W-->>U: 字段级提示(鼓励式文案, PRD 7)
+  else 校验通过
+    C-->>W: ok
+    W->>A: POST /api/onboarding (Bearer ACCESS)
+    A->>G: 校验 JWT
+    G-->>A: userId = token.sub (忽略 body 中任何 userId)
+    A->>C: calcCalorieBudget(input) 服务端唯一真源
+    C-->>A: CalorieResult
+    A->>R: upsertProfile + upsertGoal + 追加 weight_goal_history
+    R->>D: INSERT / UPDATE (ON CONFLICT)
+    D-->>R: ok
+    R-->>A: profile & goal
+    A-->>W: { data: { profile, goal, budget } }
+    W-->>U: 跳转 /dashboard, 展示剩余热量大数字 + 进度环
+  end
+
+%% ===========================================================================
+%% ② 落地页免注册试用计算器（PRD US-01，不落库、不发写请求）
+%% ===========================================================================
+sequenceDiagram
+  autonumber
+  participant U as 访客
+  participant W as 落地页(/)
+  participant C as Core引擎
+
+  U->>W: 输入 性别/年龄/身高/体重/活动量
+  W->>C: safeCalcCalorieBudget(input)
+  alt 校验通过
+    C-->>W: { ok: true, result: CalorieResult }
+    W-->>U: 展示 BMR / TDEE / 建议摄入 + 参考来源入口 + 免责声明
+  else 校验失败
+    C-->>W: { ok: false, errors: ValidationError[] }
+    W-->>U: 字段级提示(不阻断, 鼓励式文案)
+  end
+  Note over W,C: 全程零网络写请求, 不落库, 无注册

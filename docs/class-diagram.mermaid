@@ -1,0 +1,105 @@
+classDiagram
+  class Gender {
+    <<enumeration>>
+    male
+    female
+  }
+  class ActivityLevel {
+    <<enumeration>>
+    sedentary
+    light
+    moderate
+    high
+    athlete
+  }
+  class MacroRatio {
+    +number protein
+    +number fat
+    +number carb
+  }
+  class CalorieInput {
+    +Gender gender
+    +number age
+    +number heightCm
+    +number weightKg
+    +number targetWeightKg
+    +number targetWeeks
+    +ActivityLevel activityLevel
+    +MacroRatio macroRatio
+    +number weeklyLossKg
+  }
+  class MacroResult {
+    +number proteinG
+    +number fatG
+    +number carbG
+  }
+  class CalorieResult {
+    +number bmr
+    +number tdee
+    +number targetDeficitRaw
+    +number deficitCap
+    +number effectiveDeficit
+    +boolean isDeficitCapped
+    +number intakeRecommended
+    +boolean floorApplied
+    +number safetyFloor
+    +string[] safetyMessages
+    +MacroResult macros
+    +number weeklyLossEffectiveKg
+    +number etaWeeks
+    +ValidationWarning[] warnings
+  }
+  class ValidationError {
+    +string code
+    +string field
+    +string message
+  }
+  class ValidationWarning {
+    +string code
+    +string field
+    +string message
+  }
+  class ValidationReport {
+    +ValidationError[] errors
+    +ValidationWarning[] warnings
+  }
+  class CalorieEngine {
+    <<module>>
+    +ACTIVITY_FACTORS
+    +SAFETY_FLOOR
+    +KCAL_PER_KG_FAT
+    +calcBMR(input) number
+    +calcTDEE(bmr, level) number
+    +deriveWeeklyLossKg(weightKg, targetWeightKg, targetWeeks) number
+    +calcCalorieBudget(input) CalorieResult
+    +safeCalcCalorieBudget(input) Result
+    +calcMacros(intake, ratio) MacroResult
+    +calcETaWeeks(input, effectiveDeficit) number
+    +buildSafetyMessages(flags) string[]
+  }
+  class Validator {
+    +validateCalorieInput(input) ValidationReport
+  }
+  class Units {
+    +kcalToKj(kcal) number
+    +kjToKcal(kj) number
+  }
+  class DayKey {
+    +toLocalDateKey(date) string
+    +ageFromBirthDate(birth, now) number
+  }
+
+  CalorieInput *-- Gender
+  CalorieInput *-- ActivityLevel
+  CalorieInput *-- MacroRatio
+  CalorieResult *-- MacroResult
+  CalorieResult *-- ValidationWarning : warnings[]
+  CalorieEngine ..> CalorieInput : 消费
+  CalorieEngine ..> CalorieResult : 产出
+  CalorieEngine ..> Validator : 前置校验
+  CalorieEngine ..> ValidationWarning : 结果侧告警
+  CalorieEngine ..> Units : 单位换算
+  CalorieEngine ..> DayKey : 日期辅助
+  Validator ..> ValidationReport : 产出
+  ValidationReport *-- ValidationError : errors[]
+  ValidationReport *-- ValidationWarning : warnings[]

@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-brand-50 text-slate-800 antialiased;
+  font-family: theme('fontFamily.sans');
+  /* 移动端优先：避免横向滚动，尊重安全区 */
+  overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 数字展示统一使用等宽数字，避免跳动 */
+.qsh-tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 通用卡片样式（深色模式在 theme/dark.css 中覆盖 .qsh-surface） */
+.qsh-surface {
+  @apply bg-white ring-1 ring-brand-100;
+}

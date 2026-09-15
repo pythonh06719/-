@@ -1,0 +1,2348 @@
+{
+  "_meta": {
+    "description": "Open Food Facts 中国区条目（原始采集，入库前请人工抽检）",
+    "license": "Open Database License (ODbL) 1.0 — © Open Food Facts contributors",
+    "attribution": "数据来源 Open Food Facts (https://world.openfoodfacts.org)，ODbL 1.0 许可，使用需署名并同许可共享",
+    "fetchedAt": "2026-09-15T01:57:25.553Z",
+    "collected": 79,
+    "freshAfterDedupe": 76
+  },
+  "items": [
+    {
+      "name": "康师傅 冰红茶",
+      "namePinyin": null,
+      "aliases": [
+        "康师傅"
+      ],
+      "category": "beverages",
+      "kcalPer100g": 39,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 9.2,
+      "fiber": 0,
+      "sodium": 12,
+      "sugar": 9,
+      "saturatedFat": 0,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 500,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6922507005019"
+    },
+    {
+      "name": "臻浓牛奶",
+      "namePinyin": null,
+      "aliases": [
+        "yili",
+        "伊利"
+      ],
+      "category": "牛奶",
+      "kcalPer100g": 74.3,
+      "protein": 3.3,
+      "fat": 4.6,
+      "carbs": 5,
+      "fiber": 0,
+      "sodium": 57,
+      "sugar": 5,
+      "saturatedFat": 4.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "0140141789706"
+    },
+    {
+      "name": "点點心麵 Dim Sum Noodle 海鲜味 Seafood Flavour - DOLL",
+      "namePinyin": null,
+      "aliases": [
+        "公仔 DOLL"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 426.5,
+      "protein": 10,
+      "fat": 18.2,
+      "carbs": 55.6,
+      "fiber": null,
+      "sodium": null,
+      "sugar": 2.9,
+      "saturatedFat": 8.5,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 34,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6900082020153"
+    },
+    {
+      "name": "茶π果味茶饮料 柑普柠檬茶",
+      "namePinyin": null,
+      "aliases": [
+        "Nongfu Spring",
+        "农夫山泉"
+      ],
+      "category": "beverages",
+      "kcalPer100g": 33,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 8,
+      "fiber": 0,
+      "sodium": 40,
+      "sugar": 0,
+      "saturatedFat": 0,
+      "servingUnits": [
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": true
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6921168597734"
+    },
+    {
+      "name": "上好佳薯条",
+      "namePinyin": null,
+      "aliases": [
+        "上好佳"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 467,
+      "protein": 5.3,
+      "fat": 20.1,
+      "carbs": 67,
+      "fiber": null,
+      "sodium": 880,
+      "sugar": 12,
+      "saturatedFat": 2,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6909409014240"
+    },
+    {
+      "name": "瓜子",
+      "namePinyin": null,
+      "aliases": [
+        "老街口"
+      ],
+      "category": "plant",
+      "kcalPer100g": 584.6,
+      "protein": 29.5,
+      "fat": 41.8,
+      "carbs": 22.6,
+      "fiber": null,
+      "sodium": 871,
+      "sugar": 3.2,
+      "saturatedFat": 6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 25,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6930755610138"
+    },
+    {
+      "name": "青箭口香糖",
+      "namePinyin": null,
+      "aliases": [],
+      "category": "包装食品",
+      "kcalPer100g": 9.3,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 2.3,
+      "fiber": 0,
+      "sodium": null,
+      "sugar": 2.3,
+      "saturatedFat": 0,
+      "servingUnits": [
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": true
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "02291208"
+    },
+    {
+      "name": "林鳳營特濃重乳優格（無加糖）",
+      "namePinyin": null,
+      "aliases": [
+        "林鳳營"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 77.4,
+      "protein": 5.6,
+      "fat": 3.4,
+      "carbs": 6.1,
+      "fiber": null,
+      "sodium": 63,
+      "sugar": 5.2,
+      "saturatedFat": 2.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710063338038"
+    },
+    {
+      "name": "穀拿滋棒-抹茶堅果",
+      "namePinyin": null,
+      "aliases": [
+        "米大師"
+      ],
+      "category": "plant",
+      "kcalPer100g": 465.9,
+      "protein": 13.8,
+      "fat": 27.9,
+      "carbs": 39.9,
+      "fiber": null,
+      "sodium": 50,
+      "sugar": 21,
+      "saturatedFat": 5.9,
+      "servingUnits": [
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": true
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710631641386"
+    },
+    {
+      "name": "北海鱈魚香絲",
+      "namePinyin": null,
+      "aliases": [
+        "北海"
+      ],
+      "category": "snacks",
+      "kcalPer100g": 330.7,
+      "protein": 23.9,
+      "fat": 1.5,
+      "carbs": 55.1,
+      "fiber": null,
+      "sodium": 1793,
+      "sugar": 21,
+      "saturatedFat": 1,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 21,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710866002600"
+    },
+    {
+      "name": "蒜香黑胡椒雞胸肉",
+      "namePinyin": null,
+      "aliases": [
+        "711"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 126,
+      "protein": 21.4,
+      "fat": 3.1,
+      "carbs": 3.2,
+      "fiber": null,
+      "sodium": 430,
+      "sugar": 0.7,
+      "saturatedFat": 0.7,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2639369811118"
+    },
+    {
+      "name": "Gaozi Sweet Chilli Sauce (高仔辣椒醬)",
+      "namePinyin": null,
+      "aliases": [
+        "Gao Ta (高塔)"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 220.1,
+      "protein": 1.1,
+      "fat": 0,
+      "carbs": 53.1,
+      "fiber": null,
+      "sodium": 1300,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6927953166666"
+    },
+    {
+      "name": "椒麻雞胸肉 Simply Fit",
+      "namePinyin": null,
+      "aliases": [
+        "7-Eleven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 117,
+      "protein": 23.6,
+      "fat": 1.8,
+      "carbs": 1.6,
+      "fiber": null,
+      "sodium": 620,
+      "sugar": 1.5,
+      "saturatedFat": 0.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2856245011817"
+    },
+    {
+      "name": "溫泉蛋",
+      "namePinyin": null,
+      "aliases": [
+        "石安牧場"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 140,
+      "protein": 14.2,
+      "fat": 7.6,
+      "carbs": 3.7,
+      "fiber": null,
+      "sodium": 215,
+      "sugar": 1.4,
+      "saturatedFat": 2.8,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 76,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2030428711514"
+    },
+    {
+      "name": "舒迷雞胸肉",
+      "namePinyin": null,
+      "aliases": [
+        "大成"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 110,
+      "protein": 22,
+      "fat": 1.6,
+      "carbs": 1.9,
+      "fiber": null,
+      "sodium": 218,
+      "sugar": null,
+      "saturatedFat": 0.5,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2975966811411"
+    },
+    {
+      "name": "台灣鯛魚排",
+      "namePinyin": null,
+      "aliases": [
+        "善美的"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 110,
+      "protein": 9.1,
+      "fat": 1.8,
+      "carbs": 1.3,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 200,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711845300724"
+    },
+    {
+      "name": "一日野菜活力彩蔬",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 59.2,
+      "protein": 1.5,
+      "fat": 2.1,
+      "carbs": 8.5,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": 0.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 184,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2514943211136"
+    },
+    {
+      "name": "鳳梨大福 にじゅうのもちバナナ・パイナップル",
+      "namePinyin": null,
+      "aliases": [
+        "雪の恋"
+      ],
+      "category": "desserts",
+      "kcalPer100g": 288,
+      "protein": 2.1,
+      "fat": 4.5,
+      "carbs": 59.7,
+      "fiber": null,
+      "sodium": 20,
+      "sugar": 31.4,
+      "saturatedFat": 2.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 30,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4713072170286"
+    },
+    {
+      "name": "玫瑰鹽水煮蛋",
+      "namePinyin": null,
+      "aliases": [
+        "卜蜂"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 128.9,
+      "protein": 12.1,
+      "fat": 8.2,
+      "carbs": 1.6,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": 2.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 76,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2328284112317"
+    },
+    {
+      "name": "芭樂切片",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 47,
+      "protein": 0.7,
+      "fat": 0.2,
+      "carbs": 10.6,
+      "fiber": null,
+      "sodium": null,
+      "sugar": 5.2,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 115,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2310524911231"
+    },
+    {
+      "name": "一日野菜四色海藻",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 25.9,
+      "protein": 1.2,
+      "fat": 0.2,
+      "carbs": 4.8,
+      "fiber": null,
+      "sodium": 67,
+      "sugar": 2.6,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 162,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2981318611035"
+    },
+    {
+      "name": "鹽味毛豆",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 147,
+      "protein": 12,
+      "fat": 6.1,
+      "carbs": 11.4,
+      "fiber": null,
+      "sodium": 477,
+      "sugar": 4.2,
+      "saturatedFat": 0.8,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 66,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "24047883"
+    },
+    {
+      "name": "頂級蟹管肉",
+      "namePinyin": null,
+      "aliases": [
+        "善美的"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 97,
+      "protein": 19,
+      "fat": 1.5,
+      "carbs": 0,
+      "fiber": null,
+      "sodium": 1072,
+      "sugar": null,
+      "saturatedFat": 0.1,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 120,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711845301387"
+    },
+    {
+      "name": "洋香瓜",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 38.8,
+      "protein": 1.2,
+      "fat": 0,
+      "carbs": 9.6,
+      "fiber": 0.6,
+      "sodium": null,
+      "sugar": 8.8,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 139,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2633870511031"
+    },
+    {
+      "name": "輕滷時蔬",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 29.9,
+      "protein": 1.5,
+      "fat": 1.2,
+      "carbs": 3.3,
+      "fiber": null,
+      "sodium": 191,
+      "sugar": 2,
+      "saturatedFat": 0.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 144,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2334022011415"
+    },
+    {
+      "name": "美濃木瓜切片",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 36.2,
+      "protein": 0.5,
+      "fat": 0.3,
+      "carbs": 9.2,
+      "fiber": null,
+      "sodium": 6,
+      "sugar": 6.2,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 130,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2338601311439"
+    },
+    {
+      "name": "BCAA 粉",
+      "namePinyin": null,
+      "aliases": [
+        "Decathlon"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 373.8,
+      "protein": 61.3,
+      "fat": 0.4,
+      "carbs": 31.3,
+      "fiber": null,
+      "sodium": 25,
+      "sugar": 13.8,
+      "saturatedFat": 0.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 8,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "3608418962247"
+    },
+    {
+      "name": "鮮蝦蔬果沙拉",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 70.2,
+      "protein": 3.4,
+      "fat": 2,
+      "carbs": 9.7,
+      "fiber": null,
+      "sodium": 228,
+      "sugar": 1.3,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 131,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2367165212333"
+    },
+    {
+      "name": "Atsugiri Baumkuchen (厚切り バウムクーヘン)",
+      "namePinyin": null,
+      "aliases": [
+        "Kagetsudo (香月堂)"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 412.5,
+      "protein": 5.8,
+      "fat": 24.2,
+      "carbs": 43.8,
+      "fiber": null,
+      "sodium": 100,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 24,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4972208700111"
+    },
+    {
+      "name": "蘋果牛奶",
+      "namePinyin": null,
+      "aliases": [
+        "福樂"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 68.8,
+      "protein": 1.6,
+      "fat": 1.5,
+      "carbs": 11.2,
+      "fiber": null,
+      "sodium": 58974,
+      "sugar": 10.7,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": true
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710339006456"
+    },
+    {
+      "name": "Scallop Butter Shoyu Flavour (ほたてバターしょうゆ味)",
+      "namePinyin": null,
+      "aliases": [
+        "Pringles JP"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 522.6,
+      "protein": 6.2,
+      "fat": 29.2,
+      "carbs": 58.9,
+      "fiber": null,
+      "sodium": 679,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 53,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "8886467124556"
+    },
+    {
+      "name": "Yak Milk Coffee (氂牛奶咖啡)",
+      "namePinyin": null,
+      "aliases": [
+        "Jinglan (景蘭)"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 475.4,
+      "protein": 6.1,
+      "fat": 19.4,
+      "carbs": 68.9,
+      "fiber": null,
+      "sodium": 211,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 18,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6940881127189"
+    },
+    {
+      "name": "麥香減糖鮮奶麥片",
+      "namePinyin": null,
+      "aliases": [
+        "桂格"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 406.2,
+      "protein": 7.4,
+      "fat": 11.4,
+      "carbs": 70.8,
+      "fiber": 4.6,
+      "sodium": 326,
+      "sugar": 21.8,
+      "saturatedFat": 8.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 33,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710043045918"
+    },
+    {
+      "name": "五香牛肉",
+      "namePinyin": null,
+      "aliases": [
+        "Aldi"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 212.7,
+      "protein": 23.6,
+      "fat": 12.8,
+      "carbs": 0.9,
+      "fiber": null,
+      "sodium": 848,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "6971454232412"
+    },
+    {
+      "name": "醇奶茶乳清",
+      "namePinyin": null,
+      "aliases": [
+        "Mars"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 391.4,
+      "protein": 74.3,
+      "fat": 7.4,
+      "carbs": 6.9,
+      "fiber": null,
+      "sodium": 289,
+      "sugar": 4.9,
+      "saturatedFat": 4.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 35,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710469848254"
+    },
+    {
+      "name": "水果麥片抹茶風味",
+      "namePinyin": null,
+      "aliases": [
+        "Calbee"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 444,
+      "protein": 7.6,
+      "fat": 15.6,
+      "carbs": 73,
+      "fiber": null,
+      "sodium": 190,
+      "sugar": 15,
+      "saturatedFat": 6.2,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 50,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4901330747817"
+    },
+    {
+      "name": "Premium特濃抹茶巧克力雪糕",
+      "namePinyin": null,
+      "aliases": [
+        "健司X辻利"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 304.4,
+      "protein": 3.5,
+      "fat": 21,
+      "carbs": 25.1,
+      "fiber": null,
+      "sodium": 39706,
+      "sugar": 20.1,
+      "saturatedFat": 13.1,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 68,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4715635823578"
+    },
+    {
+      "name": "大燕麥片",
+      "namePinyin": null,
+      "aliases": [
+        "桂格"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 373.3,
+      "protein": 13.1,
+      "fat": 8,
+      "carbs": 67.5,
+      "fiber": 9.9,
+      "sodium": 9,
+      "sugar": 1.3,
+      "saturatedFat": 1.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 38,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710043017007"
+    },
+    {
+      "name": "Ground Natto with Konbu Tare (ひきわり昆布だしたれ付)",
+      "namePinyin": null,
+      "aliases": [
+        "おかめ納豆"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 200,
+      "protein": 16.3,
+      "fat": 10.1,
+      "carbs": 11.7,
+      "fiber": 6.8,
+      "sodium": 477,
+      "sugar": 8.3,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 50,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4901160030097"
+    },
+    {
+      "name": "里肌百匯三明治",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 234,
+      "protein": 11.5,
+      "fat": 10.9,
+      "carbs": 22.4,
+      "fiber": null,
+      "sodium": null,
+      "sugar": 3.1,
+      "saturatedFat": 3.7,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2331660729931"
+    },
+    {
+      "name": "厚濃黑豆奶 無加糖",
+      "namePinyin": null,
+      "aliases": [
+        "義美"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 50.5,
+      "protein": 5.3,
+      "fat": 2.4,
+      "carbs": 2.5,
+      "fiber": 1.1,
+      "sodium": 20,
+      "sugar": 0.9,
+      "saturatedFat": 0.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "0710126206397"
+    },
+    {
+      "name": "泰式椰汁綠咖喱雞肉飯",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 177,
+      "protein": 5.2,
+      "fat": 5.6,
+      "carbs": 26.5,
+      "fiber": null,
+      "sodium": 278,
+      "sugar": 0.8,
+      "saturatedFat": 3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "0391268730130"
+    },
+    {
+      "name": "古早味滷排骨(Old Fashion Style Pork CHOPS)",
+      "namePinyin": null,
+      "aliases": [
+        "高津食品(GAO JIN FOOD)"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 163.3,
+      "protein": 13.2,
+      "fat": 8.9,
+      "carbs": 7.5,
+      "fiber": 0,
+      "sodium": 65,
+      "sugar": 4.7,
+      "saturatedFat": 2.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 120,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4713495501667"
+    },
+    {
+      "name": "桃木燻雞胸",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 113.5,
+      "protein": 22.6,
+      "fat": 1.9,
+      "carbs": 1.5,
+      "fiber": null,
+      "sodium": 291,
+      "sugar": 1.5,
+      "saturatedFat": 0.8,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2838503535419"
+    },
+    {
+      "name": "石安牧場溫泉蛋",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 139.5,
+      "protein": 14.2,
+      "fat": 7.6,
+      "carbs": 3.7,
+      "fiber": null,
+      "sodium": 537,
+      "sugar": 1.3,
+      "saturatedFat": 2.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 38,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2030428734117"
+    },
+    {
+      "name": "晶華霜降和牛飯糰",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 190,
+      "protein": 4.8,
+      "fat": 3.4,
+      "carbs": 34.9,
+      "fiber": null,
+      "sodium": 500,
+      "sugar": 2.4,
+      "saturatedFat": 1.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 120,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2464610934137"
+    },
+    {
+      "name": "香草烤雞腿時蔬餐",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 148.1,
+      "protein": 8.8,
+      "fat": 5,
+      "carbs": 16.9,
+      "fiber": null,
+      "sodium": 395,
+      "sugar": 0.7,
+      "saturatedFat": 1.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 293,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2586184634135"
+    },
+    {
+      "name": "可可花生",
+      "namePinyin": null,
+      "aliases": [
+        "MUJI"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 596,
+      "protein": 13.1,
+      "fat": 42,
+      "carbs": 41.3,
+      "fiber": null,
+      "sodium": 59,
+      "sugar": 35.6,
+      "saturatedFat": 23.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 30,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4550583745714"
+    },
+    {
+      "name": "小龍蝦魚卵飯糰",
+      "namePinyin": null,
+      "aliases": [
+        "7-11"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 206.3,
+      "protein": 4.3,
+      "fat": 5.6,
+      "carbs": 34.8,
+      "fiber": null,
+      "sodium": 374,
+      "sugar": 1.1,
+      "saturatedFat": 0.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 111,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2536360934030"
+    },
+    {
+      "name": "黑糖奶茶 Pro",
+      "namePinyin": null,
+      "aliases": [
+        "Body Goals"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 435,
+      "protein": 67.5,
+      "fat": 8.5,
+      "carbs": 22.3,
+      "fiber": null,
+      "sodium": 300,
+      "sugar": 13.8,
+      "saturatedFat": 5.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711048660878"
+    },
+    {
+      "name": "鮮奶豆漿",
+      "namePinyin": null,
+      "aliases": [
+        "光泉"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 42.3,
+      "protein": 3.7,
+      "fat": 2.3,
+      "carbs": 1.7,
+      "fiber": null,
+      "sodium": 15,
+      "sugar": 0.8,
+      "saturatedFat": 0.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 375,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710105037097"
+    },
+    {
+      "name": "鮮乳",
+      "namePinyin": null,
+      "aliases": [
+        "六甲田莊"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 67.3,
+      "protein": 3.2,
+      "fat": 3.7,
+      "carbs": 5.3,
+      "fiber": null,
+      "sodium": 38,
+      "sugar": 5.2,
+      "saturatedFat": 2.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 237,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4713072520814"
+    },
+    {
+      "name": "草莓牛奶 Pro",
+      "namePinyin": null,
+      "aliases": [
+        "Body Goals"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 432.5,
+      "protein": 67.5,
+      "fat": 7,
+      "carbs": 25,
+      "fiber": null,
+      "sodium": 140,
+      "sugar": 18.8,
+      "saturatedFat": 4.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711048660854"
+    },
+    {
+      "name": "A2Β酪蛋白鮮乳",
+      "namePinyin": null,
+      "aliases": [
+        "鮮乳坊"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 68,
+      "protein": 3.2,
+      "fat": 4,
+      "carbs": 4.8,
+      "fiber": null,
+      "sodium": 40,
+      "sugar": 4.6,
+      "saturatedFat": 2.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 234,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4712947620116"
+    },
+    {
+      "name": "花生牛奶 Pro",
+      "namePinyin": null,
+      "aliases": [
+        "Body Goals"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 397.5,
+      "protein": 67.5,
+      "fat": 8.3,
+      "carbs": 13.3,
+      "fiber": null,
+      "sodium": 188,
+      "sugar": 7,
+      "saturatedFat": 3.8,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711048661073"
+    },
+    {
+      "name": "筍香肉包",
+      "namePinyin": null,
+      "aliases": [
+        "桂冠"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 258.6,
+      "protein": 7.4,
+      "fat": 7.1,
+      "carbs": 41.1,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 70,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710011417310"
+    },
+    {
+      "name": "法式可可 Pro",
+      "namePinyin": null,
+      "aliases": [
+        "Body Goals"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 407.5,
+      "protein": 67.5,
+      "fat": 7.3,
+      "carbs": 18,
+      "fiber": null,
+      "sodium": 158,
+      "sugar": 7,
+      "saturatedFat": 4.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711048660823"
+    },
+    {
+      "name": "酸菜牛肉麵",
+      "namePinyin": null,
+      "aliases": [
+        "Uni-President"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 153.4,
+      "protein": 9.2,
+      "fat": 3.9,
+      "carbs": 20.3,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": 1.1,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 356,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2713233334733"
+    },
+    {
+      "name": "雞胸肉",
+      "namePinyin": null,
+      "aliases": [
+        "博客"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 112,
+      "protein": 20,
+      "fat": 2.5,
+      "carbs": 2.3,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 100,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2853814100118"
+    },
+    {
+      "name": "蛋白粉",
+      "namePinyin": null,
+      "aliases": [
+        "GymMars"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 402.9,
+      "protein": 74.3,
+      "fat": 7.7,
+      "carbs": 9.4,
+      "fiber": null,
+      "sodium": null,
+      "sugar": 3.4,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 35,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710469849374"
+    },
+    {
+      "name": "雞肉飯飯糰",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 200.9,
+      "protein": 6.1,
+      "fat": 5.6,
+      "carbs": 31.5,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 110,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2354777334737"
+    },
+    {
+      "name": "蕎麥麵",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 141.8,
+      "protein": 5.1,
+      "fat": 2.3,
+      "carbs": 25.1,
+      "fiber": null,
+      "sodium": null,
+      "sugar": null,
+      "saturatedFat": null,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 237,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2654975034935"
+    },
+    {
+      "name": "皮蛋瘦肉粥",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 71.4,
+      "protein": 3.5,
+      "fat": 4.2,
+      "carbs": 4.9,
+      "fiber": null,
+      "sodium": 341,
+      "sugar": null,
+      "saturatedFat": 1.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 517,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2438583134931"
+    },
+    {
+      "name": "起司貝果",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 313.5,
+      "protein": 9.6,
+      "fat": 8.2,
+      "carbs": 50.4,
+      "fiber": null,
+      "sodium": 389,
+      "sugar": 18.7,
+      "saturatedFat": 4.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 111,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2406688434911"
+    },
+    {
+      "name": "牧場限定鮮乳",
+      "namePinyin": null,
+      "aliases": [
+        "義美"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 68.3,
+      "protein": 3.3,
+      "fat": 3.9,
+      "carbs": 5,
+      "fiber": null,
+      "sodium": 41,
+      "sugar": 4.9,
+      "saturatedFat": 2.7,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 237,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710126150430"
+    },
+    {
+      "name": "Spark Pure 純生乳即溶乳清蛋白",
+      "namePinyin": null,
+      "aliases": [
+        "Spark"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 409,
+      "protein": 78,
+      "fat": 7.3,
+      "carbs": 7.7,
+      "fiber": null,
+      "sodium": 221,
+      "sugar": 7.7,
+      "saturatedFat": 4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 30,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710564214251"
+    },
+    {
+      "name": "細關東麵",
+      "namePinyin": null,
+      "aliases": [
+        "五木"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 349.6,
+      "protein": 12,
+      "fat": 1.3,
+      "carbs": 72.4,
+      "fiber": null,
+      "sodium": 623,
+      "sugar": 1.9,
+      "saturatedFat": 0.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 75,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710175567128"
+    },
+    {
+      "name": "海鹽羅宋麵包",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 400,
+      "protein": 9.2,
+      "fat": 16.6,
+      "carbs": 53.4,
+      "fiber": null,
+      "sodium": 390,
+      "sugar": 12,
+      "saturatedFat": 10.8,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 114,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2399959635318"
+    },
+    {
+      "name": "肉鬆飯糰",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 250.5,
+      "protein": 5.3,
+      "fat": 8.3,
+      "carbs": 38.6,
+      "fiber": null,
+      "sodium": 346,
+      "sugar": 2.8,
+      "saturatedFat": 1.4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 103,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2428562935062"
+    },
+    {
+      "name": "泰泰奶茶 Pro",
+      "namePinyin": null,
+      "aliases": [
+        "Body Goals"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 425,
+      "protein": 67.5,
+      "fat": 6,
+      "carbs": 25,
+      "fiber": null,
+      "sodium": 175,
+      "sugar": 13.8,
+      "saturatedFat": 4,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 40,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4711048660885"
+    },
+    {
+      "name": "香草烤雞便當",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 148.1,
+      "protein": 8.8,
+      "fat": 5,
+      "carbs": 16.9,
+      "fiber": null,
+      "sodium": 395,
+      "sugar": 0.7,
+      "saturatedFat": 1.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 293,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2586184635637"
+    },
+    {
+      "name": "豬肉水餃",
+      "namePinyin": null,
+      "aliases": [
+        "及第"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 200.9,
+      "protein": 6.6,
+      "fat": 11.6,
+      "carbs": 17.5,
+      "fiber": null,
+      "sodium": 648,
+      "sugar": 1.8,
+      "saturatedFat": 3.5,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 227,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2393768036311"
+    },
+    {
+      "name": "麻婆豆腐飯",
+      "namePinyin": null,
+      "aliases": [
+        "Seven"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 137.6,
+      "protein": 4.6,
+      "fat": 3.3,
+      "carbs": 22.4,
+      "fiber": null,
+      "sodium": 363,
+      "sugar": 1.1,
+      "saturatedFat": 0.9,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 489,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "2382538336331"
+    },
+    {
+      "name": "幸運兒鮮乳",
+      "namePinyin": null,
+      "aliases": [
+        "幸運兒"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 68,
+      "protein": 3.2,
+      "fat": 4,
+      "carbs": 4.8,
+      "fiber": null,
+      "sodium": 40,
+      "sugar": 4.6,
+      "saturatedFat": 2.6,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 234,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4712947620079"
+    },
+    {
+      "name": "咚兵衛烏冬麵",
+      "namePinyin": null,
+      "aliases": [
+        "日清"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 420,
+      "protein": 10.5,
+      "fat": 17.1,
+      "carbs": 56.1,
+      "fiber": null,
+      "sodium": 2271,
+      "sugar": 7.5,
+      "saturatedFat": 7.1,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 95,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4902105281475"
+    },
+    {
+      "name": "超能蛋白 低脂・堅果可可口味",
+      "namePinyin": null,
+      "aliases": [
+        "Fresh delight"
+      ],
+      "category": "包装食品",
+      "kcalPer100g": 55.5,
+      "protein": 5.5,
+      "fat": 0.7,
+      "carbs": 6.8,
+      "fiber": null,
+      "sodium": 84,
+      "sugar": 6.3,
+      "saturatedFat": 0.3,
+      "servingUnits": [
+        {
+          "unit": "份",
+          "grams": 375,
+          "isDefault": true
+        },
+        {
+          "unit": "100克",
+          "grams": 100,
+          "isDefault": false
+        }
+      ],
+      "source": "openfoodfacts",
+      "isCustom": false,
+      "offCode": "4710339007538"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+# CI：以「热量引擎单元测试」为门禁（架构 T05 DoD），失败即阻断
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core-engine-gate:
+    name: 引擎单测门禁（P0）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 热量引擎单元测试 + 覆盖率门禁（≥90%）
+        run: npm test -w @qsh/core
+      - name: 全仓类型检查
+        run: npm run typecheck --workspaces --if-present
+
+  backend:
+    name: 后端构建与 e2e
+    runs-on: ubuntu-latest
+    needs: core-engine-gate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 构建后端
+        run: npm run build -w @qsh/api
+      - name: 后端 e2e（vitest）
+        run: npx vitest run --root apps/api
+
+  frontend:
+    name: 前端测试与构建
+    runs-on: ubuntu-latest
+    needs: core-engine-gate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 前端单测
+        run: npx vitest run --root apps/web
+      - name: 构建（含 PWA 产物）
+        run: npm run build -w @qsh/web

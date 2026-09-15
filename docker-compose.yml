@@ -1,0 +1,61 @@
+# 「轻生活」一键部署（T05）：web(nginx) + api(NestJS) + 可选 postgres
+# 用法：
+#   1) 在仓库根 .env 设置 JWT_SECRET（必填，compose 会校验）
+#   2) docker compose up -d --build
+#
+# 说明：
+# - MVP 默认用 SQLite（无需 postgres），生产建议启用 postgres 服务并把
+#   DATABASE_URL 换成 postgresql://（配合 apps/api/prisma/schema.pg.prisma）
+# - api 容器启动时自动：prisma db push（建表/迁移）→ seed（幂等灌食物库）→ 启动服务
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # SQLite（MVP）；切换 PG 时改为 postgresql://qsh:qsh@postgres:5432/qingshenghuo
+      DATABASE_URL: file:/repo/data/dev.db
+      # 安全：不再提供默认值 —— 未设置时 compose 直接报错（代码审查 #1）
+      JWT_SECRET: ${JWT_SECRET:?请在仓库根 .env 里设置 JWT_SECRET（随机长字符串，勿用示例值）}
+      JWT_EXPIRES_IN: 7d
+      # 演示/预发：尚无 SMTP 时置 true 可从容器日志取验证码完成登录；接入 SMTP 后必须保持 false
+      AUTH_LOG_CODE: ${AUTH_LOG_CODE:-false}
+    volumes:
+      - api-data:/repo/data
+    command:
+      - sh
+      - -c
+      - |
+        npx prisma db push --schema apps/api/prisma/schema.prisma --skip-generate &&
+        npx tsx apps/api/prisma/seed.ts &&
+        node apps/api/dist/apps/api/src/main.js
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # 生产模式启用（SQLite 模式可注释掉）
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: qsh
+  #     POSTGRES_PASSWORD: qsh
+  #     POSTGRES_DB: qingshenghuo
+  #   volumes:
+  #     - pg-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+volumes:
+  api-data:
+#   pg-data:

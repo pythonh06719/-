@@ -1,0 +1,25 @@
+{
+  "name": "qingshenghuo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "轻生活 —— 移动端优先的生活化减肥 Web/PWA（npm workspaces 单体仓库）",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test -w @qsh/core",
+    "test:core": "npm run test -w @qsh/core",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "npm run dev -w @qsh/web",
+    "build": "npm run build -w @qsh/web",
+    "preview": "npm run preview -w @qsh/web"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

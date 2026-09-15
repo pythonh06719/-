@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vitest/globals", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@qsh/core": ["src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

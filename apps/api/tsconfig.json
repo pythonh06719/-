@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedModules": false,
+    "useDefineForClassFields": false,
+    "strictPropertyInitialization": false,
+    "baseUrl": ".",
+    "paths": {
+      "@qsh/core": ["../../packages/core/src/index.ts"],
+      "@qsh/core/*": ["../../packages/core/src/*"],
+      "@qsh/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@qsh/shared-types/*": ["../../packages/shared-types/src/*"]
+    }
+  },
+  "include": ["src", "test", "prisma", "vitest.config.ts"]
+}

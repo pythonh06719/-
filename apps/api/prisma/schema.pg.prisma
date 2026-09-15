@@ -1,0 +1,464 @@
+// =============================================================================
+// 「轻生活」Prisma Schema —— PostgreSQL 16 方言（生产环境）
+//
+// 权威参照：docs/schema.pg.sql
+// 与 schema.prisma（SQLite，MVP）为**同一模型的两套 provider 快照**，差异（ARCHITECTURE §3.2）：
+//   - provider：postgresql
+//   - 自增主键：BigInt @default(autoincrement())（对应 BIGINT ... IDENTITY）
+//   - JSON 列：Json（JSONB），SQLite 下为 String
+//   - 日期/时间戳：DateTime（@db.Date / @db.Timestamptz(6)），SQLite 下为 String
+//   - 布尔：Boolean（BOOLEAN），SQLite 下由 Prisma 归一为 0/1
+//
+// 本文件仅供生产库校验/迁移参照，T02 阶段不对其执行 generate（避免覆盖 SQLite 客户端）。
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated-pg"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PG")
+}
+
+// -----------------------------------------------------------------------------
+// 1. users
+// -----------------------------------------------------------------------------
+model User {
+  id              BigInt    @id @default(autoincrement())
+  email           String    @unique(map: "ux_users_email")
+  passwordHash    String?   @map("password_hash")
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  status          String    @default("active")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  profile           UserProfile?
+  goal              UserGoal?
+  settings          UserSettings?
+  weightGoalHistory WeightGoalHistory[]
+  weightLogs        WeightLog[]
+  foodFavorites     FoodFavorite[]
+  mealLogs          MealLog[]
+  mealCombos        MealCombo[]
+  createdFoods      FoodItem[]          @relation("FoodCreatedBy")
+  exerciseLogs      ExerciseLog[]
+  waterLogs         WaterLog[]
+  habitDefinitions  HabitDefinition[]
+  habitCheckins     HabitCheckin[]
+  fastingSettings   FastingSettings?
+  fastingSessions   FastingSession[]
+  aiUsage           AiUsage[]
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// 2. auth_verification_codes
+// -----------------------------------------------------------------------------
+model AuthVerificationCode {
+  id         BigInt    @id @default(autoincrement())
+  email      String
+  codeHash   String    @map("code_hash")
+  purpose    String    @default("login")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([email, purpose, expiresAt], map: "ix_avc_email_purpose")
+  @@map("auth_verification_codes")
+}
+
+// -----------------------------------------------------------------------------
+// 3. user_profiles
+// -----------------------------------------------------------------------------
+model UserProfile {
+  userId                BigInt    @id @map("user_id")
+  gender                String
+  birthDate             DateTime  @map("birth_date") @db.Date
+  heightCm              Float     @map("height_cm")
+  activityLevel         String    @map("activity_level")
+  dietaryPreference     Json      @default("[]") @map("dietary_preference")
+  conditions            Json      @default("[]") // 敏感字段（D3）
+  disclaimerAcceptedAt  DateTime? @map("disclaimer_accepted_at") @db.Timestamptz(6)
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// -----------------------------------------------------------------------------
+// 4. user_goals
+// -----------------------------------------------------------------------------
+model UserGoal {
+  userId         BigInt   @id @map("user_id")
+  startWeightKg  Float    @map("start_weight_kg")
+  targetWeightKg Float    @map("target_weight_kg")
+  targetWeeks    Int      @map("target_weeks")
+  weeklyLossKg   Float    @map("weekly_loss_kg")
+  macroRatio     Json     @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_goals")
+}
+
+// -----------------------------------------------------------------------------
+// 5. weight_goal_history
+// -----------------------------------------------------------------------------
+model WeightGoalHistory {
+  id             BigInt   @id @default(autoincrement())
+  userId         BigInt   @map("user_id")
+  startWeightKg  Float    @map("start_weight_kg")
+  targetWeightKg Float    @map("target_weight_kg")
+  targetWeeks    Int      @map("target_weeks")
+  weeklyLossKg   Float    @map("weekly_loss_kg")
+  macroRatio     Json     @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  effectiveFrom  DateTime @map("effective_from") @db.Date
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom], map: "ix_wgh_user_from")
+  @@map("weight_goal_history")
+}
+
+// -----------------------------------------------------------------------------
+// 6. user_settings
+// -----------------------------------------------------------------------------
+model UserSettings {
+  userId         BigInt   @id @map("user_id")
+  unit           String   @default("kcal")
+  darkMode       Boolean  @default(false) @map("dark_mode")
+  waterGoalMl    Int      @default(2000) @map("water_goal_ml")
+  fastingEnabled Boolean  @default(false) @map("fasting_enabled")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 7. weight_logs
+// -----------------------------------------------------------------------------
+model WeightLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  loggedAt  DateTime @map("logged_at") @db.Date
+  weightKg  Float    @map("weight_kg")
+  note      String?
+  source    String   @default("manual")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, loggedAt], map: "ux_weight_user_day")
+  @@index([userId, loggedAt], map: "ix_weight_user_at")
+  @@map("weight_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 8. food_items
+// -----------------------------------------------------------------------------
+model FoodItem {
+  id                       BigInt   @id @default(autoincrement())
+  name                     String
+  namePinyin               String?  @map("name_pinyin")
+  aliases                  Json     @default("[]")
+  category                 String   @default("other")
+  kcalPer100g              Float    @map("kcal_per_100g")
+  proteinGPer100g          Float    @default(0) @map("protein_g_per_100g")
+  fatGPer100g              Float    @default(0) @map("fat_g_per_100g")
+  carbGPer100g             Float    @default(0) @map("carb_g_per_100g")
+  fiberGPer100g            Float?   @map("fiber_g_per_100g")
+  sodiumMgPer100g          Float?   @map("sodium_mg_per_100g")
+  saturatedFatGPer100g     Float?   @map("saturated_fat_g_per_100g")
+  sugarGPer100g            Float?   @map("sugar_g_per_100g")
+  calciumMgPer100g         Float?   @map("calcium_mg_per_100g")
+  ironMgPer100g            Float?   @map("iron_mg_per_100g")
+  potassiumMgPer100g       Float?   @map("potassium_mg_per_100g")
+  vitaminDUgPer100g        Float?   @map("vitamin_d_ug_per_100g")
+  b12UgPer100g             Float?   @map("b12_ug_per_100g")
+  magnesiumMgPer100g       Float?   @map("magnesium_mg_per_100g")
+  /// JSON array<ServingUnit>；结构见 docs/ARCHITECTURE.md §3.3
+  servingUnits             Json     @default("[]") @map("serving_units")
+  defaultServingGrams      Float?   @map("default_serving_grams")
+  barcode                  String?  @unique(map: "ux_food_barcode")
+  source                   String   @default("builtin")
+  createdByUserId          BigInt?  @map("created_by_user_id")
+  isVerified               Boolean  @default(false) @map("is_verified")
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  createdBy      User?             @relation("FoodCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  favorites      FoodFavorite[]
+  mealLogs       MealLog[]
+  mealComboItems MealComboItem[]
+
+  @@index([name], map: "ix_food_name")
+  @@index([namePinyin], map: "ix_food_pinyin")
+  @@index([category], map: "ix_food_category")
+  @@index([source], map: "ix_food_source")
+  @@map("food_items")
+}
+
+// -----------------------------------------------------------------------------
+// 9. food_favorites
+// -----------------------------------------------------------------------------
+model FoodFavorite {
+  userId     BigInt   @map("user_id")
+  foodItemId BigInt   @map("food_item_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, foodItemId])
+  @@map("food_favorites")
+}
+
+// -----------------------------------------------------------------------------
+// 10. meal_logs
+// -----------------------------------------------------------------------------
+model MealLog {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  loggedDate  DateTime @map("logged_date") @db.Date
+  mealType    String   @map("meal_type")
+  foodItemId  BigInt?  @map("food_item_id")
+  customName  String?  @map("custom_name")
+  grams       Float?
+  servingUnit String?  @map("serving_unit")
+  servingQty  Float?   @map("serving_qty")
+  kcal        Float
+  proteinG    Float?   @map("protein_g")
+  fatG        Float?   @map("fat_g")
+  carbG       Float?   @map("carb_g")
+  fiberG      Float?   @map("fiber_g")
+  sodiumMg    Float?   @map("sodium_mg")
+  source      String   @default("search")
+  comboId     BigInt?  @map("combo_id")
+  note        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem?  @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+  combo    MealCombo? @relation(fields: [comboId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedDate], map: "ix_meal_user_date")
+  @@index([userId, loggedDate, mealType], map: "ix_meal_user_date_type")
+  @@index([userId, foodItemId], map: "ix_meal_user_food")
+  @@map("meal_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 11. meal_combos
+// -----------------------------------------------------------------------------
+model MealCombo {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  name      String
+  mealType  String   @default("breakfast") @map("meal_type")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealComboItem[]
+  logs  MealLog[]
+
+  @@unique([userId, name], map: "ux_combo_user_name")
+  @@map("meal_combos")
+}
+
+// -----------------------------------------------------------------------------
+// 12. meal_combo_items
+// -----------------------------------------------------------------------------
+model MealComboItem {
+  id          BigInt   @id @default(autoincrement())
+  comboId     BigInt   @map("combo_id")
+  foodItemId  BigInt?  @map("food_item_id")
+  customName  String?  @map("custom_name")
+  grams       Float?
+  servingUnit String?  @map("serving_unit")
+  servingQty  Float?   @map("serving_qty")
+  kcal        Float    @default(0)
+  proteinG    Float?   @map("protein_g")
+  fatG        Float?   @map("fat_g")
+  carbG       Float?   @map("carb_g")
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  combo    MealCombo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+
+  @@index([comboId], map: "ix_combo_item_combo")
+  @@map("meal_combo_items")
+}
+
+// -----------------------------------------------------------------------------
+// 13. met_activities
+// -----------------------------------------------------------------------------
+model MetActivity {
+  code      String   @id
+  name      String
+  category  String   @default("other")
+  intensity String?
+  met       Float
+  isBuiltin Boolean  @default(true) @map("is_builtin")
+  source    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  exerciseLogs ExerciseLog[]
+
+  @@map("met_activities")
+}
+
+// -----------------------------------------------------------------------------
+// 14. exercise_logs
+// -----------------------------------------------------------------------------
+model ExerciseLog {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  loggedDate    DateTime @map("logged_date") @db.Date
+  activityCode  String   @map("activity_code")
+  activityName  String   @map("activity_name")
+  met           Float
+  minutes       Float
+  weightKgAtLog Float    @map("weight_kg_at_log")
+  kcalBurned    Float    @map("kcal_burned")
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity MetActivity @relation(fields: [activityCode], references: [code], onDelete: Restrict)
+
+  @@index([userId, loggedDate], map: "ix_exercise_user_date")
+  @@map("exercise_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 15. water_logs
+// -----------------------------------------------------------------------------
+model WaterLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  loggedDate DateTime @map("logged_date") @db.Date
+  loggedAt   DateTime @default(now()) @map("logged_at") @db.Timestamptz(6)
+  amountMl   Int      @map("amount_ml")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedDate, loggedAt], map: "ix_water_user_date")
+  @@map("water_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 16. habit_definitions
+// -----------------------------------------------------------------------------
+model HabitDefinition {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt?  @map("user_id")
+  code         String
+  name         String
+  icon         String?
+  targetPerDay Int      @default(1) @map("target_per_day")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user     User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkins HabitCheckin[]
+
+  @@unique([userId, code], map: "ux_habit_user_code")
+  @@map("habit_definitions")
+}
+
+// -----------------------------------------------------------------------------
+// 17. habit_checkins
+// -----------------------------------------------------------------------------
+model HabitCheckin {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  habitId    BigInt   @map("habit_id")
+  loggedDate DateTime @map("logged_date") @db.Date
+  done       Boolean  @default(true)
+  value      Float?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit HabitDefinition @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, habitId, loggedDate], map: "ux_checkin_user_habit_day")
+  @@map("habit_checkins")
+}
+
+// -----------------------------------------------------------------------------
+// 18. fasting_settings
+// -----------------------------------------------------------------------------
+model FastingSettings {
+  userId          BigInt    @id @map("user_id")
+  plan            String    @default("16:8")
+  targetFastHours Float     @default(16) @map("target_fast_hours")
+  eatWindowStart  String?   @map("eat_window_start")
+  enabled         Boolean   @default(false)
+  disclaimerAckAt DateTime? @map("disclaimer_ack_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fasting_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 19. fasting_sessions
+// -----------------------------------------------------------------------------
+model FastingSession {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @map("user_id")
+  plan        String    @default("16:8")
+  targetHours Float     @default(16) @map("target_hours")
+  startedAt   DateTime  @map("started_at") @db.Timestamptz(6)
+  endedAt     DateTime? @map("ended_at") @db.Timestamptz(6)
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt], map: "ix_fasting_user_started")
+  @@map("fasting_sessions")
+}
+
+// -----------------------------------------------------------------------------
+// 20. ai_usage
+// -----------------------------------------------------------------------------
+model AiUsage {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  usageDate    DateTime @map("usage_date") @db.Date
+  feature      String
+  requestCount Int      @default(0) @map("request_count")
+  tokenIn      Int      @default(0) @map("token_in")
+  tokenOut     Int      @default(0) @map("token_out")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, usageDate, feature], map: "ux_ai_usage_user_day_feature")
+  @@map("ai_usage")
+}

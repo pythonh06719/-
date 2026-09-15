@@ -1,0 +1,50 @@
+{
+  "TC-01": {
+    "description": "验收用例 1：女 30 岁 165cm 60kg 久坐，每周减 0.5kg（显式 weeklyLossKg）",
+    "input": {
+      "gender": "female",
+      "age": 30,
+      "heightCm": 165,
+      "weightKg": 60,
+      "targetWeightKg": 55,
+      "targetWeeks": 10,
+      "activityLevel": "sedentary",
+      "weeklyLossKg": 0.5
+    },
+    "expected": {
+      "bmr": 1320,
+      "tdee": 1584,
+      "targetDeficitRaw": 550.0,
+      "deficitCap": 475.3,
+      "effectiveDeficit": 475.3,
+      "isDeficitCapped": true,
+      "intakeRecommended": 1200,
+      "floorApplied": true,
+      "safetyFloor": 1200
+    }
+  },
+  "TC-02": {
+    "description": "验收用例 2（本轮修订）：女 30 岁 165cm 60kg 久坐，显式 weeklyLossKg=2（60kg 的 3.3%/周，激进目标）。该输入被接受、不抛错 —— warnings = W_WEEKLY_LOSS_AGGRESSIVE + W_FLOOR_APPLIED（恰好 2 条）。targetWeightKg 取 55（BMI 20.2 ≥ 18.5）以隔离 W_WEEKLY_LOSS_AGGRESSIVE、避免额外触发 W_TARGET_BMI_LOW。cap 以公式为准 = 475.3（PRD 原写 474.9 为笔误，见 ARCHITECTURE §8 D2）。",
+    "input": {
+      "gender": "female",
+      "age": 30,
+      "heightCm": 165,
+      "weightKg": 60,
+      "targetWeightKg": 55,
+      "targetWeeks": 10,
+      "activityLevel": "sedentary",
+      "weeklyLossKg": 2
+    },
+    "expected": {
+      "bmr": 1320,
+      "tdee": 1584,
+      "targetDeficitRaw": 2200.0,
+      "deficitCap": 475.3,
+      "effectiveDeficit": 475.3,
+      "isDeficitCapped": true,
+      "intakeRecommended": 1200,
+      "floorApplied": true,
+      "safetyFloor": 1200
+    }
+  }
+}

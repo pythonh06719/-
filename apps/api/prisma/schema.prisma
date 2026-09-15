@@ -1,0 +1,478 @@
+// =============================================================================
+// 「轻生活」Prisma Schema —— SQLite 方言（MVP 默认）
+//
+// 权威参照：docs/SCHEMA.sql（SQLite DDL，20 张表 / 21 个命名索引 + 2 个自动索引，已实测）
+// 字段级对齐说明（ARCHITECTURE §3.2）：
+//   - 表名/列名使用 @map / @@map 映射回 snake_case，与 SCHEMA.sql 完全一致。
+//   - JSON 列在 SQLite 下用 String 存 JSON 文本（应用层 JSON.parse/stringify）；
+//     PG 下对应 Json（见 prisma/schema.pg.prisma）。
+//   - 日期/时间戳在 SQLite 下用 String 存 TEXT（日粒度 'YYYY-MM-DD' 本地日期；
+//     时间戳 ISO8601 UTC 含毫秒）；PG 下对应 DateTime（见 §3.2 / D1）。
+//   - 布尔在 SQLite 下由 Prisma 归一为 0/1 存储（Boolean 类型）；PG 下为 BOOLEAN。
+//   - 枚举为 TEXT 字符串（不用原生 enum，便于演进）；CHECK 约束 Prisma 无法表达，
+//     由 Prisma 迁移之外的裸 SQL（SCHEMA.sql / schema.pg.sql）与应用层校验共同保证。
+//
+// 硬删除（ARCHITECTURE §7 K9）：全部业务表关系 onDelete: Cascade；
+// 例外：meal_logs.food_item_id / meal_logs.combo_id / meal_combo_items.food_item_id
+//      为 ON DELETE SET NULL；exercise_logs.activity_code 为 ON DELETE RESTRICT。
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// 1. users —— 身份与鉴权（纯鉴权表，敏感资料见 user_profiles）
+// -----------------------------------------------------------------------------
+model User {
+  id              Int     @id @default(autoincrement())
+  email           String  @unique(map: "ux_users_email")
+  passwordHash    String? @map("password_hash") // bcryptjs cost=12；纯验证码用户为 NULL (D9)
+  emailVerifiedAt String? @map("email_verified_at") // ISO8601 UTC
+  status          String  @default("active") // active | disabled
+  createdAt       String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt       String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  profile           UserProfile?
+  goal              UserGoal?
+  settings          UserSettings?
+  weightGoalHistory WeightGoalHistory[]
+  weightLogs        WeightLog[]
+  foodFavorites     FoodFavorite[]
+  mealLogs          MealLog[]
+  mealCombos        MealCombo[]
+  createdFoods      FoodItem[]          @relation("FoodCreatedBy")
+  exerciseLogs      ExerciseLog[]
+  waterLogs         WaterLog[]
+  habitDefinitions  HabitDefinition[]
+  habitCheckins     HabitCheckin[]
+  fastingSettings   FastingSettings?
+  fastingSessions   FastingSession[]
+  aiUsage           AiUsage[]
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// 2. auth_verification_codes —— 邮箱验证码（存 hash、一次性、5 分钟过期）
+// -----------------------------------------------------------------------------
+model AuthVerificationCode {
+  id         Int     @id @default(autoincrement())
+  email      String
+  codeHash   String  @map("code_hash") // 仅存 hash，不存明文
+  purpose    String  @default("login") // login | signup | reset
+  expiresAt  String  @map("expires_at") // ISO8601 UTC
+  consumedAt String? @map("consumed_at") // 消费即置位（一次性）
+  createdAt  String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  @@index([email, purpose, expiresAt], map: "ix_avc_email_purpose")
+  @@map("auth_verification_codes")
+}
+
+// -----------------------------------------------------------------------------
+// 3. user_profiles —— 基础资料（1:1 users）
+//    conditions 为敏感字段：应用层按 D3 做访问控制 / 导出可选排除（PRD Q12）
+// -----------------------------------------------------------------------------
+model UserProfile {
+  userId                Int     @id @map("user_id")
+  gender                String // male | female
+  birthDate             String  @map("birth_date") // 'YYYY-MM-DD'
+  heightCm              Float   @map("height_cm")
+  activityLevel         String  @map("activity_level") // sedentary|light|moderate|high|athlete
+  /// JSON array<string>（dietary_preference）
+  dietaryPreference     String  @default("[]") @map("dietary_preference")
+  /// JSON array<string>（conditions）；敏感字段（D3）
+  conditions            String  @default("[]")
+  disclaimerAcceptedAt  String? @map("disclaimer_accepted_at") // ISO8601 UTC
+  onboardingCompletedAt String? @map("onboarding_completed_at") // ISO8601 UTC
+  createdAt             String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt             String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// -----------------------------------------------------------------------------
+// 4. user_goals —— 当前生效目标（1:1 users）；修改即重算 (R1.4)
+// -----------------------------------------------------------------------------
+model UserGoal {
+  userId         Int    @id @map("user_id")
+  startWeightKg  Float  @map("start_weight_kg")
+  targetWeightKg Float  @map("target_weight_kg")
+  targetWeeks    Int    @map("target_weeks")
+  weeklyLossKg   Float  @map("weekly_loss_kg") // Q5 推导并落库
+  /// JSON macro_ratio；三者和须 = 100
+  macroRatio     String @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  isActive       Boolean @default(true) @map("is_active") // INTEGER(0/1)
+  createdAt      String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt      String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_goals")
+}
+
+// -----------------------------------------------------------------------------
+// 5. weight_goal_history —— 目标变更历史（追加式，支撑预测曲线与审计）
+// -----------------------------------------------------------------------------
+model WeightGoalHistory {
+  id             Int    @id @default(autoincrement())
+  userId         Int    @map("user_id")
+  startWeightKg  Float  @map("start_weight_kg")
+  targetWeightKg Float  @map("target_weight_kg")
+  targetWeeks    Int    @map("target_weeks")
+  weeklyLossKg   Float  @map("weekly_loss_kg")
+  /// JSON macro_ratio
+  macroRatio     String @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  effectiveFrom  String @map("effective_from") // 'YYYY-MM-DD' 本地日期
+  createdAt      String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom], map: "ix_wgh_user_from")
+  @@map("weight_goal_history")
+}
+
+// -----------------------------------------------------------------------------
+// 6. user_settings —— 单位/深色/饮水目标/断食开关（1:1 users）
+// -----------------------------------------------------------------------------
+model UserSettings {
+  userId         Int     @id @map("user_id")
+  unit           String  @default("kcal") // kcal | kj (R2.11)
+  darkMode       Boolean @default(false) @map("dark_mode") // INTEGER(0/1)
+  waterGoalMl    Int     @default(2000) @map("water_goal_ml")
+  fastingEnabled Boolean @default(false) @map("fasting_enabled") // 默认关闭 (R8.1)
+  createdAt      String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt      String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 7. weight_logs —— 每日体重（同日唯一；CSV 导入 UPSERT 覆盖）
+// -----------------------------------------------------------------------------
+model WeightLog {
+  id        Int     @id @default(autoincrement())
+  userId    Int     @map("user_id")
+  loggedAt  String  @map("logged_at") // 'YYYY-MM-DD' 本地日期，当日唯一
+  weightKg  Float   @map("weight_kg")
+  note      String? // ≤200 字
+  source    String  @default("manual") // manual | import
+  createdAt String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, loggedAt], map: "ux_weight_user_day")
+  @@index([userId, loggedAt], map: "ix_weight_user_at") // 7 日均线
+  @@map("weight_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 8. food_items —— 中式食物库（每 100g 营养 + 自然份量单位）
+// -----------------------------------------------------------------------------
+model FoodItem {
+  id                       Int     @id @default(autoincrement())
+  name                     String
+  namePinyin               String? @map("name_pinyin") // 拼音模糊搜索
+  /// JSON array<string>（aliases）
+  aliases                  String  @default("[]")
+  category                 String  @default("other") // 主食/家常菜/外卖/奶茶/零食/水果/蔬菜/蛋白/other
+  kcalPer100g              Float   @map("kcal_per_100g")
+  proteinGPer100g          Float   @default(0) @map("protein_g_per_100g")
+  fatGPer100g              Float   @default(0) @map("fat_g_per_100g")
+  carbGPer100g             Float   @default(0) @map("carb_g_per_100g")
+  // 微量营养素（二期面板，一期可留空）
+  fiberGPer100g            Float?  @map("fiber_g_per_100g")
+  sodiumMgPer100g          Float?  @map("sodium_mg_per_100g")
+  saturatedFatGPer100g     Float?  @map("saturated_fat_g_per_100g")
+  sugarGPer100g            Float?  @map("sugar_g_per_100g")
+  calciumMgPer100g         Float?  @map("calcium_mg_per_100g")
+  ironMgPer100g            Float?  @map("iron_mg_per_100g")
+  potassiumMgPer100g       Float?  @map("potassium_mg_per_100g")
+  vitaminDUgPer100g        Float?  @map("vitamin_d_ug_per_100g")
+  b12UgPer100g             Float?  @map("b12_ug_per_100g")
+  magnesiumMgPer100g       Float?  @map("magnesium_mg_per_100g")
+  /// JSON array<ServingUnit>（serving_units）。
+  /// ServingUnit = { unit: string; grams: number; isDefault?: boolean; label?: string }
+  /// 结构见 docs/ARCHITECTURE.md §3.3；换算 kcal = kcal_per_100g × 选定克数 ÷ 100。
+  servingUnits             String  @default("[]") @map("serving_units")
+  defaultServingGrams      Float?  @map("default_serving_grams") // 冗余默认单位克数
+  barcode                  String? @unique(map: "ux_food_barcode") // Open Food Facts (二期)
+  source                   String  @default("builtin") // builtin | openfoodfacts | user_custom
+  createdByUserId          Int?    @map("created_by_user_id") // user_custom 归属；builtin 为 NULL
+  isVerified               Boolean @default(false) @map("is_verified") // INTEGER(0/1)
+  createdAt                String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt                String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  createdBy        User?             @relation("FoodCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  favorites        FoodFavorite[]
+  mealLogs         MealLog[]
+  mealComboItems   MealComboItem[]
+
+  @@index([name], map: "ix_food_name")
+  @@index([namePinyin], map: "ix_food_pinyin")
+  @@index([category], map: "ix_food_category")
+  @@index([source], map: "ix_food_source")
+  @@map("food_items")
+}
+
+// -----------------------------------------------------------------------------
+// 9. food_favorites —— 收藏（R3.4）；复合主键
+// -----------------------------------------------------------------------------
+model FoodFavorite {
+  userId     Int    @map("user_id")
+  foodItemId Int    @map("food_item_id")
+  createdAt  String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, foodItemId])
+  @@map("food_favorites")
+}
+
+// -----------------------------------------------------------------------------
+// 10. meal_logs —— 饮食记录（search / quick_add / barcode / ai / combo）
+//     food_item_id 可为 NULL（快速加卡仅名称+热量，R3.5/TC-19）
+// -----------------------------------------------------------------------------
+model MealLog {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @map("user_id")
+  loggedDate  String  @map("logged_date") // 'YYYY-MM-DD' 本地日期 (D1)
+  mealType    String  @map("meal_type") // breakfast | lunch | dinner | snack
+  foodItemId  Int?    @map("food_item_id")
+  customName  String? @map("custom_name") // 快速加卡 / AI 名称
+  grams       Float? // 选定克数（g），可空 = 按份量估算
+  servingUnit String? @map("serving_unit") // 个/碗/杯/片/袋
+  servingQty  Float?  @map("serving_qty")
+  kcal        Float
+  proteinG    Float?  @map("protein_g") // 快速加卡允许为空 (TC-19)
+  fatG        Float?  @map("fat_g")
+  carbG       Float?  @map("carb_g")
+  fiberG      Float?  @map("fiber_g") // 二期微量
+  sodiumMg    Float?  @map("sodium_mg")
+  source      String  @default("search") // search|quick_add|barcode|ai|combo
+  comboId     Int?    @map("combo_id")
+  note        String?
+  sortOrder   Int     @default(0) @map("sort_order") // 餐间拖拽排序 (TC-27)
+  createdAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem?  @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+  combo    MealCombo? @relation(fields: [comboId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedDate], map: "ix_meal_user_date")
+  @@index([userId, loggedDate, mealType], map: "ix_meal_user_date_type")
+  @@index([userId, foodItemId], map: "ix_meal_user_food") // 「最近吃过」
+  @@map("meal_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 11. meal_combos —— 套餐模板头（模板修改不影响历史，US-10）
+// -----------------------------------------------------------------------------
+model MealCombo {
+  id        Int    @id @default(autoincrement())
+  userId    Int    @map("user_id")
+  name      String
+  mealType  String @default("breakfast") @map("meal_type") // breakfast|lunch|dinner|snack
+  createdAt String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealComboItem[]
+  logs  MealLog[]
+
+  @@unique([userId, name], map: "ux_combo_user_name")
+  @@map("meal_combos")
+}
+
+// -----------------------------------------------------------------------------
+// 12. meal_combo_items —— 套餐模板明细
+// -----------------------------------------------------------------------------
+model MealComboItem {
+  id          Int     @id @default(autoincrement())
+  comboId     Int     @map("combo_id")
+  foodItemId  Int?    @map("food_item_id")
+  customName  String? @map("custom_name")
+  grams       Float?
+  servingUnit String? @map("serving_unit")
+  servingQty  Float?  @map("serving_qty")
+  kcal        Float   @default(0)
+  proteinG    Float?  @map("protein_g")
+  fatG        Float?  @map("fat_g")
+  carbG       Float?  @map("carb_g")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  combo    MealCombo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+
+  @@index([comboId], map: "ix_combo_item_combo")
+  @@map("meal_combo_items")
+}
+
+// -----------------------------------------------------------------------------
+// 13. met_activities —— 运动 MET 表（R6.1，二期）；主键为文本 code
+// -----------------------------------------------------------------------------
+model MetActivity {
+  code      String  @id
+  name      String
+  category  String  @default("other")
+  intensity String? // 慢走/快走 等档位 (Q11)
+  met       Float
+  isBuiltin Boolean @default(true) @map("is_builtin") // INTEGER(0/1)
+  source    String? // 2024 成人活动 MET 汇编
+  createdAt String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  exerciseLogs ExerciseLog[]
+
+  @@map("met_activities")
+}
+
+// -----------------------------------------------------------------------------
+// 14. exercise_logs —— 运动记录（消耗 = MET × kg × h，TC-32，二期）
+// -----------------------------------------------------------------------------
+model ExerciseLog {
+  id             Int     @id @default(autoincrement())
+  userId         Int     @map("user_id")
+  loggedDate     String  @map("logged_date") // 'YYYY-MM-DD' 本地日期
+  activityCode   String  @map("activity_code")
+  activityName   String  @map("activity_name") // 冗余快照
+  met            Float
+  minutes        Float
+  weightKgAtLog  Float   @map("weight_kg_at_log")
+  kcalBurned     Float   @map("kcal_burned")
+  note           String?
+  createdAt      String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt      String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity MetActivity @relation(fields: [activityCode], references: [code], onDelete: Restrict)
+
+  @@index([userId, loggedDate], map: "ix_exercise_user_date")
+  @@map("exercise_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 15. water_logs —— 饮水（一键 +250ml；撤销 = 删除最新一条，TC-33，二期）
+// -----------------------------------------------------------------------------
+model WaterLog {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @map("user_id")
+  loggedDate String  @map("logged_date") // 'YYYY-MM-DD' 本地日期
+  loggedAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("logged_at") // 精确时间，用于撤销
+  amountMl   Int     @map("amount_ml")
+  createdAt  String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedDate, loggedAt], map: "ix_water_user_date")
+  @@map("water_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 16. habit_definitions —— 习惯项（user_id NULL = 系统内置模板，R7.3，二期）
+// -----------------------------------------------------------------------------
+model HabitDefinition {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @map("user_id") // NULL = 内置
+  code         String // water / early_sleep / steps / no_takeout ...
+  name         String
+  icon         String?
+  targetPerDay Int      @default(1) @map("target_per_day")
+  isActive     Boolean  @default(true) @map("is_active") // INTEGER(0/1)
+  createdAt    String   @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt    String   @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user     User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkins HabitCheckin[]
+
+  @@unique([userId, code], map: "ux_habit_user_code")
+  @@map("habit_definitions")
+}
+
+// -----------------------------------------------------------------------------
+// 17. habit_checkins —— 习惯打卡（幂等；断签不惩罚，TC-35，二期）
+// -----------------------------------------------------------------------------
+model HabitCheckin {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @map("user_id")
+  habitId    Int     @map("habit_id")
+  loggedDate String  @map("logged_date") // 'YYYY-MM-DD' 本地日期
+  done       Boolean @default(true) // INTEGER(0/1)
+  value      Float? // 可选数值（步数等）
+  createdAt  String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit HabitDefinition @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, habitId, loggedDate], map: "ux_checkin_user_habit_day")
+  @@map("habit_checkins")
+}
+
+// -----------------------------------------------------------------------------
+// 18. fasting_settings —— 断食设置（默认关闭；开启需内容警告确认，R8.1/R8.2）
+// -----------------------------------------------------------------------------
+model FastingSettings {
+  userId           Int     @id @map("user_id")
+  plan             String  @default("16:8") // 16:8 | 18:6 | custom
+  targetFastHours  Float   @default(16) @map("target_fast_hours")
+  eatWindowStart   String? @map("eat_window_start") // 'HH:mm'
+  enabled          Boolean @default(false) // INTEGER(0/1)
+  disclaimerAckAt  String? @map("disclaimer_ack_at") // 内容警告确认时间
+  createdAt        String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt        String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fasting_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 19. fasting_sessions —— 断食会话（不做主动推送，R8.3）
+// -----------------------------------------------------------------------------
+model FastingSession {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @map("user_id")
+  plan        String  @default("16:8")
+  targetHours Float   @default(16) @map("target_hours")
+  startedAt   String  @map("started_at")
+  endedAt     String? @map("ended_at")
+  completed   Boolean @default(false) // INTEGER(0/1)
+  createdAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt], map: "ix_fasting_user_started")
+  @@map("fasting_sessions")
+}
+
+// -----------------------------------------------------------------------------
+// 20. ai_usage —— AI 每日限额（每账号每日每功能计数，上限 50，R9.4，三期）
+// -----------------------------------------------------------------------------
+model AiUsage {
+  id           Int    @id @default(autoincrement())
+  userId       Int    @map("user_id")
+  usageDate    String @map("usage_date") // 'YYYY-MM-DD' 本地日期
+  feature      String // daily_summary|today_plan|free_ask|food_recognize
+  requestCount Int    @default(0) @map("request_count")
+  tokenIn      Int    @default(0) @map("token_in")
+  tokenOut     Int    @default(0) @map("token_out")
+  createdAt    String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt    String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, usageDate, feature], map: "ux_ai_usage_user_day_feature")
+  @@map("ai_usage")
+}
