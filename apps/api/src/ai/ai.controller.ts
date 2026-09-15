@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user';
+import { todayLocalKey } from '../common/utils/date.util';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
   AgentAskDto,
@@ -11,6 +12,7 @@ import {
   TodayPlanDto,
 } from './dto/ai.dto';
 import { AgentService } from './agent.service';
+import { toFreeAskResponse } from './agent-view';
 import { AiService } from './ai.service';
 
 /**
@@ -42,11 +44,28 @@ export class AiController {
     return this.aiService.todayPlan(userId, dto);
   }
 
-  /** 自由提问（R9.3）：医疗意图走固定就医回复（R9.6）。 */
+  /**
+   * 自由提问（R9.3）：**确定性优先，否则交给 Agent 工具链**。
+   *
+   * - 医疗意图 / 「还能吃 X 吗」等可确定性回答的语境 → 由 `AiService` 直接给出
+   *   （数字来自食物库，可溯源）；
+   * - 其余开放问题 → 交给 `AgentService.run`，让模型自己决定调用哪些工具（多步）。
+   *
+   * 编排放在控制器而非 Service 层：`AgentService` 已依赖 `AiService`（复用配额/记账），
+   * 若反向依赖会形成循环依赖。
+   */
   @Post('free-ask')
   @HttpCode(HttpStatus.OK)
-  freeAsk(@CurrentUser() userId: number, @Body() dto: FreeAskDto) {
-    return this.aiService.freeAsk(userId, dto);
+  async freeAsk(@CurrentUser() userId: number, @Body() dto: FreeAskDto) {
+    const deterministic = await this.aiService.freeAskDeterministic(userId, dto);
+    if (deterministic !== null) {
+      return deterministic;
+    }
+
+    const question = dto.question.trim();
+    const date = dto.date ?? todayLocalKey();
+    const run = await this.agentService.run(userId, question, date);
+    return toFreeAskResponse(run, { date, question });
   }
 
   /** 食物识别（R3.7）：文字描述 → 食物库候选；**不直接写 meal_logs**，需用户确认。 */

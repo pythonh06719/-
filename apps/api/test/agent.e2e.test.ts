@@ -341,3 +341,78 @@ describe('Agent（P0：多步工具调用 / 写操作确认 / 降级）', () => 
     expect(Array.isArray(rows[0]?.steps)).toBe(true);
   });
 });
+
+describe('free-ask 路由（P1：确定性优先 → 否则交给工具链）', () => {
+  it('回归：`我晚上还能吃点什么？` 不再把「什么」当食物名（历史缺陷）', async () => {
+    useScript({ toolCalls: [{ name: 'get_today_status', args: {} }] }, { content: '晚上可以清淡一些，比如清蒸鱼配青菜。' });
+
+    const res = await request(server as never)
+      .post(`${API}/ai/free-ask`)
+      .set(auth(tokenAgent))
+      .send({ question: '我晚上还能吃点什么？' })
+      .expect(200);
+
+    const data = res.body.data as { answer: string; tools?: string[]; mode: string };
+    // 关键断言：不再出现「暂时没有找到「什么？」」这种答非所问
+    expect(data.answer).not.toContain('暂时没有找到');
+    expect(data.answer).toContain('清淡');
+    expect(data.mode).toBe('llm');
+    expect(data.tools).toContain('get_today_status');
+  });
+
+  it('确定性优先：食物库命中的「还能吃 X 吗」不调用模型（数字全部来自库）', async () => {
+    useScript({ content: '这条不应被使用' });
+
+    const res = await request(server as never)
+      .post(`${API}/ai/free-ask`)
+      .set(auth(tokenAgent))
+      .send({ question: '今天还能吃米饭吗？' })
+      .expect(200);
+
+    const data = res.body.data as {
+      mode: string;
+      matchedFood: { name: string } | null;
+      available: boolean;
+    };
+    expect(data.mode).toBe('rule');
+    expect(data.available).toBe(true);
+    expect(data.matchedFood?.name).toContain('米饭');
+    expect(callCount).toBe(0); // 未调用模型
+  });
+
+  it('食物库查不到具体食物时 → 交给 Agent 换关键词重搜（不再直接说「没找到」）', async () => {
+    useScript(
+      { toolCalls: [{ name: 'search_food', args: { query: '不存在的食材XYZ' } }] },
+      { content: '暂时没找到这个食材，你可以换个说法或手动记录。' },
+    );
+
+    const res = await request(server as never)
+      .post(`${API}/ai/free-ask`)
+      .set(auth(tokenAgent))
+      .send({ question: '今天还能吃不存在的食材XYZ吗？' })
+      .expect(200);
+
+    const data = res.body.data as { tools?: string[]; mode: string };
+    expect(data.mode).toBe('llm');
+    expect(data.tools).toContain('search_food');
+  });
+
+  it('写操作经 free-ask 进入待确认：响应带 pending 与 traceId，且未落库', async () => {
+    const before = await prisma.mealLog.count({ where: { loggedDate: today } });
+    useScript({ toolCalls: [{ name: 'log_meal', args: { foodId: seededFoodId, grams: 200, mealType: 'breakfast' } }] });
+
+    const res = await request(server as never)
+      .post(`${API}/ai/free-ask`)
+      .set(auth(tokenAgent))
+      .send({ question: '帮我记一份早餐：一碗米饭' })
+      .expect(200);
+
+    const data = res.body.data as {
+      pending?: { tool: string; describe: string } | null;
+      traceId?: number;
+    };
+    expect(data.pending?.tool).toBe('log_meal');
+    expect(typeof data.traceId).toBe('number');
+    expect(await prisma.mealLog.count({ where: { loggedDate: today } })).toBe(before);
+  });
+});

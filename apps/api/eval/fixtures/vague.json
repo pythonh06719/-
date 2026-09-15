@@ -1,0 +1,9 @@
+[
+ {
+  "content": "你好呀，我在的～ 想记录今天吃了什么，或者看看今天还能吃多少，都可以跟我说。",
+  "toolCalls": [],
+  "tokenIn": 1180,
+  "tokenOut": 23,
+  "finishReason": "stop"
+ }
+]

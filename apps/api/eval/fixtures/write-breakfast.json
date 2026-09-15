@@ -1,0 +1,36 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_ZQWawMCa3aTc3PZ1qKhF2333",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"米饭\"}"
+    }
+   }
+  ],
+  "tokenIn": 1186,
+  "tokenOut": 38,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "一碗米饭大概 200g 左右，我先按这个量记。",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_LZf6ahmYPCmkmBQYGPSQ8619",
+    "type": "function",
+    "function": {
+     "name": "log_meal",
+     "arguments": "{\"foodId\": 1, \"grams\": 200, \"mealType\": \"breakfast\"}"
+    }
+   }
+  ],
+  "tokenIn": 1371,
+  "tokenOut": 87,
+  "finishReason": "tool_calls"
+ }
+]

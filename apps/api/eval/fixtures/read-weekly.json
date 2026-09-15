@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_UW2bbraWV39IuaLQorWQ4125",
+    "type": "function",
+    "function": {
+     "name": "get_weekly_report",
+     "arguments": "{}"
+    }
+   }
+  ],
+  "tokenIn": 1185,
+  "tokenOut": 23,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "这周（9/9–9/15）暂时还没有记录数据，所以日均摄入、热量缺口这些还看不出来。\n\n想开始的话，随时告诉我吃了什么，我帮你记上，慢慢就有趋势可看啦。",
+  "toolCalls": [],
+  "tokenIn": 1306,
+  "tokenOut": 48,
+  "finishReason": "stop"
+ }
+]

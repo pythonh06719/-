@@ -38,6 +38,10 @@ jobs:
       - run: npm ci
       - name: 后端构建 + e2e（pretest 自动建表并灌种子数据）
         run: npm test -w @qsh/api
+      - name: Agent 评测（回放 fixtures，离线零成本）
+        # 真实评测用 `node apps/api/eval/run-eval.mjs --live`（需 AI_API_KEY，会花钱）；
+        # CI 只回放录制好的模型响应，验证「循环 + 断言逻辑」没被改坏。
+        run: node apps/api/eval/run-eval.mjs --replay
 
   frontend:
     name: 前端测试与构建

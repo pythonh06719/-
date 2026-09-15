@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_SfSbOD94C4S7gWRSQFxE3718",
+    "type": "function",
+    "function": {
+     "name": "get_today_status",
+     "arguments": "{}"
+    }
+   }
+  ],
+  "tokenIn": 1183,
+  "tokenOut": 23,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "今天还没有记录任何进食，推荐摄入 1278 千卡，剩余 1278 千卡，饮水 0 毫升（目标 2000 毫升）。想吃什么随时告诉我，我帮你记下来。",
+  "toolCalls": [],
+  "tokenIn": 1287,
+  "tokenOut": 46,
+  "finishReason": "stop"
+ }
+]

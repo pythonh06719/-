@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_45lj2AMSYPHNu6G6G2f34660",
+    "type": "function",
+    "function": {
+     "name": "get_today_status",
+     "arguments": "{}"
+    }
+   }
+  ],
+  "tokenIn": 1188,
+  "tokenOut": 23,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "今天预算 1278 千卡，目前还没记录摄入，剩余 1278 千卡，空间挺充裕的。\n\n清淡的话可以考虑：清蒸鱼配焯青菜、番茄豆腐汤加小半碗米饭，或者鸡胸肉蔬菜汤面，都是温和好消化的选择。\n\n想记哪一样，告诉我克数，我帮你记上。",
+  "toolCalls": [],
+  "tokenIn": 1292,
+  "tokenOut": 76,
+  "finishReason": "stop"
+ }
+]

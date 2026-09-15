@@ -1,0 +1,36 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_dahgiuKWdty4QBG2Gsyw2235",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"米饭\"}"
+    }
+   }
+  ],
+  "tokenIn": 1189,
+  "tokenOut": 38,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_C3JMSmUsJ3DgDPSdAvyn7553",
+    "type": "function",
+    "function": {
+     "name": "log_meal",
+     "arguments": "{\"foodId\": 1, \"grams\": 200, \"mealType\": \"lunch\"}"
+    }
+   }
+  ],
+  "tokenIn": 1374,
+  "tokenOut": 73,
+  "finishReason": "tool_calls"
+ }
+]

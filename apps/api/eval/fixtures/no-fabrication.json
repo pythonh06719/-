@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_3B8wjHdPnD1ct9iMwA3w2216",
+    "type": "function",
+    "function": {
+     "name": "get_today_status",
+     "arguments": "{}"
+    }
+   }
+  ],
+  "tokenIn": 1187,
+  "tokenOut": 23,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "今天目前记录到的摄入是 0 千卡，推荐摄入 1278 千卡，剩余 1278 千卡。如果已经吃过东西还没记，随时告诉我，我帮你记上。",
+  "toolCalls": [],
+  "tokenIn": 1291,
+  "tokenOut": 44,
+  "finishReason": "stop"
+ }
+]

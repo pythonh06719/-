@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_VhkB8U8OnxJaKiTckNf27938",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"豆腐\"}"
+    }
+   }
+  ],
+  "tokenIn": 1184,
+  "tokenOut": 38,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "豆腐的种类不同，热量也有差别：北豆腐（卤水）约 78 千卡/100 克，南豆腐（嫩豆腐）约 61 千卡/100 克，老豆腐约 145 千卡/100 克，麻婆豆腐因做法不同约 130 千卡/100 克。你想记哪一种、大概多少克呢？",
+  "toolCalls": [],
+  "tokenIn": 1371,
+  "tokenOut": 81,
+  "finishReason": "stop"
+ }
+]

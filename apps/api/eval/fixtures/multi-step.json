@@ -1,0 +1,44 @@
+[
+ {
+  "content": "I'll check your current status and look up those foods.",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_mCAeYhZIdqh2Yaaem9IE9009",
+    "type": "function",
+    "function": {
+     "name": "get_today_status",
+     "arguments": "{}"
+    }
+   },
+   {
+    "index": 1,
+    "id": "call_01_i4VZNlgMyDX9MVEhK2ie9039",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"米饭\"}"
+    }
+   },
+   {
+    "index": 2,
+    "id": "call_02_oHX1MkGpNAInhaxoQKEF1551",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"红烧肉\"}"
+    }
+   }
+  ],
+  "tokenIn": 1195,
+  "tokenOut": 93,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "今天你的推荐摄入是 1278 千卡，目前记录里还没有午餐的数据，所以剩余额度显示为 1278 千卡。\n\n如果中午的米饭和红烧肉还没记，可以告诉我大概的克数，我帮你补上，这样晚上的建议会更贴合实际。晚餐可以往清淡一点的方向走，比如一份清炒或水煮的蔬菜，配点豆腐、鱼或鸡胸这类蛋白质，主食少量就好。",
+  "toolCalls": [],
+  "tokenIn": 1555,
+  "tokenOut": 93,
+  "finishReason": "stop"
+ }
+]

@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_B0vjzPNFxHsqtsaRJlXD3060",
+    "type": "function",
+    "function": {
+     "name": "estimate_exercise",
+     "arguments": "{\"activity\": \"太极\", \"minutes\": 120}"
+    }
+   }
+  ],
+  "tokenIn": 1186,
+  "tokenOut": 54,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "太极暂时不在可估算的运动类型里，相近的选项有散步、快走、徒步/爬山等。如果你愿意，我可以按「散步」两小时帮你估个大概，或者你告诉我更接近的选项～",
+  "toolCalls": [],
+  "tokenIn": 1325,
+  "tokenOut": 46,
+  "finishReason": "stop"
+ }
+]

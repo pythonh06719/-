@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_5mdyrMWRsz2Kcd69Yz2J5409",
+    "type": "function",
+    "function": {
+     "name": "search_food",
+     "arguments": "{\"query\": \"米饭\"}"
+    }
+   }
+  ],
+  "tokenIn": 1183,
+  "tokenOut": 38,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "想帮你记上，不过还差两个信息：这份米饭大概多少克，以及算哪一餐（早/午/晚/加餐）？告诉我就可以记啦。",
+  "toolCalls": [],
+  "tokenIn": 1368,
+  "tokenOut": 38,
+  "finishReason": "stop"
+ }
+]

@@ -39,6 +39,33 @@ import type { DailySummaryDto, FreeAskDto, RecognizeFoodDto, TodayPlanDto } from
 /** 「今天还能吃 X 吗」句式（R9.3 示例场景，兜底规则可确定性回答）。 */
 const CAN_EAT_PATTERN = /(?:还能|还可以|能|可以)(?:再)?吃(?:点|一些|一[点点个些份])?(?<food>.{1,20}?)(?:吗|么|嘛)?[??！!。]?\s*$/;
 
+/**
+ * 疑问词 / 泛称黑名单：这些**不是食物名**。
+ *
+ * 历史缺陷：`我晚上还能吃点什么？` 会被句式命中并把「什么」当食物名，
+ * 于是返回「食物库里暂时没有找到「什么？」」——既答非所问又难看。
+ */
+const FOOD_NAME_STOPWORDS = /^(什么|啥|什|嘛|点儿|点什么|点啥|哪些|哪样|多少|几点|东西|玩意儿|别的|其他|什么都|什么都行)$/;
+const FOOD_NAME_QUESTION_PREFIX = /^(什么|啥|什|哪|多少|几点)/;
+
+/** 从句式里抽取食物名；抽出疑问词/泛称或为空则返回 null（交由工具链处理）。 */
+function extractFoodName(question: string): string | null {
+  const matched = CAN_EAT_PATTERN.exec(question);
+  // 归一化两步（缺一不可）：
+  // ① 去尾部标点/空白；
+  // ② 去尾部语气词 —— 正则里的 `(?:吗|么|嘛)?` 是**可选**的，惰性匹配会优先把「吗」
+  //    留在 food 组里，实测会把 `今天还能吃米饭吗？` 提取成「米饭吗」而查不到食物。
+  const food = (matched?.groups?.food ?? '')
+    .trim()
+    .replace(/[?？。！!，,、\s]+$/g, '')
+    .replace(/(吗|么|嘛|呢|吧|啊|呀|哦)+$/g, '')
+    .trim();
+  if (food.length === 0 || FOOD_NAME_STOPWORDS.test(food) || FOOD_NAME_QUESTION_PREFIX.test(food)) {
+    return null;
+  }
+  return food;
+}
+
 /** LLM 润色输出的 JSON 形状。 */
 interface InsightJson {
   conclusion?: unknown;
@@ -160,8 +187,20 @@ export class AiService {
   // R9.3 自由提问（「今天还能吃 X 吗」等；热量数字一律来自食物库）
   // ---------------------------------------------------------------------------
 
-  /** 自由提问。医疗意图 → 固定就医回复（不消耗限额）；句式命中 → 数据确定性回答。 */
-  async freeAsk(userId: number, dto: FreeAskDto): Promise<AiFreeAskResponse> {
+  /**
+   * 自由提问的**确定性部分**：返回 `null` 表示「这里答不了，交给 Agent 工具链」。
+   *
+   * 分工原则：
+   * - 「今天还能吃 X 吗」这类句式 → 服务端**直接查食物库**给出确定性回答，
+   *   热量数字 100% 可溯源（比让模型自由发挥更可靠，也更省 token）；
+   * - 其余开放问题（趋势、建议、多步任务）→ 交给 Agent，让模型自己决定调哪些工具。
+   *
+   * 修复的历史缺陷：`我晚上还能吃点什么？` 曾被句式命中并把「什么」当食物名，
+   * 于是回答「食物库里暂时没有找到「什么？」」——既答非所问又难看。
+   * 现在：疑问词/泛称被黑名单拦下走 Agent；食物名查不到时也不再直接说「没找到」，
+   * 同样交给 Agent（它可以换关键词重搜，或如实告知用户）。
+   */
+  async freeAskDeterministic(userId: number, dto: FreeAskDto): Promise<AiFreeAskResponse | null> {
     const date = dto.date ?? todayLocalKey();
     const question = dto.question.trim();
     if (question.length === 0) {
@@ -187,74 +226,56 @@ export class AiService {
     await this.consumeQuota(userId, 'free_ask');
     const available = isAiConfigured();
 
-    // 句式命中「还能吃 X 吗」：热量数字全部来自食物库，确定性回答（不依赖 LLM）
-    const matched = CAN_EAT_PATTERN.exec(question);
-    const foodText = matched?.groups?.food?.trim() ?? '';
-    if (foodText.length > 0) {
+    const foodText = extractFoodName(question);
+    if (foodText !== null) {
       const answer = await this.answerCanEat(userId, date, foodText);
-      return {
-        date,
-        question,
-        answer: answer.text,
-        available,
-        mode: 'rule',
-        safetyFlag: false,
-        matchedFood: answer.food,
-      };
-    }
-
-    // 非「还能吃 X」句式：key 已配置 → LLM 开放回答（附当日数据，输出仍过安全闸）
-    if (available) {
-      const data = await this.gatherDayContext(userId, date);
-      const completion = await this.tryChat(
-        [
-          { role: 'system', content: AI_SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `用户的问题：「${question}」\n当日真实数据：${JSON.stringify(data)}\n请用 2~3 句话温和回答；热量数字只能引用上面数据或说明「记录里没有这个信息」，不要编造数字。直接输出回答文本。`,
-          },
-        ],
-        false,
-      );
-      if (completion !== null && !matchMedicalIntent(completion.content)) {
+      if (answer.food !== null) {
+        // 命中食物库 → 确定性回答（数字来自库，不经过模型）
         return {
           date,
           question,
-          answer: completion.content.trim(),
-          available: true,
-          mode: 'llm',
+          answer: answer.text,
+          available,
+          mode: 'rule',
+          safetyFlag: false,
+          matchedFood: answer.food,
+        };
+      }
+      if (!available) {
+        // 没有 key：保留「没找到」提示（比笼统的「暂不可用」更有用）
+        return {
+          date,
+          question,
+          answer: answer.text,
+          available: false,
+          reason: 'ai_not_configured',
+          mode: 'rule',
           safetyFlag: false,
           matchedFood: null,
         };
       }
-      if (completion !== null && matchMedicalIntent(completion.content)) {
-        // LLM 输出触医疗闸 → 固定就医建议
-        return {
-          date,
-          question,
-          answer: MEDICAL_REPLY,
-          available: true,
-          reason: 'matched_medical_intent',
-          mode: 'rule',
-          safetyFlag: true,
-          matchedFood: null,
-        };
-      }
+      // 有 key：交给 Agent 换关键词重搜 / 如实说明
+      return null;
     }
 
-    // key 未配置且句式未命中：返回 available:false（前端显示「暂不可用」）+ 引导文案
-    return {
-      date,
-      question,
-      answer:
-        'AI 助手暂不可用，暂时回答不了这个问题。可以先试试问我「今天还能吃 X 吗」，' +
-        '或者把这一餐记录下来，我帮你做整理。',
-      available: false,
-      reason: 'ai_not_configured',
-      mode: 'rule',
-      safetyFlag: false,
-      matchedFood: null,
-    };
+    // key 未配置且语境不确定：引导文案（不假装能回答）
+    if (!available) {
+      return {
+        date,
+        question,
+        answer:
+          'AI 助手暂不可用，暂时回答不了这个问题。可以先试试问我「今天还能吃 X 吗」，' +
+          '或者把这一餐记录下来，我帮你做整理。',
+        available: false,
+        reason: 'ai_not_configured',
+        mode: 'rule',
+        safetyFlag: false,
+        matchedFood: null,
+      };
+    }
+
+    // 有 key 且非确定性句式 → 交给 Agent 工具链（本次改造的核心）
+    return null;
   }
 
   // ---------------------------------------------------------------------------

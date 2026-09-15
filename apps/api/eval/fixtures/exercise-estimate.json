@@ -1,0 +1,26 @@
+[
+ {
+  "content": "",
+  "toolCalls": [
+   {
+    "index": 0,
+    "id": "call_00_hTRMhnEDoYXF40m8RMAZ8375",
+    "type": "function",
+    "function": {
+     "name": "estimate_exercise",
+     "arguments": "{\"activity\": \"跑步\", \"minutes\": 30}"
+    }
+   }
+  ],
+  "tokenIn": 1186,
+  "tokenOut": 54,
+  "finishReason": "tool_calls"
+ },
+ {
+  "content": "跑步半小时大约消耗 341 千卡（按 62 公斤体重估算）。这个数字会随体重和配速有些浮动，供你参考就好。",
+  "toolCalls": [],
+  "tokenIn": 1275,
+  "tokenOut": 34,
+  "finishReason": "stop"
+ }
+]

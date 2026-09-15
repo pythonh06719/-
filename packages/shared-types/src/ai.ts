@@ -12,8 +12,13 @@
 /** AI 生成模式：`llm` = 配置了 key 的模型生成/润色；`rule` = 服务端规则模板（兜底）。 */
 export type AiMode = 'llm' | 'rule';
 
-/** 不可用原因：`ai_not_configured` = 未配置 key（TC-24，前端显示「暂不可用」）。 */
-export type AiUnavailableReason = 'ai_not_configured';
+/**
+ * 不可用原因：
+ * - `ai_not_configured` = 未配置 key（TC-24，前端显示「暂不可用」）；
+ * - `ai_call_failed` = 已配置但调用失败（网络/额度），前端提示「稍后再试」；
+ * - `ai_max_steps` = Agent 达到步数上限仍未收敛（P0），前端提示换个问法。
+ */
+export type AiUnavailableReason = 'ai_not_configured' | 'ai_call_failed' | 'ai_max_steps';
 
 /** 安全闸命中原因：响应由固定就医建议模板生成（R9.6 / TC-44），前端据此区分展示。 */
 export type AiSafetyReason = 'matched_medical_intent';
@@ -109,6 +114,15 @@ export interface AiFreeAskResponse extends AiAvailability {
   safetyFlag: boolean;
   /** 「还能吃 X 吗」命中的食物信息（热量来自食物库；未命中为 null） */
   matchedFood: AiFreeAskFood | null;
+  /**
+   * Agent 模式（已配置 key 且非确定性句式）下的轨迹 id。
+   * 若 `pending` 非空，前端需据此调用 `POST /ai/agent/confirm` 完成写操作。
+   */
+  traceId?: number;
+  /** Agent 模式下的待确认写操作（human-in-the-loop；无待办为 null / 缺省） */
+  pending?: { tool: string; describe: string } | null;
+  /** Agent 模式下实际执行的工具链（便于前端展示"我查了什么"） */
+  tools?: string[];
 }
 
 /** 食物识别候选（R3.7 / US-09）：仅返回名称与库内热量，**需用户确认才入库**（TC-22/23）。 */
