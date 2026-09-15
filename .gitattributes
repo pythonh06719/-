@@ -1,0 +1,33 @@
+# 统一换行符与文本处理（跨平台协作）
+# 仓库内源码一律 LF 存储；Windows 检出时由 git 自动处理
+* text=auto eol=lf
+
+# 明确为二进制的文件（禁止换行转换与 diff）
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.db   binary
+*.sqlite binary
+*.xlsx binary
+
+# 在 GitHub 上按语言统计/高亮
+*.ts    text
+*.tsx   text
+*.js    text
+*.json  text
+*.md    text
+*.yml   text
+*.yaml  text
+*.css   text
+*.html  text
+
+# 生成物与锁文件：不参与语言统计
+package-lock.json linguist-generated=true
+infra/db/seed/food_items.openfoodfacts.raw.json linguist-generated=true
+infra/db/seed/food_items.usda.candidates.json    linguist-generated=true

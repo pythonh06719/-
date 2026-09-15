@@ -1,8 +1,22 @@
 # 轻生活（qingshenghuo）
 
+[![ci](https://github.com/pythonh06719/-/actions/workflows/ci.yml/badge.svg)](https://github.com/pythonh06719/-/actions/workflows/ci.yml)
+
 > 移动端优先的生活化减肥工具 —— 不节食、不极端，把减肥融入日常生活。
 
-本仓库为 **npm workspaces 单体仓库（monorepo）**，当前交付 **T01：可运行最小骨架 + 热量计算引擎 + 单元测试**。
+本仓库为 **npm workspaces 单体仓库（monorepo）**，已交付**三期完整功能 + 容器化部署**：
+
+| 交付 | 内容 |
+| --- | --- |
+| 热量引擎 | Mifflin-St Jeor 预算计算，强制安全下限（女 1200 / 男 1500）与缺口上限（TDEE × 30%），纯函数、可溯源 |
+| 记录与反馈 | 饮食日记（3 次点击记一餐）、体重趋势、运动 MET 换算、饮水、习惯打卡 |
+| 生活化工具 | 外卖换算、零食救赎（含运动等价换算）、聚餐模式、饮品计算、断食计时 |
+| 报告与 AI | 周报 + 10 项微量营养素参考；AI 助手（医疗意图安全闸、单日 50 次限额、规则兜底降级，key 仅存服务端） |
+| 数据主权 | CSV 导出 / 导入（含公式注入防护）、账号硬删除、隐私承诺（无广告 SDK、无第三方行为分析） |
+| 部署 | `docker compose up -d --build` 一键起（nginx + NestJS + 可选 PostgreSQL），容器自动建表并幂等灌种子 |
+| 测试 | core 85 / api 24 / web 51 = **160 用例全绿**，core 覆盖率 99.7% |
+
+食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
 
 ## 目录结构
 
@@ -68,3 +82,19 @@ npm run typecheck
 ## 免责声明
 
 本产品不提供医疗建议。孕期 / 哺乳期 / 疾病治疗期人群不建议使用热量缺口方案，请咨询专业医师。
+
+## 许可
+
+| 范围 | 许可 | 说明 |
+| --- | --- | --- |
+| 代码（本仓库全部源码） | [MIT](./LICENSE) | 自由使用、修改、商用 |
+| 食物营养数据（`infra/db/seed/`） | **混合许可** | 自建 57 条 CC BY 4.0；Open Food Facts 258 条 **ODbL 1.0**（须署名 + 衍生库同许可）；USDA 128 条公有领域 |
+
+详细义务（尤其是 ODbL 的署名与同许可要求）见 **[DATA-LICENSE.md](./DATA-LICENSE.md)**。
+
+### 数据来源署名
+
+- 包装食品营养数据：© [Open Food Facts](https://world.openfoodfacts.org) contributors（ODbL 1.0）
+- 基础食材营养数据：[USDA FoodData Central — SR Legacy](https://fdc.nal.usda.gov)（公有领域），中文译名与归类由本项目完成
+- 自建样例集与 MET / 习惯模板：本项目整理（CC BY 4.0）
+
