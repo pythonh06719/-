@@ -15,7 +15,9 @@ import { config as loadDotenv } from 'dotenv';
 let envLoaded = false;
 
 /**
- * 幂等加载 `.env`（apps/api/.env 优先，其次逐级向上的仓库根 `.env`）。
+ * 幂等加载 `.env`。**仓库根 `.env` 为唯一事实源并优先**，`apps/api/.env` 仅作兜底
+ * （它只服务于在 apps/api 目录下直接跑 prisma CLI 的场景，历史上曾因它先加载而
+ * 静默遮蔽根 `.env`，导致 AI key 等新配置读不到）。
  *
  * 兼容从 `apps/api` 或仓库根两种 cwd 启动。
  */
@@ -25,15 +27,29 @@ export function loadEnv(): void {
   }
   envLoaded = true;
 
+  // 注意：dotenv 默认不覆盖已存在的变量 → **先加载者生效**，故顺序即优先级。
+  // 显式判定 cwd 是否为仓库根，避免靠相对路径顺序猜（曾因此让 apps/api/.env 遮蔽根 .env）
+  const cwd = process.cwd();
+  const isRepoRoot = existsSync(resolve(cwd, 'apps/api/package.json'));
+  const rootEnv = isRepoRoot ? resolve(cwd, '.env') : resolve(cwd, '../../.env');
+  const apiLocalEnv = isRepoRoot ? resolve(cwd, 'apps/api/.env') : resolve(cwd, '.env');
+
   const candidates = [
-    resolve(process.cwd(), '.env'),
-    resolve(process.cwd(), 'apps/api/.env'),
-    resolve(process.cwd(), '../../.env'),
+    rootEnv, // 唯一事实源：仓库根 .env
+    apiLocalEnv, // 兜底：仅补齐根 .env 未声明的项
   ];
 
   for (const path of candidates) {
-    if (existsSync(path)) {
-      loadDotenv({ path });
+    if (!existsSync(path)) {
+      continue;
+    }
+    const result = loadDotenv({ path });
+    // dotenv 默认**不覆盖**已存在的变量，而某些 shell / IDE / CI 会注入**空字符串**的同名变量
+    // （例如 `AI_API_KEY=""`）。若不处理，`.env` 会被静默遮蔽 —— 故把空值视为「未设置」。
+    for (const [key, value] of Object.entries(result.parsed ?? {})) {
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
     }
   }
 }
@@ -61,6 +77,12 @@ export interface AppConfig {
   bcryptCost: number;
   /** AI（三期，R9.5）：key 仅存在于服务端环境变量，绝不进入前端产物 / 响应体 / 日志 */
   ai: {
+    /**
+     * AI 总开关（`AI_ENABLED=false` 关闭，默认开启）。
+     * 用于：① 成本熔断 / 故障降级；② 测试中**确定性地**模拟「未配置 key」，
+     * 不依赖环境里 key 是否为空（历史上的测试正是靠环境巧合才通过）。
+     */
+    enabled: boolean;
     /** LLM API Key（空 = 未配置，AI 功能走规则兜底并返回 `available: false`） */
     apiKey: string;
     /** OpenAI 兼容 base url（如 `https://api.openai.com/v1`） */
@@ -113,6 +135,7 @@ export function getAppConfig(): AppConfig {
     allowLogVerificationCode: readEnv('AUTH_LOG_CODE', 'false') === 'true',
     bcryptCost: Number(readEnv('BCRYPT_COST', '12')) || 12,
     ai: {
+      enabled: readEnv('AI_ENABLED', 'true').trim().toLowerCase() !== 'false',
       apiKey: readEnv('AI_API_KEY', ''),
       baseUrl: readEnv('AI_BASE_URL', 'https://api.openai.com/v1'),
       model: readEnv('AI_MODEL', 'gpt-4o-mini'),

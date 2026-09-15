@@ -32,6 +32,8 @@ export interface LlmCompletion {
 
 /** 服务端 AI 配置（key 不外泄：本接口仅在服务端模块内部使用）。 */
 export interface AiRuntimeConfig {
+  /** 总开关（`AI_ENABLED=false` 时强制走规则兜底） */
+  enabled: boolean;
   apiKey: string;
   baseUrl: string;
   model: string;
@@ -41,15 +43,21 @@ export interface AiRuntimeConfig {
 export function getAiRuntimeConfig(): AiRuntimeConfig {
   const config = getAppConfig();
   return {
+    enabled: config.ai.enabled,
     apiKey: config.ai.apiKey,
     baseUrl: config.ai.baseUrl,
     model: config.ai.model,
   };
 }
 
-/** key 是否已配置（三者齐备才视为可用）。 */
+/** key 是否已配置（开关打开且三者齐备才视为可用）。 */
 export function isAiConfigured(config: AiRuntimeConfig = getAiRuntimeConfig()): boolean {
-  return config.apiKey.trim().length > 0 && config.baseUrl.trim().length > 0 && config.model.trim().length > 0;
+  return (
+    config.enabled &&
+    config.apiKey.trim().length > 0 &&
+    config.baseUrl.trim().length > 0 &&
+    config.model.trim().length > 0
+  );
 }
 
 /**

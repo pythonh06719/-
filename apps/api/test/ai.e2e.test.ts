@@ -11,12 +11,19 @@
  *    且**不写 meal_logs**（TC-22/23）。
  *
  * ⚠️ 与 `api.e2e.test.ts` 相同的机制：加载 `dist/**` 编译产物（装饰器元数据）。
- * 当前测试环境**未配置 `AI_API_KEY`**，正好覆盖「未配置 key」全链路（规则兜底）。
+ *
+ * ⚠️ 本文件**显式关闭 AI 总开关**（`AI_ENABLED=false`）：既确定性地覆盖「未配置 / 不可用」
+ * 全链路（规则兜底），也确保测试**永不发起真实 LLM 请求**（避免花钱、避免网络抖动造成 flaky）。
+ * 历史教训：此前本文件只假设"环境里没有 key"，一旦本地配了真实 key 用例即失败 ——
+ * 测试必须在自身内部固定前置条件，不得依赖环境。
  */
 
 import 'reflect-metadata';
 
 import { createRequire } from 'node:module';
+
+// 必须在创建应用之前设置：AI 开关在每次调用时读取环境变量（见 app-config.ts）
+process.env.AI_ENABLED = 'false';
 
 import type { INestApplication } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';

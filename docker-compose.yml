@@ -22,6 +22,10 @@ services:
       JWT_EXPIRES_IN: 7d
       # 演示/预发：尚无 SMTP 时置 true 可从容器日志取验证码完成登录；接入 SMTP 后必须保持 false
       AUTH_LOG_CODE: ${AUTH_LOG_CODE:-false}
+      # AI（OpenAI 兼容）：key 仅服务端环境变量，不进入前端产物；留空则走规则兜底
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
     volumes:
       - api-data:/repo/data
     command:
