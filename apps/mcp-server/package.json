@@ -1,0 +1,20 @@
+{
+  "name": "@qsh/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "轻生活 MCP Server：把食物库与热量引擎暴露为标准 MCP 工具（stdio，零新依赖——协议为手写 JSON-RPC 2.0）",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "node test-stdio.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@qsh/core": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4"
+  }
+}
