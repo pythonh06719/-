@@ -36,12 +36,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: 准备测试数据库（建表）
-        run: npx prisma db push --schema apps/api/prisma/schema.prisma --skip-generate
-      - name: 构建后端
-        run: npm run build -w @qsh/api
-      - name: 后端 e2e（vitest）
-        run: npx vitest run --root apps/api
+      - name: 后端构建 + e2e（pretest 自动建表并灌种子数据）
+        run: npm test -w @qsh/api
 
   frontend:
     name: 前端测试与构建
