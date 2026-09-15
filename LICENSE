@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 黄志城（pythonh06719）
+Copyright (c) 2026 Huang Zhicheng (黄志城, pythonh06719)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-注意：本许可仅覆盖**代码**。`infra/db/seed/` 下的食物营养数据来自多个来源，
-其许可与署名要求见 [DATA-LICENSE.md](./DATA-LICENSE.md)。

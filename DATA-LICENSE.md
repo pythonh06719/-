@@ -1,6 +1,6 @@
 # 数据许可与署名（Data License & Attribution）
 
-本仓库的**代码**采用 [MIT 许可](./LICENSE)。
+本仓库的**代码**采用 [MIT 许可](./LICENSE)（`LICENSE` 文件仅覆盖代码，不含数据）。
 但 `infra/db/seed/` 下的**食物营养数据**是混合来源，各部分许可不同，**不可整体按 MIT 使用**。
 
 ## 一览
