@@ -1,0 +1,30 @@
+# Dependabot：每周检查依赖更新（npm workspaces + GitHub Actions）
+# 生成 PR 会自动跑 ci.yml 的三个作业，通过后合并即可
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # 同批次小版本合并成一个 PR，减少噪音
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # 主版本升级需要人工评估（破坏性变更）
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"
