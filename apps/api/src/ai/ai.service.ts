@@ -349,7 +349,8 @@ export class AiService {
    * 消耗一次限额：**先原子累加，再合计校验**，超限则回退并 429 `E_LIMIT_AI`。
    * （读→判→写的旧实现存在并发竞态：两个请求同时读到 49 会双双放行。）
    */
-  private async consumeQuota(userId: number, feature: AiFeature): Promise<void> {
+  /** 消耗一次限额（对 AgentService 公开复用，避免绕过限额）。 */
+  async consumeQuota(userId: number, feature: AiFeature): Promise<void> {
     const usageDate = todayLocalKey();
     await this.prisma.aiUsage.upsert({
       where: { userId_usageDate_feature: { userId, usageDate, feature } },
@@ -371,7 +372,8 @@ export class AiService {
   }
 
   /** 累计 LLM token 用量（单独 upsert，失败静默——限额统计不受影响）。 */
-  private async recordTokens(userId: number, feature: AiFeature, completion: LlmCompletion): Promise<void> {
+  /** 记录 token 用量（对 AgentService 公开复用）。 */
+  async recordTokens(userId: number, feature: AiFeature, completion: LlmCompletion): Promise<void> {
     if (completion.tokenIn === 0 && completion.tokenOut === 0) {
       return;
     }

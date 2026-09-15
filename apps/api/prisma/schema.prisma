@@ -54,6 +54,7 @@ model User {
   fastingSettings   FastingSettings?
   fastingSessions   FastingSession[]
   aiUsage           AiUsage[]
+  aiTraces          AiTrace[]
 
   @@map("users")
 }
@@ -475,4 +476,30 @@ model AiUsage {
 
   @@unique([userId, usageDate, feature], map: "ux_ai_usage_user_day_feature")
   @@map("ai_usage")
+}
+
+// -----------------------------------------------------------------------------
+// 13. ai_traces —— Agent 执行轨迹（可观测性：工具调用链 / 耗时 / token / 结果）
+// -----------------------------------------------------------------------------
+// 设计要点：
+// - `steps` 存 JSON 数组，记录每一步（推理文本、工具名与参数、工具结果摘要、耗时）
+// - `pendingTool` 存等待用户确认的写操作（如记一餐）；确认后由 confirm 接口执行
+// - 只保留轨迹用于调试与评估，不含任何密钥
+model AiTrace {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @map("user_id")
+  question    String // 用户原始提问
+  status      String // answered | need_confirm | max_steps | failed | disabled
+  answer      String? // 最终回答（answered 时非空）
+  steps       String // JSON：AgentStep[]
+  pendingTool String? @map("pending_tool") // JSON：{ name, args }（写操作待确认）
+  toolCalls   Int     @default(0) @map("tool_calls")
+  tokens      Int     @default(0)
+  durationMs  Int     @default(0) @map("duration_ms")
+  createdAt   String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, id], map: "ix_ai_traces_user_id")
+  @@map("ai_traces")
 }

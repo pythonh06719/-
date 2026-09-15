@@ -46,7 +46,7 @@ export type UnitSystem = 'kcal' | 'kj';
 export type FastingPlan = '16:8' | '18:6' | 'custom';
 
 /** `ai_usage.feature` */
-export type AiFeature = 'daily_summary' | 'today_plan' | 'free_ask' | 'food_recognize';
+export type AiFeature = 'daily_summary' | 'today_plan' | 'free_ask' | 'food_recognize' | 'agent';
 
 // ---------------------------------------------------------------------------
 // 1. users

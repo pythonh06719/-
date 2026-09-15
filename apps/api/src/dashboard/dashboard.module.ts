@@ -11,5 +11,7 @@ import { DashboardService } from './dashboard.service';
   imports: [UsersModule, MealsModule, WeightsModule],
   controllers: [DashboardController],
   providers: [DashboardService],
+  // 供 AiModule 的 Agent 工具（get_today_status）复用看板聚合结果
+  exports: [DashboardService],
 })
 export class DashboardModule {}

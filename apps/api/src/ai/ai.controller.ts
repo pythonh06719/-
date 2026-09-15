@@ -1,8 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { DailySummaryDto, FreeAskDto, RecognizeFoodDto, TodayPlanDto } from './dto/ai.dto';
+import {
+  AgentAskDto,
+  AgentConfirmDto,
+  DailySummaryDto,
+  FreeAskDto,
+  RecognizeFoodDto,
+  TodayPlanDto,
+} from './dto/ai.dto';
+import { AgentService } from './agent.service';
 import { AiService } from './ai.service';
 
 /**
@@ -15,7 +23,10 @@ import { AiService } from './ai.service';
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly agentService: AgentService,
+  ) {}
 
   /** 每日总结（R9.1）：当日复盘 = 直接结论 + 依据 + 一条可执行建议。 */
   @Post('daily-summary')
@@ -43,5 +54,33 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   recognizeFood(@CurrentUser() userId: number, @Body() dto: RecognizeFoodDto) {
     return this.aiService.recognizeFood(userId, dto);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent（P0）：模型自主调用领域工具的**多步**执行循环
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Agent 提问（P0）：由模型决定调用哪些工具（查食物 / 看板 / 运动换算 / 周报）。
+   * 写操作（记一餐）不直接执行 —— 返回 `status: 'need_confirm'` 与待办卡片，
+   * 由前端引导用户确认后调用 `/ai/agent/confirm`。
+   */
+  @Post('agent')
+  @HttpCode(HttpStatus.OK)
+  agent(@CurrentUser() userId: number, @Body() dto: AgentAskDto) {
+    return this.agentService.run(userId, dto.question, dto.date);
+  }
+
+  /** 确认并执行 Agent 的待办写操作（human-in-the-loop 第二半）。 */
+  @Post('agent/confirm')
+  @HttpCode(HttpStatus.OK)
+  agentConfirm(@CurrentUser() userId: number, @Body() dto: AgentConfirmDto) {
+    return this.agentService.confirm(userId, dto.traceId);
+  }
+
+  /** 查看自己的 Agent 执行轨迹（可观测性：工具链 / 耗时 / token）。 */
+  @Get('agent/traces')
+  agentTraces(@CurrentUser() userId: number, @Query('limit') limit?: string) {
+    return this.agentService.listTraces(userId, Number(limit ?? 20) || 20);
   }
 }
