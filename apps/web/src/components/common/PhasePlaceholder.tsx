@@ -55,7 +55,7 @@ export default function PhasePlaceholder({
         </ul>
       )}
 
-      <p className="mt-6 text-xs text-slate-400 dark:text-slate-500">
+      <p className="mt-6 text-xs text-slate-600 dark:text-slate-400">
         我们正在按计划打磨，先把最有用的部分做扎实。你现在的记录不会受影响。
       </p>
 

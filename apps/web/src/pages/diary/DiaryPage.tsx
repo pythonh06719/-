@@ -230,7 +230,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           <button
             type="button"
             onClick={() => setDate((current) => addDays(current, -1))}
-            className="qsh-touch-target rounded-lg px-3 text-slate-500 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-lg px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
             aria-label="前一天"
           >
             ‹
@@ -239,7 +239,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           <button
             type="button"
             onClick={() => setDate((current) => addDays(current, 1))}
-            className="qsh-touch-target rounded-lg px-3 text-slate-500 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-lg px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
             aria-label="后一天"
           >
             ›

@@ -32,7 +32,7 @@ export default function Sparkline({
   if (numeric.length < 2) {
     return (
       <div
-        className="flex h-[72px] items-center justify-center rounded-xl bg-brand-50 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+        className="flex h-[72px] items-center justify-center rounded-xl bg-brand-50 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400"
         style={{ width: '100%' }}
       >
         记录几笔体重后，这里会出现趋势

@@ -68,7 +68,7 @@ function InsightCard({ insight }: { insight: { conclusion: string; basis: string
       <p className="mt-3 rounded-xl bg-teal-50 px-4 py-3 text-sm leading-relaxed text-teal-700 dark:bg-teal-900/30 dark:text-teal-200">
         {insight.suggestion}
       </p>
-      <p className="mt-2 text-xs text-slate-400">{COPY.aiRuleModeNote}</p>
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRuleModeNote}</p>
     </div>
   );
 }
@@ -111,7 +111,7 @@ function FoodRecognizePanel(): ReactElement {
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
-      <p className="mt-1 text-xs text-slate-400">{COPY.aiRecognizeHint}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
       <div className="mt-3 flex gap-2">
         <input
           type="text"
@@ -137,8 +137,8 @@ function FoodRecognizePanel(): ReactElement {
 
       {submitted.length > 0 && (
         <div className="mt-4" aria-live="polite">
-          {loading && <p className="text-sm text-slate-400">正在找相近的食物…</p>}
-          {!loading && recognizeQuery.isError && <p className="text-sm text-slate-500">{errorMessage(recognizeQuery.error)}</p>}
+          {loading && <p className="text-sm text-slate-500 dark:text-slate-400">正在找相近的食物…</p>}
+          {!loading && recognizeQuery.isError && <p className="text-sm text-slate-500 dark:text-slate-400">{errorMessage(recognizeQuery.error)}</p>}
           {!loading && !recognizeQuery.isError && candidates.length === 0 && (
             <p className="text-sm text-slate-500 dark:text-slate-300">{COPY.aiRecognizeEmpty}</p>
           )}
@@ -151,7 +151,7 @@ function FoodRecognizePanel(): ReactElement {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100">{candidate.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
                       每 100g 约 {candidate.kcalPer100g} kcal
                       {candidate.servingKcal !== null && candidate.servingUnitLabel !== null
                         ? `；一份（${candidate.servingUnitLabel}）约 ${candidate.servingKcal} kcal`
@@ -173,7 +173,7 @@ function FoodRecognizePanel(): ReactElement {
           {confirmedName !== null && (
             <p className="mt-3 text-sm text-teal-600 dark:text-teal-300">{COPY.aiRecognizeConfirmed}</p>
           )}
-          <p className="mt-3 text-xs text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
         </div>
       )}
     </section>
@@ -250,7 +250,7 @@ export default function AiPage(): ReactElement {
             className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
               tab === item.key
                 ? 'bg-white text-teal-600 shadow-sm dark:bg-slate-700 dark:text-teal-300'
-                : 'text-slate-500 dark:text-slate-400'
+                : 'text-slate-600 dark:text-slate-400'
             }`}
           >
             {item.label}
@@ -269,8 +269,8 @@ export default function AiPage(): ReactElement {
           >
             {COPY.aiDailyGenerate}
           </button>
-          {dailyQuery.isFetching && <p className="text-center text-sm text-slate-400">正在整理今天的记录…</p>}
-          {dailyQuery.isError && <p className="text-center text-sm text-slate-500">{errorMessage(dailyQuery.error)}</p>}
+          {dailyQuery.isFetching && <p className="text-center text-sm text-slate-600 dark:text-slate-400">正在整理今天的记录…</p>}
+          {dailyQuery.isError && <p className="text-center text-sm text-slate-600 dark:text-slate-400">{errorMessage(dailyQuery.error)}</p>}
           {!dailyQuery.isFetching && dailyQuery.data !== undefined && (
             <>
               {dailyQuery.data.available === false && <UnavailableNotice />}
@@ -291,13 +291,13 @@ export default function AiPage(): ReactElement {
           >
             {COPY.aiPlanGenerate}
           </button>
-          {planQuery.isFetching && <p className="text-center text-sm text-slate-400">正在看最近两天的记录…</p>}
-          {planQuery.isError && <p className="text-center text-sm text-slate-500">{errorMessage(planQuery.error)}</p>}
+          {planQuery.isFetching && <p className="text-center text-sm text-slate-600 dark:text-slate-400">正在看最近两天的记录…</p>}
+          {planQuery.isError && <p className="text-center text-sm text-slate-600 dark:text-slate-400">{errorMessage(planQuery.error)}</p>}
           {!planQuery.isFetching && planQuery.data !== undefined && (
             <>
               {planQuery.data.available === false && <UnavailableNotice />}
               {planQuery.data.cached && (
-                <p className="text-xs text-slate-400">记录没有变化，这是刚整理过的方案</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">记录没有变化，这是刚整理过的方案</p>
               )}
               <InsightCard insight={planQuery.data.insight} />
             </>
@@ -331,10 +331,10 @@ export default function AiPage(): ReactElement {
             </button>
           </div>
           {question.trim().length === 0 && askSubmitted.length === 0 && (
-            <p className="text-xs text-slate-400">{COPY.aiAskEmpty}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{COPY.aiAskEmpty}</p>
           )}
-          {askQuery.isFetching && <p className="text-center text-sm text-slate-400">正在想怎么回答…</p>}
-          {askQuery.isError && <p className="text-center text-sm text-slate-500">{errorMessage(askQuery.error)}</p>}
+          {askQuery.isFetching && <p className="text-center text-sm text-slate-600 dark:text-slate-400">正在想怎么回答…</p>}
+          {askQuery.isError && <p className="text-center text-sm text-slate-600 dark:text-slate-400">{errorMessage(askQuery.error)}</p>}
           {!askQuery.isFetching && askQuery.data !== undefined && (
             <>
               {/* 医疗安全兜底：高亮展示安全提示（R9.6 / TC-44） */}
@@ -344,7 +344,7 @@ export default function AiPage(): ReactElement {
                 <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQuery.data.answer}</p>
                 {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
                 {askQuery.data.tools !== undefined && askQuery.data.tools.length > 0 && (
-                  <p className="mt-3 text-xs text-slate-400">
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                     我查了：{askQuery.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
                   </p>
                 )}

@@ -197,14 +197,14 @@ export default function CalorieCalculator(): ReactElement {
         <div className="mt-6" aria-live="polite">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl bg-brand-50 p-3">
-              <p className="text-xs text-slate-500">基础代谢 BMR</p>
+              <p className="text-xs text-slate-600">基础代谢 BMR</p>
               <p className="mt-1 text-xl font-semibold text-slate-800">{result.bmr}</p>
-              <p className="text-xs text-slate-400">kcal</p>
+              <p className="text-xs text-slate-600">kcal</p>
             </div>
             <div className="rounded-xl bg-brand-50 p-3">
-              <p className="text-xs text-slate-500">每日消耗 TDEE</p>
+              <p className="text-xs text-slate-600">每日消耗 TDEE</p>
               <p className="mt-1 text-xl font-semibold text-slate-800">{result.tdee}</p>
-              <p className="text-xs text-slate-400">kcal</p>
+              <p className="text-xs text-slate-600">kcal</p>
             </div>
             <div className="rounded-xl bg-brand-100 p-3">
               <p className="text-xs text-brand-700">建议摄入</p>
@@ -226,7 +226,7 @@ export default function CalorieCalculator(): ReactElement {
             </ul>
           )}
 
-          <p className="mt-4 text-xs leading-relaxed text-slate-400">
+          <p className="mt-4 text-xs leading-relaxed text-slate-500">
             参考来源：Mifflin-St Jeor（1990）基础代谢公式、2024 成人活动 MET 汇编。
             结果仅为健康生活参考，不构成医疗建议。孕期 / 哺乳期 / 疾病治疗期请咨询专业医师。
           </p>

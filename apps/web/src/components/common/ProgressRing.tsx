@@ -91,7 +91,7 @@ export default function ProgressRing({
             </span>
           )}
           {centerLabel !== undefined && (
-            <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">{centerLabel}</span>
+            <span className="mt-1 text-xs text-slate-600 dark:text-slate-400">{centerLabel}</span>
           )}
         </div>
       )}

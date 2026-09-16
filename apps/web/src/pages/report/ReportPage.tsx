@@ -76,21 +76,21 @@ export default function ReportPage(): ReactElement {
             </h2>
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-400">日均摄入</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">日均摄入</p>
                 <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{report.avgIntakeKcal}</p>
-                <p className="text-xs text-slate-400">kcal</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">kcal</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-400">运动消耗</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">运动消耗</p>
                 <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{report.totalExerciseKcal}</p>
-                <p className="text-xs text-slate-400">kcal</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">kcal</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-400">体重变化</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
                 <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
                   {report.weightChangeKg === null ? '—' : report.weightChangeKg > 0 ? `+${report.weightChangeKg}` : report.weightChangeKg}
                 </p>
-                <p className="text-xs text-slate-400">kg</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">kg</p>
               </div>
             </div>
 
@@ -108,14 +108,14 @@ export default function ReportPage(): ReactElement {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
               体重涨一点不用慌，{report.weightChangeKg !== null && report.weightChangeKg > 0 ? '波动很正常，看趋势就好' : '继续看趋势就好'}。
             </p>
           </section>
 
           <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
-            <p className="mt-1 text-xs text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
             <ul className="mt-3 space-y-3">
               {report.micronutrients.map((item) => {
                 const percent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
@@ -125,7 +125,7 @@ export default function ReportPage(): ReactElement {
                     <div className="flex items-baseline justify-between text-sm">
                       <span className="text-slate-700 dark:text-slate-200">
                         {item.name}
-                        <span className="ml-2 text-xs text-slate-400">
+                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                           参考{item.direction === 'atLeast' ? '≥' : '≤'} {item.reference} {item.unit}
                         </span>
                       </span>
@@ -148,7 +148,7 @@ export default function ReportPage(): ReactElement {
                 );
               })}
             </ul>
-            <p className="mt-3 text-xs text-slate-400">{report.referenceNote}</p>
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{report.referenceNote}</p>
           </section>
         </>
       )}

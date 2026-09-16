@@ -177,7 +177,7 @@ export default function OnboardingPage(): ReactElement {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="qsh-touch-target mt-3 w-full rounded-xl py-3 text-sm text-slate-500 dark:text-slate-400"
+          className="qsh-touch-target mt-3 w-full rounded-xl py-3 text-sm text-slate-600 dark:text-slate-400"
         >
           再想想，先回首页
         </button>
@@ -231,19 +231,19 @@ export default function OnboardingPage(): ReactElement {
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
           <ul className="mt-3 grid grid-cols-3 gap-3 text-center">
             <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-slate-500 dark:text-slate-400">蛋白质</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">蛋白质</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.proteinG} g
               </p>
             </li>
             <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-slate-500 dark:text-slate-400">脂肪</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">脂肪</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.fatG} g
               </p>
             </li>
             <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-slate-500 dark:text-slate-400">碳水</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">碳水</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.carbG} g
               </p>
@@ -278,7 +278,7 @@ export default function OnboardingPage(): ReactElement {
           <button
             type="button"
             onClick={() => setStep('form')}
-            className="qsh-touch-target w-full rounded-xl py-3 text-sm text-slate-500 dark:text-slate-400"
+            className="qsh-touch-target w-full rounded-xl py-3 text-sm text-slate-600 dark:text-slate-400"
           >
             返回修改
           </button>
@@ -390,7 +390,7 @@ export default function OnboardingPage(): ReactElement {
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-200">
                   {option.label}
-                  <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">{option.hint}</span>
+                  <span className="ml-2 text-xs text-slate-600 dark:text-slate-400">{option.hint}</span>
                 </span>
               </label>
             ))}
@@ -499,7 +499,7 @@ export default function OnboardingPage(): ReactElement {
           看看我的预算
         </button>
         {hasRisk && (
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-center text-xs text-slate-600 dark:text-slate-400">
             勾选高风险情况后，我们不会提供减重方案按钮，请先咨询专业医师。
           </p>
         )}

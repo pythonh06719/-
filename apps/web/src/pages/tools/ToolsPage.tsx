@@ -94,7 +94,7 @@ export default function ToolsPage(): ReactElement {
                 </span>{' '}
                 kcal
               </p>
-              <p className="mt-2 text-xs text-slate-400">估算口径：{takeout.assumption}</p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{takeout.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">这样点更轻松</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {takeout.swaps.map((swap) => (
@@ -163,7 +163,7 @@ export default function ToolsPage(): ReactElement {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-slate-400">想吃了就吃一点，不用有负担 —— 知道它换算成什么就好。</p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">想吃了就吃一点，不用有负担 —— 知道它换算成什么就好。</p>
         </section>
       ) : null}
 
@@ -192,7 +192,7 @@ export default function ToolsPage(): ReactElement {
                 </span>{' '}
                 kcal（不含酒水）
               </p>
-              <p className="mt-2 text-xs text-slate-400">估算口径：{feast.assumption}</p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{feast.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">当天可以这样安排</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {feast.adjustTips.map((tip) => (

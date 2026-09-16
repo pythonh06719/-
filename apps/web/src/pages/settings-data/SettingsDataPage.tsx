@@ -206,7 +206,7 @@ export default function SettingsDataPage(): ReactElement {
               导入完成：成功 {importState.imported} 条，跳过 {importState.skipped} 行。
             </p>
             {importState.errors.length > 0 && (
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-500 dark:text-slate-400">
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-600 dark:text-slate-400">
                 {importState.errors.slice(0, 5).map((error) => (
                   <li key={`${error.row}-${error.reason}`}>
                     第 {error.row} 行：{error.reason}

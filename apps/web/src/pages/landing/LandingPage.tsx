@@ -26,8 +26,8 @@ export default function LandingPage(): ReactElement {
         <p className="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700">
           不节食 · 不极端 · 融进日常
         </p>
-        <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">轻生活</h1>
-        <p className="mx-auto mt-3 max-w-xl text-base text-slate-600">
+        <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-4xl">轻生活</h1>
+        <p className="mx-auto mt-3 max-w-xl text-base text-slate-600 dark:text-slate-400">
           一款把减肥融入日常的中文工具：科学热量预算、低门槛饮食记录、温和的习惯养成。
         </p>
       </header>
@@ -86,7 +86,7 @@ export default function LandingPage(): ReactElement {
         </ul>
       </section>
 
-      <footer className="mt-8 rounded-2xl bg-slate-100 p-5 text-xs leading-relaxed text-slate-500">
+      <footer className="mt-8 rounded-2xl bg-slate-100 p-5 text-xs leading-relaxed text-slate-600">
         <p className="font-medium text-slate-600">免责声明</p>
         <p className="mt-1">
           本产品不提供医疗建议。孕期、哺乳期、疾病治疗期人群不建议使用热量缺口方案，请先咨询专业医师。

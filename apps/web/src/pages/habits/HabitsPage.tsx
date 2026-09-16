@@ -134,7 +134,7 @@ export default function HabitsPage(): ReactElement {
         </div>
       </form>
 
-      <p className="text-center text-xs text-slate-400">{COPY.streakPositive}</p>
+      <p className="text-center text-xs text-slate-600 dark:text-slate-400">{COPY.streakPositive}</p>
       {notice ? <p className="text-center text-sm text-teal-700 dark:text-teal-400">{notice}</p> : null}
     </div>
   );

@@ -185,7 +185,7 @@ export default function ShareCard(props: ShareCardProps): ReactElement {
       >
         生成分享卡片
       </button>
-      {error !== null && <p className="text-xs text-slate-400">{error}</p>}
+      {error !== null && <p className="text-xs text-slate-600 dark:text-slate-400">{error}</p>}
     </div>
   );
 }

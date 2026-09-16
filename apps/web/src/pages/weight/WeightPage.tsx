@@ -203,7 +203,7 @@ export default function WeightPage(): ReactElement {
           <div className="mt-2 h-64 w-full" aria-label="体重趋势折线图">
             <Suspense
               fallback={
-                <p className="flex h-full items-center justify-center text-sm text-slate-400">
+                <p className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                   正在准备图表…
                 </p>
               }
@@ -239,7 +239,7 @@ export default function WeightPage(): ReactElement {
         </div>
       </dl>
 
-      <p className="px-1 text-xs text-slate-400 dark:text-slate-500">
+      <p className="px-1 text-xs text-slate-600 dark:text-slate-400">
         趋势图默认展示最近 {points.length} 笔记录
         {points.length > 0 ? `，起始于 ${formatFullDate(points[0]?.date ?? todayKey())}` : ''}。
         {points.length > 0 && movingAverage.length > 0
@@ -269,7 +269,7 @@ export default function WeightPage(): ReactElement {
               ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
           参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
         </p>
       </div>

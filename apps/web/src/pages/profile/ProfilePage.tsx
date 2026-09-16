@@ -132,26 +132,26 @@ export default function ProfilePage(): ReactElement {
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
           <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <dt className="text-xs text-slate-500 dark:text-slate-400">建议摄入</dt>
+              <dt className="text-xs text-slate-600 dark:text-slate-400">建议摄入</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {toDisplayEnergy(budget.intakeRecommended, unit)} {energyLabel(unit)}
               </dd>
             </div>
             <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <dt className="text-xs text-slate-500 dark:text-slate-400">BMR</dt>
+              <dt className="text-xs text-slate-600 dark:text-slate-400">BMR</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.bmr, unit)}
               </dd>
             </div>
             <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <dt className="text-xs text-slate-500 dark:text-slate-400">TDEE</dt>
+              <dt className="text-xs text-slate-600 dark:text-slate-400">TDEE</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.tdee, unit)}
               </dd>
             </div>
           </dl>
-          {!offline && <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">数据来自服务端重算结果</p>}
-          {offline && <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">当前展示为本地预览，联网后会自动更新</p>}
+          {!offline && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">数据来自服务端重算结果</p>}
+          {offline && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">当前展示为本地预览，联网后会自动更新</p>}
         </div>
       )}
 
@@ -272,7 +272,7 @@ export default function ProfilePage(): ReactElement {
             </p>
           </li>
         </ul>
-        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
           安全下限：女性 1200 kcal / 男性 1500 kcal；每日缺口不超过 TDEE 的 30%。
         </p>
       </section>
@@ -310,7 +310,7 @@ export default function ProfilePage(): ReactElement {
         </section>
       )}
 
-      <p className="px-1 text-xs leading-relaxed text-slate-400 dark:text-slate-500">
+      <p className="px-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
         {COPY.disclaimer}
       </p>
     </section>

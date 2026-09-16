@@ -218,7 +218,7 @@ export default function ExercisePage(): ReactElement {
             撤销上一条
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-400">{COPY.waterGentle}</p>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.waterGentle}</p>
       </section>
     </div>
   );
