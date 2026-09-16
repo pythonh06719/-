@@ -45,3 +45,33 @@ html.dark hr,
 html.dark .qsh-divider {
   border-color: #24443a;
 }
+
+/* ------------------------------------------------------------------ *
+ * 生活化气质（暖色组件）的深色覆盖
+ * 用 slate-800/900 体系，避免纯黑；文字色保证 AA 对比度。
+ * ------------------------------------------------------------------ */
+
+/* 暖色卡片：深色下用 slate-800 底 + slate-700 描边，保留柔和大圆角 */
+html.dark .qsh-surface-warm {
+  background-color: #1e293b;
+  --tw-ring-color: #334155;
+}
+
+/* 胶囊标签：深色下低饱和，文字提亮到可读 */
+html.dark .qsh-chip {
+  background-color: #334155;
+  color: #f8d9a0;
+}
+
+/* 行动卡：深色下暖底转为 slate-800，文字用温暖浅色，保持可点与悬停反馈 */
+html.dark .qsh-action-card {
+  background-color: #1e293b;
+  color: #f8d9a0;
+  --tw-ring-color: #334155;
+}
+
+html.dark .qsh-action-card:hover,
+html.dark .qsh-action-card:focus-visible {
+  background-color: #27354a;
+}
+

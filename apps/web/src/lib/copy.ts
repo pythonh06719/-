@@ -7,6 +7,8 @@
  * 命名约定：`COPY.xxx` 为常量，`xxxFor(...)` 为按参数生成的文案。
  */
 
+import { WATER_ML_PER_CUP } from '@/theme/tokens';
+
 export const COPY = {
   /** 通用鼓励（看板无数据 / 默认兜底） */
   defaultEncouragement: '今天也照顾好自己',
@@ -23,6 +25,8 @@ export const COPY = {
   /** 数据为空时的引导 */
   emptyDiary: '今天还没有记录，点一下就好',
   emptyWeight: '记录第一笔体重，之后就交给趋势吧',
+  /** 首页「今天还没记」的生活化空状态（说人话，不说指标话） */
+  emptyToday: '今天还没记，从一杯水开始也行',
   /** 离线 / 后端未就绪时的友好说明 */
   offlineNotice: '网络好像不太稳定，先看看已经缓存的内容吧',
   offlineQueued: '已保存在本地，联网后会自动同步',
@@ -99,7 +103,150 @@ export function remainingLabel(remainingKcal: number): string {
   return '今天还可以这样安排';
 }
 
+// ---------------------------------------------------------------------------
+// 生活化文案（homepage「今天」的生活流：问候 / 叙事 / 分档鼓励 / 水杯换算）
+// 语气规范（PRD §7 K4）：说人话、不评判、无负罪感；禁用词见 §7.1。
+// ---------------------------------------------------------------------------
+
+/** 一杯水的容量（ml）——用于把毫升换算成「第几杯」（与设计令牌同源）。 */
+const ML_PER_CUP = WATER_ML_PER_CUP;
+
+/**
+ * 按本地时间给出时段问候。
+ *
+ * @param hour 本地小时（0–23）
+ * @returns 「早上好 / 中午好 / 下午好 / 晚上好」
+ */
+export function greetingForHour(hour: number): string {
+  if (!Number.isFinite(hour)) {
+    return '你好';
+  }
+  const normalized = ((Math.floor(hour) % 24) + 24) % 24;
+  if (normalized >= 5 && normalized < 11) {
+    return '早上好';
+  }
+  if (normalized >= 11 && normalized < 14) {
+    return '中午好';
+  }
+  if (normalized >= 14 && normalized < 18) {
+    return '下午好';
+  }
+  return '晚上好';
+}
+
+/**
+ * 首页一句生活叙事——根据「今天记了几笔 / 有没有吃」说人话。
+ *
+ * @param input.mealCount 今天已记录的食物笔数（可为 0）
+ * @param input.intakeKcal 今天已摄入热量（kcal）
+ * @returns 一句日常口吻的状态描述
+ */
+export function lifeNarrative(input: { mealCount: number; intakeKcal: number }): string {
+  const meals = Number.isFinite(input.mealCount) ? Math.max(0, Math.floor(input.mealCount)) : 0;
+  if (meals >= 3) {
+    return `今天记了 ${meals} 笔，挺顺的`;
+  }
+  if (meals >= 1) {
+    return `今天记了 ${meals} 笔，慢慢来`;
+  }
+  if (Number.isFinite(input.intakeKcal) && input.intakeKcal > 0) {
+    return '今天已经记下一些了';
+  }
+  return COPY.emptyToday;
+}
+
+/**
+ * 首页摘要卡里的一句生活化总结（不出现「超标 / 失败」等词）。
+ *
+ * @param input.intakeKcal 今天已摄入热量（kcal）
+ * @param input.progressRatio 今日进度比（0 ~ 1+）
+ * @returns 一句日常口吻的总结
+ */
+export function mealSummaryLine(input: { intakeKcal: number; progressRatio: number }): string {
+  const ratio = Number.isFinite(input.progressRatio) ? input.progressRatio : 0;
+  if (ratio > 1) {
+    return '今天吃得丰富一些，明天照常就好';
+  }
+  if (!Number.isFinite(input.intakeKcal) || input.intakeKcal <= 0) {
+    return COPY.emptyToday;
+  }
+  if (ratio >= 0.8) {
+    return '差不多正好，按这个节奏就挺好';
+  }
+  return '今天吃得挺舒服';
+}
+
+/** 首页摘要卡的小标签（胶囊里的一两个词）。 */
+export function mealSummaryTag(input: { intakeKcal: number; progressRatio: number }): string {
+  const ratio = Number.isFinite(input.progressRatio) ? input.progressRatio : 0;
+  if (ratio > 1) {
+    return '宽宽松松';
+  }
+  if (!Number.isFinite(input.intakeKcal) || input.intakeKcal <= 0) {
+    return '刚开始';
+  }
+  return '舒服';
+}
+
+/** 按时段分档的生活化鼓励语（各 2~3 句，无压迫感）。 */
+const ENCOURAGEMENT_POOL: Record<'morning' | 'noon' | 'afternoon' | 'evening', readonly string[]> = {
+  morning: ['早上好呀，先给自己倒杯水', '早餐慢慢吃，今天会挺顺的'],
+  noon: ['中午了，吃饱一点下午才有精神', '吃完起身走两步，晒晒太阳'],
+  afternoon: ['下午容易嘴馋，先喝口水试试', '忙里偷个闲，伸个懒腰也挺好'],
+  evening: ['晚上好，今天过得怎么样', '晚饭清淡点，睡前会舒服些'],
+};
+
+/**
+ * 按时段取一句鼓励语；无记录时也可安全使用。
+ *
+ * @param hour 本地小时（0–23）
+ * @returns 一句生活化鼓励语
+ */
+export function encouragementForHour(hour: number): string {
+  const greeting = greetingForHour(hour);
+  const bucket = greeting === '早上好' ? 'morning' : greeting === '中午好' ? 'noon' : greeting === '下午好' ? 'afternoon' : 'evening';
+  const pool = ENCOURAGEMENT_POOL[bucket];
+  return pool[0] ?? COPY.defaultEncouragement;
+}
+
+/**
+ * 把饮水毫升换算为「第几杯 / 目标几杯」（250ml = 1 杯）。
+ *
+ * @param currentMl 今日已饮水（ml）
+ * @param goalMl 今日目标（ml）
+ * @returns `cups`：已喝完的整杯数；`goalCups`：目标杯数（目标为 0 时返回 0）
+ */
+export function cupProgress(currentMl: number, goalMl: number): { cups: number; goalCups: number } {
+  const safeCurrent = Number.isFinite(currentMl) ? Math.max(0, currentMl) : 0;
+  const safeGoal = Number.isFinite(goalMl) ? Math.max(0, goalMl) : 0;
+  return {
+    cups: Math.floor(safeCurrent / ML_PER_CUP),
+    goalCups: safeGoal > 0 ? Math.max(1, Math.round(safeGoal / ML_PER_CUP)) : 0,
+  };
+}
+
+/**
+ * 水杯进度文案（配合 `role="status" aria-live` 播报）。
+ *
+ * @param currentMl 今日已饮水（ml）
+ * @param goalMl 今日目标（ml）
+ * @returns 如「今天第 3 杯水，离 6 杯又近了一步」
+ */
+export function cupText(currentMl: number, goalMl: number): string {
+  const { cups, goalCups } = cupProgress(currentMl, goalMl);
+  if (cups <= 0) {
+    return goalCups > 0 ? `今天还没喝水，随手一杯就好（目标 ${goalCups} 杯）` : '今天还没喝水，随手一杯就好';
+  }
+  if (goalCups > 0 && cups >= goalCups) {
+    return `今天第 ${cups} 杯水，已经很充足啦`;
+  }
+  return goalCups > 0
+    ? `今天第 ${cups} 杯水，离 ${goalCups} 杯又近了一步`
+    : `今天第 ${cups} 杯水，按自己的节奏来`;
+}
+
 /** 每日轻提醒的鼓励语池（本地随机挑一条；不含敏感数据，PRD §7）。 */
+
 const REMINDER_MESSAGES: readonly string[] = [
   '记得照看好自己，喝口水，慢慢来',
   '今天也辛苦啦，吃饭的时候专心一点就好',

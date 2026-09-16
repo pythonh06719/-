@@ -13,6 +13,7 @@ import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, todayKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { COPY } from '@/lib/copy';
+import { emojiForFoodName } from '@/lib/food-emoji';
 import { MEAL_BUDGET_SHARE, type ThemeBudget } from '@/theme/tokens';
 import MealComposer from './MealComposer';
 import type { ComposerSubmit } from './MealComposer';
@@ -216,11 +217,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
 
   const progressRatio = dailyBudget > 0 ? todayTotal / dailyBudget : 0;
 
+  /** 整日都没有记录时，给一个生活化的空状态（大 emoji + 一句话）。 */
+  const isEmptyDay = groups.every((group) => group.logs.length === 0);
+
   return (
     <section aria-labelledby="diary-title" className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 id="diary-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          饮食日记
+          饮食记录
         </h1>
         <div className="flex items-center gap-1">
           <button
@@ -244,10 +248,12 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       </div>
 
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm text-slate-500 dark:text-slate-400">今日合计</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">今天一共</p>
         <p className="qsh-tnum mt-1 text-3xl font-bold text-brand-700 dark:text-brand-300">
           {toDisplayEnergy(todayTotal, unit)}
-          <span className="ml-1.5 text-sm font-medium text-slate-400">{energyLabel(unit)}</span>
+          <span className="ml-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">
+            {energyLabel(unit)}
+          </span>
         </p>
         {dailyBudget > 0 && (
           <div className="mt-3">
@@ -264,6 +270,16 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           </div>
         )}
       </div>
+
+      {/* 空状态插画位：大 emoji + 一句话（不指责、不催） */}
+      {isEmptyDay && (
+        <div className="qsh-surface-warm flex items-center gap-4 p-5">
+          <span aria-hidden="true" className="text-4xl">
+            🍽️
+          </span>
+          <p className="text-sm text-slate-700 dark:text-slate-300">{COPY.emptyToday}</p>
+        </div>
+      )}
 
       {/* 屏幕阅读器播报记录结果（TC-48） */}
       <p className="qsh-sr-only" role="status" aria-live="polite">
@@ -295,7 +311,12 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             </div>
 
             {group.logs.length === 0 ? (
-              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">还没有记录</p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <span aria-hidden="true" className="mr-1">
+                  🍽️
+                </span>
+                还没有记录，点一下下面就好
+              </p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {group.logs.map((log) => (
@@ -303,14 +324,19 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                     key={log.id}
                     className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ring-1 ring-brand-100 dark:ring-slate-700"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-slate-800 dark:text-slate-100">
-                        {log.customName ?? `食物 #${log.foodItemId ?? '—'}`}
-                      </p>
-                      <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
-                        {toDisplayEnergy(log.kcal, unit)} {energyLabel(unit)}
-                        {log.grams !== null ? ` · ${log.grams}g` : ''}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden="true" className="text-lg">
+                        {emojiForFoodName(log.customName)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-slate-800 dark:text-slate-100">
+                          {log.customName ?? `食物 #${log.foodItemId ?? '—'}`}
+                        </p>
+                        <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
+                          {toDisplayEnergy(log.kcal, unit)} {energyLabel(unit)}
+                          {log.grams !== null ? ` · ${log.grams}g` : ''}
+                        </p>
+                      </div>
                     </div>
                     <button
                       type="button"

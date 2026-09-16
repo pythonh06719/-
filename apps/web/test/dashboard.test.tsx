@@ -59,14 +59,17 @@ describe('DashboardPage', () => {
   it('mock 数据下渲染剩余热量、进度与鼓励语', async () => {
     renderDashboard();
 
-    // 剩余热量大数字
+    // 剩余热量（已降级为次要信息，但数值仍在）
     expect(await screen.findByText('1200')).toBeInTheDocument();
     // 进度环
     expect(screen.getByLabelText(/今日热量进度/)).toBeInTheDocument();
     // 鼓励语
     expect(screen.getByText('今天也照顾好自己')).toBeInTheDocument();
-    // 饮水组件
-    expect(screen.getByText('+ 250 ml')).toBeInTheDocument();
+    // 生活化行动卡：主 CTA「喝一杯水」（250ml = 一杯）
+    expect(screen.getByRole('button', { name: /喝一杯水/ })).toBeInTheDocument();
+    // 行动优先：记一餐 / 动一动 两个入口
+    expect(screen.getByRole('link', { name: /记一餐/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /动一动/ })).toBeInTheDocument();
   });
 
   it('后端不可用（网络错误）时回退缓存且不白屏', async () => {
@@ -78,9 +81,9 @@ describe('DashboardPage', () => {
     );
     renderDashboard();
 
-    // 无缓存时显示引导入口（不抛错、不白屏）
+    // 无缓存时显示生活化的引导入口（不抛错、不白屏）
     await waitFor(() => {
-      expect(screen.getByText('今天开始记录吧')).toBeInTheDocument();
+      expect(screen.getByText('今天还没记，从一杯水开始也行')).toBeInTheDocument();
     });
   });
 });

@@ -29,3 +29,23 @@ body {
 .qsh-surface {
   @apply bg-white ring-1 ring-brand-100;
 }
+
+/* ------------------------------------------------------------------ *
+ * 生活化气质：暖色卡片 / 胶囊标签 / 行动卡
+ * 深色覆盖统一在 `theme/dark.css`，浅色与深色都必须好看。
+ * ------------------------------------------------------------------ */
+
+/* 暖色卡片：奶油底 + 柔阴影 + 大圆角（首页问候 / 摘要） */
+.qsh-surface-warm {
+  @apply rounded-xl2 bg-cream-100 shadow-soft ring-1 ring-warm-100;
+}
+
+/* 胶囊标签：给生活用语（「舒服」「刚开始」）一个小巧的底色 */
+.qsh-chip {
+  @apply inline-flex items-center rounded-full bg-warm-100 px-3 py-1 text-xs font-medium text-warm-800;
+}
+
+/* 行动卡：暖底、悬停微抬、轻过渡（首页「记一餐 / 喝一杯水 / 动一动」） */
+.qsh-action-card {
+  @apply flex flex-col items-center justify-center gap-1 rounded-2xl bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-warm-100 hover:shadow-soft focus-visible:-translate-y-0.5;
+}

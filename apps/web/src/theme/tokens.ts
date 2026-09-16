@@ -44,6 +44,9 @@ export const TOKENS = {
 /** 饮水单次快捷量（ml，TC-33 / US-16）。 */
 export const WATER_QUICK_ADD_ML = 250;
 
+/** 一杯水的容量（ml）——用于把毫升换算成「第几杯」的生活化表达。 */
+export const WATER_ML_PER_CUP = 250;
+
 /** 默认每日饮水目标（ml）。 */
 export const DEFAULT_WATER_GOAL_ML = 1500;
 

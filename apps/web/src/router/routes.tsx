@@ -43,14 +43,14 @@ export const routes: AppRoute[] = [
   // 2. 首次引导（免责声明确认 → 问卷 → 结果）
   { path: '/onboarding', element: <OnboardingPage /> },
 
-  // 3. 今日看板
-  { path: '/dashboard', element: withShell(<DashboardPage />, '今日看板') },
+  // 3. 今天（生活流首页）
+  { path: '/dashboard', element: withShell(<DashboardPage />, '今天') },
 
-  // 4. 饮食日记（≤3 次点击记一餐）
-  { path: '/diary', element: withShell(<DiaryPage />, '饮食日记') },
+  // 4. 饮食记录（≤3 次点击记一餐）
+  { path: '/diary', element: withShell(<DiaryPage />, '记录') },
 
-  // 5. 体重趋势（7 日移动平均）
-  { path: '/weight', element: withShell(<WeightPage />, '体重趋势') },
+  // 5. 体重变化（7 日移动平均）
+  { path: '/weight', element: withShell(<WeightPage />, '变化') },
 
   // 6. 我的（基础数据修改 + 参考来源）
   { path: '/profile', element: withShell(<ProfilePage />, '我的') },

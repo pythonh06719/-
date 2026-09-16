@@ -4,7 +4,8 @@ import { NavLink } from 'react-router-dom';
 /**
  * 底部导航（components/layout/BottomNav.tsx）—— 移动端优先（NFR-9）。
  *
- * 四个一级入口：看板 / 日记 / 体重 / 我的。桌面端由 `AppShell` 转为顶部横向导航。
+ * 四个一级入口：今天 / 记录 / 变化 / 我的（显示文案生活化；**路由 path 保持不变**）。
+ * 桌面端由 `AppShell` 转为顶部横向导航。
  * 无障碍：使用 `<nav>` + `aria-current`（NavLink 自动设置），触控目标 ≥44px（NFR-7）。
  */
 
@@ -54,9 +55,9 @@ function ProfileIcon(): ReactElement {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { to: '/dashboard', label: '看板', icon: <DashboardIcon /> },
-  { to: '/diary', label: '日记', icon: <DiaryIcon /> },
-  { to: '/weight', label: '体重', icon: <WeightIcon /> },
+  { to: '/dashboard', label: '今天', icon: <DashboardIcon /> },
+  { to: '/diary', label: '记录', icon: <DiaryIcon /> },
+  { to: '/weight', label: '变化', icon: <WeightIcon /> },
   { to: '/profile', label: '我的', icon: <ProfileIcon /> },
 ];
 

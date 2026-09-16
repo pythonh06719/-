@@ -5,6 +5,7 @@ import type { FoodItem, MealComboWithItems, MealType, SearchFoodsResponse } from
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
+import { emojiForCategory } from '@/lib/food-emoji';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
 
@@ -119,7 +120,10 @@ export default function MealComposer({
             onClick={() => chooseFood(food)}
             className="qsh-touch-target w-full rounded-xl px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
           >
-            <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
+              <span aria-hidden="true" className="text-base">
+                {emojiForCategory(food.category)}
+              </span>
               {food.name}
             </span>
             <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
@@ -196,7 +200,7 @@ export default function MealComposer({
                 className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
-            {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-400">搜索中…</p>}
+            {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">搜索中…</p>}
             {searchQuery.data !== undefined && renderFoodList(searchQuery.data.items)}
             {keyword.trim() !== '' &&
               searchQuery.data !== undefined &&
@@ -215,7 +219,7 @@ export default function MealComposer({
             {(() => {
               const query = tab === 'recent' ? recentQuery : favoriteQuery;
               if (query.isLoading) {
-                return <p className="text-xs text-slate-400">读取中…</p>;
+                return <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>;
               }
               const items = query.data ?? [];
               if (items.length === 0) {
@@ -252,14 +256,14 @@ export default function MealComposer({
                 className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{COPY.quickAddHint}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
           </div>
         )}
 
         {/* 套餐模板（R3.9 / TC-26） */}
         {tab === 'combo' && (
           <div className="mt-4">
-            {comboQuery.isLoading && <p className="text-xs text-slate-400">读取中…</p>}
+            {comboQuery.isLoading && <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>}
             {(comboQuery.data ?? []).length === 0 && !comboQuery.isLoading && (
               <p className="text-sm text-slate-500 dark:text-slate-400">还没有保存的套餐模板</p>
             )}
@@ -355,7 +359,7 @@ export default function MealComposer({
               {busy ? '正在记录…' : '确认记录'}
             </button>
           ) : (
-            <p className="flex-1 text-center text-xs text-slate-400 dark:text-slate-500">
+            <p className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
               先选一个食物，或者切到「快加」
             </p>
           )}
