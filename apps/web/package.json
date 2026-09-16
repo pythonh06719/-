@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
+    "e2e:gif": "node scripts/record-demo.mjs"
   },
   "dependencies": {
     "@qsh/core": "*",

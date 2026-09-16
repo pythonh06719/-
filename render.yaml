@@ -1,0 +1,27 @@
+# Render 部署（后端 API + Postgres）—— 公网 Demo 简历项
+# 前置：Render Dashboard → New → Blueprint → 连接本仓库
+services:
+  - type: web
+    name: qingshenghuo-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build -w @qsh/api && npx prisma db push --schema apps/api/prisma/schema.pg.prisma && node apps/api/scripts/sync-embeddings-pg.mjs
+    startCommand: node apps/api/dist/apps/api/src/main.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL_PG
+        fromDatabase:
+          name: qingshenghuo-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: qingshenghuo-db
+    plan: free
+    region: singapore
+    # pgvector：free 档 Postgres 16+ 自带 vector 扩展，首次连接执行
+    #   psql $DATABASE_URL_PG -f infra/db/migrations/pg/001_pgvector.sql

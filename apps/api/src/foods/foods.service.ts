@@ -8,6 +8,8 @@ import { toFoodItem } from '../common/mappers/entity.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchFoodsDto } from './dto/search-foods.dto';
 import { keywordWhere, visibleFoodWhere } from './foods.util';
+import { VectorSearchService } from './rag/vector-search.service';
+import type { RagFoodHit } from './rag/vector-search.service';
 
 /**
  * 食物库分页结果。
@@ -26,10 +28,18 @@ export interface FoodSearchResult {
  *
  * ⚠️ SQLite 下 Prisma **不支持** `mode: 'insensitive'`，故统一使用普通 `contains`：
  * SQLite 的 `LIKE` 对 ASCII 天然大小写不敏感，中文按子串匹配即可满足需求。
+ *
+ * 检索来源（RAG 接线）：优先走 `VectorSearchService` 向量检索；以下情况静默回退到
+ * 原有关键词检索（`keywordWhere`），保证 API 响应形状不变、SQLite 开发环境零负担：
+ * - `DATABASE_URL` 为 SQLite（`file:` 前缀）→ 直接走关键词，不尝试向量；
+ * - 向量检索抛错（pgvector 缺失 / 查询失败 / 种子向量未加载）→ catch 后降级。
  */
 @Injectable()
 export class FoodsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vectorSearch: VectorSearchService,
+  ) {}
 
   /** 关键词 + 分类搜索（模糊匹配名称 / 拼音 / 别名）。 */
   async search(userId: number, dto: SearchFoodsDto): Promise<FoodSearchResult> {
@@ -37,6 +47,27 @@ export class FoodsService {
     const pageSize = dto.pageSize ?? dto.limit ?? 20;
     const page = dto.page ?? (dto.offset ? Math.floor(dto.offset / pageSize) + 1 : 1);
     const offset = (page - 1) * pageSize;
+
+    const vectorHits = await this.tryVectorSearch(userId, keyword, pageSize);
+
+    if (vectorHits !== null) {
+      // 向量命中：沿用分页契约做内存分页；category 过滤在命中结果上追加（语义同关键词路径）。
+      const filtered =
+        dto.category && dto.category.trim().length > 0
+          ? vectorHits.filter((hit) => hit.category === dto.category?.trim())
+          : vectorHits;
+      // 回表：按向量 id 取完整行，复用 `toFoodItem` 映射 —— 响应形状与关键词路径完全一致。
+      const ids = filtered.slice(offset, offset + pageSize).map((hit) => hit.id);
+      const rows = await this.prisma.foodItem.findMany({
+        where: { id: { in: ids }, ...visibleFoodWhere(userId) },
+      });
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      const items = ids
+        .map((id) => rowById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row !== undefined)
+        .map(toFoodItem);
+      return { items, total: filtered.length, page, pageSize };
+    }
 
     const filters: object[] = [visibleFoodWhere(userId)];
     if (keyword.length > 0) {
@@ -58,6 +89,25 @@ export class FoodsService {
     ]);
 
     return { items: rows.map(toFoodItem), total, page, pageSize };
+  }
+
+  /**
+   * 尝试向量检索；任何不可用场景返回 `null`（调用方回退关键词），绝不抛错。
+   * SQLite（`DATABASE_URL` 以 `file:` 开头）直接短路为 `null`。
+   */
+  private async tryVectorSearch(
+    userId: number,
+    keyword: string,
+    topK: number,
+  ): Promise<RagFoodHit[] | null> {
+    if (keyword.length === 0) return null;
+    if ((process.env.DATABASE_URL ?? '').startsWith('file:')) return null; // SQLite → 关键词
+    try {
+      const hits = await this.vectorSearch.search(userId, keyword, topK);
+      return hits.length > 0 ? hits : null; // 空命中也回退，保证搜索体验
+    } catch {
+      return null; // 静默降级：pgvector 缺失 / 查询失败 / 种子未加载
+    }
   }
 
   /** 全部分类（去重、升序）。 */
