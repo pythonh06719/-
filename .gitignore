@@ -35,3 +35,6 @@ pnpm-debug.log*
 # 本地备份（含密钥或数据快照，禁止提交）
 *.bak
 .env.bak*
+
+# vitest 临时缓存（vite/vitest 配置加载产物，勿提交）
+*.timestamp-*.mjs

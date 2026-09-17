@@ -60,7 +60,7 @@ export function isNetworkError(error: unknown): boolean {
 
 /** 状态码 → 温和的中文提示（PRD §7：不指责、不恐吓）。 */
 const FRIENDLY_BY_STATUS: Record<number, string> = {
-  400: '这次填写的信息好像还差一点，检查一下再试试就好',
+  400: '这次填写的信息好像还没填全，检查一下再试试就好',
   401: '登录状态已经过期，我们重新登录一次吧',
   403: '这部分内容暂时无法查看',
   404: '没有找到这条内容，换个条件再看看',

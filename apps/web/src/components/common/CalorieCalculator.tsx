@@ -184,7 +184,7 @@ export default function CalorieCalculator(): ReactElement {
 
       {outcome !== null && !outcome.ok && (
         <div className="mt-5 rounded-xl bg-amber-50 p-4" role="status">
-          <p className="text-sm font-medium text-amber-800">还差一点点就能算了，帮我们看看：</p>
+          <p className="text-sm font-medium text-amber-800">马上就能算了，帮我们看看：</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-700">
             {outcome.errors.map((error) => (
               <li key={`${error.field}-${error.code}`}>{error.message}</li>

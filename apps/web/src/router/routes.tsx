@@ -43,8 +43,8 @@ export const routes: AppRoute[] = [
   // 2. 首次引导（免责声明确认 → 问卷 → 结果）
   { path: '/onboarding', element: <OnboardingPage /> },
 
-  // 3. 今天（生活流首页）
-  { path: '/dashboard', element: withShell(<DashboardPage />, '今天') },
+  // 3. 今天（生活流首页）——顶栏用品牌字标，页面 h1 才是「今天」，避免重复
+  { path: '/dashboard', element: withShell(<DashboardPage />, '轻生活') },
 
   // 4. 饮食记录（≤3 次点击记一餐）
   { path: '/diary', element: withShell(<DiaryPage />, '记录') },

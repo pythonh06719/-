@@ -390,7 +390,7 @@ export default function OnboardingPage(): ReactElement {
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-200">
                   {option.label}
-                  <span className="ml-2 text-xs text-slate-600 dark:text-slate-400">{option.hint}</span>
+                  <span className="ml-2 text-xs text-slate-600 dark:text-slate-300">{option.hint}</span>
                 </span>
               </label>
             ))}
@@ -481,7 +481,7 @@ export default function OnboardingPage(): ReactElement {
         {previewErrors.length > 0 && (
           <div role="status" className="rounded-2xl bg-brand-50 p-4 dark:bg-brand-900/30">
             <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              还差一点点就能算了，帮我们看看：
+              马上就能算了，帮我们看看：
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
               {previewErrors.map((error) => (

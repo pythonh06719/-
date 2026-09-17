@@ -18,6 +18,18 @@
 
 食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
 
+## 产品一览
+
+6 个核心页面（Pixel 7 视口截图，`docs/screenshots/`）：
+
+| 落地页 | 今天 · 浅色 |
+| --- | --- |
+| ![落地页](docs/screenshots/01-landing.png) | ![今天 · 浅色](docs/screenshots/02-dashboard-light.png) |
+| **今天 · 深色** | **饮食记录** |
+| ![今天 · 深色](docs/screenshots/03-dashboard-dark.png) | ![饮食记录](docs/screenshots/04-diary.png) |
+| **AI 助手** | **体重变化** |
+| ![AI 助手](docs/screenshots/05-ai.png) | ![体重变化](docs/screenshots/06-weight.png) |
+
 ## 目录结构
 
 ```text

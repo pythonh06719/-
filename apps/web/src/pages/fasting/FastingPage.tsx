@@ -147,7 +147,7 @@ export default function FastingPage(): ReactElement {
                   <span className="text-base font-normal"> 小时</span>
                 </p>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-                  {session.remainingHours > 0 ? `还差 ${session.remainingHours.toFixed(1)} 小时到目标` : '已经达到目标啦'}
+                  {session.remainingHours > 0 ? `还有 ${session.remainingHours.toFixed(1)} 小时到目标` : '已经达到目标啦'}
                 </p>
                 <button
                   type="button"

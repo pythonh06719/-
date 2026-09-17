@@ -277,7 +277,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           <span aria-hidden="true" className="text-4xl">
             🍽️
           </span>
-          <p className="text-sm text-slate-700 dark:text-slate-300">{COPY.emptyToday}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300">{COPY.emptyTodayDiary}</p>
         </div>
       )}
 

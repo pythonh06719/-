@@ -93,6 +93,11 @@ export function formatDateLabel(key: string, now: Date = new Date()): string {
   return `${formatMonthDay(key)} · ${weekdayLabel(key)}`;
 }
 
+/** `9月16日 · 周三`——始终输出真实日期（首页顶栏右侧用，避免与页面 h1「今天」重复）。 */
+export function formatDateLine(key: string): string {
+  return `${formatMonthDay(key)} · ${weekdayLabel(key)}`;
+}
+
 /** 数字千分位。 */
 export function formatNumber(value: number, fractionDigits = 0): string {
   return value.toLocaleString('zh-CN', {

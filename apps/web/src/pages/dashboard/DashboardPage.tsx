@@ -7,7 +7,7 @@ import { isNetworkError } from '@/lib/api';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
-import { formatDateLabel, todayKey } from '@/lib/format';
+import { formatDateLine, todayKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import {
   COPY,
@@ -20,7 +20,6 @@ import {
   mealSummaryTag,
 } from '@/lib/copy';
 import { DEFAULT_WATER_GOAL_ML, WATER_QUICK_ADD_ML } from '@/theme/tokens';
-import BigNumber from '@/components/common/BigNumber';
 import ProgressRing from '@/components/common/ProgressRing';
 import Sparkline from '@/components/common/Sparkline';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
@@ -214,6 +213,12 @@ export default function DashboardPage(): ReactElement {
   const summaryLine = mealSummaryLine({ intakeKcal: data.intakeKcal, progressRatio: data.progressRatio });
   const summaryTag = mealSummaryTag({ intakeKcal: data.intakeKcal, progressRatio: data.progressRatio });
   const isEmptyToday = mealCount === 0 && data.intakeKcal <= 0;
+  // 摘要卡主行：无参考预算 → 中性引导；今天没记 → 空态；其余 → 生活化分档总结
+  const summaryHeadline = data.budget == null
+    ? COPY.noBudgetSummary
+    : isEmptyToday
+      ? COPY.emptyTodayData
+      : summaryLine;
   const encouragement =
     data.encouragement.trim() !== '' ? data.encouragement : encouragementForHour(hour);
 
@@ -223,7 +228,7 @@ export default function DashboardPage(): ReactElement {
         <h1 id="dashboard-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
           今天
         </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{formatDateLabel(date)}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{formatDateLine(date)}</p>
       </header>
 
       {offline && (
@@ -249,6 +254,9 @@ export default function DashboardPage(): ReactElement {
             🍚
           </span>
           <span>记一餐</span>
+          <span className="text-xs font-normal text-slate-600 dark:text-slate-400">
+            早餐 / 午餐 / 晚餐
+          </span>
         </Link>
         <button
           type="button"
@@ -260,7 +268,7 @@ export default function DashboardPage(): ReactElement {
             💧
           </span>
           <span>喝一杯水</span>
-          <span className="text-xs font-normal text-warm-800 dark:text-slate-400">
+          <span className="text-xs font-normal text-slate-600 dark:text-slate-400">
             {WATER_QUICK_ADD_ML} ml
           </span>
         </button>
@@ -269,6 +277,7 @@ export default function DashboardPage(): ReactElement {
             🏃
           </span>
           <span>动一动</span>
+          <span className="text-xs font-normal text-slate-600 dark:text-slate-400">散步也算</span>
         </Link>
       </section>
 
@@ -278,17 +287,6 @@ export default function DashboardPage(): ReactElement {
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
           <span className="qsh-chip">{summaryTag}</span>
         </div>
-
-        {isEmptyToday ? (
-          <div className="mt-2 flex items-center gap-3">
-            <span aria-hidden="true" className="text-3xl">
-              🥗
-            </span>
-            <p className="text-sm text-slate-700 dark:text-slate-300">{COPY.emptyToday}</p>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{summaryLine}</p>
-        )}
 
         <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
           <ProgressRing
@@ -300,19 +298,25 @@ export default function DashboardPage(): ReactElement {
             ariaLabel={`今日热量进度 ${Math.round(data.progressRatio * 100)}%`}
           />
           <div className="flex-1">
-            <BigNumber
-              caption="今天还能吃"
-              value={remainingDisplay}
-              unit={energyLabel(unit)}
-              size="md"
-              tone="neutral"
-              ariaLabel={`今日还能摄入 ${remainingDisplay} ${energyLabel(unit)}`}
-              hint={
-                data.remainingKcal < 0
-                  ? '今天吃得丰富一些，明天照常就好'
-                  : `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
-              }
-            />
+            {/* 主行：生活化表达（数字降权，D 修） */}
+            <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+              {isEmptyToday && (
+                <span aria-hidden="true" className="mr-2 align-middle text-2xl">
+                  🥗
+                </span>
+              )}
+              {summaryHeadline}
+            </p>
+            {/* 次要行：真实数字，小字号等宽呈现 */}
+            <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
+              {data.remainingKcal < 0
+                ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
+                : (
+                  <>
+                    还能吃 <span>{remainingDisplay}</span> {energyLabel(unit)}
+                  </>
+                )}
+            </p>
           </div>
         </div>
       </div>

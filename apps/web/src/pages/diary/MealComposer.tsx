@@ -126,7 +126,7 @@ export default function MealComposer({
               </span>
               {food.name}
             </span>
-            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
               {food.category} · 每 100g {food.kcalPer100g} kcal
             </span>
           </button>
