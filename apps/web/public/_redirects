@@ -1,0 +1,9 @@
+# Cloudflare Pages 重写规则（apps/web/public/_redirects）
+# 前端所有请求打同源相对路径 /api/*（见 apps/web/src/lib/api.ts），生产由此反代到 Render。
+#
+# 第 1 行：/api/* → Render 后端（200 表示「代理/重写」而非跳转）
+#   ⚠️ 域名占位：若 Render 服务名不是 qingshenghuo-api，请替换为实际地址。
+/api/*  https://qingshenghuo-api.onrender.com/api/:splat  200
+
+# 第 2 行：SPA 回退，前端路由直接刷新时不再 404
+/*      /index.html                                       200
