@@ -11,7 +11,7 @@ jobs:
     name: 引擎单测门禁（P0）
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -30,7 +30,7 @@ jobs:
       # SQLite 相对 schema 目录解析 → apps/api/prisma/dev.db（与本地 .env 一致）
       DATABASE_URL: file:./dev.db
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: core-engine-gate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
