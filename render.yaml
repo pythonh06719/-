@@ -6,7 +6,11 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install && npm run build -w @qsh/api && npx prisma db push --schema apps/api/prisma/schema.pg.prisma && node apps/api/scripts/sync-embeddings-pg.mjs
+    # ⚠️ 必须带 --include=dev：下面 envVars 设了 NODE_ENV=production，而该变量对 **build 阶段同样生效**，
+    #    npm 在 NODE_ENV=production 下会跳过 devDependencies —— 但构建恰恰依赖 devDeps 里的
+    #    nest CLI（`npm run build -w @qsh/api`）与 prisma CLI（`npx prisma db push`）。
+    #    不加 --include=dev 时这些 CLI 缺失，构建必然失败。
+    buildCommand: npm install --include=dev && npm run build -w @qsh/api && npx prisma db push --schema apps/api/prisma/schema.pg.prisma && node apps/api/scripts/sync-embeddings-pg.mjs
     startCommand: node apps/api/dist/apps/api/src/main.js
     healthCheckPath: /api/health
     envVars:
@@ -18,10 +22,40 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
+      # --- AI（三期 R9）：以下均为**非密**配置，可入库 ---
+      # 总开关：true 走真实 LLM；false 强制规则兜底（成本熔断 / 故障降级）。
+      - key: AI_ENABLED
+        value: "true"
+      # OpenAI 兼容接口地址（默认值抄自 apps/api/src/config/app-config.ts）。
+      - key: AI_BASE_URL
+        value: "https://api.openai.com/v1"
+      # 模型名（默认值抄自 apps/api/src/config/app-config.ts）。
+      - key: AI_MODEL
+        value: "gpt-4o-mini"
+      #
+      # ⚠️ AI_API_KEY 绝不能写进仓库：请在 Render Dashboard → 本服务 → Environment **手动新增**
+      #    key=AI_API_KEY，value=你的 LLM key（如 sk-...）。未配置时 AI 入口降级为规则兜底。
+      #
+      # 说明：以下两项当前**未被代码读取**（硬编码在 apps/api/src/ai/ai.constants.ts：
+      #   AI_MAX_OUTPUT_TOKENS=512、AI_REQUEST_TIMEOUT_MS=15000），故此处仅记录默认值、暂不生效；
+      #   若后续把常量改为读环境变量，取消注释即可。
+      # - key: AI_MAX_OUTPUT_TOKENS
+      #   value: "512"
+      # - key: AI_REQUEST_TIMEOUT_MS
+      #   value: "15000"
+      # --- CORS 白名单（变量名：CORS_ORIGINS，逗号分隔；见 apps/api/src/config/app-config.ts）---
+      # ⚠️ 占位域名：把 qingshenghuo.pages.dev 换成你 Cloudflare Pages 实际分配的项目域名后再部署。
+      #    若前端经 apps/web/public/_redirects 同源反代 /api，浏览器视角为同源，CORS 通常不触发；
+      #    此处仍显式配置，以防前端直连后端。
+      - key: CORS_ORIGINS
+        value: "https://qingshenghuo.pages.dev,http://localhost:5173"
 
 databases:
   - name: qingshenghuo-db
     plan: free
     region: singapore
-    # pgvector：free 档 Postgres 16+ 自带 vector 扩展，首次连接执行
-    #   psql $DATABASE_URL_PG -f infra/db/migrations/pg/001_pgvector.sql
+    # pgvector：free 档 Postgres 16+ 自带 vector 扩展。
+    #   `vector` 扩展 + `food_embeddings` 表 + 余弦索引，现由构建阶段的
+    #   apps/api/scripts/sync-embeddings-pg.mjs **幂等自动创建**（它读取
+    #   infra/db/migrations/pg/001_pgvector.sql，定义只此一份），无需人工操作。
+    #   如需手工执行（可选，可重复执行）：psql $DATABASE_URL_PG -f infra/db/migrations/pg/001_pgvector.sql
