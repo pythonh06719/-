@@ -1,8 +1,10 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { todayLocalKey } from '../common/utils/date.util';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { UserThrottlerGuard } from '../common/guards/user-throttler.guard';
 import {
   AgentAskDto,
   AgentConfirmDto,
@@ -20,10 +22,13 @@ import { AiService } from './ai.service';
  *
  * - 全部鉴权（`userId` 一律取 JWT，K7）；响应统一 `{ data, error }`（K2）；
  * - key 仅服务端（R9.5）：请求 / 响应中不出现任何 AI 凭据；
- * - 所有端点 POST + 200（与其他写端点一致，QA BUG-P2-2 同口径）。
+ * - 所有端点 POST + 200（与其他写端点一致，QA BUG-P2-2 同口径）；
+ * - **成本防线**：烧 token 的 5 个端点按**登录用户**限流 20 次 / 分钟
+ *   （`UserThrottlerGuard`，避免 NAT 共享 IP 的用户互相误伤）；超限 → 429 `E_LIMIT_THROTTLE`。
+ *   查询轨迹 / 确认写入不调用模型，沿用模块默认限额（300 次 / 分钟 / 用户）。
  */
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, UserThrottlerGuard)
 export class AiController {
   constructor(
     private readonly aiService: AiService,
@@ -33,6 +38,7 @@ export class AiController {
   /** 每日总结（R9.1）：当日复盘 = 直接结论 + 依据 + 一条可执行建议。 */
   @Post('daily-summary')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   dailySummary(@CurrentUser() userId: number, @Body() dto: DailySummaryDto) {
     return this.aiService.dailySummary(userId, dto);
   }
@@ -40,6 +46,7 @@ export class AiController {
   /** 今日方案（R9.2）：据最近两日记录生成；数据未变则复用缓存（不计数）。 */
   @Post('today-plan')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   todayPlan(@CurrentUser() userId: number, @Body() dto: TodayPlanDto) {
     return this.aiService.todayPlan(userId, dto);
   }
@@ -56,6 +63,7 @@ export class AiController {
    */
   @Post('free-ask')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async freeAsk(@CurrentUser() userId: number, @Body() dto: FreeAskDto) {
     const deterministic = await this.aiService.freeAskDeterministic(userId, dto);
     if (deterministic !== null) {
@@ -71,6 +79,7 @@ export class AiController {
   /** 食物识别（R3.7）：文字描述 → 食物库候选；**不直接写 meal_logs**，需用户确认。 */
   @Post('recognize-food')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   recognizeFood(@CurrentUser() userId: number, @Body() dto: RecognizeFoodDto) {
     return this.aiService.recognizeFood(userId, dto);
   }
@@ -86,6 +95,7 @@ export class AiController {
    */
   @Post('agent')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   agent(@CurrentUser() userId: number, @Body() dto: AgentAskDto) {
     return this.agentService.run(userId, dto.question, dto.date);
   }

@@ -38,3 +38,6 @@ pnpm-debug.log*
 
 # vitest 临时缓存（vite/vitest 配置加载产物，勿提交）
 *.timestamp-*.mjs
+
+# AI 评测生成物（可随时重跑生成，不入库；结论与数字见 docs/AGENT.md）
+apps/api/eval/eval-report.json

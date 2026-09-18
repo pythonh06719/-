@@ -48,6 +48,7 @@ const API = '/api';
 const USER_AI = 'e2e-ai@qinglife.test';
 const USER_LIMIT = 'e2e-ai-limit@qinglife.test';
 const USER_DELETED = 'e2e-ai-deleted@qinglife.test';
+const USER_THROTTLE = 'e2e-ai-throttle@qinglife.test';
 
 const logSpy = vi.spyOn(Logger.prototype, 'log');
 
@@ -87,7 +88,9 @@ function auth(token: string): { Authorization: string } {
 
 /** 清理测试用户（级联）与测试种子食物。 */
 async function cleanup(): Promise<void> {
-  await prisma.user.deleteMany({ where: { email: { in: [USER_AI, USER_LIMIT, USER_DELETED] } } });
+  await prisma.user.deleteMany({
+    where: { email: { in: [USER_AI, USER_LIMIT, USER_DELETED, USER_THROTTLE] } },
+  });
   if (seededFoodId > 0) {
     await prisma.foodItem.deleteMany({ where: { id: seededFoodId } });
   }
@@ -306,6 +309,38 @@ describe('AI 助手（三期 T05：R9.x / R3.7）', () => {
     // 医疗兜底不计入正常回答：free_ask 行数不变
     const after = await prisma.aiUsage.count({ where: { userId: userAiId, feature: 'free_ask' } });
     expect(after).toBe(before);
+  });
+
+  it('成本防线：AI 路由按【用户】限流 —— 同一 IP 下打满 A 不影响 B（UserThrottlerGuard）', async () => {
+    const { token } = await register(USER_THROTTLE);
+
+    // 同一端点连打 21 次：前 20 次放行，第 21 次被拦（限额 20 次 / 分钟）
+    const statuses: number[] = [];
+    for (let index = 0; index < 21; index += 1) {
+      const res = await request(server as never)
+        .post(`${API}/ai/recognize-food`)
+        .set(auth(token))
+        .send({ description: '清蒸鲈鱼e2e' });
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 20).every((status) => status === 200)).toBe(true);
+    expect(statuses[20]).toBe(429);
+
+    const blocked = await request(server as never)
+      .post(`${API}/ai/recognize-food`)
+      .set(auth(token))
+      .send({ description: '清蒸鲈鱼e2e' })
+      .expect(429);
+    expect(blocked.body.data).toBeNull();
+    expect(blocked.body.error.code).toBe('E_LIMIT_THROTTLE');
+
+    // 关键：同源 IP 的另一位用户不受影响（证明计数键是 userId 而非 IP）
+    const other = await request(server as never)
+      .post(`${API}/ai/recognize-food`)
+      .set(auth(tokenAi))
+      .send({ description: '清蒸鲈鱼e2e' })
+      .expect(200);
+    expect(other.body.error).toBeNull();
   });
 
   it('硬删除后旧 JWT 打任意端点 → 401 E_AUTH_INVALID_TOKEN（QA BUG-P3-3，鉴权层根治）', async () => {

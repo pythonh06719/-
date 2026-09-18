@@ -65,18 +65,67 @@ const MEAL_LABEL: Record<string, string> = {
   snack: '加餐',
 };
 
-function requireString(args: Record<string, unknown>, key: string): string {
+/** 文本参数长度上限（字符数）—— 防止模型把整段话塞进关键词字段。 */
+const MAX_TEXT_LENGTH = 50;
+/** `search_food.limit` 的默认条数（与 MCP 侧 `search_food` 同口径）。 */
+const DEFAULT_SEARCH_LIMIT = 5;
+/** `search_food.limit` 的夹紧上界（1~10，与 MCP 侧 `Math.min(Math.max(..., 1), 10)` 一致）。 */
+const MAX_SEARCH_LIMIT = 10;
+/** 单餐克数上界（5000 克 ≈ 一顿不可能达到的量；超出视为模型幻觉，拒绝而非截断）。 */
+const MAX_GRAMS = 5000;
+/** 运动时长上界（分钟）—— 600 分钟 = 10 小时，超出视为幻觉。 */
+const MAX_MINUTES = 600;
+
+/**
+ * 读取必填字符串参数。
+ *
+ * @param args 模型给出的原始参数
+ * @param key 参数名
+ * @param maxLength 长度上限（默认 50 字符）
+ * @throws AgentToolError 缺失 / 非字符串 / 空白 / 超长（message 会回灌给模型）
+ */
+function requireString(
+  args: Record<string, unknown>,
+  key: string,
+  maxLength: number = MAX_TEXT_LENGTH,
+): string {
   const value = args[key];
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new AgentToolError(`参数 ${key} 必须是非空字符串`);
   }
-  return value.trim();
+  const text = value.trim();
+  if (text.length > maxLength) {
+    throw new AgentToolError(`参数 ${key} 过长（最多 ${maxLength} 个字符），请只传关键词`);
+  }
+  return text;
 }
 
-function requirePositiveNumber(args: Record<string, unknown>, key: string, max: number): number {
+/**
+ * 读取闭区间数值参数（越界即拒绝并回灌错误，让模型自我纠正）。
+ *
+ * 说明：**写入 / 计算类**参数（克数、时长）采用「校验并拒绝」而非静默夹紧 ——
+ * 静默把 999999 克截成 5000 克会凭空写出错误数据；而只读分页参数（`limit`）
+ * 仅影响展示条数，故沿用 MCP 侧「夹紧」写法。两种取舍见各调用点注释。
+ *
+ * @param args 模型给出的原始参数
+ * @param key 参数名
+ * @param options 取值范围与整数要求
+ * @throws AgentToolError 非数字 / 非整数 / 越界
+ */
+function requireNumberInRange(
+  args: Record<string, unknown>,
+  key: string,
+  options: { min: number; max: number; integer?: boolean },
+): number {
   const value = Number(args[key]);
-  if (!Number.isFinite(value) || value <= 0 || value > max) {
-    throw new AgentToolError(`参数 ${key} 必须是 0 到 ${max} 之间的数字`);
+  if (!Number.isFinite(value)) {
+    throw new AgentToolError(`参数 ${key} 必须是数字`);
+  }
+  if (options.integer === true && !Number.isInteger(value)) {
+    throw new AgentToolError(`参数 ${key} 必须是整数`);
+  }
+  if (value < options.min || value > options.max) {
+    throw new AgentToolError(`参数 ${key} 必须在 ${options.min} 到 ${options.max} 之间`);
   }
   return value;
 }
@@ -96,8 +145,9 @@ function parseLogMealArgs(args: Record<string, unknown>): {
   if (!Number.isInteger(foodId) || foodId <= 0) {
     throw new AgentToolError('参数 foodId 必须是 search_food 返回的整数 id');
   }
-  const grams = requirePositiveNumber(args, 'grams', 5000);
-  const mealType = requireString(args, 'mealType') as MealType;
+  // 写入类参数：1~5000 克，越界即拒绝（避免把幻觉克数静默落库）
+  const grams = requireNumberInRange(args, 'grams', { min: 1, max: MAX_GRAMS });
+  const mealType = requireString(args, 'mealType', 20) as MealType;
   if (!MEAL_TYPES.includes(mealType)) {
     throw new AgentToolError(`参数 mealType 必须是 ${MEAL_TYPES.join(' / ')} 之一`);
   }
@@ -117,14 +167,18 @@ export function createAgentTools(deps: AgentToolDeps): Record<string, AgentTool>
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: '食物名称关键词，如「米饭」「豆腐」' },
-          limit: { type: 'integer', description: '返回条数，默认 5，最大 10' },
+          query: { type: 'string', description: '食物名称关键词（最多 50 字），如「米饭」「豆腐」' },
+          limit: { type: 'integer', description: '返回条数，默认 5，最大 10（超出按 10 处理）' },
         },
         required: ['query'],
       },
       async run(args, ctx) {
         const query = requireString(args, 'query');
-        const limit = Math.min(Math.max(Number(args.limit ?? 5) || 5, 1), 10);
+        // 只读分页参数：夹紧到 [1, 10]（与 MCP 侧 search_food 完全同口径，不拒绝）
+        const limit = Math.min(
+          Math.max(Number(args.limit ?? DEFAULT_SEARCH_LIMIT) || DEFAULT_SEARCH_LIMIT, 1),
+          MAX_SEARCH_LIMIT,
+        );
         const result = await deps.foods.search(ctx.userId, { q: query, pageSize: limit });
         const items = result.items.map((item) => ({
           id: item.id,
@@ -174,14 +228,18 @@ export function createAgentTools(deps: AgentToolDeps): Record<string, AgentTool>
       parameters: {
         type: 'object',
         properties: {
-          activity: { type: 'string', description: '运动名称或关键词，如「跑步」「快走」「游泳」' },
-          minutes: { type: 'number', description: '时长（分钟）' },
+          activity: {
+            type: 'string',
+            description: '运动名称或关键词（最多 50 字），如「跑步」「快走」「游泳」',
+          },
+          minutes: { type: 'number', description: '时长（分钟），取值 1~600' },
         },
         required: ['activity', 'minutes'],
       },
       async run(args, ctx) {
         const activity = requireString(args, 'activity');
-        const minutes = requirePositiveNumber(args, 'minutes', 600);
+        // 计算类参数：1~600 分钟，越界即拒绝并回灌错误（不静默截断）
+        const minutes = requireNumberInRange(args, 'minutes', { min: 1, max: MAX_MINUTES });
         const activities = deps.exercise.listActivities();
         const keyword = activity.toLowerCase();
         const matched =
@@ -250,12 +308,12 @@ export function createAgentTools(deps: AgentToolDeps): Record<string, AgentTool>
       parameters: {
         type: 'object',
         properties: {
-          foodId: { type: 'integer', description: '食物 id，来自 search_food 结果' },
-          grams: { type: 'number', description: '克数' },
+          foodId: { type: 'integer', description: '食物 id，来自 search_food 结果（正整数）' },
+          grams: { type: 'number', description: '克数，取值 1~5000' },
           mealType: {
             type: 'string',
             enum: [...MEAL_TYPES],
-            description: '餐次：breakfast/lunch/dinner/snack',
+            description: '餐次：breakfast/lunch/dinner/snack（仅接受这 4 个值）',
           },
         },
         required: ['foodId', 'grams', 'mealType'],

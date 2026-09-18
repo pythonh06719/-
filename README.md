@@ -14,7 +14,7 @@
 | 报告与 AI | 周报 + 10 项微量营养素参考；AI 助手（医疗意图安全闸、单日 50 次限额、规则兜底降级，key 仅存服务端） |
 | 数据主权 | CSV 导出 / 导入（含公式注入防护）、账号硬删除、隐私承诺（无广告 SDK、无第三方行为分析） |
 | 部署 | `docker compose up -d --build` 一键起（nginx + NestJS + 可选 PostgreSQL），容器自动建表并幂等灌种子 |
-| 测试 | core 85 / api 24 / web 51 = **160 用例全绿**，core 覆盖率 99.7% |
+| 测试 | core 85 / api 57 / web 50 = **192 用例全绿**，core 覆盖率 99.7% |
 
 食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
 
@@ -65,6 +65,27 @@ npm test
 ```
 
 覆盖率阈值（lines / functions / branches / statements 均 ≥ 90%）作为门禁，任一不足即失败。
+
+### 本地跑前端 / 后端测试的正确姿势
+
+> ⚠️ **已知现象**：`npm run test -w @qsh/web` 在本机会 **全部用例失败**（约 50 个），但 CI 是全绿的。
+> **成因**：仓库内同时存在两份 vitest —— 根 `node_modules/vitest` 为 **2.1.9**（workspace 提升），
+> 而 `apps/web/node_modules/vitest` 为 **2.0.5**（web 的 package.json 声明）。从工作区脚本启动时
+> 会解析到偏低的那一份，与 `apps/web` 的测试配置 / jsdom 环境不匹配，于是报错而非断言失败。
+> **彻底去重**需执行一次 `npm install`（网络良好时），让两份版本对齐；本仓库当前不为此变更依赖。
+
+因此本地请**显式指定 vitest 入口**（绕过 workspace 脚本的版本解析）：
+
+```bash
+# 前端（apps/web，50 用例）
+cd apps/web && node ../../node_modules/vitest/vitest.mjs run
+# 等价写法（仓库根）
+node node_modules/vitest/vitest.mjs run --root apps/web
+
+# 后端（apps/api，端到端，会加载 dist 编译产物 → 先 build）
+npm run build -w @qsh/api
+cd apps/api && node ../../node_modules/vitest/vitest.mjs run
+```
 
 ## 本地启动前端
 

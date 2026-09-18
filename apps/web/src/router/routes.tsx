@@ -1,7 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import AppShell from '@/components/layout/AppShell';
-import PhasePlaceholder from '@/components/common/PhasePlaceholder';
 import LandingPage from '@/pages/landing/LandingPage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
