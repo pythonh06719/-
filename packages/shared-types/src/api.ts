@@ -207,6 +207,75 @@ export interface CreateCustomFoodRequest {
 }
 
 // ---------------------------------------------------------------------------
+// 在线食物库兜底（Phase C-1）：Open Food Facts 只读代理 + 幂等导入
+// ---------------------------------------------------------------------------
+
+/**
+ * 外部（在线）食物条目 —— 来自 Open Food Facts，**尚未入库**故无 DB `id`。
+ *
+ * 字段命名与 `FoodItem` 对齐，前端可复用同一套份量 / 热量换算逻辑。
+ * 数据许可为 **ODbL 1.0**，须署名「© Open Food Facts contributors」。
+ */
+export interface ExternalFoodItem {
+  /** 外部唯一标识（OFF 的 `code`，即条码） */
+  externalId: string;
+  name: string;
+  /** 映射到本项目的分类 */
+  category: string;
+  kcalPer100g: number;
+  proteinGPer100g: number;
+  fatGPer100g: number;
+  carbGPer100g: number;
+  servingUnits: ServingUnit[];
+  defaultServingGrams: number | null;
+  /** 条码（与 `externalId` 相同） */
+  barcode: string;
+  /** 品牌（可空） */
+  brand: string | null;
+  /** 上游商品页 URL（供用户核验 / ODbL 署名） */
+  sourceUrl: string;
+  source: 'openfoodfacts';
+  /** 数据许可标识（如 `ODbL 1.0`） */
+  license: string;
+}
+
+/**
+ * `GET /api/foods/live-search` 响应（R3.6 / Phase C-1）。
+ *
+ * `degraded: true` 表示上游不可用（网络异常 / 超时）—— 前端应给出「先用本地结果」的友好提示，
+ * **不是错误**，故仍返回 200。
+ */
+export interface LiveSearchResponse {
+  items: ExternalFoodItem[];
+  /** 归一化通过的条数（= `items.length`） */
+  found: number;
+  /** 因脏数据（缺名称 / 缺条码 / 热量非法）被过滤掉的条数 */
+  skipped: number;
+  /** 是否降级（上游不可用） */
+  degraded: boolean;
+  source: 'openfoodfacts';
+  license: string;
+}
+
+/** `POST /api/foods/import-external` 请求 —— 仅提供外部条码，营养数据由服务端重取。 */
+export interface ImportExternalFoodRequest {
+  /** OFF 条码（8–14 位数字） */
+  externalId: string;
+}
+
+/**
+ * `GET /api/foods/barcode/:code` 响应（Phase C-2）。
+ *
+ * - 命中 → `{ item, degraded: false }`；
+ * - 上游不可用 → `{ item: null, degraded: true }`（HTTP 200，非错误）；
+ * - 确认不存在 → HTTP 404 `E_NOTFOUND_FOOD`。
+ */
+export interface BarcodeLookupResponse {
+  item: FoodItem | null;
+  degraded: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // 饮食记录（meals）：R3.5/R3.8 —— 四种记录方式
 // ---------------------------------------------------------------------------
 

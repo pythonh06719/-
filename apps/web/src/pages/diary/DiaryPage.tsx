@@ -138,7 +138,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       request = {
         loggedDate: date,
         mealType,
-        source: 'search',
+        source: payload.source ?? 'search',
         foodId: payload.food.id,
         grams: payload.grams,
         servingUnit: payload.servingUnit,
@@ -202,7 +202,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         carbG: null,
         fiberG: null,
         sodiumMg: null,
-        source: payload.kind === 'quick' ? 'quick_add' : 'search',
+        source: payload.kind === 'quick' ? 'quick_add' : (payload.source ?? 'search'),
         comboId: null,
         note: null,
         sortOrder: 0,

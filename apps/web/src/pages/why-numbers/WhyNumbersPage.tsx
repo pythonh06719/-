@@ -18,6 +18,7 @@ import {
 } from '@qsh/core';
 import type { ActivityLevel, CalorieResult, Gender } from '@qsh/core';
 import { api } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth.store';
 import { queryKeys } from '@/lib/queryClient';
 
 /**
@@ -103,9 +104,12 @@ function DerivationRow({
 }
 
 export default function WhyNumbersPage(): ReactElement {
+  // 未登录时**跳过** `/profile` 请求：避免 401 触发全局登出跳转，让本页在登出状态也可读（P3 收口）。
+  const hasToken = getAccessToken() !== null;
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
     queryFn: () => api.get<ProfileResult>('/profile'),
+    enabled: hasToken,
     retry: 0,
   });
 
@@ -221,7 +225,9 @@ export default function WhyNumbersPage(): ReactElement {
           </dl>
         ) : (
           <p className="mt-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-            完成引导问卷后，这里会用你自己的资料实时算出每一步的分解。
+            {hasToken
+              ? '完成引导问卷后，这里会用你自己的资料实时算出每一步的分解。'
+              : '登录并完成引导问卷后，这里会用你自己的资料实时算出每一步的分解。'}
           </p>
         )}
 

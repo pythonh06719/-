@@ -38,6 +38,7 @@ export const queryKeys = {
   dashboard: (date: string) => ['dashboard', date] as const,
   meals: (date: string) => ['meals', date] as const,
   foodSearch: (keyword: string, category: string) => ['foods', 'search', keyword, category] as const,
+  foodLiveSearch: (keyword: string) => ['foods', 'live-search', keyword] as const,
   foodCategories: ['foods', 'categories'] as const,
   foodRecent: ['foods', 'recent'] as const,
   foodFavorites: ['foods', 'favorites'] as const,
