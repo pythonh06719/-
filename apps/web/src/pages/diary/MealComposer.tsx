@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { FoodItem, MealComboWithItems, MealType, SearchFoodsResponse } from '@qsh/shared-types';
-import { api } from '@/lib/api';
+import type {
+  BarcodeLookupResponse,
+  ExternalFoodItem,
+  FoodItem,
+  LiveSearchResponse,
+  MealComboWithItems,
+  MealType,
+  SearchFoodsResponse,
+} from '@qsh/shared-types';
+import { ApiClientError, api } from '@/lib/api';
+import BarcodeScanner from '@/components/common/BarcodeScanner';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
@@ -10,16 +19,19 @@ import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
 
 /**
- * 记录一餐面板（pages/diary/MealComposer.tsx）—— 四种记录方式（R3.4/R3.5/R3.8/R3.9）。
+ * 记录一餐面板（pages/diary/MealComposer.tsx）—— 四种记录方式（R3.4/R3.5/R3.8/R3.9）
+ * + 在线食物库兜底 + 条码扫码（Phase C-1 / C-2）。
  *
  * **★ 3 次点击完成记录（TC-25）**：打开面板（1）→ 选食物（2）→ 点「确认记录」（3）。
  * 最近 / 收藏 / 套餐均为「一次点击直接确认」，更快。
  *
  * 搜索 / 最近 / 收藏 / 套餐接口未成功时退化为空列表并给出温和提示，不阻塞快速加卡（离线可用）。
+ * 本地无结果时**自动兜底**查在线食物库（Open Food Facts，ODbL 1.0）：用户可「加入并记录」，
+ * 复用**既有份量确认 → 确认记录**流程；上游不可用时给无负罪感提示。
  */
 
 export type ComposerSubmit =
-  | { kind: 'food'; food: FoodItem; grams: number; servingUnit: string }
+  | { kind: 'food'; food: FoodItem; grams: number; servingUnit: string; source?: 'search' | 'barcode' }
   | { kind: 'quick'; name: string; kcal: number }
   | { kind: 'combo'; comboId: number };
 
@@ -54,6 +66,10 @@ export default function MealComposer({
   const [tab, setTab] = useState<TabKey>('search');
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<FoodItem | null>(null);
+  const [selectedSource, setSelectedSource] = useState<'search' | 'barcode'>('search');
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [onlineRequested, setOnlineRequested] = useState(false);
+  const [onlineBusyId, setOnlineBusyId] = useState<string | null>(null);
   const [grams, setGrams] = useState('100');
   const [servingUnit, setServingUnit] = useState('克');
   const [quickName, setQuickName] = useState('');
@@ -66,6 +82,21 @@ export default function MealComposer({
     queryFn: () => api.get<SearchFoodsResponse>('/foods', { q: keyword, limit: 20, offset: 0 }),
     enabled: tab === 'search' && keyword.trim() !== '',
   });
+
+  const localItems = searchQuery.data?.items ?? [];
+  const localEmpty = searchQuery.data !== undefined && localItems.length === 0;
+  /** 本地为空（或用户主动点「搜索在线食物库」）时才请求在线兜底。 */
+  const wantOnline = keyword.trim() !== '' && (localEmpty || onlineRequested);
+
+  const liveQuery = useQuery({
+    queryKey: queryKeys.foodLiveSearch(keyword),
+    queryFn: () => api.get<LiveSearchResponse>('/foods/live-search', { q: keyword, limit: 10 }),
+    enabled: tab === 'search' && wantOnline,
+    retry: 0,
+  });
+
+  /** 在线兜底是否不可用（上游降级或本地请求不可用）。 */
+  const onlineDegraded = liveQuery.data?.degraded === true || liveQuery.isError;
 
   const recentQuery = useQuery({
     queryKey: queryKeys.foodRecent,
@@ -91,11 +122,48 @@ export default function MealComposer({
     }
   }, [searchQuery.isError, recentQuery.isError, favoriteQuery.isError, comboQuery.isError]);
 
-  const chooseFood = (food: FoodItem): void => {
+  const chooseFood = (food: FoodItem, source: 'search' | 'barcode' = 'search'): void => {
     const serving = resolveDefaultServing(food);
     setSelected(food);
+    setSelectedSource(source);
     setServingUnit(serving.unit);
     setGrams(String(serving.grams));
+  };
+
+  /** 加入在线食物（服务端按条码重新拉取 OFF 后幂等入库）→ 复用既有份量确认流程。 */
+  const addOnlineFood = async (item: ExternalFoodItem): Promise<void> => {
+    setOnlineBusyId(item.externalId);
+    setNote(null);
+    try {
+      const food = await api.post<FoodItem>('/foods/import-external', { externalId: item.externalId });
+      chooseFood(food, 'search');
+      setNote('已经加入到食物库，确认份量就能记下');
+    } catch {
+      setNote('这条暂时加不进来，也可以先用「快加」记下');
+    } finally {
+      setOnlineBusyId(null);
+    }
+  };
+
+  /** 扫码命中条码 → 后端先本地后在线查，命中即返回可记录的食物。 */
+  const handleBarcode = async (code: string): Promise<void> => {
+    setScannerOpen(false);
+    setNote(null);
+    try {
+      const result = await api.get<BarcodeLookupResponse>(`/foods/barcode/${code}`);
+      if (result.item !== null) {
+        chooseFood(result.item, 'barcode');
+        setNote('扫码找到啦，确认份量就能记下');
+      } else {
+        setNote('这次没扫到对应的食物，试试搜索或「快加」');
+      }
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) {
+        setNote('食物库里还没有这个条码，试试搜索或「快加」');
+      } else {
+        setNote('扫码暂时没成功，手动搜一下也可以');
+      }
+    }
   };
 
   const gramsNumber = Number(grams);
@@ -169,6 +237,7 @@ export default function MealComposer({
               onClick={() => {
                 setTab(item.key);
                 setSelected(null);
+                setSelectedSource('search');
               }}
               className={[
                 'qsh-touch-target shrink-0 rounded-full px-4 text-sm transition',
@@ -195,21 +264,101 @@ export default function MealComposer({
               搜索食物
               <input
                 value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
+                onChange={(event) => {
+                  setKeyword(event.target.value);
+                  setOnlineRequested(false);
+                }}
                 placeholder="如：番茄、米饭、拿铁"
                 className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
+
+            {/* 扫码 / 在线兜底入口 */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="qsh-touch-target rounded-full bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+              >
+                扫码查条码
+              </button>
+              {keyword.trim() !== '' && (
+                <button
+                  type="button"
+                  onClick={() => setOnlineRequested(true)}
+                  className="qsh-touch-target rounded-full bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                >
+                  搜索在线食物库
+                </button>
+              )}
+            </div>
+
             {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">搜索中…</p>}
             {searchQuery.data !== undefined && renderFoodList(searchQuery.data.items)}
-            {keyword.trim() !== '' &&
-              searchQuery.data !== undefined &&
-              searchQuery.data.items.length === 0 &&
-              !searchQuery.isFetching && (
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  没有找到这条食物，试试「快加」
-                </p>
-              )}
+
+            {/* 本地为空 → 在线兜底（Open Food Facts，ODbL 1.0） */}
+            {keyword.trim() !== '' && localEmpty && !searchQuery.isFetching && (
+              <div className="mt-3">
+                {liveQuery.isFetching && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">本地没有，正在帮你找在线食物库…</p>
+                )}
+
+                {onlineDegraded && (
+                  <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                    在线食物库暂时连不上，先用本地结果或「快加」记下也没问题。
+                  </p>
+                )}
+
+                {liveQuery.data !== undefined &&
+                  !liveQuery.data.degraded &&
+                  liveQuery.data.items.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">在线结果</h3>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                          Open Food Facts · ODbL 1.0
+                        </span>
+                      </div>
+                      <ul className="mt-2 space-y-2">
+                        {liveQuery.data.items.map((item) => (
+                          <li
+                            key={item.externalId}
+                            className="rounded-xl px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                                  {item.name}
+                                </p>
+                                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
+                                  {item.brand !== null ? `${item.brand} · ` : ''}每 100g {item.kcalPer100g} kcal
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={onlineBusyId !== null}
+                                onClick={() => void addOnlineFood(item)}
+                                className="qsh-touch-target shrink-0 rounded-lg bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
+                              >
+                                {onlineBusyId === item.externalId ? '加入中…' : '加入并记录'}
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                        数据来自 Open Food Facts（ODbL 1.0），加入后会存到你的食物库。
+                      </p>
+                    </>
+                  )}
+
+                {liveQuery.data !== undefined &&
+                  !liveQuery.data.degraded &&
+                  liveQuery.data.items.length === 0 && (
+                    <p className="text-sm text-slate-500 dark:text-slate-400">没有找到这条食物，试试「快加」</p>
+                  )}
+              </div>
+            )}
           </div>
         )}
 
@@ -352,7 +501,7 @@ export default function MealComposer({
                   setNote('克数填一个大于 0 的数字就好');
                   return;
                 }
-                void run({ kind: 'food', food: selected, grams: gramsValue, servingUnit });
+                void run({ kind: 'food', food: selected, grams: gramsValue, servingUnit, source: selectedSource });
               }}
               className="qsh-touch-target flex-1 rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
             >
@@ -365,6 +514,13 @@ export default function MealComposer({
           )}
         </div>
       </div>
+
+      {scannerOpen && (
+        <BarcodeScanner
+          onClose={() => setScannerOpen(false)}
+          onDetected={(code) => void handleBarcode(code)}
+        />
+      )}
     </div>
   );
 }

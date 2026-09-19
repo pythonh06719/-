@@ -11,12 +11,16 @@
 | 热量引擎 | Mifflin-St Jeor 预算计算，强制安全下限（女 1200 / 男 1500）与缺口上限（TDEE × 30%），纯函数、可溯源 |
 | 记录与反馈 | 饮食日记（3 次点击记一餐）、体重趋势、运动 MET 换算、饮水、习惯打卡 |
 | 生活化工具 | 外卖换算、零食救赎（含运动等价换算）、聚餐模式、饮品计算、断食计时 |
+| 在线食物库兜底 | 本地查不到时经服务端代理检索 Open Food Facts（条码识别 + 关键词），归一化为统一结构、过滤异常值，上游不可用则优雅降级 + 无负担提示；「加入并记录」入库复用既有流程 |
+| 条码扫码 | 记录餐次时用手机摄像头识别包装条码（原生 `BarcodeDetector`，零额外依赖），镜头权限被拒 / 不支持时回退手输；画面仅在本地识别、不上传 |
 | 报告与 AI | 周报 + 10 项微量营养素参考；AI 助手（医疗意图安全闸、单日 50 次限额、规则兜底降级，key 仅存服务端） |
 | 数据主权 | CSV 导出 / 导入（含公式注入防护）、账号硬删除、隐私承诺（无广告 SDK、无第三方行为分析） |
+| 可解释性 | `/why-numbers` 逐项解释每个数字的来源与算法，未登录也能打开查看纯解释（不触发登录跳转） |
 | 部署 | `docker compose up -d --build` 一键起（nginx + NestJS + 可选 PostgreSQL），容器自动建表并幂等灌种子 |
-| 测试 | core 85 / api 57 / web 50 = **192 用例全绿**，core 覆盖率 99.7% |
+| 测试 | core 85 / api 74 / web 55 = **214 用例全绿**，core 覆盖率 99.7% |
 
 食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
+运行时还可经服务端代理**在线兜底检索 Open Food Facts**（ODbL 1.0），查询与入库均不向浏览器泄露上游地址，聚合限流 20 次/分。
 
 ## 产品一览
 
@@ -77,7 +81,7 @@ npm test
 因此本地请**显式指定 vitest 入口**（绕过 workspace 脚本的版本解析）：
 
 ```bash
-# 前端（apps/web，50 用例）
+# 前端（apps/web，55 用例）
 cd apps/web && node ../../node_modules/vitest/vitest.mjs run
 # 等价写法（仓库根）
 node node_modules/vitest/vitest.mjs run --root apps/web

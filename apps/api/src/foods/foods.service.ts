@@ -1,12 +1,26 @@
 import { Injectable } from '@nestjs/common';
 
-import type { FoodItem } from '@qsh/shared-types';
+import type {
+  BarcodeLookupResponse,
+  ExternalFoodItem,
+  FoodItem,
+  LiveSearchResponse,
+} from '@qsh/shared-types';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
 import { toFoodItem } from '../common/mappers/entity.mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
+import {
+  BARCODE_PATTERN,
+  OFF_LICENSE,
+  OFF_SOURCE,
+  fetchOpenFoodFactsProduct,
+  searchOpenFoodFacts,
+} from './external/off.client';
+import type { ExternalFoodDraft } from './external/off.client';
 import { keywordWhere, visibleFoodWhere } from './foods.util';
 import { VectorSearchService } from './rag/vector-search.service';
 import type { RagFoodHit } from './rag/vector-search.service';
@@ -36,6 +50,15 @@ export interface FoodSearchResult {
  */
 @Injectable()
 export class FoodsService {
+  /** 在线搜索结果缓存 TTL（10 分钟，Phase C-1）。 */
+  private static readonly LIVE_CACHE_TTL_MS = 10 * 60_000;
+
+  /** 在线搜索结果缓存最大条数（超出按最旧淘汰）。 */
+  private static readonly LIVE_CACHE_MAX = 200;
+
+  /** 进程内在线搜索缓存（`key = q|limit`）。仅缓存**成功**结果，降级不缓存。 */
+  private readonly liveCache = new Map<string, { at: number; value: LiveSearchResponse }>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly vectorSearch: VectorSearchService,
@@ -169,6 +192,172 @@ export class FoodsService {
   async removeFavorite(userId: number, foodId: number): Promise<{ favorited: false }> {
     await this.prisma.foodFavorite.deleteMany({ where: { userId, foodItemId: foodId } });
     return { favorited: false };
+  }
+
+  // -------------------------------------------------------------------------
+  // 在线食物库兜底（R3.6 / Phase C-1）：Open Food Facts 只读代理 + 幂等导入
+  // -------------------------------------------------------------------------
+
+  /**
+   * 在线搜索（Open Food Facts 只读代理）。
+   *
+   * 与本地检索互补：前端仅当本地命中为空（或用户主动点「搜索在线食物库」）时才调用。
+   * - 结果映射为 `FoodItem` 形状（无 DB `id`，带 `source: 'openfoodfacts'` / `license` / `sourceUrl`）；
+   * - 命中进程内缓存（TTL 10 分钟 / 上限 200 条，**仅缓存成功结果**，降级不缓存）；
+   * - 上游不可用 → `degraded: true` + 空数组（HTTP 200，绝不 500）；
+   * - **只转发搜索词**，不携带任何用户数据。
+   */
+  async liveSearch(userId: number, dto: LiveSearchDto): Promise<LiveSearchResponse> {
+    void userId; // 鉴权在控制器层完成；代理查询不涉及用户数据
+    const query = (dto.q ?? '').trim();
+    const limit = dto.limit ?? 10;
+
+    if (query.length === 0) {
+      return this.liveResponse([], 0, false);
+    }
+
+    const cacheKey = `${query}|${limit}`;
+    const cached = this.liveCache.get(cacheKey);
+    if (cached !== undefined && Date.now() - cached.at < FoodsService.LIVE_CACHE_TTL_MS) {
+      return cached.value;
+    }
+
+    const outcome = await searchOpenFoodFacts(query, limit);
+    const items = outcome.drafts.map((draft) => this.toExternalItem(draft));
+    const value = this.liveResponse(items, outcome.skipped, outcome.degraded);
+
+    if (!outcome.degraded) {
+      this.rememberLive(cacheKey, value);
+    }
+    return value;
+  }
+
+  /**
+   * 把一条在线食物**导入**本地食物库（幂等）。
+   *
+   * **安全**：营养数据一律**重新从 OFF 拉取**，绝不采信客户端传入的任何热量 / 宏量字段。
+   * - 命中已有 `barcode` → 直接返回（离线可用，不重复插）；
+   * - 上游不可用 → 503 `E_EXTERNAL_UNAVAILABLE`（可读，不 500）；
+   * - 上游确认不存在 → 404 `E_NOTFOUND_FOOD`。
+   */
+  async importExternal(userId: number, externalId: string): Promise<FoodItem> {
+    void userId; // 开放数据库全局可见；入库归属 NULL（source=openfoodfacts）
+    const code = externalId.trim();
+    if (!BARCODE_PATTERN.test(code)) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '条码应为 8–14 位数字', {
+        externalId: '条码应为 8–14 位数字',
+      });
+    }
+
+    const existing = await this.prisma.foodItem.findFirst({ where: { barcode: code } });
+    if (existing !== null) {
+      return toFoodItem(existing);
+    }
+
+    const { draft, degraded } = await fetchOpenFoodFactsProduct(code);
+    if (degraded) {
+      throw new ApiException(503, ERROR_CODES.EXTERNAL_UNAVAILABLE, '在线食物库暂时连不上，稍后再试或手动添加');
+    }
+    if (draft === null) {
+      throw new ApiException(404, ERROR_CODES.NOTFOUND_FOOD, '在线食物库里没有这条');
+    }
+    return this.persistDraft(draft);
+  }
+
+  /**
+   * 条码查询（R3.6 / Phase C-2）：先查本地库，未命中再查 OFF，命中即**幂等入库**返回。
+   * - 非法格式 → 400；上游不可用 → `{ item: null, degraded: true }`（HTTP 200，非错误）；
+   * - 确认不存在 → 404 `E_NOTFOUND_FOOD`。
+   */
+  async findByBarcode(userId: number, rawCode: string): Promise<BarcodeLookupResponse> {
+    void userId; // 同上：仅按条码查询，不涉及用户数据
+    const code = (rawCode ?? '').trim();
+    if (!BARCODE_PATTERN.test(code)) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '条码应为 8–14 位数字', {
+        code: '条码应为 8–14 位数字',
+      });
+    }
+
+    const local = await this.prisma.foodItem.findFirst({ where: { barcode: code } });
+    if (local !== null) {
+      return { item: toFoodItem(local), degraded: false };
+    }
+
+    const { draft, degraded } = await fetchOpenFoodFactsProduct(code);
+    if (degraded) {
+      return { item: null, degraded: true };
+    }
+    if (draft === null) {
+      throw new ApiException(404, ERROR_CODES.NOTFOUND_FOOD, '没有找到这个条码');
+    }
+    return { item: await this.persistDraft(draft), degraded: false };
+  }
+
+  /** 组装在线搜索响应（统一带来源与许可）。 */
+  private liveResponse(
+    items: ExternalFoodItem[],
+    skipped: number,
+    degraded: boolean,
+  ): LiveSearchResponse {
+    return { items, found: items.length, skipped, degraded, source: OFF_SOURCE, license: OFF_LICENSE };
+  }
+
+  /** 草稿 → 契约 `ExternalFoodItem`。 */
+  private toExternalItem(draft: ExternalFoodDraft): ExternalFoodItem {
+    return {
+      externalId: draft.externalId,
+      name: draft.name,
+      category: draft.category,
+      kcalPer100g: draft.kcalPer100g,
+      proteinGPer100g: draft.proteinGPer100g,
+      fatGPer100g: draft.fatGPer100g,
+      carbGPer100g: draft.carbGPer100g,
+      servingUnits: draft.servingUnits,
+      defaultServingGrams: draft.defaultServingGrams,
+      barcode: draft.barcode,
+      brand: draft.brand,
+      sourceUrl: draft.sourceUrl,
+      source: OFF_SOURCE,
+      license: OFF_LICENSE,
+    };
+  }
+
+  /** 写入内存缓存（超出上限时淘汰最旧一条）。 */
+  private rememberLive(key: string, value: LiveSearchResponse): void {
+    if (this.liveCache.size >= FoodsService.LIVE_CACHE_MAX) {
+      const oldestKey = this.liveCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.liveCache.delete(oldestKey);
+      }
+    }
+    this.liveCache.set(key, { at: Date.now(), value });
+  }
+
+  /**
+   * 把 OFF 草稿幂等写入 `food_items`：
+   * `source=openfoodfacts`（`visibleFoodWhere` 视为全局可见）、归属 `NULL`、`barcode` 唯一键 upsert。
+   */
+  private async persistDraft(draft: ExternalFoodDraft): Promise<FoodItem> {
+    const row = await this.prisma.foodItem.upsert({
+      where: { barcode: draft.barcode },
+      create: {
+        name: draft.name,
+        aliases: JSON.stringify([]),
+        category: draft.category,
+        kcalPer100g: draft.kcalPer100g,
+        proteinGPer100g: draft.proteinGPer100g,
+        fatGPer100g: draft.fatGPer100g,
+        carbGPer100g: draft.carbGPer100g,
+        servingUnits: JSON.stringify(draft.servingUnits),
+        defaultServingGrams: draft.defaultServingGrams,
+        barcode: draft.barcode,
+        source: OFF_SOURCE,
+        createdByUserId: null,
+        isVerified: false,
+      },
+      update: {},
+    });
+    return toFoodItem(row);
   }
 
   /**

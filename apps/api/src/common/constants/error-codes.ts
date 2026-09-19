@@ -46,6 +46,9 @@ export const ERROR_CODES = {
   LIMIT_THROTTLE: 'E_LIMIT_THROTTLE',
   LIMIT_AI: 'E_LIMIT_AI',
 
+  // 外部依赖（Phase C：在线食物库兜底 / 条码查询）
+  EXTERNAL_UNAVAILABLE: 'E_EXTERNAL_UNAVAILABLE',
+
   // 内部
   INTERNAL: 'E_INTERNAL',
 } as const;
