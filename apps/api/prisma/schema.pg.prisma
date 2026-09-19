@@ -5,16 +5,29 @@
 // 与 schema.prisma（SQLite，MVP）为**同一模型的两套 provider 快照**，差异（ARCHITECTURE §3.2）：
 //   - provider：postgresql
 //   - 自增主键：BigInt @default(autoincrement())（对应 BIGINT ... IDENTITY）
-//   - JSON 列：Json（JSONB），SQLite 下为 String
+//   - JSON 列：两套 provider **一律 String 存 JSON 文本**（应用层 JSON.parse/stringify）——
+//     见下方「JSON 语义列」说明；**不声明为 Json**。
 //   - 日期/时间戳：DateTime（@db.Date / @db.Timestamptz(6)），SQLite 下为 String
 //   - 布尔：Boolean（BOOLEAN），SQLite 下由 Prisma 归一为 0/1
 //
-// 本文件仅供生产库校验/迁移参照，T02 阶段不对其执行 generate（避免覆盖 SQLite 客户端）。
+// 「JSON 语义列」为何用 String 而非 Json（与 schema.prisma 完全一致）：
+//   user_profiles.dietary_preference / conditions、user_goals.macro_ratio、
+//   weight_goal_history.macro_ratio、food_items.aliases / serving_units、ai_traces.steps / pending_tool。
+//   代码契约就是**字符串**：写 `JSON.stringify(...)`、读 `JSON.parse(...)`、置空为 `null`。
+//   若声明为 Json 会导致：(a) `pendingTool: null` 与 `where.pendingTool.not: null` 在 PG 客户端下
+//   类型不匹配（TS2322，需 Prisma.DbNull）；(b) `aliases: { contains }` 这类 StringFilter 无法表达；
+//   (c) 存储形状从「JSON 文本」变成「JSON 字符串标量」，与 dev 不一致。
+//
+// 生产（render.yaml）：build 前先 `prisma generate --schema schema.pg.prisma`，让 tsc 跑在
+//   **PG 客户端类型**上 —— 两套 schema 一旦漂移，构建期即红，而非坏在线上运行期。
+//   为此本 generator 的 output 必须留空（默认位置＝应用 `from '@prisma/client'` 解析到的位置）。
 // =============================================================================
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated-pg"
+  // ⚠️ 不要指定 output：生产运行时客户端必须生成到默认位置（应用统一 `from '@prisma/client'`）。
+  //    指定 output 会把客户端写到无人引用的目录 → 生产拿到 postgresql:// URL 却被 SQLite 客户端
+  //    拒绝（`the URL must start with the protocol file:`）→ API 起不来（历史 P0 生产缺陷）。
 }
 
 datasource db {
@@ -50,6 +63,7 @@ model User {
   fastingSettings   FastingSettings?
   fastingSessions   FastingSession[]
   aiUsage           AiUsage[]
+  aiTraces          AiTrace[]
 
   @@map("users")
 }
@@ -79,8 +93,8 @@ model UserProfile {
   birthDate             DateTime  @map("birth_date") @db.Date
   heightCm              Float     @map("height_cm")
   activityLevel         String    @map("activity_level")
-  dietaryPreference     Json      @default("[]") @map("dietary_preference")
-  conditions            Json      @default("[]") // 敏感字段（D3）
+  dietaryPreference     String    @default("[]") @map("dietary_preference")
+  conditions            String    @default("[]") // 敏感字段（D3）
   disclaimerAcceptedAt  DateTime? @map("disclaimer_accepted_at") @db.Timestamptz(6)
   onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(6)
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -100,7 +114,7 @@ model UserGoal {
   targetWeightKg Float    @map("target_weight_kg")
   targetWeeks    Int      @map("target_weeks")
   weeklyLossKg   Float    @map("weekly_loss_kg")
-  macroRatio     Json     @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  macroRatio     String   @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
   isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -120,7 +134,7 @@ model WeightGoalHistory {
   targetWeightKg Float    @map("target_weight_kg")
   targetWeeks    Int      @map("target_weeks")
   weeklyLossKg   Float    @map("weekly_loss_kg")
-  macroRatio     Json     @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
+  macroRatio     String   @default("{\"protein\":25,\"fat\":25,\"carb\":50}") @map("macro_ratio")
   effectiveFrom  DateTime @map("effective_from") @db.Date
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -174,7 +188,7 @@ model FoodItem {
   id                       BigInt   @id @default(autoincrement())
   name                     String
   namePinyin               String?  @map("name_pinyin")
-  aliases                  Json     @default("[]")
+  aliases                  String   @default("[]")
   category                 String   @default("other")
   kcalPer100g              Float    @map("kcal_per_100g")
   proteinGPer100g          Float    @default(0) @map("protein_g_per_100g")
@@ -191,7 +205,7 @@ model FoodItem {
   b12UgPer100g             Float?   @map("b12_ug_per_100g")
   magnesiumMgPer100g       Float?   @map("magnesium_mg_per_100g")
   /// JSON array<ServingUnit>；结构见 docs/ARCHITECTURE.md §3.3
-  servingUnits             Json     @default("[]") @map("serving_units")
+  servingUnits             String   @default("[]") @map("serving_units")
   defaultServingGrams      Float?   @map("default_serving_grams")
   barcode                  String?  @unique(map: "ux_food_barcode")
   source                   String   @default("builtin")
@@ -461,4 +475,32 @@ model AiUsage {
 
   @@unique([userId, usageDate, feature], map: "ux_ai_usage_user_day_feature")
   @@map("ai_usage")
+}
+
+// -----------------------------------------------------------------------------
+// 21. ai_traces —— Agent 执行轨迹（可观测性：工具调用链 / 耗时 / token / 结果）
+//   与 schema.prisma 的 AiTrace 逐字段对齐；按本文件（PG）既有写法转换类型：
+//     - 自增主键 → BigInt @default(autoincrement())
+//     - JSON 文本列（steps / pending_tool） → String（存 JSON 文本，应用层 JSON.parse/stringify）
+//     - 时间戳 → DateTime @db.Timestamptz(6)
+//   生产建表走 `prisma db push --schema prisma/schema.pg.prisma`，本模型缺失会
+//   导致线上 `/api/ai/agent` 因「表不存在」500（P0 回归点，故由 check-schema-parity 守卫）。
+// -----------------------------------------------------------------------------
+model AiTrace {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  question    String
+  status      String
+  answer      String?
+  steps       String
+  pendingTool String?  @map("pending_tool")
+  toolCalls   Int      @default(0) @map("tool_calls")
+  tokens      Int      @default(0)
+  durationMs  Int      @default(0) @map("duration_ms")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, id], map: "ix_ai_traces_user_id")
+  @@map("ai_traces")
 }

@@ -36,6 +36,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Schema 一致性门禁（防 SQLite/PG 两套 schema model 漂移）
+        # P0 防复发：两套 schema 的 model 集合必须一致，否则生产建表会漏表 → 线上 500。
+        # 放在 build 之前，不一致立即阻断。
+        run: node apps/api/scripts/check-schema-parity.mjs
       - name: 后端构建 + e2e（pretest 自动建表并灌种子数据）
         run: npm test -w @qsh/api
       - name: Agent 评测（回放 fixtures，离线零成本）
