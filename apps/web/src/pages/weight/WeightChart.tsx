@@ -27,9 +27,18 @@ export default function WeightChart({
   weights,
   movingAverage,
 }: WeightChartProps): ReactElement {
-  const option = useMemo(
-    () => ({
-      grid: { left: 40, right: 16, top: 24, bottom: 32 },
+  const option = useMemo(() => {
+    // 单数据点时 `scale: true` 会回落到底层默认区间（如 40–160），点被压在中间；
+    // 手动把 y 轴收紧到 [数值-3, 数值+3]，并保证不出现负体重。
+    const singleValue = weights.length === 1 ? weights[0] : undefined;
+    const yAxisRange =
+      typeof singleValue === 'number'
+        ? { min: Math.max(0, singleValue - 3), max: singleValue + 3 }
+        : { scale: true };
+
+    return {
+      // bottom 留出图例区，避免图例与横轴日期文字重叠压字
+      grid: { left: 40, right: 16, top: 24, bottom: 56 },
       tooltip: { trigger: 'axis' },
       xAxis: {
         type: 'category',
@@ -38,7 +47,7 @@ export default function WeightChart({
       },
       yAxis: {
         type: 'value',
-        scale: true,
+        ...yAxisRange,
         axisLabel: { fontSize: 10, color: '#7d9489' },
         splitLine: { lineStyle: { color: 'rgba(125,148,137,0.18)' } },
       },
@@ -63,9 +72,8 @@ export default function WeightChart({
           itemStyle: { color: '#248263' },
         },
       ],
-    }),
-    [dates, weights, movingAverage],
-  );
+    };
+  }, [dates, weights, movingAverage]);
 
   return <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge lazyUpdate />;
 }
