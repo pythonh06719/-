@@ -213,11 +213,11 @@ export default function DashboardPage(): ReactElement {
   const summaryLine = mealSummaryLine({ intakeKcal: data.intakeKcal, progressRatio: data.progressRatio });
   const summaryTag = mealSummaryTag({ intakeKcal: data.intakeKcal, progressRatio: data.progressRatio });
   const isEmptyToday = mealCount === 0 && data.intakeKcal <= 0;
-  // 摘要卡主行：无参考预算 → 中性引导；今天没记 → 空态；其余 → 生活化分档总结
+  // 摘要卡主行：无参考预算 → 中性引导；今天没记 → 动作导向（不与问候卡重复）；其余 → 生活化分档总结
   const summaryHeadline = data.budget == null
     ? COPY.noBudgetSummary
     : isEmptyToday
-      ? COPY.emptyTodayData
+      ? COPY.emptyTodayAction
       : summaryLine;
   const encouragement =
     data.encouragement.trim() !== '' ? data.encouragement : encouragementForHour(hour);
@@ -289,14 +289,17 @@ export default function DashboardPage(): ReactElement {
         </div>
 
         <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <ProgressRing
-            value={data.progressRatio}
-            size={120}
-            strokeWidth={10}
-            centerValue={`${Math.round(Math.min(data.progressRatio, 9.99) * 100)}%`}
-            centerLabel="今日进度"
-            ariaLabel={`今日热量进度 ${Math.round(data.progressRatio * 100)}%`}
-          />
+          {/* 有记录才渲染进度环；空态日降权为「一句叙事 + 直达记早餐」，不再强调 0% */}
+          {!isEmptyToday && (
+            <ProgressRing
+              value={data.progressRatio}
+              size={96}
+              strokeWidth={9}
+              centerValue={`${Math.round(Math.min(data.progressRatio, 9.99) * 100)}%`}
+              centerLabel="今日进度"
+              ariaLabel={`今日热量进度 ${Math.round(data.progressRatio * 100)}%`}
+            />
+          )}
           <div className="flex-1">
             {/* 主行：生活化表达（数字降权，D 修） */}
             <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
@@ -307,16 +310,25 @@ export default function DashboardPage(): ReactElement {
               )}
               {summaryHeadline}
             </p>
-            {/* 次要行：真实数字，小字号等宽呈现 */}
-            <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
-              {data.remainingKcal < 0
-                ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
-                : (
-                  <>
-                    还能吃 <span>{remainingDisplay}</span> {energyLabel(unit)}
-                  </>
-                )}
-            </p>
+            {/* 空态日：给一个直达动作；有记录日：真实数字，小字号等宽呈现 */}
+            {isEmptyToday ? (
+              <Link
+                to="/diary"
+                className="qsh-touch-target mt-2 inline-flex items-center text-sm font-medium text-brand-700 dark:text-brand-300"
+              >
+                去记早餐 →
+              </Link>
+            ) : (
+              <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
+                {data.remainingKcal < 0
+                  ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
+                  : (
+                    <>
+                      还能吃 <span>{remainingDisplay}</span> {energyLabel(unit)}
+                    </>
+                  )}
+              </p>
+            )}
           </div>
         </div>
       </div>
