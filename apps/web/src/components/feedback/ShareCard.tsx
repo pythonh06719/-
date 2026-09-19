@@ -38,13 +38,14 @@ export function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardProps): 
 
   const W = 720;
   const H = 960;
-  const BRAND = '#14b8a6';
+  // 品牌色（与 tailwind 的 brand-600 一致；此前沿用旧青绿色，统一到 brand 后对比度更高）
+  const BRAND = '#248263';
   const INK = '#1e293b';
   const SUB = '#64748b';
 
   // 背景：浅色渐变（固定浅色，保证导出图片在深色模式下也可读）
   const gradient = ctx.createLinearGradient(0, 0, 0, H);
-  gradient.addColorStop(0, '#f0fdfa');
+  gradient.addColorStop(0, '#f0f7f4');
   gradient.addColorStop(1, '#ffffff');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, W, H);
@@ -79,7 +80,7 @@ export function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardProps): 
     const x = 56 + index * 204;
     const y = 220;
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#ccfbf1';
+    ctx.strokeStyle = '#d9ede4';
     ctx.lineWidth = 2;
     ctx.beginPath();
     // roundRect 兼容：手动圆角路径（旧浏览器 canvas 无 roundRect）
@@ -181,7 +182,7 @@ export default function ShareCard(props: ShareCardProps): ReactElement {
       <button
         type="button"
         onClick={handleDownload}
-        className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
       >
         生成分享卡片
       </button>

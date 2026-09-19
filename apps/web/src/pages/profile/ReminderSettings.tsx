@@ -65,7 +65,7 @@ export default function ReminderSettings(): ReactElement {
           aria-label={COPY.reminderToggleTitle}
           onClick={() => void handleToggle()}
           className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-            enabled ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'
+            enabled ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-600'
           }`}
         >
           <span
@@ -76,7 +76,7 @@ export default function ReminderSettings(): ReactElement {
         </button>
       </div>
       {notice !== null && (
-        <p role="status" className="mt-3 text-sm text-teal-600 dark:text-teal-300">
+        <p role="status" className="mt-3 text-sm text-brand-600 dark:text-brand-300">
           {notice}
         </p>
       )}

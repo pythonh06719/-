@@ -156,18 +156,18 @@ export default function ExercisePage(): ReactElement {
         />
 
         <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
-          大约消耗 <span className="text-xl font-bold text-teal-600 dark:text-teal-400">{previewKcal}</span> kcal
+          大约消耗 <span className="text-xl font-bold text-brand-600 dark:text-brand-400">{previewKcal}</span> kcal
         </p>
 
         <button
           type="button"
-          className="mt-4 w-full rounded-xl bg-teal-600 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-xl bg-brand-600 px-4 py-3 font-medium text-white disabled:opacity-50"
           disabled={logExercise.isPending}
           onClick={() => logExercise.mutate()}
         >
           记下这次运动
         </button>
-        {feedback ? <p className="mt-2 text-sm text-teal-700 dark:text-teal-400">{feedback}</p> : null}
+        {feedback ? <p className="mt-2 text-sm text-brand-700 dark:text-brand-400">{feedback}</p> : null}
 
         <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
           <p className="text-sm text-slate-600 dark:text-slate-300">

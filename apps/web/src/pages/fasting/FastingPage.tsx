@@ -189,7 +189,7 @@ export default function FastingPage(): ReactElement {
             </button>
           </>
         )}
-        {notice ? <p className="mt-3 text-sm text-teal-700 dark:text-teal-400">{notice}</p> : null}
+        {notice ? <p className="mt-3 text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
       </section>
     </div>

@@ -331,6 +331,13 @@ export default function DashboardPage(): ReactElement {
             )}
           </div>
         </div>
+
+        <Link
+          to="/why-numbers"
+          className="mt-3 inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
+        >
+          这些数字是怎么来的 →
+        </Link>
       </div>
 
       {/* 喝水：改说「第几杯」，真实毫升作为次要文字 */}

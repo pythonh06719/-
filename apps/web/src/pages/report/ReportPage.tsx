@@ -100,7 +100,7 @@ export default function ReportPage(): ReactElement {
                   <span className="w-16 shrink-0">{day.date.slice(5)}</span>
                   <span className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                     <span
-                      className="block h-full rounded-full bg-teal-400"
+                      className="block h-full rounded-full bg-brand-400"
                       style={{ width: `${Math.round((day.intakeKcal / maxIntake) * 100)}%` }}
                     />
                   </span>
@@ -135,7 +135,7 @@ export default function ReportPage(): ReactElement {
                     </div>
                     <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                       <div
-                        className={`h-full rounded-full ${onTrack ? 'bg-teal-400' : 'bg-amber-300'}`}
+                        className={`h-full rounded-full ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
                         style={{ width: `${percent}%` }}
                         role="meter"
                         aria-valuenow={percent}
