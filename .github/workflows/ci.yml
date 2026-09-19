@@ -11,8 +11,8 @@ jobs:
     name: 引擎单测门禁（P0）
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -30,12 +30,16 @@ jobs:
       # SQLite 相对 schema 目录解析 → apps/api/prisma/dev.db（与本地 .env 一致）
       DATABASE_URL: file:./dev.db
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Schema 一致性门禁（防 SQLite/PG 两套 schema model 漂移）
+        # P0 防复发：两套 schema 的 model 集合必须一致，否则生产建表会漏表 → 线上 500。
+        # 放在 build 之前，不一致立即阻断。
+        run: node apps/api/scripts/check-schema-parity.mjs
       - name: 后端构建 + e2e（pretest 自动建表并灌种子数据）
         run: npm test -w @qsh/api
       - name: Agent 评测（回放 fixtures，离线零成本）
@@ -48,8 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: core-engine-gate
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm

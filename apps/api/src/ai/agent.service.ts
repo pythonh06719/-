@@ -17,7 +17,7 @@ import {
   MEDICAL_REPLY,
 } from './ai.constants';
 import { AgentToolError, createAgentTools } from './agent-tools';
-import type { AgentTool, AgentToolContext } from './agent-tools';
+import type { AgentTool, AgentToolContext, AgentToolResult } from './agent-tools';
 import { LLM_CHAT_WITH_TOOLS } from './llm.client';
 import type { LlmChatWithToolsFn, LlmMessage } from './llm.client';
 import { isAiConfigured } from './llm.client';
@@ -361,6 +361,12 @@ export class AgentService {
   /**
    * 确认并执行待办写操作（human-in-the-loop 的第二半）。
    * 只能确认自己的轨迹，且只能确认 `pendingTool` 中记录的**那一次**调用 —— 防止被改参重放。
+   *
+   * 并发安全（P0 修复）：读 trace → 校验 → 执行写 → 清空 pendingTool 的朴素写法，
+   * 在并发（双击 / 重放 / 网络重试）下会因两个请求都通过 `!trace.pendingTool` 检查而**双写**。
+   * 这里改为**条件更新原子抢占**：只有仍带 `pendingTool` 的那一次能把自己的 `pendingTool`
+   * 置空（count=1），其余请求 count=0 → 直接拒绝，从而保证「同一待办最多执行一次」。
+   * 抢占后若 `tool.run()` 失败，则把 `pendingTool` 还原回去，让用户仍可重试（不吞掉原始错误）。
    */
   async confirm(userId: number, traceId: number): Promise<{
     status: 'answered';
@@ -373,6 +379,7 @@ export class AgentService {
       throw new ApiException(404, ERROR_CODES.NOTFOUND_RESOURCE, '没有找到这次待确认的操作');
     }
     if (!trace.pendingTool) {
+      // 顺序重复确认（上一次已处理完，pendingTool 已清空）→ 可读的 400
       throw new ApiException(400, ERROR_CODES.VALID_INPUT, '这次会话没有待确认的操作');
     }
 
@@ -389,9 +396,30 @@ export class AgentService {
       throw new ApiException(400, ERROR_CODES.VALID_INPUT, '该操作不支持确认执行');
     }
 
-    const ctx: AgentToolContext = { userId, dateKey: todayLocalKey() };
-    const result = await tool.run(pending.args, ctx);
+    // ① 原子抢占：仅当 pendingTool 仍非空时置空。count=0 说明本用户的另一并发请求已抢到并处理，
+    //    此请求必须放弃执行，避免第二次 tool.run() 落库（否则会重复记两餐）。
+    const claimed = await this.prisma.aiTrace.updateMany({
+      where: { id: traceId, userId, pendingTool: { not: null } },
+      data: { pendingTool: null },
+    });
+    if (claimed.count === 0) {
+      throw new ApiException(409, ERROR_CODES.VALID_DUPLICATE, '这次操作已经处理过了，请勿重复确认');
+    }
 
+    // ② 抢占成功后执行；失败则还原 pendingTool（用户可重试），并原样抛出错误（不静默吞掉）
+    const ctx: AgentToolContext = { userId, dateKey: todayLocalKey() };
+    let result: AgentToolResult;
+    try {
+      result = await tool.run(pending.args, ctx);
+    } catch (error) {
+      await this.prisma.aiTrace.updateMany({
+        where: { id: traceId, userId },
+        data: { pendingTool: trace.pendingTool },
+      });
+      throw error;
+    }
+
+    // ③ 成功后按原逻辑收尾（对外响应形状保持不变）
     const steps = JSON.parse(trace.steps) as AgentStep[];
     steps.push({ index: steps.length, type: 'tool', tool: pending.tool, args: pending.args, result: result.content });
 

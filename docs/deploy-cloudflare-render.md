@@ -95,3 +95,4 @@ CORS_ORIGINS = https://qingshenghuo.pages.dev,http://localhost:5173
 - [ ] **健康检查**：`curl -s https://<你的-api-域名>/api/health` 返回 200，且响应形如 `{"data":{"status":"ok",...},"error":null}`。
 - [ ] **端到端 AI 验证**：在前端跑一次 AI 问答，返回应为**模型生成**的答案（而非固定规则兜底文案），说明 `AI_API_KEY` 生效。
 - [ ] **免费档注意事项**：Render 免费 Web Service 在一段时间无请求后会休眠（冷启动需数秒）；免费 Postgres 有存储/连接数配额，可能因闲置被暂停，长期 Demo 需留意唤醒与配额。
+- [ ] **⚠️ 仅当库是「旧的已建库」时才需注意**：本次把 PG 侧的 8 个 JSON 契约列由 `Json` 改成了 `String`（`TEXT`）。若目标库是**早期用旧 schema 建过**的（这些列已是 `JSONB`），`prisma db push` 会把 `JSONB → TEXT` 视为潜在破坏性变更并要求 `--accept-data-loss`，否则**构建会红**。处理方式二选一：①**全新库**（首次部署）→ 无需任何操作；②已建库 → 先手工 `ALTER TABLE … ALTER COLUMN … TYPE text USING …::text`，或临时在 buildCommand 的 `db push` 后加 `--accept-data-loss`（**仅在确认无重要数据时**，之后记得移除该 flag）。

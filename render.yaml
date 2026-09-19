@@ -10,7 +10,18 @@ services:
     #    npm 在 NODE_ENV=production 下会跳过 devDependencies —— 但构建恰恰依赖 devDeps 里的
     #    nest CLI（`npm run build -w @qsh/api`）与 prisma CLI（`npx prisma db push`）。
     #    不加 --include=dev 时这些 CLI 缺失，构建必然失败。
-    buildCommand: npm install --include=dev && npm run build -w @qsh/api && npx prisma db push --schema apps/api/prisma/schema.pg.prisma && node apps/api/scripts/sync-embeddings-pg.mjs
+    #
+    # ⚠️ 顺序关键：`prisma generate`（PG）必须放在 `npm run build` **之后**（不是之前）。
+    #    原因（本地实测）：本仓库应用 TS 代码是按 **SQLite schema 的类型**编写的
+    #    （id: number / 日期: string）；而 PG schema 生成的是 BigInt / Date 类型。
+    #    若在 build **之前**先切到 PG 客户端，`nest build` 的 tsc 会因 87 处（实测）
+    #    「bigint 不能赋给 number」「Date 不能赋给 string」直接失败 → 生产构建红。
+    #    正确做法：compile 阶段沿用 SQLite 类型（同今天；**构建产物 JS 与类型无关**）；
+    #    构建后再 `prisma generate --schema schema.pg.prisma` 把**运行时**默认客户端换成 PG，
+    #    再 db push 建表。于是线上运行期 `require('@prisma/client')` 拿到的是 PG 客户端，
+    #    不会再出现「the URL must start with the protocol file:」的启动失败。
+    #    两套 schema 的漂移由 CI 的 `check-schema-parity.mjs` + `prisma validate` 守卫。
+    buildCommand: npm install --include=dev && npm run build -w @qsh/api && npx prisma generate --schema apps/api/prisma/schema.pg.prisma && npx prisma db push --schema apps/api/prisma/schema.pg.prisma && node apps/api/scripts/sync-embeddings-pg.mjs
     startCommand: node apps/api/dist/apps/api/src/main.js
     healthCheckPath: /api/health
     envVars:

@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
     "prisma:validate:pg": "prisma validate --schema prisma/schema.pg.prisma",
+    "check:schema": "node scripts/check-schema-parity.mjs",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:push": "prisma db push --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts"
