@@ -41,15 +41,18 @@ services:
       # 总开关：true 走真实 LLM；false 强制规则兜底（成本熔断 / 故障降级）。
       - key: AI_ENABLED
         value: "true"
-      # OpenAI 兼容接口地址（默认值抄自 apps/api/src/config/app-config.ts）。
+      # OpenAI 兼容接口地址。⚠️ **必须与你手上的 key 同源**：
+      #   本仓库默认按 DeepSeek 配置（与本地 .env 一致）；若改用 OpenAI 官方 key，
+      #   把下面两项改成 https://api.openai.com/v1 + gpt-4o-mini，否则必然 401。
       - key: AI_BASE_URL
-        value: "https://api.openai.com/v1"
-      # 模型名（默认值抄自 apps/api/src/config/app-config.ts）。
+        value: "https://api.deepseek.com/v1"
+      # 模型名（须与上面的 base url 同源可用）。
       - key: AI_MODEL
-        value: "gpt-4o-mini"
+        value: "deepseek-chat"
       #
       # ⚠️ AI_API_KEY 绝不能写进仓库：请在 Render Dashboard → 本服务 → Environment **手动新增**
-      #    key=AI_API_KEY，value=你的 LLM key（如 sk-...）。未配置时 AI 入口降级为规则兜底。
+      #    key=AI_API_KEY，value=你的 DeepSeek key（sk-...，与本地 .env 同一把即可）。
+      #    未配置时 AI 入口降级为规则兜底（不报错，但回答不是模型生成的）。
       #
       # 说明：以下两项当前**未被代码读取**（硬编码在 apps/api/src/ai/ai.constants.ts：
       #   AI_MAX_OUTPUT_TOKENS=512、AI_REQUEST_TIMEOUT_MS=15000），故此处仅记录默认值、暂不生效；
@@ -59,9 +62,9 @@ services:
       # - key: AI_REQUEST_TIMEOUT_MS
       #   value: "15000"
       # --- CORS 白名单（变量名：CORS_ORIGINS，逗号分隔；见 apps/api/src/config/app-config.ts）---
-      # ⚠️ 占位域名：把 qingshenghuo.pages.dev 换成你 Cloudflare Pages 实际分配的项目域名后再部署。
-      #    若前端经 apps/web/public/_redirects 同源反代 /api，浏览器视角为同源，CORS 通常不触发；
-      #    此处仍显式配置，以防前端直连后端。
+      # ✅ 单 URL 部署（前端由本服务同源伺服）下**无需改动**：同源请求不触发 CORS 检查。
+      #    这里保留 localhost 供本地开发直连使用；若你另外把前端部署到 Cloudflare Pages，
+      #    再把该 Pages 域名追加进来即可。
       - key: CORS_ORIGINS
         value: "https://qingshenghuo.pages.dev,http://localhost:5173"
 

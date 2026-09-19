@@ -66,8 +66,13 @@ CORS_ORIGINS = https://qingshenghuo.pages.dev,http://localhost:5173
 
 ## AI（三期 R9）
 
-在 `render.yaml` 已配置非密项：`AI_ENABLED=true`、`AI_BASE_URL`、`AI_MODEL`。
+在 `render.yaml` 已配置非密项：`AI_ENABLED=true`、`AI_BASE_URL=https://api.deepseek.com/v1`、`AI_MODEL=deepseek-chat`。
 **`AI_API_KEY` 必须手动填**：Render Dashboard → 服务 → Environment 新增 `AI_API_KEY`（仓库内绝不放 key）。
+
+> ⚠️ **base url 必须与 key 同源**：仓库默认按 **DeepSeek** 配置。若你手上是 OpenAI 官方 key，
+> 请同时把 Render 环境变量里的 `AI_BASE_URL` 改成 `https://api.openai.com/v1`、`AI_MODEL` 改成 `gpt-4o-mini`
+> ——否则 key 打到不匹配的网关，AI 必然 401（前端会退回规则兜底文案，不会白屏，但看起来"AI 没生效"）。
+
 未配置时 AI 入口自动降级为服务端规则兜底。
 
 ## PostgreSQL 路径（Render Postgres / Neon 备选）
