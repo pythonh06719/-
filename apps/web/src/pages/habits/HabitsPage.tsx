@@ -69,7 +69,7 @@ export default function HabitsPage(): ReactElement {
           type="button"
           className={`flex items-center gap-4 rounded-2xl p-5 text-left shadow-sm transition-all ${
             habit.doneToday
-              ? 'bg-teal-50 ring-2 ring-teal-300 dark:bg-teal-900/40'
+              ? 'bg-brand-50 ring-2 ring-brand-300 dark:bg-brand-900/40'
               : 'bg-white dark:bg-slate-800'
           }`}
           onClick={() => toggle.mutate(habit)}
@@ -87,7 +87,7 @@ export default function HabitsPage(): ReactElement {
           </span>
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-lg ${
-              habit.doneToday ? 'bg-teal-500 text-white' : 'border border-slate-300 dark:border-slate-500'
+              habit.doneToday ? 'bg-brand-600 text-white' : 'border border-slate-300 dark:border-slate-500'
             }`}
             aria-hidden="true"
           >
@@ -126,7 +126,7 @@ export default function HabitsPage(): ReactElement {
           />
           <button
             type="submit"
-            className="rounded-xl bg-teal-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+            className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white disabled:opacity-50"
             disabled={createHabit.isPending}
           >
             添加
@@ -135,7 +135,7 @@ export default function HabitsPage(): ReactElement {
       </form>
 
       <p className="text-center text-xs text-slate-600 dark:text-slate-400">{COPY.streakPositive}</p>
-      {notice ? <p className="text-center text-sm text-teal-700 dark:text-teal-400">{notice}</p> : null}
+      {notice ? <p className="text-center text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
     </div>
   );
 }

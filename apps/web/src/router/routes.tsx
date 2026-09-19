@@ -14,6 +14,7 @@ import ToolsPage from '@/pages/tools/ToolsPage';
 import FastingPage from '@/pages/fasting/FastingPage';
 import ReportPage from '@/pages/report/ReportPage';
 import AiPage from '@/pages/ai/AiPage';
+import WhyNumbersPage from '@/pages/why-numbers/WhyNumbersPage';
 
 /** 单条路由定义。 */
 export interface AppRoute {
@@ -65,6 +66,9 @@ export const routes: AppRoute[] = [
   { path: '/report', element: withShell(<ReportPage />, '周报') },
   // 三期（T05 三期）：AI 助手（每日总结 / 今日方案 / 自由提问 + 食物识别）
   { path: '/ai', element: withShell(<AiPage />, 'AI 助手') },
+
+  // 可解释性页：把「数字是怎么来的」做成 App 内可查（透明度 / 可溯源）
+  { path: '/why-numbers', element: withShell(<WhyNumbersPage />, '数字是怎么来的') },
 
   // 兜底：未知路径回到落地页
   { path: '*', element: <Navigate to="/" replace /> },

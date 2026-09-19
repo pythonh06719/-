@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import {
   DRINK_LIBRARY,
   TAKEOUT_LIBRARY,
@@ -58,7 +59,7 @@ export default function ToolsPage(): ReactElement {
             role="tab"
             aria-selected={tab === item.key}
             className={`rounded-xl px-2 py-2 text-xs font-medium transition-colors ${
-              tab === item.key ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300'
+              tab === item.key ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'
             }`}
             onClick={() => setTab(item.key)}
           >
@@ -95,7 +96,7 @@ export default function ToolsPage(): ReactElement {
                 kcal
               </p>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{takeout.assumption}</p>
-              <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">这样点更轻松</h3>
+              <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">这样点更轻松</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {takeout.swaps.map((swap) => (
                   <li key={swap}>{swap}</li>
@@ -155,7 +156,7 @@ export default function ToolsPage(): ReactElement {
               <li key={swap}>{swap}</li>
             ))}
           </ul>
-          <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">吃掉它大约需要</h3>
+          <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">吃掉它大约需要</h3>
           <ul className="mt-1 space-y-1 text-sm text-slate-600 dark:text-slate-300">
             {snack.exercise.map((item) => (
               <li key={item.activityName}>
@@ -193,7 +194,7 @@ export default function ToolsPage(): ReactElement {
                 kcal（不含酒水）
               </p>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{feast.assumption}</p>
-              <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">当天可以这样安排</h3>
+              <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">当天可以这样安排</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {feast.adjustTips.map((tip) => (
                   <li key={tip}>{tip}</li>
@@ -262,7 +263,7 @@ export default function ToolsPage(): ReactElement {
             </span>{' '}
             kcal
           </p>
-          <h3 className="mt-3 text-sm font-semibold text-teal-700 dark:text-teal-400">低卡点单攻略</h3>
+          <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">低卡点单攻略</h3>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
             {drink.tips.map((tip) => (
               <li key={tip}>{tip}</li>
@@ -270,6 +271,13 @@ export default function ToolsPage(): ReactElement {
           </ul>
         </section>
       ) : null}
+
+      <Link
+        to="/why-numbers"
+        className="qsh-touch-target px-1 text-sm font-medium text-brand-700 dark:text-brand-300"
+      >
+        这些数字是怎么来的 →
+      </Link>
     </div>
   );
 }
