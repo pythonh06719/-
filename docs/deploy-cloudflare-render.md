@@ -5,6 +5,19 @@
 > 因此**不要设置 `VITE_API_BASE_URL`** —— 设了也不会被前端使用，照做会让线上所有 API 调用 404。
 > 正确的生产转发方式是 Cloudflare Pages 的 `apps/web/public/_redirects`（见下文）。
 
+## 方案 0（**推荐**）：Render 单服务 —— 一个 URL 全含
+
+`main.ts` 在生产模式下由 API 同源伺服前端 SPA（静态文件 + SPA 回退），`render.yaml` 的
+buildCommand 也已包含前端构建（`npm run build -w @qsh/web`）→ **部署完 Render 即得完整 Demo**：
+无需 Cloudflare、无需 CORS 配置（同源）、无需反向代理。
+
+1. Render Dashboard → New → **Blueprint** → 连接本仓库 → Apply（`render.yaml` 驱动全部构建/建表/同步）
+2. 构建日志确认：`SPA 静态伺服已启用：…/apps/web/dist（单 URL 部署模式）`
+3. 手动补环境变量：`AI_API_KEY`、`AUTH_LOG_CODE=true`（见检查清单）
+4. **单 URL 即完整应用**：`https://qingshenghuo-api.onrender.com`（前端、API 同源）
+
+> 下文的 Cloudflare Pages 部署保留为**备选方案**（前后端分离、CDN）；两者选其一即可。
+
 ## 方式 A：Git 集成（推荐，push 自动部署）
 
 1. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git
