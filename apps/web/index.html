@@ -47,15 +47,15 @@
       #qsh-splash .qsh-garden{width:min(78vw,360px);animation:qsh-rise .4s ease-out both;animation-delay:.05s}
       #qsh-splash .qsh-garden svg{display:block;width:100%;height:auto}
       /* 生长(scaleY 0→1，基点在地面)与摇摆(±1.4°)分两层嵌套，避免两段动画争抢同一个 transform。
-         时间预算：生长 .42s + 最晚延迟 .3s = .72s 全部长完，需与 splash.ts 的最短可见时长(950ms)配套，改一处要同步改另一处。 */
+         时间预算：生长 .42s + 最晚延迟 .20s = .62s 全部长完；需与 splash.ts 的 SPLASH_MIN_VISIBLE_MS(890ms) 配套 —— 以该常量为准，改一处必须同步核算另一处。 */
       #qsh-splash .qsh-grow{transform-box:fill-box;transform-origin:center bottom;animation:qsh-grow .42s cubic-bezier(.22,.68,.28,1) both}
       #qsh-splash .qsh-sway{transform-box:fill-box;transform-origin:center bottom;animation:qsh-sway 3.6s ease-in-out infinite}
       #qsh-splash .qsh-d2{animation-delay:.05s}
-      #qsh-splash .qsh-d3{animation-delay:.10s}
-      #qsh-splash .qsh-d4{animation-delay:.15s}
-      #qsh-splash .qsh-d5{animation-delay:.20s}
-      #qsh-splash .qsh-d6{animation-delay:.25s}
-      #qsh-splash .qsh-d7{animation-delay:.30s}
+      #qsh-splash .qsh-d3{animation-delay:.08s}
+      #qsh-splash .qsh-d4{animation-delay:.11s}
+      #qsh-splash .qsh-d5{animation-delay:.14s}
+      #qsh-splash .qsh-d6{animation-delay:.17s}
+      #qsh-splash .qsh-d7{animation-delay:.20s}
       #qsh-splash .qsh-s2{animation-duration:2.8s;animation-delay:.35s}
       #qsh-splash .qsh-s3{animation-duration:3.2s;animation-delay:.6s}
       @keyframes qsh-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
