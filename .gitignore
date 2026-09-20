@@ -41,3 +41,8 @@ pnpm-debug.log*
 
 # AI 评测生成物（可随时重跑生成，不入库；结论与数字见 docs/AGENT.md）
 apps/api/eval/eval-report.json
+
+# 一次性验证/取证脚本与产物（QA/本地探针，不应入库）
+qa-probe-*
+qa-verify/
+tmp-qa/
