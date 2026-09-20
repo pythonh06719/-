@@ -33,7 +33,26 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
 
   app.setGlobalPrefix('api');
-  app.use(helmet());
+  /**
+   * `helmet()` 的默认 CSP 是 `script-src 'self'` —— 会**连带拦掉** `apps/web/index.html` 里那段
+   * 「首屏前预置深色主题」的内联脚本（它的唯一作用就是防深色用户看到浅色闪一下）。
+   * 单 URL 部署下 HTML 由本服务伺服，CSP 因此生效；dev 模式 HTML 走 Vite，故本地开发看不出来。
+   *
+   * 修法用 **hash 白名单**而非 `'unsafe-inline'`：后者会让所有内联脚本放行，削弱 XSS 防护。
+   * ⚠️ 该 hash 与 index.html 中那段脚本**逐字节绑定**（含换行与缩进）—— 改动那段脚本后必须重算，
+   *    否则线上会再次静默拦掉。重算：`node apps/api/scripts/check-csp-hash.mjs --print`；
+   *    一致性由同一脚本在 CI 里门禁（见 .github/workflows/ci.yml 的 backend job）。
+   */
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': ["'self'", "'sha256-EwE7ng8Sn9jRAxvZU3s00JgGew5k7sheS3OiKHfU308='"],
+        },
+      },
+    }),
+  );
   app.enableCors({
     origin: config.corsOrigins,
     credentials: true,
