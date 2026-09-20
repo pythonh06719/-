@@ -123,8 +123,21 @@ GET /api/ai/agent/traces?limit=20    # 只看自己的轨迹
 
 ## 8. 已知边界与后续
 
-- **无流式输出**：当前一次性返回（P1 可接流式，改善多步等待体验）
-- **无 eval 体系**：下一步建立「问题 → 期望工具链/期望约束」用例集与通过率报告（P1）
-- **`free-ask` 尚未迁到 Agent**：它仍走「食物名匹配」前置逻辑，问「晚上吃什么」会被误判为搜索；
-  迁移到 Agent 工具链是 P1 的首要项
-- **检索仍是关键词**：食物库 443 条尚无向量检索（P1：pgvector + 混合检索 + 引用溯源）
+> ⚠️ 本节下面带 ✅ 的条目已于 2026-09-20 **核实为已完成**（文档曾把它们列在待办里，
+> 实际代码/链路都已落地）。保留原文并标注，是为了避免后来者照着这份清单返工 ——
+> **改本节前请先按条目末尾给出的证据路径复核一遍是否仍成立。**
+
+- **无流式输出**：当前一次性返回（**P1，仍未做** —— 可接流式，改善多步等待体验）
+- ✅ **eval 体系已建立**（原记「无 eval 体系 (P1)」）：`apps/api/eval/` 下有 `cases.jsonl` +
+  `fixtures` + `run-eval.mjs`；CI 的 backend job 以 `--replay` 回放录制好的模型响应，
+  验证「Agent 循环 + 断言逻辑」没被改坏（离线零成本）。真实评测用
+  `node apps/api/eval/run-eval.mjs --live`（需 `AI_API_KEY`，会花钱）。
+- ✅ **`free-ask` 已正确分流**（原记「尚未迁到 Agent (P1 首要项)」）：见
+  `apps/api/src/ai/ai.service.ts` 的 `freeAskDeterministic` —— 疑问词/泛称进黑名单走 Agent；
+  食物名查不到也不再直接答「没找到」，同样交给 Agent。
+  **实测证据（真实 DeepSeek 模型）**：问「晚上吃什么」→ `mode=llm`（交给模型，不再误判为搜索）；
+  问「今天还能吃米饭吗」→ `mode=rule`（确定性查食物库，热量数字可溯源）。
+- ✅ **向量检索已实现**（原记「检索仍是关键词 (P1)」）：见
+  `apps/api/src/foods/rag/vector-search.service.ts` —— pgvector `<=>` 余弦距离为首选路径，
+  扩展/表不可用时自动降级为内存向量路径。启动日志出现
+  `loaded 443 food embeddings …` + `pgvector not available; using in-memory path` 即后者。
