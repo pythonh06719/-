@@ -109,6 +109,10 @@ CORS_ORIGINS = https://qingshenghuo.pages.dev,http://localhost:5173
 - [ ] **`AUTH_LOG_CODE=true`（Demo 专用）**：不设则访客收不到验证码、无法登录（见上一节；真实用户环境请改用 SMTP）。
 - [ ] **Render 手动填 `AI_API_KEY`**：Dashboard → 服务 → Environment 新增 `AI_API_KEY`（仓库内绝不放 key；不填则 AI 走规则兜底）。
 - [ ] **CORS 域名**：确认 `render.yaml` 的 `CORS_ORIGINS`（或 Dashboard）已替换为真实 Cloudflare Pages 域名。
+- [ ] **⚠️ 回填分享卡片域名（易漏）**：`apps/web/index.html` 里的 `og:url` 与 `og:image` 目前是占位域名
+  `https://qingshenghuo-api.onrender.com/`。部署后拿到真实域名，必须把这两处改成真实地址并 push ——
+  **og 的图片与链接必须是绝对 URL，爬虫（尤其微信）不解析相对路径**；不改则分享出去仍是占位域名的图，
+  表现为「分享卡片有标题但无缩略图」或指向上不存在的图。
 - [ ] **向量表自动就绪**：查看 Render 构建日志出现 `已确保 pgvector 扩展与 food_embeddings 表就绪` 与 `synced ... embeddings`；若报 pgvector 相关错误，确认数据库为 Postgres 16+。
 - [ ] **健康检查**：`curl -s https://<你的-api-域名>/api/health` 返回 200，且响应形如 `{"data":{"status":"ok",...},"error":null}`。
 - [ ] **端到端 AI 验证**：在前端跑一次 AI 问答，返回应为**模型生成**的答案（而非固定规则兜底文案），说明 `AI_API_KEY` 生效。
