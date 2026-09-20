@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SPLASH_MIN_VISIBLE_MS, dismissSplash } from '@/splash';
-
 /** 与 splash.ts 内部的淡出时长保持一致，用于推进假定时器。 */
 const SPLASH_FADE_MS = 300;
 
@@ -37,6 +36,8 @@ function stubMatchMedia(matches: boolean): void {
 afterEach(() => {
   document.getElementById('qsh-splash')?.remove();
   document.getElementById('qsh-skip')?.remove();
+  // 「本会话已展示过」标记必须清掉，否则用例之间会互相影响（会走短兜底分支）
+  window.sessionStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -159,5 +160,39 @@ describe('dismissSplash', () => {
 
     vi.advanceTimersByTime(SPLASH_MIN_VISIBLE_MS + SPLASH_FADE_MS);
     expect(document.getElementById('qsh-splash')).toBeNull();
+  });
+
+  /**
+   * 可见额度在**模块求值**时按 sessionStorage 判定，所以下面两个用例要用
+   * `vi.resetModules()` + 动态 import 拿到「会话已见过」分支的模块实例。
+   */
+  it('同一会话内再次加载走短兜底，不再强留整段观赏期', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    window.sessionStorage.setItem('qsh:splash-seen', '1');
+    const mod = await import('@/splash');
+    const splash = mountSplash();
+
+    mod.dismissSplash();
+
+    // 推进到短兜底即应开始淡出；若仍是完整观赏期则此时不会
+    vi.advanceTimersByTime(mod.SPLASH_SHORT_VISIBLE_MS);
+    expect(splash.classList.contains('qsh-splash--out')).toBe(true);
+
+    vi.advanceTimersByTime(SPLASH_FADE_MS);
+    expect(document.getElementById('qsh-splash')).toBeNull();
+  });
+
+  it('短兜底场景下不显示跳过按钮（剩余太短，出现会一闪而过）', async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    window.sessionStorage.setItem('qsh:splash-seen', '1');
+    const mod = await import('@/splash');
+    mountSplash();
+    const skip = mountSkip();
+
+    mod.dismissSplash();
+
+    expect(skip.hidden).toBe(true);
   });
 });
