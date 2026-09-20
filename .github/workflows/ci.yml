@@ -40,6 +40,11 @@ jobs:
         # P0 防复发：两套 schema 的 model 集合必须一致，否则生产建表会漏表 → 线上 500。
         # 放在 build 之前，不一致立即阻断。
         run: node apps/api/scripts/check-schema-parity.mjs
+      - name: CSP hash 一致性门禁（防内联主题脚本被 CSP 静默拦掉）
+        # P0 防复发：main.ts 的 helmet script-src 用 hash 白名单放行 index.html 里的
+        # 「深色主题预置」内联脚本；hash 与脚本内容逐字节绑定，改了脚本却没同步 hash
+        # 会让该脚本被 CSP 拦掉 → 深色用户首屏闪浅色，且本地 dev（无 CSP）看不出来。
+        run: node apps/api/scripts/check-csp-hash.mjs
       - name: 后端构建 + e2e（pretest 自动建表并灌种子数据）
         run: npm test -w @qsh/api
       - name: Agent 评测（回放 fixtures，离线零成本）
