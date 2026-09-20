@@ -15,8 +15,125 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="轻生活" />
     <title>轻生活 · 把减肥融入日常生活</title>
+
+    <!-- 主题预置：必须在样式与内容绘制前同步执行，否则深色用户会先见浅底再闪回（FOUC）。逻辑同 src/theme/useTheme.ts；localStorage 在隐私模式可能抛错，故 try/catch。 -->
+    <script>
+      (function () {
+        try {
+          var stored = window.localStorage.getItem('qsh:theme');
+          var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+          var dark =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (mode === 'dark' || (mode === 'system' && dark)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          /* 存储/匹配不可用时退回浅色默认 */
+        }
+      })();
+    </script>
+
+    <!-- 首屏加载屏样式：内联避免多一次网络往返造成「空白一闪」；颜色取自设计令牌，浅深两套主题文字对比度均 ≥ 4.5:1。 -->
+    <style>
+      #qsh-splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.75rem;margin:0;padding:1.5rem;box-sizing:border-box;background:#f0f7f4;color:#155040;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;transition:opacity .3s ease;-webkit-tap-highlight-color:transparent}
+      html.dark #qsh-splash{background:#0f1a16;color:#e6f0eb}
+      #qsh-splash.qsh-splash--out{opacity:0;pointer-events:none}
+      #qsh-splash .qsh-brand{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center;animation:qsh-rise .4s ease-out both}
+      #qsh-splash .qsh-logo{display:block;width:56px;height:56px}
+      #qsh-splash .qsh-title{margin:0;font-size:1.5rem;font-weight:600;letter-spacing:.16em;text-indent:.16em}
+      #qsh-splash .qsh-sub{margin:0;font-size:.9375rem;color:#1c6a51}
+      html.dark #qsh-splash .qsh-sub{color:#b6ddc9}
+      #qsh-splash .qsh-garden{width:min(78vw,360px);animation:qsh-rise .4s ease-out both;animation-delay:.05s}
+      #qsh-splash .qsh-garden svg{display:block;width:100%;height:auto}
+      /* 生长(scaleY 0→1，基点在地面)与摇摆(±1.4°)分两层嵌套，避免两段动画争抢同一个 transform。
+         时间预算：生长 .42s + 最晚延迟 .3s = .72s 全部长完，需与 splash.ts 的最短可见时长(950ms)配套，改一处要同步改另一处。 */
+      #qsh-splash .qsh-grow{transform-box:fill-box;transform-origin:center bottom;animation:qsh-grow .42s cubic-bezier(.22,.68,.28,1) both}
+      #qsh-splash .qsh-sway{transform-box:fill-box;transform-origin:center bottom;animation:qsh-sway 3.6s ease-in-out infinite}
+      #qsh-splash .qsh-d2{animation-delay:.05s}
+      #qsh-splash .qsh-d3{animation-delay:.10s}
+      #qsh-splash .qsh-d4{animation-delay:.15s}
+      #qsh-splash .qsh-d5{animation-delay:.20s}
+      #qsh-splash .qsh-d6{animation-delay:.25s}
+      #qsh-splash .qsh-d7{animation-delay:.30s}
+      #qsh-splash .qsh-s2{animation-duration:2.8s;animation-delay:.35s}
+      #qsh-splash .qsh-s3{animation-duration:3.2s;animation-delay:.6s}
+      @keyframes qsh-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+      @keyframes qsh-sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+      @keyframes qsh-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+      /* 尊重「减少动态效果」：关闭全部动画，静态构图仍完整可见 */
+      @media (prefers-reduced-motion:reduce){#qsh-splash,#qsh-splash *{animation:none !important}}
+    </style>
   </head>
   <body>
+    <!-- 首屏加载屏：React 之外的原生节点，先于 bundle 渲染（路由无 lazy，故无需路由级兜底）；挂载完成后由 src/splash.ts 的 dismissSplash() 淡出并移除。 -->
+    <div id="qsh-splash" role="status" aria-live="polite" aria-label="轻生活 正在加载">
+      <div class="qsh-brand">
+        <svg class="qsh-logo" viewBox="0 0 192 192" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="qshSplashGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4fbf94" /><stop offset="100%" stop-color="#248263" />
+            </linearGradient>
+          </defs>
+          <rect width="192" height="192" rx="44" fill="url(#qshSplashGradient)" />
+          <path d="M96 40a56 56 0 0 1 52 36" fill="none" stroke="#fff" stroke-width="9" stroke-opacity=".85" stroke-linecap="round" />
+          <text x="96" y="120" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="62" font-weight="600" fill="#fff">轻</text>
+        </svg>
+        <p class="qsh-title">轻生活</p>
+        <p class="qsh-sub">让身体慢慢变轻</p>
+      </div>
+
+      <!-- 装饰性花园：柔光 + 两层草坡 + 3 棵树 + 4 朵花 + 草叶，整体 aria-hidden -->
+      <div class="qsh-garden">
+        <svg viewBox="0 0 400 220" aria-hidden="true" focusable="false">
+          <!-- 一朵花 = 五瓣 + 花心 + 茎 + 双叶，基点(0,0)在根部；复用 4 次，花色由 color 传入（花瓣 fill=currentColor） -->
+          <defs>
+            <g id="qsh-bloom">
+              <line x1="0" y1="0" x2="0" y2="-19" stroke="#2f9e78" stroke-width="2" stroke-linecap="round" />
+              <ellipse cx="-7" cy="-12" rx="6" ry="3.2" fill="#4fbf94" transform="rotate(-25 -7 -12)" />
+              <ellipse cx="7" cy="-8" rx="5.5" ry="3" fill="#4fbf94" transform="rotate(22 7 -8)" />
+              <g fill="currentColor">
+                <circle cx="0" cy="-29" r="5" /><circle cx="4.8" cy="-25.5" r="5" /><circle cx="2.9" cy="-20" r="5" /><circle cx="-2.9" cy="-20" r="5" /><circle cx="-4.8" cy="-25.5" r="5" />
+              </g>
+              <circle cx="0" cy="-24" r="2.8" fill="#eaa032" />
+            </g>
+          </defs>
+
+          <circle cx="330" cy="44" r="44" fill="#fbd89c" opacity=".22" />
+          <circle cx="330" cy="44" r="28" fill="#fbd89c" opacity=".45" />
+          <path d="M0 150Q110 112 210 142T400 132V220H0Z" fill="#b6ddc9" opacity=".55" />
+          <path d="M0 178Q130 146 250 172T400 162V220H0Z" fill="#d9ede4" opacity=".9" />
+
+          <!-- 树 A：左侧高树（brand-500/600/700 层次 + 暖棕树干） -->
+          <g class="qsh-grow"><g class="qsh-sway">
+            <rect x="106" y="120" width="9" height="56" rx="4.5" fill="#7f4a17" />
+            <circle cx="110" cy="108" r="30" fill="#248263" /><circle cx="84" cy="122" r="24" fill="#2f9e78" /><circle cx="136" cy="120" r="23" fill="#2f9e78" /><circle cx="110" cy="86" r="22" fill="#4fbf94" />
+          </g></g>
+          <!-- 树 B：右侧中树，略偏深绿，制造层次 -->
+          <g class="qsh-grow qsh-d2"><g class="qsh-sway qsh-s3">
+            <rect x="296" y="136" width="8" height="44" rx="4" fill="#7f4a17" />
+            <circle cx="300" cy="126" r="24" fill="#1c6a51" /><circle cx="280" cy="138" r="19" fill="#248263" /><circle cx="320" cy="136" r="18" fill="#248263" />
+          </g></g>
+          <!-- 树 C：中后景小树，制造纵深错落 -->
+          <g class="qsh-grow qsh-d3"><g class="qsh-sway qsh-s2">
+            <rect x="172" y="140" width="6" height="34" rx="3" fill="#7f4a17" />
+            <circle cx="175" cy="132" r="17" fill="#2f9e78" /><circle cx="162" cy="140" r="13" fill="#4fbf94" /><circle cx="188" cy="139" r="12" fill="#4fbf94" />
+          </g></g>
+
+          <!-- 花：暖黄 / 浅金 / 珊瑚三色，从左下到右侧依次「长」出 -->
+          <g class="qsh-grow qsh-d4"><g class="qsh-sway qsh-s2"><use href="#qsh-bloom" transform="translate(55,198)" style="color:#f7b955" /></g></g>
+          <g class="qsh-grow qsh-d5"><g class="qsh-sway qsh-s3"><use href="#qsh-bloom" transform="translate(135,200)" style="color:#f8c06b" /></g></g>
+          <g class="qsh-grow qsh-d6"><g class="qsh-sway qsh-s2"><use href="#qsh-bloom" transform="translate(245,196) scale(.9)" style="color:#eda184" /></g></g>
+          <g class="qsh-grow qsh-d7"><g class="qsh-sway qsh-s3"><use href="#qsh-bloom" transform="translate(352,196)" style="color:#f8c06b" /></g></g>
+
+          <!-- 草叶：细长圆头，顺坡面方向 -->
+          <g stroke="#4fbf94" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9">
+            <path d="M98 190q4-10 1-18" /><path d="M205 184q-4-9-1-16" /><path d="M286 192q3-9 0-15" /><path d="M376 186q-4-10-2-17" />
+          </g>
+        </svg>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

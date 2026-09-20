@@ -5,6 +5,7 @@ import App from './App';
 import { queryClient } from '@/lib/queryClient';
 import { initTheme } from '@/theme/useTheme';
 import { initPwa } from '@/pwa/registerSW';
+import { dismissSplash } from './splash';
 
 // 样式：Tailwind 入口 + 深色模式 + 无障碍
 import './styles/index.css';
@@ -28,3 +29,6 @@ createRoot(rootElement).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// React 已挂载：让 index.html 里的首屏加载屏淡出（内部保证最短可见时长，幂等）
+dismissSplash();
