@@ -61,14 +61,20 @@
       @keyframes qsh-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
       @keyframes qsh-sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
       @keyframes qsh-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+      /* 跳过按钮：绝对定位（脱离 flex 流）→ 显示时不会让花园位移；触控目标 ≥44px。
+         仅在应用挂载完成、进入「定格观赏期」后由 splash.ts 取消 hidden —— 在那之前跳过只会看到空白。 */
+      #qsh-skip{position:absolute;left:50%;bottom:calc(1.25rem + env(safe-area-inset-bottom));transform:translateX(-50%);min-height:44px;padding:0 1.5rem;border:0;border-radius:9999px;background:#d9ede4;color:#155040;font-family:inherit;font-size:.875rem;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;animation:qsh-rise .3s ease-out both}
+      html.dark #qsh-skip{background:#24443a;color:#b6ddc9}
+      #qsh-skip[hidden]{display:none}
+      #qsh-skip:focus-visible{outline:2px solid #2f9e78;outline-offset:2px}
       /* 尊重「减少动态效果」：关闭全部动画，静态构图仍完整可见 */
       @media (prefers-reduced-motion:reduce){#qsh-splash,#qsh-splash *{animation:none !important}}
     </style>
   </head>
   <body>
     <!-- 首屏加载屏：React 之外的原生节点，先于 bundle 渲染（路由无 lazy，故无需路由级兜底）；挂载完成后由 src/splash.ts 的 dismissSplash() 淡出并移除。 -->
-    <div id="qsh-splash" role="status" aria-live="polite" aria-label="轻生活 正在加载">
-      <div class="qsh-brand">
+    <div id="qsh-splash">
+      <div class="qsh-brand" role="status" aria-live="polite" aria-label="轻生活 正在加载">
         <svg class="qsh-logo" viewBox="0 0 192 192" aria-hidden="true" focusable="false">
           <defs>
             <linearGradient id="qshSplashGradient" x1="0" y1="0" x2="1" y2="1">
@@ -132,6 +138,9 @@
           </g>
         </svg>
       </div>
+
+      <!-- 用户主动跳过：默认 hidden，由 splash.ts 在应用挂载完成后显示（见上方样式注释） -->
+      <button id="qsh-skip" type="button" aria-label="跳过加载动画" hidden>跳过</button>
     </div>
 
     <div id="root"></div>
