@@ -1,20 +1,31 @@
+import { Suspense, lazy } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import AppShell from '@/components/layout/AppShell';
+import RouteLoading from '@/components/common/RouteLoading';
 import LandingPage from '@/pages/landing/LandingPage';
-import OnboardingPage from '@/pages/onboarding/OnboardingPage';
-import DashboardPage from '@/pages/dashboard/DashboardPage';
-import DiaryPage from '@/pages/diary/DiaryPage';
-import WeightPage from '@/pages/weight/WeightPage';
-import ProfilePage from '@/pages/profile/ProfilePage';
-import SettingsDataPage from '@/pages/settings-data/SettingsDataPage';
-import ExercisePage from '@/pages/exercise/ExercisePage';
-import HabitsPage from '@/pages/habits/HabitsPage';
-import ToolsPage from '@/pages/tools/ToolsPage';
-import FastingPage from '@/pages/fasting/FastingPage';
-import ReportPage from '@/pages/report/ReportPage';
-import AiPage from '@/pages/ai/AiPage';
-import WhyNumbersPage from '@/pages/why-numbers/WhyNumbersPage';
+
+/**
+ * 路由级代码分割。
+ *
+ * `LandingPage` **刻意保持同步引入**：它是匿名访客的第一屏（免注册计算器 + 隐私承诺），
+ * 拆成独立 chunk 只会给这一屏多加一次往返 —— 而它恰恰是最需要立刻出现的一屏。
+ * 其余页面全部按需加载：既缩小首屏主包，也让重依赖（如 `WeightPage` 动态引入的 ECharts，
+ * 约 1 MB）只在真正访问该页时才请求。加新页面时记得同步 `lazy()` 与下面的路由表。
+ */
+const OnboardingPage = lazy(() => import('@/pages/onboarding/OnboardingPage'));
+const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
+const DiaryPage = lazy(() => import('@/pages/diary/DiaryPage'));
+const WeightPage = lazy(() => import('@/pages/weight/WeightPage'));
+const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
+const SettingsDataPage = lazy(() => import('@/pages/settings-data/SettingsDataPage'));
+const ExercisePage = lazy(() => import('@/pages/exercise/ExercisePage'));
+const HabitsPage = lazy(() => import('@/pages/habits/HabitsPage'));
+const ToolsPage = lazy(() => import('@/pages/tools/ToolsPage'));
+const FastingPage = lazy(() => import('@/pages/fasting/FastingPage'));
+const ReportPage = lazy(() => import('@/pages/report/ReportPage'));
+const AiPage = lazy(() => import('@/pages/ai/AiPage'));
+const WhyNumbersPage = lazy(() => import('@/pages/why-numbers/WhyNumbersPage'));
 
 /** 单条路由定义。 */
 export interface AppRoute {
@@ -24,9 +35,23 @@ export interface AppRoute {
   element: ReactElement;
 }
 
-/** 用应用外壳包裹页面（带顶部栏与底部导航）。 */
+/**
+ * 用应用外壳包裹页面（带顶部栏与底部导航）。
+ *
+ * `Suspense` 放在 `AppShell` **内部**：页面 chunk 到达前只让内容区显示兜底，
+ * 顶栏与底部导航保持可见 —— 否则每次切换路由整页都会闪一下外壳。
+ */
 function withShell(page: ReactNode, title?: string): ReactElement {
-  return <AppShell {...(title === undefined ? {} : { title })}>{page}</AppShell>;
+  return (
+    <AppShell {...(title === undefined ? {} : { title })}>
+      <Suspense fallback={<RouteLoading />}>{page}</Suspense>
+    </AppShell>
+  );
+}
+
+/** 无外壳页面的 `Suspense` 包装（`/onboarding` 为全屏引导，不套 AppShell）。 */
+function bare(page: ReactNode): ReactElement {
+  return <Suspense fallback={<RouteLoading />}>{page}</Suspense>;
 }
 
 /**
@@ -37,11 +62,11 @@ function withShell(page: ReactNode, title?: string): ReactElement {
  * 文案友好并标注「二期/三期即将到来」（不使用生硬字眼）。
  */
 export const routes: AppRoute[] = [
-  // 1. 落地页（免注册计算器 + 隐私承诺 + 免责声明）
+  // 1. 落地页（免注册计算器 + 隐私承诺 + 免责声明）—— 同步引入，见文件顶部说明
   { path: '/', element: <LandingPage /> },
 
   // 2. 首次引导（免责声明确认 → 问卷 → 结果）
-  { path: '/onboarding', element: <OnboardingPage /> },
+  { path: '/onboarding', element: bare(<OnboardingPage />) },
 
   // 3. 今天（生活流首页）——顶栏用品牌字标，页面 h1 才是「今天」，避免重复
   { path: '/dashboard', element: withShell(<DashboardPage />, '轻生活') },
