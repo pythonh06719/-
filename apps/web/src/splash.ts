@@ -7,13 +7,18 @@
  */
 
 /**
- * 加载屏最短可见时长（ms），与 index.html 的 CSS 时间预算配套，改这里必须同步改那边。
+ * 加载屏最短可见时长（ms），与 index.html 的 CSS 动画时间预算配套 —— 改一处必须同步核算另一处。
  *
- * index.html 里花园最晚一组（.qsh-d7）在 `.30s 延迟 + .42s 生长 ≈ .72s` 才长完；
- * 950ms 保证「完整花园」长完后还能定格约 230ms 再淡出（淡出过渡 300ms），
- * 即用户一定看得见长满的树与花，而不是生长到一半就被淡出。
+ * 时间预算（实测值，非名义值）：花园最晚一组 `.qsh-d7` 名义上是 `.30s 延迟 + .42s 生长 = .72s`，
+ * 但动画随首次渲染在 module eval 之前约 54ms 就已起跑，故实测约 666ms 时全部 `.qsh-grow` 的 scaleY 已达 1。
+ * 取 890ms，则完整花园长完后定格实测约 224ms 再开始淡出（淡出过渡 300ms），守住「定格 ≥ 200ms」的设计底线：
+ * 即 `定格 ≈ SPLASH_MIN_VISIBLE_MS − 666ms`，**不得低于 200ms**（对应本常量不得低于 ~870）。
+ *
+ * 已知限制（按 YAGNI 暂不修，仅记录）：`splashStartedAt` 取的是 module eval 时刻而非导航/解析时刻，
+ * 因此**慢加载**下会在「用户已经等了一段时间」的基础上再加满本常量（QA 限速场景实测 3794ms 即由此而来）；
+ * Demo 场景不触发。
  */
-export const SPLASH_MIN_VISIBLE_MS = 950;
+export const SPLASH_MIN_VISIBLE_MS = 890;
 
 /** 淡出过渡时长（ms），与 index.html 里 `#qsh-splash` 的 transition 保持一致。 */
 const SPLASH_FADE_MS = 300;
