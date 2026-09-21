@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, isNetworkError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
+import EmptyState from '@/components/common/EmptyState';
 
 /**
  * 习惯打卡（`/habits`，PRD §6 第 7 行 / R7.3 / R7.4，二期）。
@@ -97,9 +98,13 @@ export default function HabitsPage(): ReactElement {
       ))}
 
       {habits.length === 0 ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
-          {habitsQuery.isLoading ? '正在取回你的习惯…' : '还没有习惯，从下面加一个开始吧'}
-        </p>
+        habitsQuery.isLoading ? (
+          <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+            正在取回你的习惯…
+          </p>
+        ) : (
+          <EmptyState title="还没有习惯，从下面加一个开始吧" />
+        )
       ) : null}
 
       <form

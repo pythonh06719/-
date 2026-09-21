@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import BrandDecor from '@/components/common/BrandDecor';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
 
 /**
@@ -374,7 +375,8 @@ export default function MealComposer({
               const items = query.data ?? [];
               if (items.length === 0) {
                 return (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                    <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
                     {tab === 'recent' ? '还没有记录过食物' : '还没有收藏的食物'}
                   </p>
                 );

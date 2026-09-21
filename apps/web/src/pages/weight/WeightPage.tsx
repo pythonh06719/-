@@ -15,6 +15,7 @@ import { addDays, formatFullDate, formatSigned, todayKey } from '@/lib/format';
 import { COPY } from '@/lib/copy';
 import { computeMovingAverage7d, computeTrendStats, isWeightRising, toTrendPoints } from '@/lib/trend';
 import { enqueueRequest } from '@/pwa/offline-queue';
+import BrandDecor from '@/components/common/BrandDecor';
 
 /** ECharts 图表按需加载，避免拖慢首屏主包（NFR-3）。 */
 const WeightChart = lazy(() => import('./WeightChart'));
@@ -251,7 +252,10 @@ export default function WeightPage(): ReactElement {
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
         {points.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">还没有记录</p>
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
+            还没有记录
+          </p>
         ) : (
           <ul className="mt-3 space-y-1.5">
             {[...points]
