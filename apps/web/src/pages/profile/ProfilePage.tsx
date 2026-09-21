@@ -129,7 +129,7 @@ export default function ProfilePage(): ReactElement {
 
       {budget !== null && (
         <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
           <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">建议摄入</dt>
@@ -182,7 +182,7 @@ export default function ProfilePage(): ReactElement {
           });
         }}
       >
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">基础数据</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">基础数据</h2>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm text-slate-600 dark:text-slate-300">
             性别
@@ -250,7 +250,7 @@ export default function ProfilePage(): ReactElement {
         aria-label="参考来源"
         className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
       >
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
         <ul className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
           <li>
@@ -293,7 +293,7 @@ export default function ProfilePage(): ReactElement {
           aria-label="账号"
           className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
         >
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">账号</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">账号</h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             已登录：{user?.email ?? '当前账号'}
           </p>

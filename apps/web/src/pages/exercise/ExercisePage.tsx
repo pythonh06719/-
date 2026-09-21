@@ -121,7 +121,7 @@ export default function ExercisePage(): ReactElement {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-24 pt-4" aria-live="polite">
-      <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+      <section className="qsh-surface p-5">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">动一动</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           消耗 = MET × 体重 × 时长（估算值，来源见「参考来源」页）
@@ -191,7 +191,7 @@ export default function ExercisePage(): ReactElement {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+      <section className="qsh-surface p-5">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {waterTotal} / {waterGoal} ml（{waterPercent}%）

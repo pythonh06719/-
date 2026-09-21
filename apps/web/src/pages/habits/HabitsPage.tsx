@@ -117,7 +117,7 @@ export default function HabitsPage(): ReactElement {
       ) : null}
 
       <form
-        className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800"
+        className="qsh-surface p-5"
         onSubmit={(event) => {
           event.preventDefault();
           const trimmed = newName.trim();

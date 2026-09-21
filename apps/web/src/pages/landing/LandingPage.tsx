@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import CalorieCalculator from '@/components/common/CalorieCalculator';
 import LoginCard from '@/components/common/LoginCard';
 import { useAuthStore } from '@/lib/auth.store';
+import BrandDecor from '@/components/common/BrandDecor';
 
 const HIGHLIGHTS: ReadonlyArray<{ title: string; desc: string }> = [
   { title: '3 次点击记一餐', desc: '搜索 + 常见份量，记录不再是负担。' },
@@ -26,6 +27,11 @@ export default function LandingPage(): ReactElement {
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
       <header className="text-center">
+        <div className="mb-3 flex items-end justify-center gap-3" aria-hidden="true">
+          <BrandDecor variant="leaf" className="h-5 w-5 text-brand-300 opacity-70" />
+          <BrandDecor variant="bloom" className="h-8 w-8 text-brand-400" />
+          <BrandDecor variant="leaf" className="h-5 w-5 -scale-x-100 text-brand-300 opacity-70" />
+        </div>
         <p className="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200">
           不节食 · 不极端 · 融进日常
         </p>
@@ -39,7 +45,7 @@ export default function LandingPage(): ReactElement {
         {HIGHLIGHTS.map((item) => (
           <div
             key={item.title}
-            className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-100 dark:bg-slate-800 dark:ring-slate-700"
+            className="qsh-surface p-4"
           >
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
@@ -47,7 +53,7 @@ export default function LandingPage(): ReactElement {
         ))}
       </section>
 
-      <section aria-label="登录或注册" className="mt-10 rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-800">
+      <section aria-label="登录或注册" className="mt-10 qsh-surface p-6">
         {accessToken ? (
           <div className="flex flex-col items-center gap-3">
             <p className="text-sm text-slate-600 dark:text-slate-400">已经登录，欢迎回来 👋</p>

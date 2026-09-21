@@ -56,7 +56,7 @@ function UnavailableNotice(): ReactElement {
 /** 复盘 / 方案卡片（结论 + 依据 + 建议）。 */
 function InsightCard({ insight }: { insight: { conclusion: string; basis: string[]; suggestion: string } }): ReactElement {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+    <div className="qsh-surface p-5">
       <p className="text-base font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{insight.conclusion}</p>
       <ul className="mt-3 space-y-1.5" aria-label="依据">
         {insight.basis.map((item) => (
@@ -109,7 +109,7 @@ function FoodRecognizePanel(): ReactElement {
   const loading = recognizeQuery.isFetching;
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+    <section className="qsh-surface p-5">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
       <div className="mt-3 flex gap-2">
@@ -341,7 +341,7 @@ export default function AiPage(): ReactElement {
               {/* 医疗安全兜底：高亮展示安全提示（R9.6 / TC-44） */}
               {askQuery.data.safetyFlag && <SafetyBanner safetyMessages={[askQuery.data.answer]} />}
               {askQuery.data.available === false && <UnavailableNotice />}
-              <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+              <div className="qsh-surface p-5">
                 <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQuery.data.answer}</p>
                 {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
                 {askQuery.data.tools !== undefined && askQuery.data.tools.length > 0 && (

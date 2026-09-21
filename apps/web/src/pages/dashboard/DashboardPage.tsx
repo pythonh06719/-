@@ -285,7 +285,7 @@ export default function DashboardPage(): ReactElement {
       {/* ③ 生活化摘要：热量环降级为次要信息，配生活用语 */}
       <div className="qsh-surface-warm p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
           <span className="qsh-chip">{summaryTag}</span>
         </div>
 
@@ -344,7 +344,7 @@ export default function DashboardPage(): ReactElement {
       {/* 喝水：改说「第几杯」，真实毫升作为次要文字 */}
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
           <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
         </div>
         <p
@@ -372,7 +372,7 @@ export default function DashboardPage(): ReactElement {
 
       {/* 这周的小变化（迷你体重趋势） */}
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend)}</p>
         <div className="mt-3">
           <Sparkline data={data.miniTrend} />

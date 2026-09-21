@@ -51,7 +51,7 @@ export default function ToolsPage(): ReactElement {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4">
-      <div role="tablist" aria-label="工具切换" className="grid grid-cols-4 gap-1 rounded-2xl bg-white p-1 shadow-sm dark:bg-slate-800">
+      <div role="tablist" aria-label="工具切换" className="grid grid-cols-4 gap-1 qsh-surface p-1">
         {TABS.map((item) => (
           <button
             key={item.key}
@@ -69,7 +69,7 @@ export default function ToolsPage(): ReactElement {
       </div>
 
       {tab === 'takeout' ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+        <section className="qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">外卖换算器</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="takeout-kind">
             常点的品类
@@ -108,7 +108,7 @@ export default function ToolsPage(): ReactElement {
       ) : null}
 
       {tab === 'snack' ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+        <section className="qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">零食救赎</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="snack-name">
             想吃的零食
@@ -169,7 +169,7 @@ export default function ToolsPage(): ReactElement {
       ) : null}
 
       {tab === 'feast' ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+        <section className="qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">聚餐模式</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="feast-kind">
             聚餐类型
@@ -206,7 +206,7 @@ export default function ToolsPage(): ReactElement {
       ) : null}
 
       {tab === 'drink' ? (
-        <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+        <section className="qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">饮品计算器</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="drink-kind">
             饮品

@@ -228,7 +228,7 @@ export default function OnboardingPage(): ReactElement {
         </dl>
 
         <section aria-label="宏量营养素建议" className="mt-4 qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
           <ul className="mt-3 grid grid-cols-3 gap-3 text-center">
             <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">蛋白质</p>
