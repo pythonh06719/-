@@ -75,11 +75,18 @@ export interface SendCodeRequest {
   purpose?: VerificationPurpose;
 }
 
-/** `POST /api/auth/send-code` 响应（不返回验证码本身，仅返回有效期）。 */
+/** `POST /api/auth/send-code` 响应（默认不返回验证码本身，仅返回有效期）。 */
 export interface SendCodeResponse {
   email: string;
   /** 验证码剩余有效秒数（默认 300s） */
   expiresInSeconds: number;
+  /**
+   * 真实验证码：**仅自用 / 开发模式**回显（服务端 `AUTH_LOG_CODE=true`）。
+   *
+   * ⚠️ 安全边界：该开关默认 `false`，生产环境本字段恒为 `undefined`（不会出现在响应里）。
+   * 前端拿到它只做「预填输入框」，不得据此认为服务端总是会返回验证码。
+   */
+  code?: string;
 }
 
 /** `POST /api/auth/verify-code` 请求。 */
