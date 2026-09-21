@@ -44,7 +44,8 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     ports:
-      - "80:80"
+      # 宿主机端口可配：大陆服务器未备案时用非 80 端口最省事（如 WEB_PORT=8080 docker compose up -d）
+      - "${WEB_PORT:-80}:80"
     depends_on:
       - api
     restart: unless-stopped

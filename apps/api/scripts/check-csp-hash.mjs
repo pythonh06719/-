@@ -23,6 +23,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(here, '../../..');
 const INDEX_HTML = resolve(REPO_ROOT, 'apps/web/index.html');
 const MAIN_TS = resolve(REPO_ROOT, 'apps/api/src/main.ts');
+const NGINX_CONF = resolve(REPO_ROOT, 'infra/nginx/default.conf');
 
 /** 取出 index.html 中第一段无属性的内联 `<script>`（即主题预置脚本）。 */
 function extractInlineScript(html) {
@@ -42,16 +43,39 @@ if (process.argv.includes('--print')) {
   process.exit(0);
 }
 
-const mainTs = readFileSync(MAIN_TS, 'utf-8');
+/**
+ * 两处 CSP 声明都必须放行同一段内联脚本：
+ * - `apps/api/src/main.ts`   → 单 URL 部署（API 直接伺服 HTML）
+ * - `infra/nginx/default.conf` → Docker 部署（nginx 伺服 HTML）
+ * 漏掉任何一处，对应部署形态下深色主题预置都会静默失效。
+ */
+const TARGETS = [
+  { file: MAIN_TS, label: 'apps/api/src/main.ts', hint: '把 helmet 的 script-src 换成上面「期望」的值' },
+  {
+    file: NGINX_CONF,
+    label: 'infra/nginx/default.conf',
+    hint: '把 nginx CSP 里的 script-src 换成上面「期望」的值',
+  },
+];
 
-if (!mainTs.includes(hash)) {
-  console.error('✗ CSP hash 失配：index.html 的内联脚本已变更，但 main.ts 里的 hash 未同步。');
-  console.error(`  期望（当前脚本）：${hash}`);
-  const declared = mainTs.match(/'sha256-[A-Za-z0-9+/=]+'/)?.[0] ?? '(未找到)';
-  console.error(`  实际（main.ts）：  ${declared}`);
-  console.error('  处理：把 main.ts 中 helmet 的 script-src 换成上面「期望」的值。');
-  console.error('  影响：不改则该内联脚本会被 CSP 拦掉，深色主题预置静默失效（首屏闪浅色）。');
+let failed = false;
+for (const { file, label, hint } of TARGETS) {
+  const text = readFileSync(file, 'utf-8');
+  if (text.includes(hash)) {
+    console.log(`  ✓ ${label}`);
+    continue;
+  }
+  failed = true;
+  console.error(`  ✗ ${label}：hash 未同步。`);
+  const declared = text.match(/'sha256-[A-Za-z0-9+/=]+'/)?.[0] ?? '(未找到)';
+  console.error(`      期望（当前脚本）：${hash}`);
+  console.error(`      该文件里是：      ${declared}`);
+  console.error(`      处理：${hint}。`);
+  console.error('      影响：该部署形态下内联主题脚本被 CSP 拦掉，深色用户首屏闪浅色。');
+}
+
+if (failed) {
   process.exit(1);
 }
 
-console.log(`✅ CSP hash 一致（${hash}）`);
+console.log(`✅ CSP hash 一致（两处声明，${hash}）`);
