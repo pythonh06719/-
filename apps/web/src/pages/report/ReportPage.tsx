@@ -70,7 +70,7 @@ export default function ReportPage(): ReactElement {
         </p>
       ) : (
         <>
-          <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+          <section className="qsh-surface p-5">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
               近 7 天（{report.from} ~ {report.to}）
             </h2>
@@ -113,7 +113,7 @@ export default function ReportPage(): ReactElement {
             </p>
           </section>
 
-          <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+          <section className="qsh-surface p-5">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
             <ul className="mt-3 space-y-3">

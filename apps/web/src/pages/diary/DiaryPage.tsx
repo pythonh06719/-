@@ -296,7 +296,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                 {MEAL_TYPE_LABELS[group.mealType]}
               </h2>
               <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">

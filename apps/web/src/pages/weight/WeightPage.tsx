@@ -197,7 +197,7 @@ export default function WeightPage(): ReactElement {
       )}
 
       <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
+        <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
         {points.length === 0 ? (
           <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">{COPY.emptyWeight}</p>
         ) : (
@@ -250,7 +250,7 @@ export default function WeightPage(): ReactElement {
       </p>
 
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
         {points.length === 0 ? (
           <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
             <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />

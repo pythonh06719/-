@@ -97,9 +97,9 @@ export default function CalorieCalculator(): ReactElement {
   return (
     <section
       aria-label="免注册热量计算器"
-      className="mx-auto w-full max-w-xl rounded-2xl bg-white p-6 shadow-sm ring-1 ring-brand-100 dark:bg-slate-800 dark:ring-slate-700"
+      className="mx-auto w-full max-w-xl qsh-surface p-6"
     >
-      <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
         先算一算，再决定要不要用
       </h2>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

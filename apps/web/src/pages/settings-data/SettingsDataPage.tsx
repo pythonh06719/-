@@ -157,7 +157,7 @@ export default function SettingsDataPage(): ReactElement {
         aria-label="导出数据"
         className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
       >
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           JSON 可完整恢复；CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
         </p>
@@ -180,7 +180,7 @@ export default function SettingsDataPage(): ReactElement {
         aria-label="导入历史体重"
         className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
       >
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           模板列：<code>date</code>（YYYY-MM-DD）、<code>weightKg</code>、<code>note</code>（可选）。
           同日期以导入值覆盖，非法行会跳过并汇总。
