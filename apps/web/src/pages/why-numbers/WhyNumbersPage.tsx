@@ -95,7 +95,7 @@ function DerivationRow({
       <dt className="text-sm text-slate-600 dark:text-slate-300">
         {term}
         {hint !== undefined && (
-          <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{hint}</span>
+          <span className="ml-2 text-xs text-slate-600 dark:text-slate-300">{hint}</span>
         )}
       </dt>
       <dd className="qsh-tnum shrink-0 text-sm font-semibold text-slate-800 dark:text-slate-100">{value}</dd>
@@ -184,7 +184,7 @@ export default function WhyNumbersPage(): ReactElement {
         <table className="mt-2 w-full border-collapse text-sm">
           <caption className="sr-only">各活动水平对应的活动系数</caption>
           <thead>
-            <tr className="text-left text-xs text-slate-500 dark:text-slate-400">
+            <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
               <th scope="col" className="py-1 font-medium">活动水平</th>
               <th scope="col" className="py-1 text-right font-medium">系数</th>
             </tr>
@@ -224,7 +224,7 @@ export default function WhyNumbersPage(): ReactElement {
             <DerivationRow term="建议摄入" value={`${live.budget.intakeRecommended} kcal/日`} />
           </dl>
         ) : (
-          <p className="mt-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+          <p className="mt-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
             {hasToken
               ? '完成引导问卷后，这里会用你自己的资料实时算出每一步的分解。'
               : '登录并完成引导问卷后，这里会用你自己的资料实时算出每一步的分解。'}
@@ -291,7 +291,7 @@ export default function WhyNumbersPage(): ReactElement {
         <table className="mt-3 w-full border-collapse text-sm">
           <caption className="sr-only">常见运动的 MET 值与换算示例（60kg / 30 分钟）</caption>
           <thead>
-            <tr className="text-left text-xs text-slate-500 dark:text-slate-400">
+            <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
               <th scope="col" className="py-1 font-medium">运动</th>
               <th scope="col" className="py-1 text-right font-medium">MET</th>
               <th scope="col" className="py-1 text-right font-medium">约消耗（60kg / 30 分钟）</th>
@@ -307,7 +307,7 @@ export default function WhyNumbersPage(): ReactElement {
             ))}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
           运动消耗是估算值：实际还受强度、效率、体质影响，所以我们会说「大约」。别把它当精确账本。
         </p>
       </section>
@@ -326,7 +326,7 @@ export default function WhyNumbersPage(): ReactElement {
         <table className="mt-3 w-full border-collapse text-sm">
           <caption className="sr-only">食物营养数据来源与许可</caption>
           <thead>
-            <tr className="text-left text-xs text-slate-500 dark:text-slate-400">
+            <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
               <th scope="col" className="py-1 font-medium">来源</th>
               <th scope="col" className="py-1 text-right font-medium">条数</th>
               <th scope="col" className="py-1 font-medium">许可</th>
@@ -350,7 +350,7 @@ export default function WhyNumbersPage(): ReactElement {
             </tr>
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
           署名：© Open Food Facts contributors（ODbL 1.0）；USDA FoodData Central — SR Legacy（公有领域）。
         </p>
 

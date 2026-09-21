@@ -14,6 +14,7 @@ import { addDays, formatDateLabel, todayKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { COPY } from '@/lib/copy';
 import { emojiForFoodName } from '@/lib/food-emoji';
+import EmptyState from '@/components/common/EmptyState';
 import { MEAL_BUDGET_SHARE, type ThemeBudget } from '@/theme/tokens';
 import MealComposer from './MealComposer';
 import type { ComposerSubmit } from './MealComposer';
@@ -271,15 +272,9 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         )}
       </div>
 
-      {/* 空状态插画位：大 emoji + 一句话（不指责、不催） */}
-      {isEmptyDay && (
-        <div className="qsh-surface-warm flex items-center gap-4 p-5">
-          <span aria-hidden="true" className="text-4xl">
-            🍽️
-          </span>
-          <p className="text-sm text-slate-700 dark:text-slate-300">{COPY.emptyTodayDiary}</p>
-        </div>
-      )}
+      {/* 空状态（共用组件第一处接入）：品牌花替代原先的 emoji 插画位，
+          文案保持原样不动（语气规范由 copy.ts 统一把关） */}
+      {isEmptyDay && <EmptyState title={COPY.emptyTodayDiary} />}
 
       {/* 屏幕阅读器播报记录结果（TC-48） */}
       <p className="qsh-sr-only" role="status" aria-live="polite">
