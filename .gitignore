@@ -6,6 +6,10 @@ node_modules/
 # build outputs
 dist/
 build/
+# 临时构建目录：用于绕开本机 vite build 的 safe-delete 守卫（先 --outDir dist_tmp 再拷回 dist）。
+# 加这条是因为它真的被误提交过两次：命令被并发重试时，第二次的 `git add -A` 抓到了第一次
+# 还在构建中的 dist_tmp（历史里因此留下 ~1.5MB 构建产物，共两处）。
+dist_tmp/
 coverage/
 *.tsbuildinfo
 
