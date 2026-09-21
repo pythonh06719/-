@@ -4,6 +4,18 @@
 
 :root {
   color-scheme: light;
+
+  /**
+   * elevation 的浅色值（`qsh-1~3`，深色值见 `theme/dark.css` 的同名覆盖）。
+   *
+   * 为什么做成变量而不是把颜色写死在 `tailwind.config.ts`：
+   * 深色下阴影几乎不可见（原 `shadow-soft` 用偏浅的灰蓝，深底上完全糊掉），
+   * 必须整体换成「顶部内高光 + 少量真实阴影」的表达方式。变量让同一个 token
+   * 在两套主题里各自成立，`shadow-qsh-1` 之类的调用点不需要写 `dark:` 变体。
+   */
+  --qsh-shadow-1: 0 2px 10px -6px rgba(31, 41, 55, 0.1), 0 1px 3px -1px rgba(31, 41, 55, 0.06);
+  --qsh-shadow-2: 0 12px 32px -12px rgba(31, 41, 55, 0.14), 0 4px 12px -6px rgba(31, 41, 55, 0.08);
+  --qsh-shadow-3: 0 24px 56px -16px rgba(31, 41, 55, 0.22), 0 8px 20px -10px rgba(31, 41, 55, 0.12);
 }
 
 html,
@@ -25,9 +37,43 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 通用卡片样式（深色模式在 theme/dark.css 中覆盖 .qsh-surface） */
+/**
+ * 通用卡片表面（全站共用；深色覆盖在 `theme/dark.css`）。
+ *
+ * 这里是全站「视觉体系」的唯一杠杆点：卡片是最常出现的表面，
+ * 升级这一个类的收益 = 所有用到它的卡片一起变好，不必逐页改上百处 `rounded-2xl`。
+ *
+ * 组成：elevation-1（静止）+ 卡片圆角 + 细描边 + 统一缓动 + 统一焦点环。
+ */
 .qsh-surface {
-  @apply bg-white ring-1 ring-brand-100;
+  @apply rounded-card bg-white shadow-qsh-1 ring-1 ring-brand-100;
+  @apply transition duration-qsh-base ease-qsh-out active:scale-[0.995];
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
+}
+
+/**
+ * hover 抬升只在「真有指针设备」时启用。
+ *
+ * 为什么：触屏没有真正的 hover，浏览器会把 `:hover` 粘在刚点过的元素上，
+ * 表现为「点完还在浮着」；这也是移动端最常见的伪影之一。
+ */
+@media (hover: hover) {
+  .qsh-surface:hover {
+    @apply shadow-qsh-2;
+  }
+}
+
+/**
+ * 尊重「减少动态效果」偏好（NFR-7）：抬升与下沉只保留静态结果，去掉位移过程。
+ * `theme/a11y.css` 已有全局的 `prefers-reduced-motion` 兜底，这里针对本文件的
+ * transform/transition 再显式关一次，避免被后续规则覆盖。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .qsh-surface,
+  .qsh-surface-warm,
+  .qsh-action-card {
+    transition: none;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -35,9 +81,24 @@ body {
  * 深色覆盖统一在 `theme/dark.css`，浅色与深色都必须好看。
  * ------------------------------------------------------------------ */
 
-/* 暖色卡片：奶油底 + 柔阴影 + 大圆角（首页问候 / 摘要） */
+/**
+ * 暖色卡片：首页问候 / 摘要这类「主角」表面。
+ * 比普通卡片高一级 elevation（静止 2 / hover 3）——原 `shadow-soft` 的观感即 2 级，
+ * 这样既接入了体系，又不会削弱它作为页面主角的存在感。
+ *
+ * 圆角从历史值 `rounded-xl2`（1.75rem）收敛到 `radius-card`：它是**卡片**，
+ * 与全站卡片同档；`xl2` 的定义仍保留在 config 中供底部弹层过渡期使用。
+ */
 .qsh-surface-warm {
-  @apply rounded-xl2 bg-cream-100 shadow-soft ring-1 ring-warm-100;
+  @apply rounded-card bg-cream-100 shadow-qsh-2 ring-1 ring-warm-100;
+  @apply transition duration-qsh-base ease-qsh-out active:scale-[0.995];
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
+}
+
+@media (hover: hover) {
+  .qsh-surface-warm:hover {
+    @apply shadow-qsh-3;
+  }
 }
 
 /* 胶囊标签：给生活用语（「舒服」「刚开始」）一个小巧的底色 */
@@ -45,7 +106,15 @@ body {
   @apply inline-flex items-center rounded-full bg-warm-100 px-3 py-1 text-xs font-medium text-warm-800;
 }
 
-/* 行动卡：暖底、悬停微抬、轻过渡（首页「记一餐 / 喝一杯水 / 动一动」） */
+/**
+ * 行动卡：首页「记一餐 / 喝一杯水 / 动一动」。
+ *
+ * 保留原有相互手感（hover 微抬 + 位移），只做三件事：
+ * ① 圆角接入 `radius-card`；② 阴影换成 elevation token（观感不变，深色下自动可用）；
+ * ③ 补上焦点环 —— 原先只有位移、没有描边，键盘用户看不出焦点落在哪。
+ * 另外显式补 `focus-visible:rounded-card`：a11y 焦点规则曾把圆角压成 6px，聚焦瞬间会「变形」。
+ */
 .qsh-action-card {
-  @apply flex flex-col items-center justify-center gap-1 rounded-2xl bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-warm-100 hover:shadow-soft focus-visible:-translate-y-0.5;
+  @apply flex flex-col items-center justify-center gap-1 rounded-card bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-qsh-base ease-qsh-out hover:-translate-y-0.5 hover:bg-warm-100 hover:shadow-qsh-2 active:scale-[0.995];
+  @apply focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
 }

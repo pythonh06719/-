@@ -5,11 +5,16 @@
  * 屏幕阅读器专用文本、跳过导航链接、触控目标尺寸。
  */
 
-/* 键盘焦点环：任何交互元素聚焦时都可见（AA 对比度） */
+/**
+ * 键盘焦点环：任何交互元素聚焦时都可见。
+ *
+ * 几何对齐表里统一的 focus token（`docs/VISUAL-SYSTEM.md`）：2px + 2px 偏移 + 品牌色。
+ * ⚠️ 这里**不再**写 `border-radius`：实测发现旧的 6px 覆盖会把圆角卡片（radius-card 16px）
+ *    在聚焦瞬间压成直角，出现肉眼可见的「变形」—— 焦点环只应有描边，不应改变元素几何。
+ */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid #1c6a51;
+  outline: 2px solid #2f9e78;
   outline-offset: 2px;
-  border-radius: 6px;
 }
 
 html.dark :where(a, button, input, select, textarea, [tabindex]):focus-visible {

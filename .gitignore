@@ -46,3 +46,4 @@ apps/api/eval/eval-report.json
 qa-probe-*
 qa-verify/
 tmp-qa/
+_qsh-*
