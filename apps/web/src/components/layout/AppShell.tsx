@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import BottomNav from './BottomNav';
+import BrandDecor from '@/components/common/BrandDecor';
 import { useTheme } from '@/theme/useTheme';
 import { energyLabel, useUnitStore } from '@/lib/units';
 import { COPY } from '@/lib/copy';
@@ -54,13 +55,19 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
       </a>
 
       <header className="sticky top-0 z-30 border-b border-brand-100 bg-white/90 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3">
-          <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</p>
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
+          {/* 标题用 `text-title`（20px）而非正文号：页头是全站层级的地基，
+              标题与正文同号会让每一页都「没有开始」 */}
+          <p className="text-title font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+            {title}
+          </p>
           <div className="flex items-center gap-2">
+            {/* 品牌角饰：一朵小花的「印章」，放在按钮左侧。shrink-0 保证它不会被标题挤扁 */}
+            <BrandDecor variant="corner" className="h-6 w-6 shrink-0 text-brand-300 opacity-50" />
             <button
               type="button"
               onClick={toggleUnit}
-              className="qsh-touch-target rounded-xl px-3 text-xs font-medium text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+              className="qsh-touch-target rounded-xl px-3 text-caption font-medium text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
               aria-label={`切换热量单位为${unit === 'kcal' ? '千焦' : '千卡'}，当前 ${energyLabel(unit)}`}
             >
               {energyLabel(unit)}
@@ -68,7 +75,7 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
             <button
               type="button"
               onClick={toggle}
-              className="qsh-touch-target rounded-xl px-3 text-xs font-medium text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+              className="qsh-touch-target rounded-xl px-3 text-caption font-medium text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
               aria-label={resolved === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
             >
               {resolved === 'dark' ? '浅色' : '深色'}
@@ -87,7 +94,8 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
         </p>
       )}
 
-      <main id="main" className="mx-auto max-w-3xl animate-fade-in px-5 py-6">
+      {/* 内容两侧多留一档呼吸（py-8）：全站每页统一；页面内部间距各自负责，此处不叠加 */}
+      <main id="main" className="mx-auto max-w-3xl animate-fade-in px-5 py-8">
         {children}
       </main>
 

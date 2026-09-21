@@ -55,6 +55,24 @@ const config: Config = {
           300: '#efe3cf',
         },
       },
+      /**
+       * 字号层级 token：**值 + 行高 + 字距一起给**。
+       * 为什么行高要绑在字号上：分散的 `text-*` + `leading-*` 组合会让同一层级的文字
+       * 在不同页面各写各的行高，节奏就散了；绑在一起才是「层级」而不是「一个尺寸」。
+       * Tailwind 内置字号（`text-sm` 等）保留不删，便于渐进迁移。
+       */
+      fontSize: {
+        /** 页面级大标题：一屏最多一个，用于页面主旨 */
+        display: ['1.75rem', { lineHeight: '1.25', letterSpacing: '-0.01em' }],
+        /** 区块 / 卡片标题：页头标题、卡片主标题 */
+        title: ['1.25rem', { lineHeight: '1.4', letterSpacing: '-0.005em' }],
+        /** 次级标题：空状态标题、小节标题 */
+        subtitle: ['0.9375rem', { lineHeight: '1.5' }],
+        /** 正文：说明、列表内容 */
+        body: ['0.875rem', { lineHeight: '1.6' }],
+        /** 补充说明（12px）：**用于文字时必须确认对比度 ≥ 4.5:1** */
+        caption: ['0.75rem', { lineHeight: '1.5' }],
+      },
       fontFamily: {
         sans: [
           'system-ui',

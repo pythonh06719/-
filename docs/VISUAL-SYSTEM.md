@@ -1,11 +1,12 @@
 # 轻生活 · 视觉体系（Visual System）
 
 > 本文是「视觉美术」的**规范表**（技术美术方法论里的资产预算表在 Web 侧的对应物）：
-> 定义 elevation / 圆角 / 动效 / 焦点四张表，每项都给出**值 + 用途 + 深色模式差异**，
+> 定义 elevation / 圆角 / 动效 / 焦点 / 字号 / 装饰六张表，每项都给出**值 + 用途 + 深色模式差异**，
 > 落地位置集中在 `tailwind.config.ts`（token）、`src/styles/index.css`（共用表面类）、
-> `src/theme/dark.css`（深色覆盖）。
+> `src/theme/dark.css`（深色覆盖）、`src/components/common/BrandDecor.tsx`（装饰组件）。
 >
 > 原则：**先有层级，再有外观**。改一个共用类，胜过改一百个页面里的写死的数值。
+> 另一条原则：**表面类不撒谎** —— 静态卡片不该带可点反馈，可点卡片才带（见 §7）。
 
 ## 0. 为什么要有这套表
 
@@ -74,31 +75,105 @@
 
 ## 4. Focus（焦点规范）
 
-统一的几何 + 品牌色（`src/styles/index.css` 的共用类与 `src/theme/a11y.css` 的全局规则一致）：
+统一的**几何**；品牌色按底色分档（表面类：浅色 `brand-600` / 深色 `brand-300`）：
 
 | 项 | 值 | 说明 |
 | --- | --- | --- |
 | 宽度 | 2px | `focus-visible:outline-2` |
 | 偏移 | 2px | `focus-visible:outline-offset-2`，与元素边界留出呼吸，不和描边黏在一起 |
 | 样式 | solid | `focus-visible:outline`（显式声明，避免被 UA 默认 style 干扰） |
-| 浅色 | `brand-500` `#2f9e78` | 重点大纲；若追求 ≥4.5:1 可用 `brand-600` `#248263`（4.72:1） |
-| 深色 | `brand-300` `#8cc9ab` | 深底上必须提亮，与既有深色环同色 |
+| 浅色 | `brand-600` `#248263` | 重点大纲：白底 **4.72:1**。旧值 `brand-500` `#2f9e78` 在白底只有 3.34:1，R3 加深一档 |
+| 深色 | `brand-300` `#8cc9ab` | 深底上必须提亮，与既有深色环同色（R3 未变） |
 | 几何 | **不得改写 `border-radius`** | 旧规则把圆角压成 6px 会让卡片聚焦瞬间「变形」—— 环只描边，不改元素 |
+
+> 为什么浅色档要加深：`brand-500` 虽过 3:1 的非文本最低线（3.34:1），但卡片本身已有
+> `ring-brand-100` 细描边，焦点环压在浅奶油/白底上时余量太小；`brand-600` 把余量拉到 4.72:1，
+> 键盘用户一眼就能定位焦点。深色底上 `brand-300` 实测已达 AA，故不动。
 
 覆盖范围：
 
 - 全局：`theme/a11y.css` 的 `:where(a, button, input, select, textarea, [tabindex]):focus-visible`；
 - 共用表面类：`.qsh-surface` / `.qsh-surface-warm` / `.qsh-action-card` 各自带上同一套环，
-  并显式重申 `focus-visible:rounded-card`，保证卡片类的几何不被全局规则影响。
+  并显式重申 `focus-visible:rounded-card`，保证卡片类的几何不被全局规则影响；
+- `.qsh-surface-tappable` 是**修饰符**，焦点环由基类 `.qsh-surface` 提供，无需重复声明。
 
-## 5. 落地映射（改哪个文件生效）
+> ✅ **已解决（R4）**：`src/theme/a11y.css` 的全局焦点环已从 `brand-500` `#2f9e78`（3.34:1）
+> 改为 **`brand-600` `#248263`（4.72:1）** —— 与表面类一致，**浅色焦点环全站只剩一个颜色**。
+> 深色仍为 `brand-300` `#8cc9ab`。
+> 实测（键盘 Tab 命中真实表单控件）：浅色 `2px solid rgb(36,130,99)`、深色 `2px solid rgb(140,201,171)`，offset 均为 2px。
+
+## 5. 字号层级（Typography）
+
+值定义在 `tailwind.config.ts → theme.extend.fontSize`。**每档把字号、行高、字距绑在一起给**，
+避免同一层级的文字在各页面各写各的 `leading-*`，节奏散掉。Tailwind 内置 `text-sm` 等保留，便于渐进迁移。
+
+| Token | 字号 | 行高 / 字距 | 用途 | 深色差异 |
+| --- | --- | --- | --- | --- |
+| `text-display` | 1.75rem (28px) | 1.25 / -0.01em | 页面级大标题，一屏最多一个 | 无 |
+| `text-title` | 1.25rem (20px) | 1.4 / -0.005em | 页头标题、卡片主标题 | 无 |
+| `text-subtitle` | 0.9375rem (15px) | 1.5 | 空状态标题、小节标题 | 无 |
+| `text-body` | 0.875rem (14px) | 1.6 | 正文、说明、列表 | 无 |
+| `text-caption` | 0.75rem (12px) | 1.5 | 补充说明 | 无 |
+
+> ⚠️ **对比度约束**：`text-caption`（12px）体量小、笔画细，**用于文字时必须确认前景 / 背景
+> 对比度 ≥ 4.5:1**（WCAG AA 正文标准）。字号 token 只统一节奏，**不替你保证对比度** ——
+> 这也是 `/why-numbers` 那批 12px 文字要从 `slate-500/400` 提到 `slate-600/300` 的原因。
+
+## 6. 装饰（Decoration）
+
+品牌装饰只有**一套造型**（五瓣花 + 茎叶），以三种载体出现；三者同源，**改形状要同步改**：
+
+| 载体 | 落地位置 | 用途 |
+| --- | --- | --- |
+| 内联 SVG | `apps/web/index.html`（加载屏 logo） | 必须在脚本之前出现（首屏无 JS 时） |
+| React 组件 `BrandDecor` | `src/components/common/BrandDecor.tsx` | 需要独立控制尺寸 / 颜色 / 摆位的场合 |
+| CSS data-URI 背景 | `index.css` 的 `.qsh-surface-warm` + `dark.css` 同名覆盖 | 暖色卡片右下角那枚极淡小花 |
+
+`BrandDecor` 的三个变体（`variant: 'corner' | 'leaf' | 'bloom'`）全部 `aria-hidden` +
+`focusable="false"` + `pointer-events-none`，形状用 `currentColor` 继承文字色 ——
+装饰**永不**进入无障碍树、**永不**拦截点击 / 焦点。
+
+> **「两处一形」是刻意保留的**：组件版（`BrandDecor`）与内联版（`index.html` 加载屏）
+> 画的是同一枚花，但没抽成单一来源 —— 内联 logo 必须在任何 JS 之前渲染，组件版要能被
+> 独立复用到任意位置，抽公共源会让两者之一失去「独立最先出现 / 独立复用」的能力。
+> **代价是改形状要同步 2~3 处**，故把这条约束写进 `BrandDecor.tsx` 顶部注释与本表，
+> 作为**显式的技术债记录**（而非遗漏）。data-URI 花色只用既有色板（浅色 `warm-500`
+> `#eaa032`、深色沿用 `#f8d9a0`），低透明度、贴右下角 28px，压不到正文。
+
+## 7. 表面语义：静态 / 可点（`.qsh-surface` vs `.qsh-surface-tappable`）
+
+R3 把「卡片表面」按**是否可点**拆开，让静态卡片不再假装可点：
+
+| 类 | 语义 | 反馈 | 用在哪 |
+| --- | --- | --- | --- |
+| `.qsh-surface` | **静态表面** | 仅 elevation-1 静止 + 焦点环；**无** hover 抬升、**无** 按下缩放 | 不可点的容器：`div` / `section` / `form` / `fieldset` |
+| `.qsh-surface` + `.qsh-surface-tappable` | **可点表面（中性）** | 悬停 → elevation-2，按下 → `scale(.995)`（仅在 `@media (hover: hover)`） | `<a>` / `<button>` / 带 `onClick` 或路由跳转的容器 |
+| `.qsh-surface-warm` | **暖色主角表面** | elevation-2 静止，悬停 → 3 | 首页问候 / 摘要 / 空状态 |
+| `.qsh-action-card` | **品牌行动卡** | 悬停微抬 + 位移 + 变色，按下缩放 | 首页「记一餐 / 喝一杯水 / 动一动」 |
+
+判定「可点」的唯一标准：元素是 `<a>` / `<button>`，或容器自身带 `onClick` / 路由跳转。
+**不要**因为「它看起来像卡片」就叠 `qsh-surface-tappable`。
+
+R3 现状：全仓 31 处 `.qsh-surface` 经逐个审计**全部为静态容器**，无一需要迁移；
+真正可点的卡片早已使用 `.qsh-action-card`（3 处 `<Link>`）。故本轮**只拆不迁** ——
+新修饰符就位，供后续新增的中性可点卡使用。
+
+> ✅ **已解决（R4）**：`.qsh-surface-warm` 的 4 处用法经审计**全为静态容器**，
+> 故已**移除** `active:scale` 与 `hover→elevation-3` —— 消除「假可点」信号（静止维持 elevation-2）。
+> 未新建 `-tappable` 变体（YAGNI：没有可点用法就不留空变体）。
+> **若将来出现可点的暖卡**，照 `.qsh-surface-tappable` 的方式加 `.qsh-surface-warm-tappable`，
+> **不要**直接给基类加回 hover/active 反馈。
+
+## 8. 落地映射（改哪个文件生效）
 
 | 文件 | 负责 |
 | --- | --- |
-| `tailwind.config.ts` | token 定义（elevation / 圆角 / 时长 / 缓动） |
-| `src/styles/index.css` | `:root` 的浅色 elevation 变量 + 三个共用表面类的 composition |
-| `src/theme/dark.css` | `html.dark` 的深色 elevation 变量、卡片底色、深色焦点色 |
-| `src/theme/a11y.css` | 全局焦点环几何与配色 |
+| `tailwind.config.ts` | token 定义（elevation / 圆角 / 时长 / 缓动 / 字号） |
+| `src/styles/index.css` | `:root` 浅色 elevation 变量 + 表面类 composition（`qsh-surface` / `-tappable` / `-warm` / `qsh-action-card` + 暖卡装饰背景） |
+| `src/theme/dark.css` | `html.dark` 深色 elevation 变量、卡片底色、深色焦点色、暖卡深色装饰 |
+| `src/theme/a11y.css` | 全局焦点环几何与配色、触控目标、skip-link |
+| `src/components/common/BrandDecor.tsx` | 品牌装饰 SVG 三变体（`corner` / `leaf` / `bloom`） |
+| `src/components/common/EmptyState.tsx` | 空状态（暖卡 + 花 + 一句话 + 可选动作） |
 
-新增界面时只需要：`className="qsh-surface rounded-card p-5"`（或直接用 `.qsh-surface`，
-圆角已内建），阴影、过渡、焦点环自动继承；**不要再写** `shadow-* xl`、`rounded-*` 数值。
+新增界面时只需要：`className="qsh-surface p-5"`（圆角已内建），阴影、过渡、焦点环自动继承；
+**可点的**卡片再叠 `qsh-surface-tappable`；**不要再写** `shadow-xl`、`rounded-*` 数值。

@@ -12,10 +12,13 @@
    * 深色下阴影几乎不可见（原 `shadow-soft` 用偏浅的灰蓝，深底上完全糊掉），
    * 必须整体换成「顶部内高光 + 少量真实阴影」的表达方式。变量让同一个 token
    * 在两套主题里各自成立，`shadow-qsh-1` 之类的调用点不需要写 `dark:` 变体。
+   *
+   * 值分三档并保持 1 < 2 < 3 的层级差：扩散大、负 spread、低透明度
+   * ——「浮起」要一眼可见，但仍不能出现硬边（硬边会变成 dashboard 的面板感）。
    */
-  --qsh-shadow-1: 0 2px 10px -6px rgba(31, 41, 55, 0.1), 0 1px 3px -1px rgba(31, 41, 55, 0.06);
-  --qsh-shadow-2: 0 12px 32px -12px rgba(31, 41, 55, 0.14), 0 4px 12px -6px rgba(31, 41, 55, 0.08);
-  --qsh-shadow-3: 0 24px 56px -16px rgba(31, 41, 55, 0.22), 0 8px 20px -10px rgba(31, 41, 55, 0.12);
+  --qsh-shadow-1: 0 4px 14px -6px rgba(31, 41, 55, 0.13), 0 1px 3px -1px rgba(31, 41, 55, 0.08);
+  --qsh-shadow-2: 0 14px 36px -12px rgba(31, 41, 55, 0.18), 0 5px 14px -6px rgba(31, 41, 55, 0.1);
+  --qsh-shadow-3: 0 26px 60px -16px rgba(31, 41, 55, 0.26), 0 10px 24px -10px rgba(31, 41, 55, 0.14);
 }
 
 html,
@@ -44,11 +47,32 @@ body {
  * 升级这一个类的收益 = 所有用到它的卡片一起变好，不必逐页改上百处 `rounded-2xl`。
  *
  * 组成：elevation-1（静止）+ 卡片圆角 + 细描边 + 统一缓动 + 统一焦点环。
+ *
+ * **语义边界（R3 起）：本类是「静态表面」** —— 只负责「一张安静的纸」，
+ * 不再自带 hover 抬升与按下缩放。原因：全站 31 处 `qsh-surface` 无一例外都是
+ * 不可点的容器（`div` / `section` / `form` / `fieldset`），把「可点」反馈写进基类
+ * 等于对每一张静态卡片谎称「你能点」—— 指针扫过整页卡片都在浮起，是明确的错误暗示。
+ * 真正可点的中性卡片改用修饰符 `.qsh-surface-tappable`（见下）；
+ * 「品牌行动卡」仍用语义独立的 `.qsh-action-card`。
  */
 .qsh-surface {
   @apply rounded-card bg-white shadow-qsh-1 ring-1 ring-brand-100;
+  @apply transition duration-qsh-base ease-qsh-out;
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:rounded-card;
+}
+
+/**
+ * 可点表面修饰符：`className="qsh-surface qsh-surface-tappable"`。
+ *
+ * 仅当**元素本身真的可点**时才叠加它 —— 元素是 `<a>` / `<button>`，或容器自身带
+ * `onClick` / 路由跳转。它补上两部分反馈：
+ * ① 指针悬停时抬到 elevation-2（放进 `@media (hover: hover)`，避免触屏「点完还浮着」）；
+ * ② 按下时轻微内缩（`active:scale-[0.995]`），给出「按到了」的手感。
+ *
+ * 依赖基类 `.qsh-surface` 提供表面色 / 圆角 / 描边 / 焦点环；单独使用不会得到卡片外观。
+ */
+.qsh-surface-tappable {
   @apply transition duration-qsh-base ease-qsh-out active:scale-[0.995];
-  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
 }
 
 /**
@@ -58,7 +82,7 @@ body {
  * 表现为「点完还在浮着」；这也是移动端最常见的伪影之一。
  */
 @media (hover: hover) {
-  .qsh-surface:hover {
+  .qsh-surface-tappable:hover {
     @apply shadow-qsh-2;
   }
 }
@@ -71,6 +95,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .qsh-surface,
   .qsh-surface-warm,
+  .qsh-surface-tappable,
   .qsh-action-card {
     transition: none;
   }
@@ -83,22 +108,34 @@ body {
 
 /**
  * 暖色卡片：首页问候 / 摘要这类「主角」表面。
- * 比普通卡片高一级 elevation（静止 2 / hover 3）——原 `shadow-soft` 的观感即 2 级，
+ * 静止 elevation 2（比普通卡片高一级）——原 `shadow-soft` 的观感即 2 级，
  * 这样既接入了体系，又不会削弱它作为页面主角的存在感。
+ *
+ * ⚠️ **刻意不做 hover / active 反馈**：全仓 4 处用法经审计**均为静态容器**
+ * （无 onClick / 无 role="button" / 无 tabIndex / 非 a·Link / 非路由容器）。
+ * 给它加 hover 抬升或按下下沉会传达「这里能点」的假信号 —— 这是交互诚实性问题，
+ * 与 `.qsh-surface` 的处理一致（后者在 R3 已拆出 `.qsh-surface-tappable` 修饰符）。
+ * 若将来真出现可点的暖卡，再照 `.qsh-surface-tappable` 的方式加变体，不要直接给本类加回反馈。
  *
  * 圆角从历史值 `rounded-xl2`（1.75rem）收敛到 `radius-card`：它是**卡片**，
  * 与全站卡片同档；`xl2` 的定义仍保留在 config 中供底部弹层过渡期使用。
  */
 .qsh-surface-warm {
   @apply rounded-card bg-cream-100 shadow-qsh-2 ring-1 ring-warm-100;
-  @apply transition duration-qsh-base ease-qsh-out active:scale-[0.995];
-  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
-}
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:rounded-card;
 
-@media (hover: hover) {
-  .qsh-surface-warm:hover {
-    @apply shadow-qsh-3;
-  }
+  /**
+   * 右下角一枚极淡的品牌小花（data-URI SVG，花瓣沿用加载页那套五瓣造型）。
+   *
+   * 为什么用 CSS 背景而不是 React 组件：暖卡是全站共用的表面类，
+   * 一处规则即可覆盖所有暖卡，且**整条删除只需删这一处** —— 装饰扩散风险最小。
+   * 花色用既有色板值（warm-500 `#eaa032`）+ 低透明度，不引入新色；
+   * 位置贴着右下角、尺寸 28px，压不到正文（卡片自身有 p-5 的内边距）。
+   */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='%23eaa032' fill-opacity='0.16'%3E%3Ccircle cx='20' cy='11' r='5.2'/%3E%3Ccircle cx='24.9' cy='15.6' r='5.2'/%3E%3Ccircle cx='23' cy='21.4' r='5.2'/%3E%3Ccircle cx='17' cy='21.4' r='5.2'/%3E%3Ccircle cx='15.1' cy='15.6' r='5.2'/%3E%3C/g%3E%3Ccircle cx='20' cy='16.4' r='2.6' fill='%23cf8320' fill-opacity='0.2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px bottom 10px;
+  background-size: 28px 28px;
 }
 
 /* 胶囊标签：给生活用语（「舒服」「刚开始」）一个小巧的底色 */
@@ -116,5 +153,5 @@ body {
  */
 .qsh-action-card {
   @apply flex flex-col items-center justify-center gap-1 rounded-card bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-qsh-base ease-qsh-out hover:-translate-y-0.5 hover:bg-warm-100 hover:shadow-qsh-2 active:scale-[0.995];
-  @apply focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 focus-visible:rounded-card;
+  @apply focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:rounded-card;
 }
