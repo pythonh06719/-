@@ -248,6 +248,10 @@ export type AgentStreamEvent =
  *
  * 协议：每条事件为 `data: {json}\n\n`；按空行分帧，并正确处理
  * 「一个事件被拆进多个 chunk」「一个 chunk 含多个事件」两种情况（用缓冲区累积）。
+ *
+ * ⚠️ 本函数**不内置降级**：流式不可用时抛 `E_STREAM_UNSUPPORTED`（或网络/HTTP 错误），
+ * 由调用方决定回退策略 —— 现有唯一调用方 AiPage 的做法是「catch 后改调对应的非流式端点」，
+ * 新增调用方请沿用同一模式（服务端 SSE 端点与普通端点共用同一套业务逻辑，回退是安全的）。
  */
 export async function postStream(
   path: string,

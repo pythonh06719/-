@@ -101,7 +101,14 @@ export class AiController {
     res.flushHeaders?.();
 
     const write = (event: Record<string, unknown>): void => {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      // ⚠️ 自吞写异常：客户端可能在流中途断开，对已销毁 socket 的 write 可能抛错 ——
+      // 若让异常从 .catch() 的 error 写入再抛出，会变成**未处理的 Promise 拒绝**（Node 22 默认崩进程）。
+      // 断开时忽略即可：run() 会自然跑完并把 trace 落库（可从 GET /ai/agent/traces 查看结果）。
+      try {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      } catch {
+        /* 客户端已断开：忽略，等本轮 Agent 结束 */
+      }
     };
 
     write({ type: 'start' });
@@ -182,7 +189,14 @@ export class AiController {
     res.flushHeaders?.();
 
     const write = (event: Record<string, unknown>): void => {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      // ⚠️ 自吞写异常：客户端可能在流中途断开，对已销毁 socket 的 write 可能抛错 ——
+      // 若让异常从 .catch() 的 error 写入再抛出，会变成**未处理的 Promise 拒绝**（Node 22 默认崩进程）。
+      // 断开时忽略即可：run() 会自然跑完并把 trace 落库（可从 GET /ai/agent/traces 查看结果）。
+      try {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      } catch {
+        /* 客户端已断开：忽略，等本轮 Agent 结束 */
+      }
     };
 
     write({ type: 'start' });
