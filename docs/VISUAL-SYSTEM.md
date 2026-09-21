@@ -97,10 +97,15 @@
   并显式重申 `focus-visible:rounded-card`，保证卡片类的几何不被全局规则影响；
 - `.qsh-surface-tappable` 是**修饰符**，焦点环由基类 `.qsh-surface` 提供，无需重复声明。
 
-> ✅ **已解决（R4）**：`src/theme/a11y.css` 的全局焦点环已从 `brand-500` `#2f9e78`（3.34:1）
-> 改为 **`brand-600` `#248263`（4.72:1）** —— 与表面类一致，**浅色焦点环全站只剩一个颜色**。
-> 深色仍为 `brand-300` `#8cc9ab`。
-> 实测（键盘 Tab 命中真实表单控件）：浅色 `2px solid rgb(36,130,99)`、深色 `2px solid rgb(140,201,171)`，offset 均为 2px。
+> ✅ **已解决（R4）**：浅色焦点环**全站收敛为单一色** `brand-600` `#248263`（对白底 4.72:1），
+> 深色统一 `brand-300` `#8cc9ab`。共三处来源，缺一都会出现「两档环色」：
+> ① 共享表面类 —— `styles/index.css` 的 `.qsh-surface` / `.qsh-surface-warm` / `.qsh-action-card`；
+> ② 全局规则 —— `theme/a11y.css` 的 `:where(a, button, input, select, textarea, [tabindex]):focus-visible`；
+> ③ **加载屏「跳过」按钮** —— `apps/web/index.html` 内联 `<style>` 的 `#qsh-skip:focus-visible`
+>    （它必须早于任何 JS 渲染，规则只能内联在 HTML 里，是**唯一不在 CSS 文件中的焦点环**，收口时最易漏，
+>    已一并改为 `#248263`；改的是 `<style>`，与 CSP 的**内联脚本** hash 无关，`check-csp-hash` 仍一致）。
+> 实测（键盘 Tab 命中真实非表面控件）：浅色 `2px solid rgb(36,130,99)`（4.72:1）、
+> 深色 `2px solid rgb(140,201,171)`（9.40:1），offset 均为 2px。
 
 ## 5. 字号层级（Typography）
 
@@ -148,7 +153,7 @@ R3 把「卡片表面」按**是否可点**拆开，让静态卡片不再假装�
 | --- | --- | --- | --- |
 | `.qsh-surface` | **静态表面** | 仅 elevation-1 静止 + 焦点环；**无** hover 抬升、**无** 按下缩放 | 不可点的容器：`div` / `section` / `form` / `fieldset` |
 | `.qsh-surface` + `.qsh-surface-tappable` | **可点表面（中性）** | 悬停 → elevation-2，按下 → `scale(.995)`（仅在 `@media (hover: hover)`） | `<a>` / `<button>` / 带 `onClick` 或路由跳转的容器 |
-| `.qsh-surface-warm` | **暖色主角表面** | elevation-2 静止，悬停 → 3 | 首页问候 / 摘要 / 空状态 |
+| `.qsh-surface-warm` | **暖色主角表面** | elevation-2 静止；**无** hover 抬升、**无** 按下缩放（R4 起） | 首页问候 / 摘要 / 空状态 |
 | `.qsh-action-card` | **品牌行动卡** | 悬停微抬 + 位移 + 变色，按下缩放 | 首页「记一餐 / 喝一杯水 / 动一动」 |
 
 判定「可点」的唯一标准：元素是 `<a>` / `<button>`，或容器自身带 `onClick` / 路由跳转。
@@ -158,9 +163,12 @@ R3 现状：全仓 31 处 `.qsh-surface` 经逐个审计**全部为静态容器*
 真正可点的卡片早已使用 `.qsh-action-card`（3 处 `<Link>`）。故本轮**只拆不迁** ——
 新修饰符就位，供后续新增的中性可点卡使用。
 
-> ✅ **已解决（R4）**：`.qsh-surface-warm` 的 4 处用法经审计**全为静态容器**，
+> ✅ **已解决（R4）**：`.qsh-surface-warm` 的 4 处用法经审计**全为静态容器**
+> （判定依据同 R3：无 `onClick` / 无 `role="button"` / 无 `tabIndex` / 非 `<a>`·`<Link>` / 非路由容器），
 > 故已**移除** `active:scale` 与 `hover→elevation-3` —— 消除「假可点」信号（静止维持 elevation-2）。
 > 未新建 `-tappable` 变体（YAGNI：没有可点用法就不留空变体）。
+> 顺带把它从 `prefers-reduced-motion` 的过渡名单里移除：本类已不再声明任何 `transition`，
+> 对无动效的类设 `transition: none` 是死代码，会掩盖真实语义。
 > **若将来出现可点的暖卡**，照 `.qsh-surface-tappable` 的方式加 `.qsh-surface-warm-tappable`，
 > **不要**直接给基类加回 hover/active 反馈。
 
@@ -172,6 +180,7 @@ R3 现状：全仓 31 处 `.qsh-surface` 经逐个审计**全部为静态容器*
 | `src/styles/index.css` | `:root` 浅色 elevation 变量 + 表面类 composition（`qsh-surface` / `-tappable` / `-warm` / `qsh-action-card` + 暖卡装饰背景） |
 | `src/theme/dark.css` | `html.dark` 深色 elevation 变量、卡片底色、深色焦点色、暖卡深色装饰 |
 | `src/theme/a11y.css` | 全局焦点环几何与配色、触控目标、skip-link |
+| `apps/web/index.html` | 加载屏 + 「跳过」按钮（内联 `<style>`，含其焦点环 `#qsh-skip`）；与 CSP 内联脚本 hash 绑定 |
 | `src/components/common/BrandDecor.tsx` | 品牌装饰 SVG 三变体（`corner` / `leaf` / `bloom`） |
 | `src/components/common/EmptyState.tsx` | 空状态（暖卡 + 花 + 一句话 + 可选动作） |
 

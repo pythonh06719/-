@@ -88,13 +88,15 @@ body {
 }
 
 /**
- * 尊重「减少动态效果」偏好（NFR-7）：抬升与下沉只保留静态结果，去掉位移过程。
+ * 尊重「减少动态效果」偏好（NFR-7）：把「带位移动效」的表面类的过渡关掉。
  * `theme/a11y.css` 已有全局的 `prefers-reduced-motion` 兜底，这里针对本文件的
  * transform/transition 再显式关一次，避免被后续规则覆盖。
+ *
+ * R4：`.qsh-surface-warm` 已移除 hover/active 反馈、不再声明任何 transition，
+ * 故从本名单删除（对无动效的类设 `transition: none` 是死代码，会掩盖真实语义）。
  */
 @media (prefers-reduced-motion: reduce) {
   .qsh-surface,
-  .qsh-surface-warm,
   .qsh-surface-tappable,
   .qsh-action-card {
     transition: none;
