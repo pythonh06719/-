@@ -97,6 +97,15 @@ export default function HabitsPage(): ReactElement {
         </button>
       ))}
 
+      {/*
+        ⚠️ 正常路径下本分支**不可达**：`GET /api/habits` 对所有账号都返回同一批种子习惯
+        （water / early_sleep / steps…），`habits.length` 恒 > 0。
+        实际只有**请求失败**时（`data` 为 undefined → `habits` 退回 `[]`）才会渲染到这里 ——
+        而那时显示「还没有习惯」其实并不准确（是出错，不是空）。
+        保留 `EmptyState` 是把它当**防御性展示**：真有一天出现「零习惯」的账号，
+        这里至少不是一句裸文案。若将来后端改成按用户返回，本处会自然生效。
+        真正可达的空状态见 exercise / weight / diary 三处。
+      */}
       {habits.length === 0 ? (
         habitsQuery.isLoading ? (
           <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
