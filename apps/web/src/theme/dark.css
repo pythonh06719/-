@@ -7,12 +7,33 @@
 
 html.dark {
   color-scheme: dark;
+
+  /**
+   * 深色下的 elevation：换个表达方式，而不是把浅色阴影调暗。
+   *
+   * 为什么：深底上「灰色投影」几乎不可见（原 `shadow-soft` 用的 rgba(31,41,55) 是浅色向的深色，
+   * 压在 #16241f 上完全糊掉）。深色里层级要靠三件事共同表达：
+   * ① 更亮的表面色（见下方 `html.dark .qsh-surface` 的 #16241f，与基底 #0f1a16 拉开）；
+   * ② 顶部 1px 内高光 —— 模拟光源从上方来，让卡片有了「厚度」；
+   * ③ 少量但更深的真实阴影 —— 负责把卡片从背景里剥离出来。
+   */
+  --qsh-shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --qsh-shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 14px 34px -14px rgba(0, 0, 0, 0.66);
+  --qsh-shadow-3: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 26px 60px -18px rgba(0, 0, 0, 0.72);
 }
 
 /* 应用外壳：深色下的基底与文字色 */
 html.dark body {
   background-color: #0f1a16;
   color: #e6f0eb;
+}
+
+/* 焦点环：浅色用 brand-500，深色必须换成更亮的 brand-300 才能在 #16241f 上保持可见
+   （与 theme/a11y.css 里原有的深色环同色 —— 全站焦点语言因此统一） */
+html.dark .qsh-surface:focus-visible,
+html.dark .qsh-surface-warm:focus-visible,
+html.dark .qsh-action-card:focus-visible {
+  outline-color: #8cc9ab;
 }
 
 /* 卡片 / 面板：深色下用低饱和墨绿，保持温和观感 */

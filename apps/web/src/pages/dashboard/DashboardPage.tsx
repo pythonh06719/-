@@ -163,8 +163,9 @@ export default function DashboardPage(): ReactElement {
   if (dashboardQuery.isLoading && data === null) {
     return (
       <section aria-busy="true" className="space-y-4">
-        <div className="h-28 animate-pulse rounded-xl2 bg-cream-200 dark:bg-slate-800" />
-        <div className="h-24 animate-pulse rounded-2xl bg-cream-200 dark:bg-slate-800" />
+        {/* 骨架必须是真表面的同款几何（圆角 token），否则数据到位那一刻会看到一次「变形」 */}
+        <div className="h-28 animate-pulse rounded-card bg-cream-200 dark:bg-slate-800" />
+        <div className="h-24 animate-pulse rounded-card bg-cream-200 dark:bg-slate-800" />
         <div className="h-40 animate-pulse rounded-2xl bg-brand-100 dark:bg-slate-800" />
         <p className="qsh-sr-only">正在读取今天的数据</p>
       </section>
