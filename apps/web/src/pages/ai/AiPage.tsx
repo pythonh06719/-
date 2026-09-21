@@ -8,7 +8,7 @@ import type {
   AiRecognizeFoodResponse,
   AiTodayPlanResponse,
 } from '@qsh/shared-types';
-import { api, ApiClientError } from '@/lib/api';
+import { api, ApiClientError, postStream } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
 import { todayKey } from '@/lib/format';
@@ -215,12 +215,70 @@ export default function AiPage(): ReactElement {
     enabled: false,
     retry: 0,
   });
-  const askQuery = useQuery({
-    queryKey: queryKeys.aiFreeAsk(date, askSubmitted),
-    queryFn: () => api.post<AiFreeAskResponse>('/ai/free-ask', { question: askSubmitted, date }),
-    enabled: askSubmitted.length > 0,
-    retry: 0,
-  });
+  /**
+   * ask 流式状态：形状刻意对齐 useQuery 的 `{ data, isFetching, isError, error }`，
+   * 渲染侧只需把 `askQuery.` 换成 `askQueryLike.`，改动最小。
+   */
+  const [askQueryLike, setAskQueryLike] = useState<{
+    data: AiFreeAskResponse | undefined;
+    isFetching: boolean;
+    isError: boolean;
+    error: unknown;
+  }>({ data: undefined, isFetching: false, isError: false, error: null });
+  /** Agent 实时步骤（流式 step 事件累积；done 后清空，答案区接管） */
+  const [liveSteps, setLiveSteps] = useState<
+    Array<{ index: number; type: string; tool?: string; note?: string; result?: string }>
+  >([]);
+
+  /**
+   * 流式发起自由提问：`free-ask/stream` 与 `free-ask` **同一套分流逻辑**
+   * （医疗安全闸 / 食物库命中 → 确定性回答；否则 Agent 多步，逐步推送）。
+   * 流式不可用 / 失败 → 回退到原非流式端点（同一分流，不白屏）。
+   */
+  const runAsk = async (questionText: string): Promise<void> => {
+    setConfirmedTraceId(null);
+    setLiveSteps([]);
+    setAskQueryLike({ data: undefined, isFetching: true, isError: false, error: null });
+    try {
+      await postStream(
+        '/ai/free-ask/stream',
+        { question: questionText, date },
+        (event) => {
+          if (event.type === 'step') {
+            setLiveSteps((prev) => [
+              ...prev,
+              { index: event.step.index, type: event.step.type, tool: event.step.tool, note: event.step.note },
+            ]);
+          }
+          if (event.type === 'done') {
+            setLiveSteps([]);
+            setAskQueryLike({
+              data: event.result as AiFreeAskResponse,
+              isFetching: false,
+              isError: false,
+              error: null,
+            });
+          }
+          if (event.type === 'error') {
+            setAskQueryLike((prev) => ({ ...prev, isFetching: false, isError: true, error: new Error(event.message) }));
+          }
+        },
+      );
+    } catch (cause) {
+      if (cause instanceof ApiClientError && cause.code === 'E_STREAM_UNSUPPORTED') {
+        // 服务端 / 浏览器不支持流式 → 回退原非流式端点（同一分流逻辑）
+        try {
+          const data = await api.post<AiFreeAskResponse>('/ai/free-ask', { question: questionText, date });
+          setAskQueryLike({ data, isFetching: false, isError: false, error: null });
+          setLiveSteps([]);
+        } catch (fallbackError) {
+          setAskQueryLike({ data: undefined, isFetching: false, isError: true, error: fallbackError });
+        }
+        return;
+      }
+      setAskQueryLike({ data: undefined, isFetching: false, isError: true, error: cause });
+    }
+  };
 
   // 点击「生成」才发起请求（POST 探测不自动发）
   useEffect(() => {
@@ -322,10 +380,11 @@ export default function AiPage(): ReactElement {
             <button
               type="button"
               onClick={() => {
-                setConfirmedTraceId(null);
-                setAskSubmitted(question.trim());
+                const text = question.trim();
+                setAskSubmitted(text);
+                void runAsk(text);
               }}
-              disabled={question.trim().length === 0 || askQuery.isFetching}
+              disabled={question.trim().length === 0 || askQueryLike.isFetching}
               className="shrink-0 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               {COPY.aiAskSend}
@@ -334,40 +393,62 @@ export default function AiPage(): ReactElement {
           {question.trim().length === 0 && askSubmitted.length === 0 && (
             <p className="text-xs text-slate-600 dark:text-slate-400">{COPY.aiAskEmpty}</p>
           )}
-          {askQuery.isFetching && <p className="text-center text-sm text-slate-600 dark:text-slate-400">正在想怎么回答…</p>}
-          {askQuery.isError && <p className="text-center text-sm text-slate-600 dark:text-slate-400">{errorMessage(askQuery.error)}</p>}
-          {!askQuery.isFetching && askQuery.data !== undefined && (
+          {askQueryLike.isFetching && (
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+              {liveSteps.length > 0 ? '正在处理…' : '正在想怎么回答…'}
+            </p>
+          )}
+          {askQueryLike.isFetching && liveSteps.length > 0 && (
+            <ul
+              aria-label="正在进行的步骤"
+              className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200"
+            >
+              {liveSteps.map((step, i) => (
+                <li key={`${step.index}-${i}`} className="flex items-start gap-1.5">
+                  {step.tool !== undefined && (
+                    <span className="font-medium">{TOOL_LABELS[step.tool] ?? step.tool}</span>
+                  )}
+                  {step.note !== undefined && <span>{step.note}</span>}
+                  {step.result !== undefined && (
+                    <span className="text-slate-500 dark:text-slate-400">{step.result}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {askQueryLike.isError && <p className="text-center text-sm text-slate-600 dark:text-slate-400">{errorMessage(askQueryLike.error)}</p>}
+          {!askQueryLike.isFetching && askQueryLike.data !== undefined && (
             <>
               {/* 医疗安全兜底：高亮展示安全提示（R9.6 / TC-44） */}
-              {askQuery.data.safetyFlag && <SafetyBanner safetyMessages={[askQuery.data.answer]} />}
-              {askQuery.data.available === false && <UnavailableNotice />}
+              {askQueryLike.data.safetyFlag && <SafetyBanner safetyMessages={[askQueryLike.data.answer]} />}
+              {askQueryLike.data.available === false && <UnavailableNotice />}
               <div className="qsh-surface p-5">
-                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQuery.data.answer}</p>
+                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQueryLike.data.answer}</p>
                 {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
-                {askQuery.data.tools !== undefined && askQuery.data.tools.length > 0 && (
+                {askQueryLike.data.tools !== undefined && askQueryLike.data.tools.length > 0 && (
                   <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    我查了：{askQuery.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
+                    我查了：{askQueryLike.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
                   </p>
                 )}
               </div>
               {/* Agent 写操作待确认卡片（human-in-the-loop）：确认后才落库 */}
-              {askQuery.data.pending !== null &&
-                askQuery.data.pending !== undefined &&
-                askQuery.data.traceId !== undefined &&
-                confirmedTraceId !== askQuery.data.traceId && (
+              {askQueryLike.data.pending !== null &&
+                askQueryLike.data.pending !== undefined &&
+                askQueryLike.data.traceId !== undefined &&
+                confirmedTraceId !== askQueryLike.data.traceId && (
                   <div
                     role="status"
                     className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/50 dark:bg-amber-900/20"
                   >
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-200">需要你确认</p>
                     <p className="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-100">
-                      {askQuery.data.pending.describe}
+                      {askQueryLike.data.pending.describe}
                     </p>
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
                         onClick={() =>
-                          confirmMutation.mutate({ traceId: askQuery.data!.traceId as number })
+                          confirmMutation.mutate({ traceId: askQueryLike.data!.traceId as number })
                         }
                         disabled={confirmMutation.isPending}
                         className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
@@ -376,7 +457,7 @@ export default function AiPage(): ReactElement {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setConfirmedTraceId(askQuery.data!.traceId as number)}
+                        onClick={() => setConfirmedTraceId(askQueryLike.data!.traceId as number)}
                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-300"
                       >
                         先不记
@@ -388,7 +469,7 @@ export default function AiPage(): ReactElement {
                   </div>
                 )}
               {confirmedTraceId !== null &&
-                askQuery.data.traceId === confirmedTraceId &&
+                askQueryLike.data.traceId === confirmedTraceId &&
                 confirmMutation.isSuccess && (
                   <p className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
                     已按确认记录好了，去饮食日记看看吧。

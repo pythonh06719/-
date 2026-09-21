@@ -44,6 +44,15 @@ export interface AgentPendingAction {
   describe: string;
 }
 
+/**
+ * 流式回调（可选）：流式端点用它把 Agent 的执行过程实时推给前端。
+ * 不传时 `run()` 的行为与既有完全一致 —— 一次性返回，现有调用方与测试不受影响。
+ */
+export interface AgentRunHooks {
+  /** 每完成一个步骤时回调（工具执行 / 注记 / 最终结论 / 待确认） */
+  onStep?: (step: AgentStep) => void;
+}
+
 export interface AgentRunResult {
   status: 'answered' | 'need_confirm' | 'max_steps' | 'disabled' | 'failed';
   answer: string;
@@ -112,10 +121,24 @@ export class AgentService {
   }
 
   /** 执行一次 Agent 运行（可能返回「待确认」）。 */
-  async run(userId: number, question: string, date?: string): Promise<AgentRunResult> {
+  async run(
+    userId: number,
+    question: string,
+    date?: string,
+    hooks?: AgentRunHooks,
+  ): Promise<AgentRunResult> {
     const started = Date.now();
     const dateKey = date ?? todayLocalKey();
     const steps: AgentStep[] = [];
+
+    /**
+     * 步骤落袋 + 流式回调。所有步骤都走这里，保证 `steps` 数组与 `onStep` 事件不脱节。
+     * （回调可选：非流式调用不传 hooks，行为与之前逐字节一致。）
+     */
+    const emit = (step: AgentStep): void => {
+      steps.push(step);
+      hooks?.onStep?.(step);
+    };
     const trimmed = question.trim();
 
     // ① 医疗意图硬闸：与既有端点同一套关键词，命中即固定回复（不调用模型，也不消耗工具）
@@ -198,7 +221,7 @@ export class AgentService {
         this.logger.warn(`agent_llm_failed: ${(error as Error).message}`);
         status = 'failed';
         answer = DEGRADED_REPLY.failed;
-        steps.push({ index, type: 'note', note: 'llm_failed', ms: Date.now() - stepStarted });
+        emit({ index, type: 'note', note: 'llm_failed', ms: Date.now() - stepStarted });
         break;
       }
 
@@ -213,7 +236,7 @@ export class AgentService {
         if (!answer) {
           answer = DEGRADED_REPLY.failed;
         }
-        steps.push({
+        emit({
           index,
           type: 'final',
           result: answer.slice(0, 200),
@@ -240,7 +263,7 @@ export class AgentService {
             name,
             content: JSON.stringify({ error: `没有名为 ${name} 的工具，请从工具清单中选择` }),
           });
-          steps.push({ index, type: 'note', note: `unknown_tool:${name}` });
+          emit({ index, type: 'note', note: `unknown_tool:${name}` });
           continue;
         }
 
@@ -254,7 +277,7 @@ export class AgentService {
             name,
             content: JSON.stringify({ error: '参数不是合法 JSON，请重新给出' }),
           });
-          steps.push({ index, type: 'note', note: `bad_args:${name}` });
+          emit({ index, type: 'note', note: `bad_args:${name}` });
           continue;
         }
 
@@ -273,7 +296,7 @@ export class AgentService {
               name,
               content: JSON.stringify({ error: message }),
             });
-            steps.push({
+            emit({
               index,
               type: 'tool',
               tool: name,
@@ -284,7 +307,7 @@ export class AgentService {
             continue;
           }
           pending = { tool: name, args, describe };
-          steps.push({
+          emit({
             index,
             type: 'pending',
             tool: name,
@@ -299,7 +322,7 @@ export class AgentService {
         try {
           const result = await tool.run(args, ctx);
           messages.push({ role: 'tool', tool_call_id: call.id, name, content: result.content });
-          steps.push({
+          emit({
             index,
             type: 'tool',
             tool: name,
@@ -316,7 +339,7 @@ export class AgentService {
             name,
             content: JSON.stringify({ error: message }),
           });
-          steps.push({
+          emit({
             index,
             type: 'tool',
             tool: name,

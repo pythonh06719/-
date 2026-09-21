@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@qsh/shared-types';
+import type { AiFreeAskResponse, ApiResponse } from '@qsh/shared-types';
 import { getAccessToken, useAuthStore } from './auth.store';
 
 /**
@@ -205,3 +205,138 @@ export const api = {
     apiRequest<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string): Promise<T> => apiRequest<T>(path, { method: 'DELETE' }),
 } as const;
+
+
+/**
+ * 流式 Agent 事件（`POST /ai/agent/stream` 的 SSE 载荷）。
+ *
+ * `step` 的形状与后端 `AgentStep` 一致；`done` 携带与 `POST /ai/agent`
+ * 相同的终态字段（status / answer / traceId / pending …）。
+ */
+export type AgentStreamEvent =
+  | { type: 'start' }
+  | {
+      type: 'step';
+      step: {
+        index: number;
+        type: string;
+        tool?: string;
+        note?: string;
+        result?: string;
+        args?: Record<string, unknown>;
+        ms?: number;
+      };
+    }
+  | {
+      type: 'done';
+      status: string;
+      answer: string;
+      steps: unknown[];
+      tokens: number;
+      durationMs: number;
+      traceId: number | null;
+      pending?: unknown;
+      result: AiFreeAskResponse;
+    }
+  | { type: 'error'; message: string };
+
+/**
+ * SSE 流式请求（POST + `Authorization` + 请求体）。
+ *
+ * 为什么不用 `EventSource`：它只支持 GET 且无法带 `Authorization` 头 ——
+ * Agent 需要带请求体的 POST，故用 `fetch` + `ReadableStream` 手工解析 SSE 帧。
+ *
+ * 协议：每条事件为 `data: {json}\n\n`；按空行分帧，并正确处理
+ * 「一个事件被拆进多个 chunk」「一个 chunk 含多个事件」两种情况（用缓冲区累积）。
+ */
+export async function postStream(
+  path: string,
+  body: unknown,
+  onEvent: (event: AgentStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  };
+  const token = getAccessToken();
+  if (token !== null) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(`/api${path}`), {
+      method: 'POST',
+      headers,
+      signal,
+      credentials: 'include',
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (cause) {
+    throw new ApiClientError({ code: NETWORK_ERROR_CODE, status: 0, message: OFFLINE_MESSAGE, cause });
+  }
+
+  if (response.status === 401) {
+    useAuthStore.getState().clear();
+    emitUnauthorized();
+    throw new ApiClientError({ code: 'E_AUTH_UNAUTHORIZED', status: 401, message: friendlyMessage(401) });
+  }
+
+  if (!response.ok) {
+    throw new ApiClientError({
+      code: `E_HTTP_${response.status}`,
+      status: response.status,
+      message: friendlyMessage(response.status),
+    });
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('text/event-stream')) {
+    throw new ApiClientError({
+      code: 'E_STREAM_UNSUPPORTED',
+      status: response.status,
+      message: '服务端未返回流式响应，请改用普通请求',
+    });
+  }
+
+  const reader = response.body?.getReader();
+  if (reader === undefined) {
+    throw new ApiClientError({
+      code: 'E_STREAM_UNSUPPORTED',
+      status: 0,
+      message: '当前浏览器不支持流式读取',
+    });
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  /** 解析一帧（可能含多行，只认 `data: ` 前缀）；单条坏帧忽略，不中断整条流。 */
+  const flush = (chunk: string): void => {
+    for (const line of chunk.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        onEvent(JSON.parse(line.slice(6)) as AgentStreamEvent);
+      } catch {
+        /* 忽略 */
+      }
+    }
+  };
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let boundary = buffer.indexOf('\n\n');
+    while (boundary !== -1) {
+      flush(buffer.slice(0, boundary));
+      buffer = buffer.slice(boundary + 2);
+      boundary = buffer.indexOf('\n\n');
+    }
+  }
+  // 收尾：流结束时缓冲区里可能还有最后一帧（未以空行结尾）
+  if (buffer.length > 0) {
+    flush(buffer);
+  }
+}

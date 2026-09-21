@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 
 import { CurrentUser } from '../common/decorators/current-user';
@@ -76,6 +77,59 @@ export class AiController {
     return toFreeAskResponse(run, { date, question });
   }
 
+  /**
+   * 流式版自由提问（SSE）：与 `freeAsk` **同一套分流逻辑**，但 Agent 的多步过程实时推送。
+   *
+   * 事件（每条 `data: {json}\n\n`）：
+   * - `start`：收到请求
+   * - `step`：Agent 每完成一步（工具执行 / 注记 / 待确认 / 最终结论），形状同 `AgentStep`
+   * - `done`：载荷与 `POST /ai/free-ask` 的响应**同形状**（AiFreeAskResponse）——
+   *   前端渲染逻辑因此无需分叉；确定性回答（医疗安全闸 / 食物库命中）不产生 step，直接 done
+   * - `error`：配额超限等异常（连接必收尾，绝不悬挂）
+   */
+  @Post('free-ask/stream')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  freeAskStream(
+    @CurrentUser() userId: number,
+    @Body() dto: FreeAskDto,
+    @Res() res: Response,
+  ): void {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+
+    const write = (event: Record<string, unknown>): void => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    write({ type: 'start' });
+    void this.aiService
+      .freeAskDeterministic(userId, dto)
+      .then(async (deterministic) => {
+        if (deterministic !== null) {
+          // 医疗安全闸 / 食物库命中：确定性回答，数字 100% 来自食物库
+          write({ type: 'done', result: deterministic });
+          return;
+        }
+        const question = dto.question.trim();
+        const date = dto.date ?? todayLocalKey();
+        const run = await this.agentService.run(userId, question, date, {
+          onStep: (step) => write({ type: 'step', step }),
+        });
+        write({ type: 'done', result: toFreeAskResponse(run, { date, question }) });
+      })
+      .catch((error: unknown) => {
+        // 配额超限 / 模型异常：明确告知前端降级，绝不悬挂连接
+        const message = error instanceof Error ? error.message : 'free_ask_stream_failed';
+        write({ type: 'error', message });
+      })
+      .finally(() => {
+        res.end();
+      });
+  }
+
   /** 食物识别（R3.7）：文字描述 → 食物库候选；**不直接写 meal_logs**，需用户确认。 */
   @Post('recognize-food')
   @HttpCode(HttpStatus.OK)
@@ -98,6 +152,53 @@ export class AiController {
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   agent(@CurrentUser() userId: number, @Body() dto: AgentAskDto) {
     return this.agentService.run(userId, dto.question, dto.date);
+  }
+
+  /**
+   * 流式版 Agent（SSE）：把「正在做什么」实时推给前端，消除多步等待的干等。
+   *
+   * 事件（每条 `data: {json}\n\n`）：
+   * - `start`：收到请求
+   * - `step`：一个步骤完成（工具执行 / 注记 / 待确认 / 最终结论），形状同 `AgentStep`
+   * - `done`：终态，字段与 `POST /ai/agent` 的响应体一致（status / answer / steps / …）
+   * - `error`：配额超限等异常（前端展示降级文案；连接必收尾，绝不悬挂）
+   *
+   * 用 `@Res()` 接管响应：全局 ResponseInterceptor 不参与（SSE 不能包 `{ data, error }`），
+   * 分块写入由本方法直接控制。鉴权与限流沿用类级守卫（JWT + 20 次/分钟）。
+   */
+  @Post('agent/stream')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  agentStream(
+    @CurrentUser() userId: number,
+    @Body() dto: AgentAskDto,
+    @Res() res: Response,
+  ): void {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    // 显式 200：POST 默认 201，对 SSE 无意义
+    res.status(200);
+    res.flushHeaders?.();
+
+    const write = (event: Record<string, unknown>): void => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    write({ type: 'start' });
+    this.agentService
+      .run(userId, dto.question, dto.date, { onStep: (step) => write({ type: 'step', step }) })
+      .then((result) => {
+        write({ type: 'done', ...result });
+      })
+      .catch((error: unknown) => {
+        // 模型不可用 / 配额超限等：明确告知前端降级，绝不悬挂连接
+        const message = error instanceof Error ? error.message : 'agent_stream_failed';
+        write({ type: 'error', message });
+      })
+      .finally(() => {
+        res.end();
+      });
   }
 
   /** 确认并执行 Agent 的待办写操作（human-in-the-loop 第二半）。 */
