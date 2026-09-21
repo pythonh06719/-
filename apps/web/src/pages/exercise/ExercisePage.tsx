@@ -7,6 +7,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { COPY } from '@/lib/copy';
+import BrandDecor from '@/components/common/BrandDecor';
 
 /**
  * 运动与饮水（`/exercise`，PRD §6 第 5 行 / R6.1~R6.3，二期）。
@@ -175,7 +176,10 @@ export default function ExercisePage(): ReactElement {
           </p>
           <ul className="mt-2 space-y-1 text-sm text-slate-500 dark:text-slate-400">
             {dayLogs.length === 0 ? (
-              <li>今天还没有记录，散散步也算数</li>
+              <li className="flex items-center gap-1.5">
+                <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
+                <span>今天还没有记录，散散步也算数</span>
+              </li>
             ) : (
               dayLogs.map((log) => (
                 <li key={log.id}>
