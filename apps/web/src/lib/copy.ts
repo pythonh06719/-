@@ -18,6 +18,12 @@ export const COPY = {
   mealLoggedAnnounce: '记录已添加，本餐热量已更新',
   /** 体重上涨时的中性说明（TC-34） */
   weightFluctuation: '波动很正常，看趋势就好',
+  /** 目标进度卡（R2.7）——标题 / 维持模式 / 注脚；措辞中性，不做打分与催促 */
+  goalProgressTitle: '距离目标',
+  goalProgressRingLabel: '目标进度',
+  goalProgressReachedTitle: '已经到啦',
+  goalProgressReachedBody: '已经到啦，接下来把节奏稳住就好',
+  goalProgressFootnote: '进度只是帮你看清走到哪儿了，不是给自己的打分',
   /** 长时间未记录后的温和召回（TC-35 / US-17） */
   streakReturn: '休息一下没关系，随时回来',
   /** 连续记录的正向表述（弱化「不能断」的压迫感） */
@@ -109,6 +115,50 @@ export function remainingLabel(remainingKcal: number): string {
     return '今天吃得丰富一些，明天照常就好';
   }
   return '今天还可以这样安排';
+}
+
+// ---------------------------------------------------------------------------
+// 目标进度 / 维持模式（R2.7）
+// 语气规范同 §7：只陈述事实与下一步，**不催促、不打分、不在维持模式制造缺口**。
+// ---------------------------------------------------------------------------
+
+/** 一位小数（本地不依赖千分位，避免 `toLocaleString` 在部分环境下的差异）。 */
+function oneDecimal(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(1) : '—';
+}
+
+/** 「距离目标还有 X kg」。 */
+export function goalRemainingLine(remainingKg: number): string {
+  return `距离目标还有 ${oneDecimal(remainingKg)} kg`;
+}
+
+/**
+ * 「按当前节奏还需 X 周」。
+ *
+ * 向上取整并保证至少 1 周 —— 说「还需 0 周」会让人以为已经到了，说「还需 3.2 周」太像报表。
+ */
+export function goalEtaLine(etaWeeks: number): string {
+  const weeks = Math.max(1, Math.ceil(etaWeeks));
+  return `按当前节奏还需 ${weeks} 周`;
+}
+
+/** 无法给出 ETA（如缺口为 0）时的兜底：只说目标，不编造周数。 */
+export function goalTargetLine(targetWeightKg: number): string {
+  return `目标 ${oneDecimal(targetWeightKg)} kg，按自己的节奏来`;
+}
+
+/** 进度基准说明（可解释性：让用户知道百分比是怎么算出来的）。 */
+export function goalBaselineLine(baselineKg: number, targetWeightKg: number): string {
+  return `从 ${oneDecimal(baselineKg)} kg 出发，目标 ${oneDecimal(targetWeightKg)} kg`;
+}
+
+/**
+ * 维持模式下的热量说明（= TDEE，不制造缺口）。
+ *
+ * ⚠️ 绝不可写成「继续减」「再压一点」—— 已达成目标时再制造缺口是错误引导。
+ */
+export function maintenanceLine(maintenanceKcal: number): string {
+  return `维持热量约 ${Math.round(maintenanceKcal)} kcal/日，不用再往下压`;
 }
 
 // ---------------------------------------------------------------------------
