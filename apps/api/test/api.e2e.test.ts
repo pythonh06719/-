@@ -443,6 +443,14 @@ describe('轻生活 API（T03 一期 MVP）', () => {
     expect(forecast.length).toBeGreaterThanOrEqual(2);
     // 末点 == 目标体重（onboarding 设定 55kg，后续仅改起始体重，目标体重不变）
     expect(forecast[forecast.length - 1]!.weightKg).toBe(55);
+    // R2.6 真 bug 回归：起点必须贴住「最新一条体重记录」（today @ 69.2），
+    // 而不是被 `syncGoalWithLatestWeight` 改写后的 `goal.start_weight_kg` + 目标创建日
+    // —— 后者会让起点日期与体重不同源、老目标整条线落在 x 域外被裁掉。
+    expect(forecast[0]!.date).toBe(today);
+    expect(forecast[0]!.weightKg).toBe(69.2);
+    for (const point of forecast) {
+      expect(point.date >= today).toBe(true);
+    }
     // 匀速下降：单调不升
     for (let index = 1; index < forecast.length; index += 1) {
       expect(forecast[index]!.weightKg).toBeLessThanOrEqual(forecast[index - 1]!.weightKg);
