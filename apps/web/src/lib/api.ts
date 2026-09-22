@@ -178,8 +178,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     });
   }
 
-  // HTTP 200 但业务包装内是错误（防御性处理）
-  if (payload !== null && payload.error !== null) {
+  // HTTP 200 但业务包装内是错误（防御性处理）。
+  // 用 `!= null` 而非 `!== null`：`error` 字段**缺失**（undefined）时也应视为「无错误」，
+  // 否则 `undefined !== null` 为真会把正常响应误判为业务错误并抛异常。
+  if (payload !== null && payload.error != null) {
     throw new ApiClientError({
       code: payload.error.code,
       status: response.status,
