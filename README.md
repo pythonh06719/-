@@ -17,7 +17,7 @@
 | 数据主权 | CSV 导出 / 导入（含公式注入防护）、账号硬删除、隐私承诺（无广告 SDK、无第三方行为分析） |
 | 可解释性 | `/why-numbers` 逐项解释每个数字的来源与算法，未登录也能打开查看纯解释（不触发登录跳转） |
 | 部署 | `docker compose up -d --build` 一键起（nginx + NestJS + 可选 PostgreSQL），容器自动建表并幂等灌种子 |
-| 测试 | core 85 / api 74 / web 55 = **214 用例全绿**，core 覆盖率 99.7% |
+| 测试 | core 85 / api 80 / web 84 = **249 用例全绿**，core 覆盖率 99.7% |
 
 食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
 运行时还可经服务端代理**在线兜底检索 Open Food Facts**（ODbL 1.0），查询与入库均不向浏览器泄露上游地址，聚合限流 20 次/分。
@@ -72,7 +72,7 @@ npm test
 
 ### 本地跑前端 / 后端测试的正确姿势
 
-> ⚠️ **已知现象**：`npm run test -w @qsh/web` 在本机会 **全部用例失败**（约 50 个），但 CI 是全绿的。
+> ⚠️ **已知现象**：`npm run test -w @qsh/web` 在本机会 **全部用例失败**，但 CI 是全绿的。
 > **成因**：仓库内同时存在两份 vitest —— 根 `node_modules/vitest` 为 **2.1.9**（workspace 提升），
 > 而 `apps/web/node_modules/vitest` 为 **2.0.5**（web 的 package.json 声明）。从工作区脚本启动时
 > 会解析到偏低的那一份，与 `apps/web` 的测试配置 / jsdom 环境不匹配，于是报错而非断言失败。
@@ -81,7 +81,7 @@ npm test
 因此本地请**显式指定 vitest 入口**（绕过 workspace 脚本的版本解析）：
 
 ```bash
-# 前端（apps/web，55 用例）
+# 前端（apps/web，84 用例）
 cd apps/web && node ../../node_modules/vitest/vitest.mjs run
 # 等价写法（仓库根）
 node node_modules/vitest/vitest.mjs run --root apps/web
@@ -98,11 +98,34 @@ npm run dev
 # 打开终端提示的地址（默认 http://localhost:5173），在落地页完成一次免注册热量计算
 ```
 
+## 环境变量（.env）
+
+后端启动前，从 `.env.example` 复制一份到仓库根 `.env`（`.env` 已在 `.gitignore` 中）：
+
+```bash
+cp .env.example .env
+```
+
+| 变量 | 必填 | 说明 |
+| --- | --- | --- |
+| `JWT_SECRET` | ✅ | 会话签名密钥，填一段随机长字符串（`docker compose` 启动时会强制校验） |
+| `DATABASE_URL` | — | 默认 `file:./dev.db`（SQLite），无需额外服务 |
+| `AI_API_KEY` | — | 不填则 AI 对话不可用，其余功能正常 |
+| `AUTH_LOG_CODE` | — | 默认 `false`。**开启后验证码会随 `/api/auth/send-code` 的响应体返回**，前端登录卡片自动预填（详见下） |
+
+> ⚠️ **`AUTH_LOG_CODE=true` 的安全含义**：该开关等价于「**知道邮箱即可登录任意账号**」，
+> 仅适用于**自用 / 本地演示**。对外提供的真实多用户服务**绝不可开启** ——
+> 应接入真实 SMTP 并把本开关置回 `false`。
+> 部署场景下的说明见 `docs/deploy-aliyun.md`、`docs/deploy-cloudflare-render.md` 的登录章节。
+
 ## 构建前端
 
 ```bash
 npm run build
 ```
+
+> 图表为**手写 SVG**（`apps/web/src/pages/weight/WeightChart.tsx`），无图表库依赖；
+> 该 chunk 由体重页 `React.lazy` 按需加载，不影响首屏主包。
 
 ## 类型检查（全仓）
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import BrandDecor from '@/components/common/BrandDecor';
-import UpdatePrompt from '@/pwa/UpdatePrompt';
 import { useTheme } from '@/theme/useTheme';
 import { energyLabel, useUnitStore } from '@/lib/units';
 import { COPY } from '@/lib/copy';
@@ -101,9 +100,6 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
       </main>
 
       <BottomNav />
-
-      {/* PWA 新版本提示：新 SW 已接管但当前页面仍是旧包时浮出，点击才刷新 */}
-      <UpdatePrompt />
     </div>
   );
 }
