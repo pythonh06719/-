@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
 
-import type { MovingAveragePoint, WeightLog } from '@qsh/shared-types';
+import type { GoalForecastPoint, MovingAveragePoint, WeightLog } from '@qsh/shared-types';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -32,12 +32,14 @@ export class WeightsController {
   ): Promise<{
     points: Array<{ date: string; weightKg: number }>;
     movingAverage7: MovingAveragePoint[];
+    forecast: GoalForecastPoint[];
     stats: WeightListResult['stats'];
   }> {
     const result = await this.weightsService.list(userId, query.days ?? 90);
     return {
       points: result.points,
       movingAverage7: result.movingAverage7,
+      forecast: result.forecast,
       stats: result.stats,
     };
   }

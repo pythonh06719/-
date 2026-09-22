@@ -436,6 +436,18 @@ describe('轻生活 API（T03 一期 MVP）', () => {
       .expect(200);
     expect(Array.isArray(trend.body.data.movingAverage7)).toBe(true);
     expect(trend.body.data.movingAverage7.length).toBe(trend.body.data.points.length);
+
+    // R2.6：有生效目标 → 两个端点都返回目标达成预测曲线（形状一致）
+    expect(Array.isArray(list.body.data.forecast)).toBe(true);
+    const forecast = list.body.data.forecast as Array<{ date: string; weightKg: number }>;
+    expect(forecast.length).toBeGreaterThanOrEqual(2);
+    // 末点 == 目标体重（onboarding 设定 55kg，后续仅改起始体重，目标体重不变）
+    expect(forecast[forecast.length - 1]!.weightKg).toBe(55);
+    // 匀速下降：单调不升
+    for (let index = 1; index < forecast.length; index += 1) {
+      expect(forecast[index]!.weightKg).toBeLessThanOrEqual(forecast[index - 1]!.weightKg);
+    }
+    expect(trend.body.data.forecast).toEqual(forecast);
   });
 
   it('看板聚合 + 鼓励语文案规范（PRD §7）', async () => {
@@ -519,5 +531,13 @@ describe('轻生活 API（T03 一期 MVP）', () => {
       .expect(400);
     expect(invalid.body.error.code).toBe('E_VALID_INPUT');
     expect(invalid.body.error.fields).toBeTruthy();
+  });
+
+  it('目标达成预测：无生效目标（未引导的用户）→ forecast 为空数组（R2.6）', async () => {
+    const res = await request(server as never)
+      .get(`${API}/weights`)
+      .set(auth(tokenB))
+      .expect(200);
+    expect(res.body.data.forecast).toEqual([]);
   });
 });

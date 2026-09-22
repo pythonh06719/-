@@ -75,4 +75,44 @@ describe('WeightChart（手写 SVG 趋势图）', () => {
 
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', expect.stringContaining('暂无数据'));
   });
+
+  it('未传 forecast：不画预测线、图例无「目标预测」（回归现有行为）', () => {
+    const { container } = render(
+      <WeightChart dates={DATES} weights={WEIGHTS} movingAverage={[60, null, 59.65]} />,
+    );
+
+    expect(container.querySelectorAll('path')).toHaveLength(2);
+    expect(container.querySelectorAll('path[stroke-dasharray]')).toHaveLength(0);
+    expect(screen.queryByText('目标预测')).toBeNull();
+  });
+
+  it('传入 forecast：多一条虚线 + 图例出现「目标预测」，且预测线不画数据点', () => {
+    const { container } = render(
+      <WeightChart
+        dates={DATES}
+        weights={WEIGHTS}
+        movingAverage={[60, null, 59.65]}
+        forecast={[
+          { date: '2026-09-01', weightKg: 60 },
+          { date: '2026-09-08', weightKg: 58 },
+          { date: '2026-09-15', weightKg: 56 },
+        ]}
+      />,
+    );
+
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    // 预测线 + 7 日均线 + 体重曲线
+    expect(svg?.querySelectorAll('path')).toHaveLength(3);
+    // 恰好一条虚线（预测线）
+    expect(svg?.querySelectorAll('path[stroke-dasharray]')).toHaveLength(1);
+    // 预测线不画数据点：圆圈仍只有实际体重记录的 3 个
+    expect(svg?.querySelectorAll('circle')).toHaveLength(3);
+
+    expect(screen.getByText('目标预测')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('目标达成预测线'),
+    );
+  });
 });

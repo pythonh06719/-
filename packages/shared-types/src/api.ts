@@ -11,6 +11,7 @@ import type {
   ActivityLevel,
   CalorieResult,
   Gender,
+  GoalForecastPoint,
   MacroRatio,
   ValidationError,
   ValidationWarning,
@@ -451,6 +452,12 @@ export interface WeightTrendResponse {
     /** 相对首个点位的净变化 kg（可正可负） */
     changeKg: number | null;
   };
+  /**
+   * 目标达成预测曲线（R2.6，升序、每周一个点）。
+   * 无生效目标（或无法预测）时为空数组 `[]`，**必填不回退 `null`**，
+   * 前端据此判断是否需要画「目标预测」虚线。
+   */
+  forecast: GoalForecastPoint[];
 }
 
 /** `GET /api/weights` 响应。 */
