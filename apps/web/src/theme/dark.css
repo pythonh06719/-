@@ -96,8 +96,14 @@ html.dark .qsh-action-card {
   --tw-ring-color: #4a3b28;
 }
 
-html.dark .qsh-action-card:hover,
 html.dark .qsh-action-card:focus-visible {
   background-color: #332920;
+}
+
+/* 与浅色一致：hover 覆盖也只在真有指针设备时生效（理由见 `styles/index.css` 的 `.qsh-action-card`） */
+@media (hover: hover) {
+  html.dark .qsh-action-card:hover {
+    background-color: #332920;
+  }
 }
 

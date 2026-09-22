@@ -130,7 +130,7 @@ export default function FastingPage(): ReactElement {
       ) : null}
 
       <section className="qsh-surface p-5">
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">断食计时</h2>
+        <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100">断食计时</h1>
 
         {!settings ? (
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">正在读取设置…</p>
