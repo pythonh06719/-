@@ -196,18 +196,54 @@ export class WeightsService {
   /**
    * 生成当前用户的目标达成预测曲线（R2.6）。
    *
-   * 无生效目标时返回 `[]`；起始日期取目标创建日（`createdAt` 的日期部分，本地语义）。
+   * ⚠️ **起点必须取「最新一条体重记录」**（`loggedAt` + `weightKg` **同源**），
+   * 而不是 `user_goals.start_weight_kg` + `goal.createdAt`（真 bug 修复）：
+   * - `syncGoalWithLatestWeight()` 会在每次记录「最新一天」体重时把
+   *   `start_weight_kg` 改写成当前体重，而 `createdAt` 仍是几个月前的目标创建日；
+   *   于是「起始体重（= 最新）」与「起始日期（= 创建日）」**不再自洽** ——
+   *   预测线起点落在横轴 x 域之外被裁掉，老目标整条虚线都看不见（0 可见点）。
+   * - 以「最新记录」为起点后，起点正好贴住图上最后一个实际数据点，且线随记录滚动更新。
+   *
+   * 周数改为**剩余周数** = `剩余量 ÷ 每周降幅`（用 `goal.weeklyLossKg`，该字段不被同步改写），
+   * 向上取整并保证 ≥ 1 周，避免「还差一点点」时算成 0 周而丢掉整条线。
+   *
+   * 返回 `[]` 的情形：无生效目标、无任何体重记录、已达成 / 低于目标（剩余 ≤ 0）、
+   * 或每周降幅非正（无法推算周数）。末点仍**精确等于** `targetWeightKg`（由纯函数保证）。
    */
   private async buildForecast(userId: number): Promise<GoalForecastPoint[]> {
     const goal = await this.prisma.userGoal.findUnique({ where: { userId } });
     if (goal === null) {
       return [];
     }
+
+    // 起点：最新一条体重记录（日期与体重取自同一条记录，保证 (日期, 体重) 自洽）
+    const latest = await this.prisma.weightLog.findFirst({
+      where: { userId },
+      orderBy: { loggedAt: 'desc' },
+      select: { loggedAt: true, weightKg: true },
+    });
+    if (latest === null) {
+      return [];
+    }
+
+    const remainingKg = latest.weightKg - goal.targetWeightKg;
+    // 已达成 / 低于目标：无需预测（与纯函数 `startWeightKg <= targetWeightKg` 的短路一致）
+    if (remainingKg <= 0) {
+      return [];
+    }
+    // 每周降幅非正 → 无法推算剩余周数（0 或负值会让 `buildGoalForecast` 返回 []）
+    if (!(goal.weeklyLossKg > 0)) {
+      return [];
+    }
+
+    // 剩余周数：向上取整且至少 1 周（保证「还差一点点」时也有可见的 2 点预测线）
+    const remainingWeeks = Math.max(1, Math.ceil(remainingKg / goal.weeklyLossKg));
+
     return buildGoalForecast({
-      startWeightKg: goal.startWeightKg,
+      startWeightKg: latest.weightKg,
       targetWeightKg: goal.targetWeightKg,
-      targetWeeks: goal.targetWeeks,
-      startDate: goal.createdAt.slice(0, 10),
+      targetWeeks: remainingWeeks,
+      startDate: latest.loggedAt,
     });
   }
 
