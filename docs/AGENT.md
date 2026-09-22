@@ -126,8 +126,15 @@ GET /api/ai/agent/traces?limit=20    # 只看自己的轨迹
 > ⚠️ 本节下面带 ✅ 的条目已于 2026-09-20 **核实为已完成**（文档曾把它们列在待办里，
 > 实际代码/链路都已落地）。保留原文并标注，是为了避免后来者照着这份清单返工 ——
 > **改本节前请先按条目末尾给出的证据路径复核一遍是否仍成立。**
+> 2026-09-22 追加核实一条：**SSE 流式输出**（commit `c8ab891`），见下方新增的 ✅ 条目。
 
-- **无流式输出**：当前一次性返回（**P1，仍未做** —— 可接流式，改善多步等待体验）
+- ✅ **SSE 流式输出已实现**（原记「无流式输出：当前一次性返回（P1）」；2026-09-22 核实，
+  commit `c8ab891`）：后端 `apps/api/src/ai/ai.controller.ts` 提供
+  `POST /api/ai/agent/stream` 与 `POST /api/ai/free-ask/stream` 两个 `text/event-stream`
+  端点，逐事件推送（工具调用 / 分段文本 / 最终结果）；前端 `apps/web/src/lib/api.ts`
+  以 fetch + `ReadableStream` 消费（不用 `EventSource`：它只支持 GET 且带不了
+  `Authorization` 头），`AiPage` 的自由提问已走 `free-ask/stream` —— 多步等待不再整段卡住，
+  非流式端点保留为兼容路径。
 - ✅ **eval 体系已建立**（原记「无 eval 体系 (P1)」）：`apps/api/eval/` 下有 `cases.jsonl` +
   `fixtures` + `run-eval.mjs`；CI 的 backend job 以 `--replay` 回放录制好的模型响应，
   验证「Agent 循环 + 断言逻辑」没被改坏（离线零成本）。真实评测用

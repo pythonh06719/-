@@ -98,7 +98,7 @@ CORS_ORIGINS = https://qingshenghuo.pages.dev,http://localhost:5173
 
 | 方案 | 做法 | 适用 |
 | --- | --- | --- |
-| **A. 开日志取码（推荐给作品集 Demo）** | Render → 服务 → Environment 新增 `AUTH_LOG_CODE=true` → 保存（自动重新部署）。之后在 Render → **Logs** 里能看到 `[验证码] you@x.com → 123456`，用它登录 | 演示、自测；**绝不要用于真实用户环境**（日志会泄露验证码） |
+| **A. 开日志取码（推荐给作品集 Demo）** | Render → 服务 → Environment 新增 `AUTH_LOG_CODE=true` → 保存（自动重新部署）。**自 `c856daa`（2026-09-22）起更省事**：开关开启后 `POST /api/auth/send-code` 的响应体会**直接带上 6 位验证码**，前端登录卡片会**自动预填** —— 访客点「获取验证码」后直接点「登录」即可，无需再翻 Render Logs；日志打印 `[验证码] you@x.com → 123456` 的行为**照旧保留**（可作兜底） | 演示、自测；**绝不要用于真实用户环境**（开启后等价于「知道邮箱即可登录任意账号」） |
 | B. 接入 SMTP | 自建邮件发送（如 Resend / SendGrid / 腾讯云 SES），把发送逻辑接进 `auth.service.ts`，再关掉 `AUTH_LOG_CODE` | 面向真实用户时 |
 
 > 免登录也能演示的部分：落地页的**免注册热量计算器**（`CalorieCalculator`）不需要账号，
@@ -106,7 +106,7 @@ CORS_ORIGINS = https://qingshenghuo.pages.dev,http://localhost:5173
 
 ## 部署前检查清单
 
-- [ ] **`AUTH_LOG_CODE=true`（Demo 专用）**：不设则访客收不到验证码、无法登录（见上一节；真实用户环境请改用 SMTP）。
+- [ ] **`AUTH_LOG_CODE=true`（Demo 专用）**：不设则访客收不到验证码、无法登录；设了则验证码会**随接口响应回显**并由前端自动预填（`c856daa` 起，见上一节）。真实用户环境请改用 SMTP 并关闭本开关。
 - [ ] **Render 手动填 `AI_API_KEY`**：Dashboard → 服务 → Environment 新增 `AI_API_KEY`（仓库内绝不放 key；不填则 AI 走规则兜底）。
 - [ ] **CORS 域名**：确认 `render.yaml` 的 `CORS_ORIGINS`（或 Dashboard）已替换为真实 Cloudflare Pages 域名。
 - [ ] **⚠️ 回填分享卡片域名（易漏）**：`apps/web/index.html` 里的 `og:url` 与 `og:image` 目前是占位域名
