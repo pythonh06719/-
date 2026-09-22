@@ -18,8 +18,11 @@ import { TOKENS } from '@/theme/tokens';
  * - 「7 日均线」：移动平均（深色、更粗、无点），弱化单日波动（TC-34）
  * - 「目标预测」（R2.6，可选）：由 `@qsh/core` 纯函数生成的匀速下降**虚线**（中性色、无点）
  *
- * **x 轴按真实时间映射**（日期 → 毫秒），实际点与预测点共用同一 `[min, max]` 域 ——
- * 比「按数组下标等距」更正确：日期跳空 / 预测延伸到未来时，横轴间距与真实时间一致。
+ * **x / y 轴均以「实际数据」为基准**，预测线只作参考、不得支配坐标轴：
+ * - x 轴按真实时间映射（日期 → 毫秒），域 = `[实际最早日期, 实际最晚日期 + clamp(数据跨度×30%, 14, 56)天]`，
+ *   且不超过预测终点；无未来预测时实际数据铺满全宽（观感与改动前一致）。预测线裁剪到域内。
+ * - y 轴 = 实际 min/max ± 10%，纳入预测时允许外扩但不超过 `max(实际跨度×0.5, 3kg)`；预测线裁到域内。
+ * - x 轴标签按**像素间距**（≥ 44px）抽稀，时间轴下不再重叠。
  */
 
 export interface WeightChartProps {
@@ -49,8 +52,19 @@ const FORECAST_COLOR = '#94a3b8';
 
 /** y 轴分段数（含两端共 5 条网格线）。 */
 const Y_SEGMENTS = 4;
-/** x 轴最多显示的标签数，超出则等间隔抽稀。 */
-const MAX_X_LABELS = 6;
+/** x 轴标签最小像素间距：小于此值即抽稀（按实际像素坐标去重，而非下标等间隔）。 */
+const MIN_LABEL_GAP = 44;
+/** 一天的毫秒数。 */
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** x 轴右端外扩天数的下限（数据时间跨度 × 30% 后 clamp 到 [14, 56] 天）。 */
+const PAD_DAYS_MIN = 14;
+/** x 轴右端外扩天数的上限。 */
+const PAD_DAYS_MAX = 56;
+
+/** 数值 clamp。 */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 /** `YYYY-MM-DD` 形态（宽松：允许 1~2 位月/日）。 */
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -157,29 +171,63 @@ export default function WeightChart({
       }
     }
 
-    // x 轴时间域：实际记录日期与预测日期共用同一 [min, max]，右端自然延伸到预测终点。
-    const timeValues: number[] = [];
+    // ---- x 轴：以「实际数据」为基准的时间域 ----
+    // 若把预测终点也算进域，会按「目标创建日 ~ 预测终点」的整段放大，
+    // 导致实际点被压缩到左侧一小条（QA R2.6 回归）。故右端只在数据跨度上有限外扩。
+    const dataTimes: number[] = [];
     for (const iso of dates) {
       const ms = dateMs(iso);
-      if (ms !== null) timeValues.push(ms);
-    }
-    for (const point of validForecast) {
-      const ms = dateMs(point.date);
-      if (ms !== null) timeValues.push(ms);
+      if (ms !== null) dataTimes.push(ms);
     }
 
-    let minX = 0;
-    let maxX = 0;
-    const firstX = timeValues[0];
-    if (firstX !== undefined) {
-      let lo = firstX;
-      let hi = firstX;
-      for (const ms of timeValues) {
+    let dataMin = 0;
+    let dataMax = 0;
+    const firstTime = dataTimes[0];
+    if (firstTime !== undefined) {
+      let lo = firstTime;
+      let hi = firstTime;
+      for (const ms of dataTimes) {
         if (ms < lo) lo = ms;
         if (ms > hi) hi = ms;
       }
-      minX = lo;
-      maxX = hi;
+      dataMin = lo;
+      dataMax = hi;
+    }
+    const dataSpanMs = dataMax - dataMin;
+    const dataSpanDays = dataSpanMs / DAY_MS;
+    // 右端外扩 = clamp(数据时间跨度 × 30%, 14 天, 56 天)
+    const padMs = clamp(dataSpanDays * 0.3, PAD_DAYS_MIN, PAD_DAYS_MAX) * DAY_MS;
+
+    // 预测终点（最晚的可解析预测日期）
+    let forecastEnd: number | null = null;
+    for (const point of validForecast) {
+      const ms = dateMs(point.date);
+      if (ms !== null && (forecastEnd === null || ms > forecastEnd)) {
+        forecastEnd = ms;
+      }
+    }
+
+    const hasData = dataTimes.length > 0;
+    let minX = 0;
+    let maxX = 0;
+    if (hasData) {
+      if (dataSpanMs === 0) {
+        // 单点：以该点为中心左右留白，避免点贴在边缘
+        const half = padMs / 2;
+        minX = dataMax - half;
+        maxX = dataMax + half;
+        if (forecastEnd !== null && forecastEnd > maxX) {
+          maxX = Math.min(dataMax + padMs, forecastEnd);
+        }
+      } else if (forecastEnd !== null && forecastEnd > dataMax) {
+        // 有未来预测：右端外扩 pad，且不超过预测终点
+        minX = dataMin;
+        maxX = Math.min(dataMax + padMs, forecastEnd);
+      } else {
+        // 无预测 / 预测已在过去：实际数据铺满全宽（与改动前观感一致）
+        minX = dataMin;
+        maxX = dataMax;
+      }
     }
 
     const centerX = PAD.left + plotWidth / 2;
@@ -194,37 +242,48 @@ export default function WeightChart({
       return iso === undefined ? centerX : xAtDate(iso);
     };
 
-    // y 轴范围。
-    // 单数据点时收紧到 ±3（否则点会被压在默认区间中间）；多点用 min/max 加 8% 呼吸；
-    // 所有值相等时兜底出一段非零跨度，避免除以 0。下限不出现负体重。
-    // **必须包含预测体重**，否则预测线会跑出绘图区。
-    const allValues: number[] = [];
-    for (const value of weights) if (Number.isFinite(value)) allValues.push(value);
-    for (const value of movingAverage) {
-      if (value !== null && Number.isFinite(value)) allValues.push(value);
-    }
-    for (const point of validForecast) allValues.push(point.weightKg);
-
-    let minY = 0;
-    let maxY = 1;
-    const firstValue = allValues[0];
-    if (firstValue !== undefined) {
-      if (allValues.length === 1) {
-        minY = Math.max(0, firstValue - 3);
-        maxY = firstValue + 3;
-      } else {
-        let lo = firstValue;
-        let hi = firstValue;
-        for (const value of allValues) {
-          if (value < lo) lo = value;
-          if (value > hi) hi = value;
-        }
-        const span = hi - lo;
-        const breathing = span === 0 ? Math.max(0.5, Math.abs(hi) * 0.02) : span * 0.08;
-        minY = Math.max(0, lo - breathing);
-        maxY = hi + breathing;
+    // 预测线 x 裁剪：只保留落在 [minX, maxX] 内的点（超出的直接丢弃，路径自然分段）
+    const visibleForecast: GoalForecastPoint[] = [];
+    for (const point of validForecast) {
+      const ms = dateMs(point.date);
+      if (ms !== null && ms >= minX && ms <= maxX) {
+        visibleForecast.push(point);
       }
     }
+
+    // ---- y 轴：同样以「实际数据」为基准 ----
+    // 实际 min/max ± 10%；纳入预测时允许外扩，但不超过 max(实际跨度 × 0.5, 3kg)，
+    // 否则预测线会把实际波动压成一条直线（QA R2.6 回归）。
+    const actualValues: number[] = [];
+    for (const value of weights) if (Number.isFinite(value)) actualValues.push(value);
+    for (const value of movingAverage) {
+      if (value !== null && Number.isFinite(value)) actualValues.push(value);
+    }
+
+    let actualMin = 0;
+    let actualMax = 1;
+    const firstValue = actualValues[0];
+    if (firstValue !== undefined) {
+      let lo = firstValue;
+      let hi = firstValue;
+      for (const value of actualValues) {
+        if (value < lo) lo = value;
+        if (value > hi) hi = value;
+      }
+      actualMin = lo;
+      actualMax = hi;
+    }
+
+    const span = actualMax - actualMin;
+    const padding = span === 0 ? 3 : span * 0.1;
+    const maxExpand = span === 0 ? 3 : Math.max(span * 0.5, 3);
+    let minY = actualMin - padding;
+    let maxY = actualMax + padding;
+    for (const point of visibleForecast) {
+      if (point.weightKg < minY) minY = Math.max(point.weightKg, actualMin - maxExpand);
+      if (point.weightKg > maxY) maxY = Math.min(point.weightKg, actualMax + maxExpand);
+    }
+    minY = Math.max(0, minY);
 
     const yAt = (value: number): number => PAD.top + ((maxY - value) / (maxY - minY)) * plotHeight;
 
@@ -234,29 +293,49 @@ export default function WeightChart({
     const averagePoints: Array<Point | null> = movingAverage.map((value, index) =>
       value !== null && Number.isFinite(value) ? { x: xAt(index), y: yAt(value) } : null,
     );
-    const forecastPoints: Point[] = validForecast.map((point) => ({
-      x: xAtDate(point.date),
-      y: yAt(point.weightKg),
-    }));
+    // 预测线 y 裁剪：超出 y 域的点丢弃
+    const forecastPoints: Point[] = [];
+    for (const point of visibleForecast) {
+      if (point.weightKg >= minY && point.weightKg <= maxY) {
+        forecastPoints.push({ x: xAtDate(point.date), y: yAt(point.weightKg) });
+      }
+    }
 
     const ticks: number[] = [];
     for (let i = 0; i <= Y_SEGMENTS; i += 1) {
       ticks.push(minY + ((maxY - minY) * i) / Y_SEGMENTS);
     }
 
-    // x 轴标签抽稀：最多 MAX_X_LABELS 个，并尽量让最后一个点也有标签。
-    const step = Math.max(1, Math.ceil(count / MAX_X_LABELS));
+    // x 轴标签抽稀：按**已算出的像素坐标**去重（与上一个保留标签间距 < MIN_LABEL_GAP 即丢弃），
+    // 首尾标签优先保留。不再用「下标等间隔」——时间轴下会导致标签重叠（QA R2.6 回归）。
     const labelIndices: number[] = [];
-    for (let i = 0; i < count; i += step) labelIndices.push(i);
+    for (let i = 0; i < count; i += 1) {
+      const x = xAt(i);
+      const previous = labelIndices[labelIndices.length - 1];
+      if (previous === undefined || x - xAt(previous) >= MIN_LABEL_GAP) {
+        labelIndices.push(i);
+      }
+    }
     const lastIndex = count - 1;
     const lastLabel = labelIndices[labelIndices.length - 1];
     if (lastIndex >= 0 && lastLabel !== undefined && lastLabel !== lastIndex) {
-      if (lastIndex - lastLabel < step / 2) labelIndices.pop();
+      const lastX = xAt(lastIndex);
+      while (labelIndices.length > 0) {
+        const keptIndex = labelIndices[labelIndices.length - 1];
+        if (keptIndex === undefined || lastX - xAt(keptIndex) >= MIN_LABEL_GAP) break;
+        labelIndices.pop();
+      }
       labelIndices.push(lastIndex);
     }
 
     // 预测线至少 2 个点才可见（单点只是 `M`，无实际线段）
     const hasForecast = forecastPoints.length >= 2;
+
+    // 目标值（预测曲线末端 = 目标体重），供图例展示
+    let targetKg: number | null = null;
+    for (const point of validForecast) {
+      if (Number.isFinite(point.weightKg)) targetKg = point.weightKg;
+    }
 
     return {
       xAt,
@@ -270,6 +349,7 @@ export default function WeightChart({
       averagePath: buildSmoothPath(averagePoints),
       forecastPath: hasForecast ? buildSmoothPath(forecastPoints) : '',
       hasForecast,
+      targetKg,
     };
   }, [dates, count, weights, movingAverage, forecast, plotWidth, plotHeight]);
 
@@ -280,7 +360,8 @@ export default function WeightChart({
     if (event.pointerType !== 'mouse' || count === 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const offsetX = event.clientX - rect.left;
-    // 时间轴下按「最近的实际记录点」取整（不再假设等距下标）
+    // 时间轴下按「最近的实际记录点」取整（不再假设等距下标）。距离超过「半个点距」
+    // 视为落在点云之外的空白区 → 清除提示（避免悬停左侧空白时跳到某个点）。
     let nearest = 0;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (let i = 0; i < count; i += 1) {
@@ -290,7 +371,9 @@ export default function WeightChart({
         nearest = i;
       }
     }
-    setHoverIndex(nearest);
+    const spread = count > 1 ? Math.abs(geometry.xAt(count - 1) - geometry.xAt(0)) : plotWidth;
+    const halfSpacing = Math.max(spread / Math.max(count - 1, 1) / 2, 12);
+    setHoverIndex(nearestDistance > halfSpacing ? null : nearest);
   };
 
   const hoverDate = hoverIndex === null ? null : (dates[hoverIndex] ?? null);
@@ -432,7 +515,9 @@ export default function WeightChart({
               className="inline-block w-4"
               style={{ borderTop: `2px dashed ${FORECAST_COLOR}` }}
             />
-            目标预测
+            {geometry.targetKg === null
+              ? '目标预测'
+              : `目标预测（目标 ${geometry.targetKg.toFixed(1)} kg）`}
           </span>
         )}
       </div>
