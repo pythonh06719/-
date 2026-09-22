@@ -27,7 +27,21 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
 
   const sendCode = useMutation({
     mutationFn: (value: string) => api.post<SendCodeResponse>('/auth/send-code', { email: value }),
-    onSuccess: (data) => setNotice(`验证码已发送，${Math.round(data.expiresInSeconds / 60)} 分钟内有效`),
+    onSuccess: (data) => {
+      const minutes = Math.round(data.expiresInSeconds / 60);
+
+      // 自用模式回显：后端仅在 `AUTH_LOG_CODE=true`（自用 / 开发）时把验证码一并返回，
+      // 生产环境恒不返回 —— 此时保持原本的提示语，不暴露任何「回显」语义。
+      // 防御性校验：只认 **6 位数字**（与验证码形状一致）；形状不对（脏数据 / 协议漂移）
+      // 一律不预填、走原文案，避免把无法登录的值塞进输入框误导用户。
+      if (typeof data.code === 'string' && /^\d{6}$/.test(data.code)) {
+        setCode(data.code);
+        setNotice(`验证码已发送，已替你填好（自用模式回显 ${data.code}），${minutes} 分钟内有效`);
+        return;
+      }
+
+      setNotice(`验证码已发送，${minutes} 分钟内有效`);
+    },
     onError: (error: unknown) =>
       setNotice(error instanceof ApiClientError ? error.message : '发送没有成功，稍后再试一次'),
   });

@@ -96,12 +96,19 @@ git pull && WEB_PORT=8080 docker compose up -d --build
 docker compose logs api | grep 验证码 | tail -3
 ```
 
+> **自 `c856daa`（2026-09-22）起更省事**：开关开启后，`POST /api/auth/send-code` 的响应体会
+> **直接带上 6 位验证码**，前端登录卡片会**自动预填** —— 演示时点「获取验证码」后
+> 直接点「登录」即可，不必再来日志里抄码。上面的日志取码方式**照旧可用**（原行为不变）。
+>
+> ⚠️ **安全边界**：这个开关等价于「**知道邮箱即可登录任意账号**」—— 只适合自用 / 演示环境；
+> 对外提供真实多用户服务时**绝不可开启**（届时应接入真实邮件发送，见下方安全提醒）。
+
 ## 七、常见问题
 
 | 症状 | 排查 |
 |---|---|
 | 页面打不开 | ① 防火墙是否放行 8080 ② `docker compose ps` 是否 Up ③ 地址是否带 `:8080` |
-| 登录收不到码 | 看日志取码（上一节）；或确认 `.env` 里 `AUTH_LOG_CODE=true` |
+| 登录收不到码 | 确认 `.env` 里 `AUTH_LOG_CODE=true`；开着时验证码会**随接口响应回显**、由前端登录卡片自动预填（见「取登录验证码」一节），也可用日志取码兜底 |
 | AI 不回答 | `docker compose logs api \| grep -i "ai_"`；确认 `AI_API_KEY` 已填 |
 | 构建时 OOM 中断（2G 内存） | 加交换分区：`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile` |
 | 想用域名访问 | 域名实名 + **ICP 备案**（1–3 周），备案后把 `WEB_PORT=80` 并解析 A 记录 |
@@ -118,6 +125,7 @@ docker compose logs api | grep 验证码 | tail -3
 ## 九、安全提醒（公开到公网前）
 
 - `JWT_SECRET` 必须是**随机长字符串**（compose 已强制校验，不设会直接报错）
-- `AUTH_LOG_CODE=true` 会把验证码打进日志 —— **仅适合演示**；接 SMTP 后改为 `false`
+- `AUTH_LOG_CODE=true` 会把验证码打进日志**并随接口响应回显**（前端自动预填，`c856daa` 起）
+  —— 等价于「知道邮箱即可登录任意账号」，**仅适合自用 / 演示**；接 SMTP 后改为 `false`
 - 数据库密码若启用 PG，务必改掉 `qsh:qsh` 默认值
 - 无需长期在线时，用完可在控制台**关机**（按量计费可省）

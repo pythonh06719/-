@@ -69,8 +69,12 @@ export interface AppConfig {
   /** 验证码有效期（秒，默认 300） */
   verificationCodeTtlSeconds: number;
   /**
-   * 是否把验证码打印到服务端日志（`AUTH_LOG_CODE=true`，默认 false）。
-   * 生产环境绝不应开启；仅用于**尚无 SMTP 的演示/预发环境**，便于从容器日志取码完成登录。
+   * 自用 / 开发模式开关（`AUTH_LOG_CODE=true`，默认 false）—— 语义扩展后同时控制两条出口：
+   * ① 把验证码打印到服务端日志；② 在 `POST /api/auth/send-code` 的响应里回显验证码（`code`）。
+   *
+   * ⚠️ 安全边界：置为 `true` 等价于「知道邮箱即可登录任意账号」，
+   * **生产环境绝不应开启**；仅用于自用部署 / 尚无 SMTP 的演示环境。
+   * 默认 false → 生产既不打印、也绝不返回验证码。
    */
   allowLogVerificationCode: boolean;
   /** 密码哈希成本因子（bcryptjs，默认 12） */

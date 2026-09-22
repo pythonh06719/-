@@ -24,6 +24,17 @@ export interface SendCodeResult {
   email: string;
   /** 验证码剩余有效秒数 */
   expiresInSeconds: number;
+  /**
+   * 真实验证码 —— **仅自用 / 开发模式**回显，供前端预填，省去翻服务端日志。
+   *
+   * ⚠️ 安全边界：只有当 `config.allowLogVerificationCode`（环境变量 `AUTH_LOG_CODE`）
+   * 为 `true` 时才写入本字段；该开关**默认 `false`**，因此生产环境恒为 `undefined`
+   * （JSON 序列化时被省略），响应体里**不会**出现验证码。
+   *
+   * 反过来说：把 `AUTH_LOG_CODE` 置为 `true` 等价于「知道邮箱即可登录任意账号」，
+   * 只适用于自用部署 / 演示环境。**面向真实用户时必须保持 `false` 并接入真实发送渠道。**
+   */
+  code?: string;
 }
 
 /**
@@ -46,6 +57,9 @@ export class AuthService {
    * 发送验证码。**开发环境把验证码打到服务端日志**（D4，不接真实 SMTP）。
    *
    * 同一 `(email, purpose)` 的未消费旧验证码会被立即置为已消费，保证「仅最新一条有效」。
+   *
+   * 自用模式（`AUTH_LOG_CODE=true`）额外把验证码放进响应体的 `code` 字段，
+   * 前端可直接预填 —— 该字段**默认不返回**，见 `SendCodeResult.code` 的安全边界说明。
    */
   async requestCode(email: string, purpose: VerificationPurpose = 'login'): Promise<SendCodeResult> {
     const config = getAppConfig();
@@ -70,7 +84,19 @@ export class AuthService {
       );
     }
 
-    return { sent: true, email, expiresInSeconds: config.verificationCodeTtlSeconds };
+    const result: SendCodeResult = {
+      sent: true,
+      email,
+      expiresInSeconds: config.verificationCodeTtlSeconds,
+    };
+
+    // 自用 / 开发模式回显：同一把开关（`AUTH_LOG_CODE`）控制「日志」与「响应体」两条出口。
+    // ⚠️ 安全边界：开关默认 false → `code` 恒为 undefined（序列化时被省略），生产永不返回。
+    if (config.allowLogVerificationCode) {
+      result.code = code;
+    }
+
+    return result;
   }
 
   /**
