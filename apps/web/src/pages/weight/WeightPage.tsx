@@ -15,10 +15,12 @@ import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatFullDate, formatSigned, todayKey } from '@/lib/format';
 import { COPY } from '@/lib/copy';
+import { detectWeightPlateau } from '@qsh/core';
 import { computeMovingAverage7d, computeTrendStats, isWeightRising, toTrendPoints } from '@/lib/trend';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 import GoalProgressCard from './GoalProgressCard';
+import PlateauCard from './PlateauCard';
 
 /** 趋势图按需加载（`React.lazy`），不占首屏主包（NFR-3）。 */
 const WeightChart = lazy(() => import('./WeightChart'));
@@ -125,6 +127,17 @@ export default function WeightPage(): ReactElement {
   const rising = useMemo(() => isWeightRising(points), [points]);
   const forecast = useMemo(() => resolveForecast(trendQuery.data), [trendQuery.data]);
   const goalProgress = useMemo(() => resolveGoalProgress(trendQuery.data), [trendQuery.data]);
+  /**
+   * 平台期判定（R2.7）：用 `@qsh/core` 纯函数在前端算（离线也能用，不新增请求）。
+   * 优先吃后端算好的 7 日均线；`asOf` 注入今天，用于「记录已停更就不谈平台期」的保护。
+   */
+  const plateau = useMemo(
+    () =>
+      points.length === 0
+        ? null
+        : detectWeightPlateau({ points, movingAverage, asOf: todayKey() }),
+    [points, movingAverage],
+  );
 
   const addWeight = useMutation({
     mutationFn: (payload: CreateWeightLogRequest) => api.post<WeightLog>('/weights', payload),
@@ -263,6 +276,13 @@ export default function WeightPage(): ReactElement {
       </div>
 
       {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
+
+      {plateau !== null && plateau.isPlateau && (
+        <PlateauCard
+          stalledDays={plateau.stalledDays}
+          slope4wKgPerWeek={plateau.slope4wKgPerWeek}
+        />
+      )}
 
       <dl className="grid grid-cols-3 gap-3 text-center">
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">

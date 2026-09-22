@@ -7,6 +7,7 @@
  * 命名约定：`COPY.xxx` 为常量，`xxxFor(...)` 为按参数生成的文案。
  */
 
+import { PLATEAU_THRESHOLD_KG } from '@qsh/core';
 import { WATER_ML_PER_CUP } from '@/theme/tokens';
 
 export const COPY = {
@@ -24,6 +25,12 @@ export const COPY = {
   goalProgressReachedTitle: '已经到啦',
   goalProgressReachedBody: '已经到啦，接下来把节奏稳住就好',
   goalProgressFootnote: '进度只是帮你看清走到哪儿了，不是给自己的打分',
+  /** 平台期说明卡（R2.7）——解释「为什么」，不使用红色 / 恐吓语义，也不指责 */
+  plateauTitle: '这几周体重没怎么动',
+  plateauBody:
+    '这不是停滞，是身体在适应。每天的数字本来就会被水分、食物重量、作息推着上下浮动 —— 连着几周不动很常见，不代表之前的记录白做了。',
+  plateauFootnote:
+    '我们不会因为几周不动就建议你加大缺口 —— 比起再压一点，把节奏稳住更容易走得远。',
   /** 长时间未记录后的温和召回（TC-35 / US-17） */
   streakReturn: '休息一下没关系，随时回来',
   /** 连续记录的正向表述（弱化「不能断」的压迫感） */
@@ -159,6 +166,33 @@ export function goalBaselineLine(baselineKg: number, targetWeightKg: number): st
  */
 export function maintenanceLine(maintenanceKcal: number): string {
   return `维持热量约 ${Math.round(maintenanceKcal)} kcal/日，不用再往下压`;
+}
+
+// ---------------------------------------------------------------------------
+// 平台期（R2.7）
+// 语气规范同 §7：只解释原因 + 给一个新的观察视角，**不指责、不建议加大缺口、不用红色**。
+// ---------------------------------------------------------------------------
+
+/** 「最近 X 天，7 日均线的变化不到 0.3 kg」—— 把判定依据直接摊开讲。 */
+export function plateauStalledLine(stalledDays: number): string {
+  return `最近 ${Math.round(stalledDays)} 天，7 日均线的变化不到 ${PLATEAU_THRESHOLD_KG} kg`;
+}
+
+/** 把视角从「每天」拉到「4 周」：给斜率，不给评价。 */
+export function plateauSlopeLine(kgPerWeek: number): string {
+  const sign = kgPerWeek > 0 ? '+' : '';
+  return `把时间拉到 4 周看，平均每周 ${sign}${kgPerWeek.toFixed(2)} kg`;
+}
+
+/** 斜率的中性解读（三个方向都不带褒贬：往下走 / 持平 / 略微上浮都是正常的事）。 */
+export function plateauSlopeHint(kgPerWeek: number): string {
+  if (kgPerWeek <= -0.05) {
+    return '拉长看，趋势其实还在往下走。';
+  }
+  if (kgPerWeek >= 0.05) {
+    return '拉长看，这几周略微上浮，波动很正常。';
+  }
+  return '拉长看，这几周基本持平。';
 }
 
 // ---------------------------------------------------------------------------

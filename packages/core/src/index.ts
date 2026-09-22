@@ -130,3 +130,16 @@ export {
   type GoalProgress,
   type GoalProgressInput,
 } from './weight/progress';
+
+// 平台期判定（R2.7）
+export {
+  PLATEAU_MIN_POINTS,
+  PLATEAU_STALE_DAYS,
+  PLATEAU_THRESHOLD_KG,
+  PLATEAU_WINDOW_DAYS,
+  SLOPE_WINDOW_DAYS,
+  detectWeightPlateau,
+  type PlateauInput,
+  type PlateauPoint,
+  type PlateauResult,
+} from './weight/plateau';

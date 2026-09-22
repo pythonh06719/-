@@ -10,7 +10,12 @@ import {
   KCAL_PER_G_PROTEIN,
   KCAL_PER_KG_FAT,
   MET_ACTIVITY_LIBRARY,
+  PLATEAU_MIN_POINTS,
+  PLATEAU_STALE_DAYS,
+  PLATEAU_THRESHOLD_KG,
+  PLATEAU_WINDOW_DAYS,
   SAFETY_FLOOR,
+  SLOPE_WINDOW_DAYS,
   ageFromBirthDate,
   buildSafetyMessages,
   deriveWeeklyLossKg,
@@ -438,6 +443,67 @@ export default function WhyNumbersPage(): ReactElement {
             </p>
           </li>
         </ul>
+      </section>
+
+      {/* ⑥ 平台期怎么看（R2.7） */}
+      <section
+        aria-labelledby="why-plateau-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-plateau-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑥ 平台期是怎么判断的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          连着几周体重不动，很容易让人以为「白坚持了」。所以我们在体重页会主动解释一句，
+          并把视角从每天的数字拉到 4 周。下面是判定规则 —— 全部来自 @qsh/core
+          的纯函数，前后端同源。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="观察窗口"
+            value={`${PLATEAU_WINDOW_DAYS} 天（3 周）`}
+            hint="短于这个跨度不算平台期"
+          />
+          <DerivationRow
+            term="变化阈值"
+            value={`7 日均线变化 < ${PLATEAU_THRESHOLD_KG} kg`}
+            hint="小于日常水分/食物的波动幅度"
+          />
+          <DerivationRow
+            term="最少记录日"
+            value={`${PLATEAU_MIN_POINTS} 个`}
+            hint="少于此分不清「没变」和「没记」"
+          />
+          <DerivationRow
+            term="停更保护"
+            value={`最后一条距今 > ${PLATEAU_STALE_DAYS} 天则不判定`}
+            hint="那是没在记录，不是平台期"
+          />
+          <DerivationRow
+            term="4 周斜率"
+            value={`最近 ${SLOPE_WINDOW_DAYS} 天最小二乘回归 × 7`}
+            hint="单位 kg/周"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用 7 日均线，而不是每天的数字</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              每天上下浮动 0.5~1.5 kg 是常态（水分、食物重量、作息都会推着它动）。
+              用 7 日平均可以把这类噪声抹平，看到的才是趋势本身。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不因此建议你加大缺口</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              几周不动更常见的解释是身体适应与日常波动，而不是「吃得还不够少」。
+              再压一点很难长期维持，所以我们的建议是把尺度拉长、把节奏稳住。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          平台期判定是生活参考，不构成医疗建议。如果体重长期异常变化，建议咨询专业医师。
+        </p>
       </section>
 
       {/* 页面间导航 */}
