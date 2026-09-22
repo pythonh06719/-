@@ -49,42 +49,18 @@ body {
  * 组成：elevation-1（静止）+ 卡片圆角 + 细描边 + 统一缓动 + 统一焦点环。
  *
  * **语义边界（R3 起）：本类是「静态表面」** —— 只负责「一张安静的纸」，
- * 不再自带 hover 抬升与按下缩放。原因：全站 31 处 `qsh-surface` 无一例外都是
+ * 不自带 hover 抬升与按下缩放。原因：全站 `qsh-surface` 用法经审计**无一例外都是
  * 不可点的容器（`div` / `section` / `form` / `fieldset`），把「可点」反馈写进基类
  * 等于对每一张静态卡片谎称「你能点」—— 指针扫过整页卡片都在浮起，是明确的错误暗示。
- * 真正可点的中性卡片改用修饰符 `.qsh-surface-tappable`（见下）；
- * 「品牌行动卡」仍用语义独立的 `.qsh-action-card`。
+ * 「品牌行动卡」用语义独立的 `.qsh-action-card`。
+ *
+ * ⚠️ 若将来真出现**可点的中性卡片**：不要给本类加回反馈，而是新建一个
+ * `.qsh-surface-tappable` 之类的修饰符叠加在 `.qsh-surface` 上，只在可点元素上生效。
  */
 .qsh-surface {
   @apply rounded-card bg-white shadow-qsh-1 ring-1 ring-brand-100;
   @apply transition duration-qsh-base ease-qsh-out;
   @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:rounded-card;
-}
-
-/**
- * 可点表面修饰符：`className="qsh-surface qsh-surface-tappable"`。
- *
- * 仅当**元素本身真的可点**时才叠加它 —— 元素是 `<a>` / `<button>`，或容器自身带
- * `onClick` / 路由跳转。它补上两部分反馈：
- * ① 指针悬停时抬到 elevation-2（放进 `@media (hover: hover)`，避免触屏「点完还浮着」）；
- * ② 按下时轻微内缩（`active:scale-[0.995]`），给出「按到了」的手感。
- *
- * 依赖基类 `.qsh-surface` 提供表面色 / 圆角 / 描边 / 焦点环；单独使用不会得到卡片外观。
- */
-.qsh-surface-tappable {
-  @apply transition duration-qsh-base ease-qsh-out active:scale-[0.995];
-}
-
-/**
- * hover 抬升只在「真有指针设备」时启用。
- *
- * 为什么：触屏没有真正的 hover，浏览器会把 `:hover` 粘在刚点过的元素上，
- * 表现为「点完还在浮着」；这也是移动端最常见的伪影之一。
- */
-@media (hover: hover) {
-  .qsh-surface-tappable:hover {
-    @apply shadow-qsh-2;
-  }
 }
 
 /**
@@ -97,7 +73,6 @@ body {
  */
 @media (prefers-reduced-motion: reduce) {
   .qsh-surface,
-  .qsh-surface-tappable,
   .qsh-action-card {
     transition: none;
   }
@@ -116,8 +91,8 @@ body {
  * ⚠️ **刻意不做 hover / active 反馈**：全仓 4 处用法经审计**均为静态容器**
  * （无 onClick / 无 role="button" / 无 tabIndex / 非 a·Link / 非路由容器）。
  * 给它加 hover 抬升或按下下沉会传达「这里能点」的假信号 —— 这是交互诚实性问题，
- * 与 `.qsh-surface` 的处理一致（后者在 R3 已拆出 `.qsh-surface-tappable` 修饰符）。
- * 若将来真出现可点的暖卡，再照 `.qsh-surface-tappable` 的方式加变体，不要直接给本类加回反馈。
+ * 与 `.qsh-surface` 的处理一致（基类同样是「静态表面」，不带可点反馈）。
+ * 若将来真出现可点的暖卡，新建修饰符叠加，不要直接给本类加回反馈。
  *
  * 圆角从历史值 `rounded-xl2`（1.75rem）收敛到 `radius-card`：它是**卡片**，
  * 与全站卡片同档；`xl2` 的定义仍保留在 config 中供底部弹层过渡期使用。

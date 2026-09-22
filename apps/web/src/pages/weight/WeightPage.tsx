@@ -17,14 +17,14 @@ import { computeMovingAverage7d, computeTrendStats, isWeightRising, toTrendPoint
 import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 
-/** ECharts 图表按需加载，避免拖慢首屏主包（NFR-3）。 */
+/** 趋势图按需加载（`React.lazy`），不占首屏主包（NFR-3）。 */
 const WeightChart = lazy(() => import('./WeightChart'));
 
 /**
  * 体重趋势（`/weight`，PRD §6 第 6 行 / R7.1 / R7.2 / TC-34）。
  *
  * - 每日体重记录（建议早晨空腹）+ 备注
- * - ECharts 趋势图：实际体重曲线 + **7 日移动平均线**
+ * - 手写 SVG 趋势图：实际体重曲线 + **7 日移动平均线**
  * - 7 日移动平均优先取后端 `movingAverage7`（契约 `WeightTrendResponse.movingAverage7`）；后端不可用时用 `lib/trend.ts` 的**纯函数**本地计算
  * - 体重上涨时展示中性文案「波动很正常，看趋势就好」（不指责、不制造焦虑）
  */
