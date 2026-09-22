@@ -84,6 +84,16 @@ export const COPY = {
   aiAskPlaceholder: '比如：今天还能吃一个苹果吗',
   aiAskSend: '问一问',
   aiAskEmpty: '想问点什么都可以，先写一句吧',
+  /** 数据备份（C6）—— 把「留一份备份」说成一件随手的小事：不催促、不吓唬、不制造焦虑 */
+  dataBackupTitle: '留一份备份',
+  dataBackupDesc:
+    '把现在的记录打包成一个文件，存到自己的电脑里。什么时候想留一份都可以，不留也没关系。',
+  dataBackupButton: '导出备份',
+  dataBackupRunning: '正在整理你的备份…',
+  dataBackupDone: '已经备份好啦，文件就在下载里，收好就行',
+  dataBackupFailed: '这次没有整理成功，晚一点再试就好',
+  dataBackupNever: '还没有备份过，什么时候想留一份都可以',
+  dataBackupToday: '上次备份就是今天',
   /** 每日轻提醒（R5 附加，本轮仅本地通知，不做服务端推送） */
   reminderToggleTitle: '每日轻提醒',
   reminderToggleDesc: '应用打开时，一天一条温和的提醒。默认关闭，随时可以停用',
@@ -193,6 +203,29 @@ export function plateauSlopeHint(kgPerWeek: number): string {
     return '拉长看，这几周略微上浮，波动很正常。';
   }
   return '拉长看，这几周基本持平。';
+}
+
+// ---------------------------------------------------------------------------
+// 数据备份（C6）
+// 语气规范同 §7：把「上次备份于 X 天前」当作一句中性的事实陈述，**不暗示「该备份了」**。
+// ---------------------------------------------------------------------------
+
+/**
+ * 「上次备份于 X 天前」。
+ *
+ * - 从未备份 / 时间戳无法解析 → 中性引导语（`dataBackupNever`），不说「你还没备份」式提醒；
+ * - 今天备份过 → 「上次备份就是今天」；
+ * - 其余 → 「上次备份于 X 天前」（天数向下取整、不为负）。
+ */
+export function lastBackupLabel(daysSince: number | null): string {
+  if (daysSince === null || !Number.isFinite(daysSince)) {
+    return COPY.dataBackupNever;
+  }
+  const days = Math.max(0, Math.floor(daysSince));
+  if (days <= 0) {
+    return COPY.dataBackupToday;
+  }
+  return `上次备份于 ${days} 天前`;
 }
 
 // ---------------------------------------------------------------------------
