@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
-import { buildGoalForecast, round2 } from '@qsh/core';
-import type { GoalForecastPoint, MovingAveragePoint, WeightLog } from '@qsh/shared-types';
+import { buildGoalForecast, buildGoalProgress, round2 } from '@qsh/core';
+import type {
+  GoalForecastPoint,
+  GoalProgress,
+  MovingAveragePoint,
+  WeightLog,
+} from '@qsh/shared-types';
 
 import { toWeightLog } from '../common/mappers/entity.mapper';
 import { addDays, todayLocalKey } from '../common/utils/date.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 import { CreateWeightDto } from './dto/create-weight.dto';
 
 /** 体重趋势（含 7 日移动平均，服务端算好，前端只渲染）。 */
@@ -24,6 +30,11 @@ export interface WeightListResult {
    * 无生效目标（或无法预测）时为 `[]`。形状与契约 `WeightTrendResponse.forecast` 一致。
    */
   forecast: GoalForecastPoint[];
+  /**
+   * 目标达成进度（R2.7，含「维持模式」）。
+   * 无生效目标 / 无法构成有意义的进度时为 `null`（前端隐藏卡片）。
+   */
+  goalProgress: GoalProgress | null;
   /** 区间统计 */
   stats: {
     minKg: number | null;
@@ -46,7 +57,10 @@ const MOVING_AVERAGE_WINDOW = 7;
  */
 @Injectable()
 export class WeightsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+  ) {}
 
   /** 记录体重（同日覆盖）。 */
   async create(userId: number, dto: CreateWeightDto): Promise<WeightLog> {
@@ -106,8 +120,77 @@ export class WeightsService {
 
     // 目标达成预测曲线（R2.6）：有生效目标才生成（纯函数在 @qsh/core，前后端同源）
     const forecast = await this.buildForecast(userId);
+    // 目标达成进度（R2.7）：复用同一次查询的 `latestKg`，不新增请求
+    const goalProgress = await this.resolveGoalProgress(userId, latestKg);
 
-    return { logs, movingAverage7, points, forecast, stats: { minKg, maxKg, latestKg, changeKg } };
+    return {
+      logs,
+      movingAverage7,
+      points,
+      forecast,
+      goalProgress,
+      stats: { minKg, maxKg, latestKg, changeKg },
+    };
+  }
+
+  /**
+   * 生成目标达成进度（R2.7）。
+   *
+   * 无生效目标（或资料不完整导致预算算不出来）时返回 `null` —— 前端据此隐藏卡片，
+   * 而不是显示一个 0% 的空档。
+   */
+  private async resolveGoalProgress(
+    userId: number,
+    latestKg: number | null,
+  ): Promise<GoalProgress | null> {
+    let goal: { startWeightKg: number; targetWeightKg: number } | null = null;
+    let etaWeeks: number | null = null;
+    let maintenanceKcal: number | null = null;
+
+    try {
+      // 复用 `/profile` 的同一条链路（资料 + 目标 + 引擎重算），保证与看板数字同源
+      const profileResult = await this.usersService.getProfile(userId);
+      if (profileResult.goal !== null) {
+        goal = {
+          startWeightKg: profileResult.goal.startWeightKg,
+          targetWeightKg: profileResult.goal.targetWeightKg,
+        };
+        etaWeeks = profileResult.budget?.etaWeeks ?? null;
+        maintenanceKcal = profileResult.budget?.tdee ?? null;
+      }
+    } catch {
+      // 资料/目标异常不应让「体重列表」整个失败：降级为不显示进度卡片
+      return null;
+    }
+
+    if (goal === null) {
+      return null;
+    }
+
+    const baselineKg = await this.resolveBaselineKg(userId, goal.startWeightKg);
+    return buildGoalProgress({
+      baselineKg,
+      targetWeightKg: goal.targetWeightKg,
+      latestKg,
+      etaWeeks,
+      maintenanceKcal,
+    });
+  }
+
+  /**
+   * 取进度基准体重：**目标历史里最早一条**的起始体重（= 设定目标时的体重）。
+   *
+   * ⚠️ 不能直接用 `user_goals.start_weight_kg`：它会被「记录最新一天体重 →
+   * 同步起始体重」持续改写为当前体重，用它当基准会让进度恒为 0%。
+   * 没有历史（老数据）时退回传入值。
+   */
+  private async resolveBaselineKg(userId: number, fallbackKg: number): Promise<number> {
+    const first = await this.prisma.weightGoalHistory.findFirst({
+      where: { userId },
+      orderBy: [{ effectiveFrom: 'asc' }, { id: 'asc' }],
+      select: { startWeightKg: true },
+    });
+    return first?.startWeightKg ?? fallbackKg;
   }
 
   /**

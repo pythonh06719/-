@@ -31,6 +31,8 @@ export type {
   Gender,
   GoalForecastInput,
   GoalForecastPoint,
+  GoalProgress,
+  GoalProgressInput,
   MacroRatio,
   MacroResult,
   SafeCalorieResult,

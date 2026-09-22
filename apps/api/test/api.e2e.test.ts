@@ -448,6 +448,33 @@ describe('轻生活 API（T03 一期 MVP）', () => {
       expect(forecast[index]!.weightKg).toBeLessThanOrEqual(forecast[index - 1]!.weightKg);
     }
     expect(trend.body.data.forecast).toEqual(forecast);
+
+    // R2.7：目标达成进度 —— 两个端点同形状。
+    // 基准必须是「设定目标时的 60kg」，而不是被体重同步逻辑改写成最新体重的
+    // `user_goals.start_weight_kg`（否则 (基准 − 最新) ÷ (基准 − 目标) 恒为 0，进度永远是 0%）。
+    const goalProgress = list.body.data.goalProgress as {
+      baselineKg: number;
+      targetWeightKg: number;
+      latestKg: number | null;
+      progressRatio: number;
+      reached: boolean;
+      remainingKg: number | null;
+      etaWeeks: number | null;
+      maintenance: boolean;
+      maintenanceKcal: number | null;
+    } | null;
+    expect(goalProgress).not.toBeNull();
+    expect(goalProgress?.baselineKg).toBe(60);
+    expect(goalProgress?.targetWeightKg).toBe(55);
+    expect(goalProgress?.latestKg).toBe(69.2);
+    expect(goalProgress?.progressRatio).toBeGreaterThanOrEqual(0);
+    expect(goalProgress?.progressRatio).toBeLessThanOrEqual(1);
+    // 69.2kg > 目标 55kg → 未达成、非维持模式，因此不下发维持热量
+    expect(goalProgress?.reached).toBe(false);
+    expect(goalProgress?.maintenance).toBe(false);
+    expect(goalProgress?.maintenanceKcal).toBeNull();
+    expect(goalProgress?.remainingKg).toBe(14.2);
+    expect(trend.body.data.goalProgress).toEqual(goalProgress);
   });
 
   it('看板聚合 + 鼓励语文案规范（PRD §7）', async () => {
@@ -539,5 +566,20 @@ describe('轻生活 API（T03 一期 MVP）', () => {
       .set(auth(tokenB))
       .expect(200);
     expect(res.body.data.forecast).toEqual([]);
+  });
+
+  it('目标达成进度：无生效目标（未引导的用户）→ goalProgress 为 null（R2.7）', async () => {
+    const res = await request(server as never)
+      .get(`${API}/weights`)
+      .set(auth(tokenB))
+      .expect(200);
+    // 契约要求「必填但可为 null」：前端据此整张卡片不渲染，而不是显示 0% 的空档
+    expect(res.body.data.goalProgress).toBeNull();
+
+    const trend = await request(server as never)
+      .get(`${API}/weights/trend`)
+      .set(auth(tokenB))
+      .expect(200);
+    expect(trend.body.data.goalProgress).toBeNull();
   });
 });

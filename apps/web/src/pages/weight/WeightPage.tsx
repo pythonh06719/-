@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateWeightLogRequest,
   GoalForecastPoint,
+  GoalProgress,
   Paginated,
   WeightLog,
   WeightTrendPoint,
@@ -17,6 +18,7 @@ import { COPY } from '@/lib/copy';
 import { computeMovingAverage7d, computeTrendStats, isWeightRising, toTrendPoints } from '@/lib/trend';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
+import GoalProgressCard from './GoalProgressCard';
 
 /** 趋势图按需加载（`React.lazy`），不占首屏主包（NFR-3）。 */
 const WeightChart = lazy(() => import('./WeightChart'));
@@ -73,6 +75,24 @@ function resolveForecast(
   return [];
 }
 
+/**
+ * 取后端目标达成进度（R2.7）。
+ *
+ * 响应为 `WeightTrendResponse` 时读取 `goalProgress`；为分页 / 数组形态（无该字段）时返回 `null`。
+ * 不新增网络请求 —— 复用已有 `trendQuery` 的返回体；`null` 表示「没有生效目标」，整张卡片不渲染。
+ */
+function resolveGoalProgress(
+  response: WeightTrendResponse | Paginated<WeightLog> | WeightLog[] | undefined,
+): GoalProgress | null {
+  if (response !== undefined && !Array.isArray(response) && 'goalProgress' in response) {
+    const provided = response.goalProgress;
+    if (provided !== null && provided !== undefined && typeof provided === 'object') {
+      return provided;
+    }
+  }
+  return null;
+}
+
 export default function WeightPage(): ReactElement {
   const queryClient = useQueryClient();
   const [date, setDate] = useState<string>(todayKey());
@@ -104,6 +124,7 @@ export default function WeightPage(): ReactElement {
   const stats = useMemo(() => computeTrendStats(points), [points]);
   const rising = useMemo(() => isWeightRising(points), [points]);
   const forecast = useMemo(() => resolveForecast(trendQuery.data), [trendQuery.data]);
+  const goalProgress = useMemo(() => resolveGoalProgress(trendQuery.data), [trendQuery.data]);
 
   const addWeight = useMutation({
     mutationFn: (payload: CreateWeightLogRequest) => api.post<WeightLog>('/weights', payload),
@@ -240,6 +261,8 @@ export default function WeightPage(): ReactElement {
           </div>
         )}
       </div>
+
+      {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
 
       <dl className="grid grid-cols-3 gap-3 text-center">
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">

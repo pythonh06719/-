@@ -123,3 +123,10 @@ export {
   type GoalForecastInput,
   type GoalForecastPoint,
 } from './weight/forecast';
+
+// 目标达成进度 + 维持模式（R2.7）
+export {
+  buildGoalProgress,
+  type GoalProgress,
+  type GoalProgressInput,
+} from './weight/progress';

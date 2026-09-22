@@ -12,6 +12,7 @@ import type {
   CalorieResult,
   Gender,
   GoalForecastPoint,
+  GoalProgress,
   MacroRatio,
   ValidationError,
   ValidationWarning,
@@ -458,6 +459,14 @@ export interface WeightTrendResponse {
    * 前端据此判断是否需要画「目标预测」虚线。
    */
   forecast: GoalForecastPoint[];
+  /**
+   * 目标达成进度（R2.7，含「维持模式」）。
+   *
+   * - 有生效目标 → 进度对象（可能处于维持模式）；
+   * - 无生效目标 / 无法构成有意义的进度 → `null`，前端据此**隐藏整张卡片**
+   *   （与 `forecast: []` 同理，必填、不回退缺省值）。
+   */
+  goalProgress: GoalProgress | null;
 }
 
 /** `GET /api/weights` 响应。 */
