@@ -64,6 +64,10 @@ export default function HabitsPage(): ReactElement {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4" aria-live="polite">
+      {/* 页面语义标题：顶栏已显示「习惯打卡」，这里只补一个 h1 供辅助技术定位页面主题，
+          不重复视觉层级 —— 本页此前没有任何标题元素（其余页面都自带 h1/h2）。 */}
+      <h1 className="qsh-sr-only">习惯打卡</h1>
+
       {habits.map((habit) => (
         <button
           key={habit.id}

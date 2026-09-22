@@ -196,7 +196,10 @@ export default function WeightChart({ dates, weights, movingAverage }: WeightCha
   }, [count, weights, movingAverage, plotWidth, plotHeight]);
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>): void => {
-    if (count === 0) return;
+    // 只跟随「真有指针设备」的悬停：触屏的 pointermove 会在手指停住时持续触发，
+    // 而抬起手指不保证触发 pointerleave → 提示会「粘」在图上不消失（同一类移动端伪影，
+    // 与 `.qsh-action-card` 的 hover 保护同理）。触屏用户直接看趋势线即可。
+    if (event.pointerType !== 'mouse' || count === 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const offsetX = event.clientX - rect.left;
     const ratio = count <= 1 ? 0 : (offsetX - PAD.left) / plotWidth;
@@ -228,10 +231,10 @@ export default function WeightChart({ dates, weights, movingAverage }: WeightCha
         onPointerLeave={() => setHoverIndex(null)}
       >
         {/* 水平网格线 + y 轴刻度 */}
-        {geometry.ticks.map((tick) => {
+        {geometry.ticks.map((tick, tickIndex) => {
           const y = geometry.yAt(tick);
           return (
-            <g key={`y-${tick}`}>
+            <g key={`y-${tickIndex}`}>
               <line x1={PAD.left} y1={y} x2={size.width - PAD.right} y2={y} stroke={GRID_COLOR} strokeWidth={1} />
               <text x={PAD.left - 6} y={y} textAnchor="end" dominantBaseline="middle" fontSize={10} fill={AXIS_COLOR}>
                 {tick.toFixed(1)}
@@ -246,7 +249,7 @@ export default function WeightChart({ dates, weights, movingAverage }: WeightCha
           if (label === undefined) return null;
           return (
             <text
-              key={`x-${label}`}
+              key={`x-${index}`}
               x={geometry.xAt(index)}
               y={size.height - PAD.bottom + 16}
               textAnchor="middle"
@@ -297,11 +300,12 @@ export default function WeightChart({ dates, weights, movingAverage }: WeightCha
         )}
       </svg>
 
-      {/* 悬浮提示（HTML 层，避免 SVG 里排版文本） */}
+      {/* 悬浮提示（HTML 层，避免在 SVG 里排版文本）。
+          刻意 **不** 用 `aria-live`：它是跟随鼠标高频更新的视觉增强，
+          进 live region 会让屏幕阅读器被反复打断；整体数据已由 svg 的 aria-label 概括。 */}
       {hoverIndex !== null && hoverDate !== null && (
         <div
-          role="status"
-          aria-live="polite"
+          aria-hidden="true"
           className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-slate-800/95 px-2.5 py-1.5 text-[11px] leading-tight text-white shadow-qsh-2 dark:bg-slate-700/95"
           style={{ left: Math.min(Math.max(hoverX, 64), Math.max(size.width - 64, 64)) }}
         >

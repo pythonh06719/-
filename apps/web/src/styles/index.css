@@ -129,6 +129,21 @@ body {
  * 另外显式补 `focus-visible:rounded-card`：a11y 焦点规则曾把圆角压成 6px，聚焦瞬间会「变形」。
  */
 .qsh-action-card {
-  @apply flex flex-col items-center justify-center gap-1 rounded-card bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-qsh-base ease-qsh-out hover:-translate-y-0.5 hover:bg-warm-100 hover:shadow-qsh-2 active:scale-[0.995];
+  @apply flex flex-col items-center justify-center gap-1 rounded-card bg-warm-50 px-3 py-4 text-center text-sm font-medium text-warm-800 ring-1 ring-warm-100 transition duration-qsh-base ease-qsh-out active:scale-[0.995];
   @apply focus-visible:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:rounded-card;
+}
+
+/**
+ * hover 微抬只在「真有指针设备」时启用。
+ *
+ * 为什么：触屏没有真正的 hover，浏览器会把 `:hover` 粘在刚点过的元素上 ——
+ * 首页行动卡点进去、返回后还浮着，是移动端最常见的伪影之一。
+ * 这也是 `.qsh-surface` 系当初拆出可点修饰符的同一条理由；那个修饰符已按 YAGNI 删除，
+ * 但这条保护仍需由本类承担 —— 它是全站**唯一**的「位移型 hover」。
+ * （`active:` 按下反馈留在基类里：触屏也需要「按到了」的手感。）
+ */
+@media (hover: hover) {
+  .qsh-action-card:hover {
+    @apply -translate-y-0.5 bg-warm-100 shadow-qsh-2;
+  }
 }
