@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
+  ExportFileDescriptor,
   ExportJsonPayload,
   OnboardingResponse,
   Paginated,
@@ -12,8 +13,11 @@ import type {
 import { api } from '@/lib/api';
 import { CACHE_KEYS, cacheClearAll, cacheGet } from '@/lib/local-cache';
 import { toExportWeightRows } from '@/lib/csv';
-import { createEmptyExportPayload, parseWeightCsv, serializeExportBundle } from '@/lib/csv';
-import { downloadExportBundle, readTextFile } from '@/lib/download';
+import { JSON_MIME, createEmptyExportPayload, parseWeightCsv, serializeExportBundle } from '@/lib/csv';
+import { downloadExportBundle, downloadTextFile, readTextFile } from '@/lib/download';
+import { clearLastBackupAt, daysSinceLastBackup, readLastBackupAt, saveLastBackupAt } from '@/lib/backup';
+import { todayKey } from '@/lib/format';
+import { COPY, lastBackupLabel } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
 import { useAuthStore } from '@/lib/auth.store';
 import { clearQueuedRequests, enqueueRequest } from '@/pwa/offline-queue';
@@ -41,6 +45,9 @@ export default function SettingsDataPage(): ReactElement {
   const [importState, setImportState] = useState<ImportState>(null);
   const [confirmStep, setConfirmStep] = useState<'idle' | 'confirm' | 'deleting'>('idle');
   const [deleteState, setDeleteState] = useState<string | null>(null);
+  /** 上次备份时间戳（C6）：初始值从本机 `localStorage` 读取，成功后滚动更新 */
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(() => readLastBackupAt());
+  const [backupState, setBackupState] = useState<string | null>(null);
 
   /** 汇总导出数据：优先服务端，未成功时回退本地缓存（保证导出按钮在离线时也可用）。 */
   const gatherPayload = async (): Promise<ExportJsonPayload> => {
@@ -107,6 +114,34 @@ export default function SettingsDataPage(): ReactElement {
     );
   };
 
+  /**
+   * 生成完整备份（C6）：调用服务端 `/data/export` 取**权威**快照（含体重/饮食/套餐等），
+   * 落盘为单个 JSON 文件，并把本次时间戳记到本机（`localStorage.lastBackupAt`）。
+   *
+   * 与上方「一键导出 JSON + CSV」的区别：这里下载的是**服务端权威快照**（一个文件、可完整恢复），
+   * 不做离线兜底 —— 拿不到服务端数据时如实告知「这次没成功」，而不是用本地缓存伪装成备份。
+   */
+  const handleBackup = async (): Promise<void> => {
+    setBackupState(COPY.dataBackupRunning);
+    try {
+      const payload = await api.get<ExportJsonPayload>('/data/export');
+      const file: ExportFileDescriptor = {
+        fileName: `qingshenghuo-backup-${todayKey()}.json`,
+        mimeType: JSON_MIME,
+        content: `${JSON.stringify(payload, null, 2)}\n`,
+        withBom: false,
+      };
+      downloadTextFile(file);
+      const nowIso = new Date().toISOString();
+      saveLastBackupAt(nowIso);
+      setLastBackupAt(nowIso);
+      setBackupState(COPY.dataBackupDone);
+    } catch {
+      // 后端未就绪 / 离线：如实说明没成功，不假装已备份（也不引导用户「赶紧」重试）
+      setBackupState(COPY.dataBackupFailed);
+    }
+  };
+
   const handleImport = async (file: File): Promise<void> => {
     setImportState(null);
     const text = await readTextFile(file);
@@ -137,6 +172,7 @@ export default function SettingsDataPage(): ReactElement {
     }
     await clearQueuedRequests();
     cacheClearAll();
+    clearLastBackupAt();
     clearAuth();
     setDeleteState('你的数据已经从本机移除。感谢这段日子的使用。');
     setConfirmStep('idle');
@@ -171,6 +207,35 @@ export default function SettingsDataPage(): ReactElement {
         {exportState !== null && (
           <p role="status" aria-live="polite" className="mt-3 text-sm text-brand-700 dark:text-brand-300">
             {exportState}
+          </p>
+        )}
+      </section>
+
+      {/* 备份（C6）：服务端权威快照 → 单个 JSON 文件 */}
+      <section
+        aria-label="导出备份"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.dataBackupTitle}
+        </h2>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.dataBackupDesc}</p>
+        <button
+          type="button"
+          onClick={() => void handleBackup()}
+          className="qsh-touch-target mt-3 w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700"
+        >
+          {COPY.dataBackupButton}
+        </button>
+        <p
+          data-testid="last-backup"
+          className="mt-2 text-xs text-slate-500 dark:text-slate-400"
+        >
+          {lastBackupLabel(daysSinceLastBackup(lastBackupAt))}
+        </p>
+        {backupState !== null && (
+          <p role="status" aria-live="polite" className="mt-2 text-sm text-brand-700 dark:text-brand-300">
+            {backupState}
           </p>
         )}
       </section>
