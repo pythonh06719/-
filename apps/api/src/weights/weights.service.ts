@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { round2 } from '@qsh/core';
-import type { MovingAveragePoint, WeightLog } from '@qsh/shared-types';
+import { buildGoalForecast, round2 } from '@qsh/core';
+import type { GoalForecastPoint, MovingAveragePoint, WeightLog } from '@qsh/shared-types';
 
 import { toWeightLog } from '../common/mappers/entity.mapper';
 import { addDays, todayLocalKey } from '../common/utils/date.util';
@@ -19,6 +19,11 @@ export interface WeightListResult {
   movingAverage7: MovingAveragePoint[];
   /** 原始趋势点（升序） */
   points: Array<{ date: string; weightKg: number }>;
+  /**
+   * 目标达成预测曲线（R2.6，升序、每周一个点）。
+   * 无生效目标（或无法预测）时为 `[]`。形状与契约 `WeightTrendResponse.forecast` 一致。
+   */
+  forecast: GoalForecastPoint[];
   /** 区间统计 */
   stats: {
     minKg: number | null;
@@ -99,7 +104,28 @@ export class WeightsService {
     const changeKg =
       firstKg === null || latestKg === null ? null : round2(latestKg - firstKg);
 
-    return { logs, movingAverage7, points, stats: { minKg, maxKg, latestKg, changeKg } };
+    // 目标达成预测曲线（R2.6）：有生效目标才生成（纯函数在 @qsh/core，前后端同源）
+    const forecast = await this.buildForecast(userId);
+
+    return { logs, movingAverage7, points, forecast, stats: { minKg, maxKg, latestKg, changeKg } };
+  }
+
+  /**
+   * 生成当前用户的目标达成预测曲线（R2.6）。
+   *
+   * 无生效目标时返回 `[]`；起始日期取目标创建日（`createdAt` 的日期部分，本地语义）。
+   */
+  private async buildForecast(userId: number): Promise<GoalForecastPoint[]> {
+    const goal = await this.prisma.userGoal.findUnique({ where: { userId } });
+    if (goal === null) {
+      return [];
+    }
+    return buildGoalForecast({
+      startWeightKg: goal.startWeightKg,
+      targetWeightKg: goal.targetWeightKg,
+      targetWeeks: goal.targetWeeks,
+      startDate: goal.createdAt.slice(0, 10),
+    });
   }
 
   /** 近 `days` 天的迷你趋势（缺失日期补 `null`，供看板）。 */

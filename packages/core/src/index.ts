@@ -116,3 +116,10 @@ export {
   withBom,
   type ParsedWeightCsv,
 } from './export/serialize';
+
+// 目标达成预测曲线（R2.6）
+export {
+  buildGoalForecast,
+  type GoalForecastInput,
+  type GoalForecastPoint,
+} from './weight/forecast';

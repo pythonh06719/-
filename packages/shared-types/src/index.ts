@@ -29,6 +29,8 @@ export type {
   CalorieInput,
   CalorieResult,
   Gender,
+  GoalForecastInput,
+  GoalForecastPoint,
   MacroRatio,
   MacroResult,
   SafeCalorieResult,

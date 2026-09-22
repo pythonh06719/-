@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateWeightLogRequest,
+  GoalForecastPoint,
   Paginated,
   WeightLog,
   WeightTrendPoint,
@@ -54,6 +55,24 @@ function resolveMovingAverage(
   return computeMovingAverage7d(points);
 }
 
+/**
+ * 取后端目标达成预测曲线（R2.6）。
+ *
+ * 响应为 `WeightTrendResponse` 时读取 `forecast`；为分页 / 数组形态（无该字段）时返回 `[]`。
+ * 不新增网络请求 —— 复用已有 `trendQuery` 的返回体。
+ */
+function resolveForecast(
+  response: WeightTrendResponse | Paginated<WeightLog> | WeightLog[] | undefined,
+): GoalForecastPoint[] {
+  if (response !== undefined && !Array.isArray(response) && 'forecast' in response) {
+    const provided = response.forecast;
+    if (Array.isArray(provided)) {
+      return provided;
+    }
+  }
+  return [];
+}
+
 export default function WeightPage(): ReactElement {
   const queryClient = useQueryClient();
   const [date, setDate] = useState<string>(todayKey());
@@ -84,6 +103,7 @@ export default function WeightPage(): ReactElement {
   );
   const stats = useMemo(() => computeTrendStats(points), [points]);
   const rising = useMemo(() => isWeightRising(points), [points]);
+  const forecast = useMemo(() => resolveForecast(trendQuery.data), [trendQuery.data]);
 
   const addWeight = useMutation({
     mutationFn: (payload: CreateWeightLogRequest) => api.post<WeightLog>('/weights', payload),
@@ -107,8 +127,9 @@ export default function WeightPage(): ReactElement {
       dates: points.map((point) => point.date),
       weights: points.map((point) => point.weightKg),
       movingAverage: movingAverage.map((point) => point.value),
+      forecast,
     }),
-    [points, movingAverage],
+    [points, movingAverage, forecast],
   );
 
   const handleSubmit = (): void => {
@@ -213,6 +234,7 @@ export default function WeightPage(): ReactElement {
                 dates={chartData.dates}
                 weights={chartData.weights}
                 movingAverage={chartData.movingAverage}
+                forecast={chartData.forecast}
               />
             </Suspense>
           </div>
