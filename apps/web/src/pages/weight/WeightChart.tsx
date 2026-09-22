@@ -198,13 +198,14 @@ export default function WeightChart({
     // 右端外扩 = clamp(数据时间跨度 × 30%, 14 天, 56 天)
     const padMs = clamp(dataSpanDays * 0.3, PAD_DAYS_MIN, PAD_DAYS_MAX) * DAY_MS;
 
-    // 预测终点（最晚的可解析预测日期）
+    // 预测起点 / 终点（可解析预测日期的最早 / 最晚）
+    let forecastStart: number | null = null;
     let forecastEnd: number | null = null;
     for (const point of validForecast) {
       const ms = dateMs(point.date);
-      if (ms !== null && (forecastEnd === null || ms > forecastEnd)) {
-        forecastEnd = ms;
-      }
+      if (ms === null) continue;
+      if (forecastStart === null || ms < forecastStart) forecastStart = ms;
+      if (forecastEnd === null || ms > forecastEnd) forecastEnd = ms;
     }
 
     const hasData = dataTimes.length > 0;
@@ -216,13 +217,25 @@ export default function WeightChart({
         const half = padMs / 2;
         minX = dataMax - half;
         maxX = dataMax + half;
-        if (forecastEnd !== null && forecastEnd > maxX) {
+        // 仅当预测起点落在外扩窗口内时才外扩（否则只会留白）
+        if (
+          forecastEnd !== null &&
+          forecastStart !== null &&
+          forecastEnd > maxX &&
+          forecastStart <= dataMax + padMs
+        ) {
           maxX = Math.min(dataMax + padMs, forecastEnd);
         }
       } else if (forecastEnd !== null && forecastEnd > dataMax) {
-        // 有未来预测：右端外扩 pad，且不超过预测终点
+        // 有未来预测，但**仅当「预测起点」落在外扩窗口内时才外扩** ——
+        // 否则预测线全在窗口之外（如目标今天创建、最后一条记录在 40 天前），
+        // 外扩只会留下右侧空白，反而压扁实际数据（QA P3）。外扩到 min(窗口末端, 预测终点)。
+        const windowEnd = dataMax + padMs;
         minX = dataMin;
-        maxX = Math.min(dataMax + padMs, forecastEnd);
+        maxX =
+          forecastStart !== null && forecastStart <= windowEnd
+            ? Math.min(windowEnd, forecastEnd)
+            : dataMax;
       } else {
         // 无预测 / 预测已在过去：实际数据铺满全宽（与改动前观感一致）
         minX = dataMin;

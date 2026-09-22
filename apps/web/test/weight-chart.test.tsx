@@ -238,4 +238,35 @@ describe('WeightChart（手写 SVG 趋势图）', () => {
     expect(quadratics).toBeGreaterThanOrEqual(1);
     expect(quadratics).toBeLessThanOrEqual(3);
   });
+
+  it('逆序场景：目标起点晚于最后记录且够不着外扩窗口 → 不外扩、铺满全宽（不留下右侧空白）', () => {
+    const dates = dailyDates(21); // 9/1 ~ 9/21
+    const weights = dates.map((_, index) => 70 - index * 0.05);
+    // 目标起点在 dataMax（9/21）之后 40 天 → 远超 14 天外扩窗口，预测全被裁掉
+    const forecast = Array.from({ length: 13 }, (_, index) => ({
+      date: addDays('2026-09-21', 40 + index * 7),
+      weightKg: 70 - index * 1.2,
+    }));
+
+    const { container } = render(
+      <WeightChart
+        dates={dates}
+        weights={weights}
+        movingAverage={dates.map(() => null)}
+        forecast={forecast}
+      />,
+    );
+
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+
+    // 若无意义外扩，最后一个实际点会落在 ~59% 处；修复后不外扩 → 贴到绘图区右边缘
+    const circles = Array.from(svg!.querySelectorAll('circle'));
+    const lastCx = Number(circles[circles.length - 1]?.getAttribute('cx'));
+    expect(lastCx).toBeGreaterThanOrEqual(PLOT_RIGHT - 4);
+
+    // 预测点全在域外 → 无虚线、无图例项
+    expect(svg!.querySelectorAll('path[stroke-dasharray]')).toHaveLength(0);
+    expect(screen.queryByText(/目标预测/)).toBeNull();
+  });
 });
