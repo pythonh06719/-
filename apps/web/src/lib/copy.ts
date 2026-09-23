@@ -36,6 +36,23 @@ export const COPY = {
   weightRangeOlderHint: '想看更早的记录，把上面的范围调大一点就好。',
   /** 选了较短区间、这一段内恰好没有记录时的中性引导（有历史、只是不在此区间） */
   weightRangeEmpty: '这个范围里还没有记录，换个更大的范围看看。',
+  /**
+   * 周报趋势增强（C2）—— 摄入 / 运动对比、习惯达成率、体重变化的中性解读。
+   * 语气规范同 §7：只陈述事实、不做打分与催促，不使用红色 / 惩罚性语义。
+   */
+  reportTrendTitle: '摄入 vs 运动',
+  reportTrendCaption: '每天的摄入与运动消耗，柱高用同一尺度，方便对比。',
+  reportTrendEmpty: '这周还没有可对比的数据，记几笔就会显示。',
+  reportIntakeSeries: '摄入',
+  reportExerciseSeries: '运动',
+  reportHabitTitle: '习惯达成率',
+  reportHabitEmpty: '还没有设置习惯，加了之后这里会显示一周的达成情况。',
+  reportHabitNote: '打卡是给自己留的记号，做到多少都算数。',
+  /** 体重变化的三种中性解读（不评判方向，只把事实说清楚） */
+  reportWeightMissing: '这周体重记录还不够，等有两条以上再一起看趋势。',
+  reportWeightFlat: '这周体重基本持平，稳住节奏就好。',
+  reportWeightDown: '这周体重略有下降，按自己的节奏来就好。',
+  reportWeightUp: '这周体重略有上浮，波动很正常，看趋势就好。',
   /** 目标进度卡（R2.7）——标题 / 维持模式 / 注脚；措辞中性，不做打分与催促 */
   goalProgressTitle: '距离目标',
   goalProgressRingLabel: '目标进度',
@@ -270,6 +287,50 @@ export function weightRangeCaption(days: number, count: number, sinceLabel: stri
   const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
   const head = `当前查看${weightRangeName(days)}：共 ${safeCount} 笔记录`;
   return sinceLabel === null ? `${head}。` : `${head}，起始于 ${sinceLabel}。`;
+}
+
+// ---------------------------------------------------------------------------
+// 周报趋势增强（C2）
+// 语气规范同 §7：习惯达成率与体重变化都只做中性陈述，不评判、不催。
+// ---------------------------------------------------------------------------
+
+/**
+ * 习惯达成率文案。
+ *
+ * @param doneTimes 一周内累计打卡次数（同一习惯同一天记一次）
+ * @param ratePercent 达成率百分比（0 ~ 100）
+ */
+export function reportHabitRateLabel(doneTimes: number, ratePercent: number): string {
+  const times = Number.isFinite(doneTimes) ? Math.max(0, Math.floor(doneTimes)) : 0;
+  const percent = Number.isFinite(ratePercent) ? Math.min(100, Math.max(0, Math.round(ratePercent))) : 0;
+  return `本周共打卡 ${times} 次，达成率 ${percent}%`;
+}
+
+/**
+ * 体重变化的中性解读（无负罪感）。
+ *
+ * - `null` / 非有限值 → 记录不足，先不谈趋势；
+ * - `|Δ| ≤ 0.1` → 基本持平；
+ * - 明显下降 / 上浮 → 各自的温和说法（上浮沿用 `weightFluctuation` 的口径）。
+ */
+export function weeklyWeightReading(changeKg: number | null): string {
+  if (changeKg === null || !Number.isFinite(changeKg)) {
+    return COPY.reportWeightMissing;
+  }
+  if (changeKg > 0.1) {
+    return COPY.reportWeightUp;
+  }
+  if (changeKg < -0.1) {
+    return COPY.reportWeightDown;
+  }
+  return COPY.reportWeightFlat;
+}
+
+/** 摄入 / 运动对比图的无障碍标签（含七天合计，让读屏用户也拿到对比结论）。 */
+export function reportTrendAria(intakeTotalKcal: number, exerciseTotalKcal: number): string {
+  const intake = Number.isFinite(intakeTotalKcal) ? Math.round(intakeTotalKcal) : 0;
+  const exercise = Number.isFinite(exerciseTotalKcal) ? Math.round(exerciseTotalKcal) : 0;
+  return `近 7 天摄入与运动消耗对比，共摄入 ${intake} 千卡，运动消耗 ${exercise} 千卡`;
 }
 
 // ---------------------------------------------------------------------------
