@@ -113,10 +113,16 @@ async function register(email: string): Promise<{ token: string; userId: number 
   return { token: body.accessToken, userId: body.user.id };
 }
 
+/**
+ * 只清理**本次测试用到的两个账号**，不要用 `deleteMany({})` 清整张表 ——
+ * 清空整表会误删同一数据库上其他账号的数据（曾让并发的验证环境读到
+ * 「共摄入 0 千卡」这种假结果）。写法与 `agent-stream.e2e.test.ts`、
+ * `agent-confirm-concurrency.e2e.test.ts` 保持一致。
+ */
 async function cleanup(): Promise<void> {
-  await prisma.aiTrace.deleteMany({});
-  await prisma.mealLog.deleteMany({});
-  await prisma.aiUsage.deleteMany({});
+  await prisma.aiTrace.deleteMany({ where: { user: { email: { in: [USER_AGENT, USER_OTHER] } } } });
+  await prisma.mealLog.deleteMany({ where: { user: { email: { in: [USER_AGENT, USER_OTHER] } } } });
+  await prisma.aiUsage.deleteMany({ where: { user: { email: { in: [USER_AGENT, USER_OTHER] } } } });
   await prisma.user.deleteMany({ where: { email: { in: [USER_AGENT, USER_OTHER] } } });
 }
 
