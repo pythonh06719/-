@@ -4,13 +4,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, isNetworkError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
+import { todayKey } from '@/lib/format';
 import EmptyState from '@/components/common/EmptyState';
+import HabitCalendar from './HabitCalendar';
 
 /**
  * 习惯打卡（`/habits`，PRD §6 第 7 行 / R7.3 / R7.4，二期）。
  *
  * **无负罪感设计（硬性）**：只展示「当前连续 / 历史最佳」两个数字，
  * 断签**不惩罚、不清零提示、不发通知**，文案一律鼓励式。
+ *
+ * C3：每个习惯多一张「连续日历」（7×5 网格 = 近 35 天），把打卡日期明细摊开展示；
+ * 断签一律空心浅色，不出现红叉 / 「已断 N 天」/ 任何惩罚性表述。
  */
 
 interface HabitItem {
@@ -23,6 +28,8 @@ interface HabitItem {
   doneToday: boolean;
   currentStreak: number;
   bestStreak: number;
+  /** 近 35 天已打卡日期（升序）；缺失时按空数组渲染（兼容旧响应） */
+  recentDates?: string[];
 }
 
 export default function HabitsPage(): ReactElement {
@@ -61,6 +68,7 @@ export default function HabitsPage(): ReactElement {
   });
 
   const habits = habitsQuery.data?.habits ?? [];
+  const today = habitsQuery.data?.today ?? todayKey();
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4" aria-live="polite">
@@ -69,36 +77,41 @@ export default function HabitsPage(): ReactElement {
       <h1 className="qsh-sr-only">习惯打卡</h1>
 
       {habits.map((habit) => (
-        <button
+        <div
           key={habit.id}
-          type="button"
-          className={`flex items-center gap-4 rounded-2xl p-5 text-left shadow-sm transition-all ${
+          className={`rounded-2xl p-5 shadow-sm transition-all ${
             habit.doneToday
               ? 'bg-brand-50 ring-2 ring-brand-300 dark:bg-brand-900/40'
               : 'bg-white dark:bg-slate-800'
           }`}
-          onClick={() => toggle.mutate(habit)}
-          aria-pressed={habit.doneToday}
-          aria-label={`${habit.name}，${habit.doneToday ? '今天已打卡' : '今天还没打卡'}`}
         >
-          <span className="text-2xl" aria-hidden="true">
-            {habit.icon ?? '✅'}
-          </span>
-          <span className="flex-1">
-            <span className="block font-medium text-slate-800 dark:text-slate-100">{habit.name}</span>
-            <span className="block text-xs text-slate-500 dark:text-slate-400">
-              当前连续 {habit.currentStreak} 天 · 历史最佳 {habit.bestStreak} 天
-            </span>
-          </span>
-          <span
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-lg ${
-              habit.doneToday ? 'bg-brand-600 text-white' : 'border border-slate-300 dark:border-slate-500'
-            }`}
-            aria-hidden="true"
+          <button
+            type="button"
+            className="flex w-full items-center gap-4 text-left"
+            onClick={() => toggle.mutate(habit)}
+            aria-pressed={habit.doneToday}
+            aria-label={`${habit.name}，${habit.doneToday ? '今天已打卡' : '今天还没打卡'}`}
           >
-            {habit.doneToday ? '✓' : ''}
-          </span>
-        </button>
+            <span className="text-2xl" aria-hidden="true">
+              {habit.icon ?? '✅'}
+            </span>
+            <span className="flex-1">
+              <span className="block font-medium text-slate-800 dark:text-slate-100">{habit.name}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">
+                当前连续 {habit.currentStreak} 天 · 历史最佳 {habit.bestStreak} 天
+              </span>
+            </span>
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-lg ${
+                habit.doneToday ? 'bg-brand-600 text-white' : 'border border-slate-300 dark:border-slate-500'
+              }`}
+              aria-hidden="true"
+            >
+              {habit.doneToday ? '✓' : ''}
+            </span>
+          </button>
+          <HabitCalendar checkedDates={habit.recentDates ?? []} today={today} />
+        </div>
       ))}
 
       {/*
