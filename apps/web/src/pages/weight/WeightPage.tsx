@@ -23,6 +23,7 @@ import {
   computeMovingAverage7d,
   computeTrendStats,
   isWeightRising,
+  normalizeTrendResponse,
   slicePointsByRange,
   toTrendPoints,
 } from '@/lib/trend';
@@ -51,15 +52,8 @@ const WeightChart = lazy(() => import('./WeightChart'));
  */
 
 /** 把任意后端返回形态归一为趋势点。 */
-function normalizePoints(response: WeightTrendResponse | Paginated<WeightLog> | WeightLog[]): WeightTrendPoint[] {
-  if (Array.isArray(response)) {
-    return toTrendPoints(response);
-  }
-  if ('points' in response) {
-    return toTrendPoints(response.points);
-  }
-  return toTrendPoints(response.items ?? []);
-}
+// `/weights` 三种返回形态的归一化已提到 `lib/trend.ts` 的 `normalizeTrendResponse`
+// —— 饮食页的「一日档案」也要用它，避免两处各写一份分支。
 
 /** 取后端移动平均（若提供），否则本地计算。 */
 function resolveMovingAverage(
@@ -130,7 +124,7 @@ export default function WeightPage(): ReactElement {
 
   useEffect(() => {
     if (trendQuery.data !== undefined) {
-      cacheSet(CACHE_KEYS.weightPoints, normalizePoints(trendQuery.data));
+      cacheSet(CACHE_KEYS.weightPoints, normalizeTrendResponse(trendQuery.data));
     }
   }, [trendQuery.data]);
 
@@ -138,7 +132,7 @@ export default function WeightPage(): ReactElement {
   const cachedPoints = cacheGet<WeightTrendPoint[]>(CACHE_KEYS.weightPoints) ?? [];
   /** 全量点：区间切片与平台期判定都以它为基准（移动平均也必须在全量上计算）。 */
   const allPoints = useMemo<WeightTrendPoint[]>(
-    () => (trendQuery.data !== undefined ? normalizePoints(trendQuery.data) : cachedPoints),
+    () => (trendQuery.data !== undefined ? normalizeTrendResponse(trendQuery.data) : cachedPoints),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [trendQuery.data],
   );
