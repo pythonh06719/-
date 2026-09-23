@@ -14,6 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { WeightTrendResponse } from '@qsh/shared-types';
 import WeightPage from '@/pages/weight/WeightPage';
 import { cacheClearAll } from '@/lib/local-cache';
+import { clearPlateauVisibility } from '@/lib/plateau-visibility';
 import { addDays, todayKey } from '@/lib/format';
 
 /** 造一份「最近 30 天」的趋势响应（均线取同一个值，模拟后端算好的平滑序列）。 */
@@ -54,6 +55,8 @@ function renderWeightPage(data: WeightTrendResponse): void {
 describe('WeightPage 平台期卡片接线（R2.7）', () => {
   beforeEach(() => {
     cacheClearAll();
+    // AC-11.1.6 的展示频控状态会跨用例残留 → 每个用例都从「从未展示 / 从未关闭」开始
+    clearPlateauVisibility();
   });
 
   it('连续 30 天没变化 → 渲染平台期说明卡，并给出 4 周斜率视角', async () => {
