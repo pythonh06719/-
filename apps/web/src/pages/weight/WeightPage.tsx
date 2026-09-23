@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -27,6 +27,12 @@ import {
   toTrendPoints,
 } from '@/lib/trend';
 import type { WeightRangeDays } from '@/lib/trend';
+import {
+  markPlateauDismissed,
+  markPlateauShown,
+  readPlateauVisibilityState,
+  shouldShowPlateau,
+} from '@/lib/plateau-visibility';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 import GoalProgressCard from './GoalProgressCard';
@@ -177,6 +183,36 @@ export default function WeightPage(): ReactElement {
           }),
     [allPoints, fullMovingAverage],
   );
+
+  /**
+   * 平台期卡的展示频控（AC-11.1.6）——**只压制展示，不改判定结果**：
+   * `plateau.isPlateau` 仍是 `detectWeightPlateau()` 的原样输出，是否渲染另由本状态说了算。
+   *
+   * 判定**每次挂载只做一次**（用 `useRef` 上锁）：否则「展示后立刻写入已展示日期」会让
+   * 下一次重算（如后台 refetch 触发 `plateau` 换引用）读到「今天已展示」而把卡片当场抽走。
+   * 重新进入页面 = 重新挂载 = 重新判定 → 命中「同一天最多一次」而不再出现。
+   */
+  const [plateauVisible, setPlateauVisible] = useState(false);
+  const plateauDecided = useRef(false);
+  useEffect(() => {
+    if (plateauDecided.current || plateau === null) {
+      return;
+    }
+    plateauDecided.current = true;
+    if (!plateau.isPlateau) {
+      return;
+    }
+    if (shouldShowPlateau(readPlateauVisibilityState())) {
+      markPlateauShown();
+      setPlateauVisible(true);
+    }
+  }, [plateau]);
+
+  /** 用户点「收起」：记录关闭时间（7 天内不再自动出现）并隐藏本卡。 */
+  const handleDismissPlateau = (): void => {
+    markPlateauDismissed();
+    setPlateauVisible(false);
+  };
 
   const addWeight = useMutation({
     mutationFn: (payload: CreateWeightLogRequest) => api.post<WeightLog>('/weights', payload),
@@ -343,10 +379,11 @@ export default function WeightPage(): ReactElement {
 
       {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
 
-      {plateau !== null && plateau.isPlateau && (
+      {plateauVisible && plateau !== null && (
         <PlateauCard
           stalledDays={plateau.stalledDays}
           slope4wKgPerWeek={plateau.slope4wKgPerWeek}
+          onDismiss={handleDismissPlateau}
         />
       )}
 

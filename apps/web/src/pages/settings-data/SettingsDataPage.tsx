@@ -16,6 +16,7 @@ import { toExportWeightRows } from '@/lib/csv';
 import { JSON_MIME, createEmptyExportPayload, parseWeightCsv, serializeExportBundle } from '@/lib/csv';
 import { downloadExportBundle, downloadTextFile, readTextFile } from '@/lib/download';
 import { clearLastBackupAt, daysSinceLastBackup, readLastBackupAt, saveLastBackupAt } from '@/lib/backup';
+import { clearPlateauVisibility } from '@/lib/plateau-visibility';
 import { todayKey } from '@/lib/format';
 import { COPY, lastBackupLabel } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
@@ -173,6 +174,8 @@ export default function SettingsDataPage(): ReactElement {
     await clearQueuedRequests();
     cacheClearAll();
     clearLastBackupAt();
+    // AC-11.1.6：平台期卡的本地频控状态也一并清掉（与备份时间戳同理，属「本机记录」）
+    clearPlateauVisibility();
     clearAuth();
     setDeleteState('你的数据已经从本机移除。感谢这段日子的使用。');
     setConfirmStep('idle');
