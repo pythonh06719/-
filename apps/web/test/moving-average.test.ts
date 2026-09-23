@@ -64,7 +64,7 @@ describe('computeMovingAverage7d', () => {
 });
 
 describe('computeTrendStats / isWeightRising', () => {
-  it('统计最小 / 最大 / 最新 / 净变化', () => {
+  it('统计最小 / 最大 / 均值 / 最新 / 净变化', () => {
     const stats = computeTrendStats([
       point('2026-09-01', 60),
       point('2026-09-02', 58.4),
@@ -72,12 +72,20 @@ describe('computeTrendStats / isWeightRising', () => {
     ]);
     expect(stats.minKg).toBe(58.4);
     expect(stats.maxKg).toBe(60);
+    // 均值 = (60 + 58.4 + 59.2) / 3 = 59.2
+    expect(stats.meanKg).toBe(59.2);
     expect(stats.latestKg).toBe(59.2);
     expect(stats.changeKg).toBe(-0.8);
   });
 
   it('空数据统计为 null', () => {
-    expect(computeTrendStats([])).toEqual({ minKg: null, maxKg: null, latestKg: null, changeKg: null });
+    expect(computeTrendStats([])).toEqual({
+      minKg: null,
+      maxKg: null,
+      meanKg: null,
+      latestKg: null,
+      changeKg: null,
+    });
   });
 
   it('最新一点高于前一点 → 判定为上涨（触发中性文案）', () => {

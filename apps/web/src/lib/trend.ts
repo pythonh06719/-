@@ -48,28 +48,31 @@ export function computeMovingAverage7d(
   });
 }
 
-/** 体重趋势统计（最小 / 最大 / 最新 / 净变化）。 */
+/** 体重趋势统计（最小 / 最大 / 均值 / 最新 / 净变化）。 */
 export interface TrendStats {
   minKg: number | null;
   maxKg: number | null;
+  /** 区间内所有记录的算术平均（C4 区间视图用；不是移动平均） */
+  meanKg: number | null;
   latestKg: number | null;
   /** 最新 − 最早（可正可负） */
   changeKg: number | null;
 }
 
-/** 计算趋势统计（纯函数）。 */
+/** 计算趋势统计（纯函数）。传入哪个区间就统计哪个区间。 */
 export function computeTrendStats(points: readonly WeightTrendPoint[]): TrendStats {
   if (points.length === 0) {
-    return { minKg: null, maxKg: null, latestKg: null, changeKg: null };
+    return { minKg: null, maxKg: null, meanKg: null, latestKg: null, changeKg: null };
   }
   const sorted = sortTrendPoints(points);
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
   if (first === undefined || last === undefined) {
-    return { minKg: null, maxKg: null, latestKg: null, changeKg: null };
+    return { minKg: null, maxKg: null, meanKg: null, latestKg: null, changeKg: null };
   }
   let minKg = first.weightKg;
   let maxKg = first.weightKg;
+  let sumKg = 0;
   for (const point of sorted) {
     if (point.weightKg < minKg) {
       minKg = point.weightKg;
@@ -77,10 +80,12 @@ export function computeTrendStats(points: readonly WeightTrendPoint[]): TrendSta
     if (point.weightKg > maxKg) {
       maxKg = point.weightKg;
     }
+    sumKg += point.weightKg;
   }
   return {
     minKg: round2(minKg),
     maxKg: round2(maxKg),
+    meanKg: round2(sumKg / sorted.length),
     latestKg: round2(last.weightKg),
     changeKg: round2(last.weightKg - first.weightKg),
   };
@@ -147,6 +152,58 @@ export function isWeightRising(points: readonly WeightTrendPoint[]): boolean {
 /** 两点间天数（用于「距上次记录 N 天」等提示，避免依赖 Date.now 的隐式调用）。 */
 export function daysBetween(a: string, b: string): number {
   return diffDays(a, b);
+}
+
+// ---------------------------------------------------------------------------
+// 体重区间视图（C4）
+// ---------------------------------------------------------------------------
+
+/** 可选区间（天）：近 7 / 30 / 90 天。 */
+export const WEIGHT_RANGE_DAYS_OPTIONS = [7, 30, 90] as const;
+/** 区间天数（联合类型，避免传入任意数字）。 */
+export type WeightRangeDays = (typeof WEIGHT_RANGE_DAYS_OPTIONS)[number];
+/**
+ * 默认区间 =**最宽的 90 天**。
+ *
+ * 改动前页面固定展示「最近 200 笔记录」（对绝大多数用户 ≈ 全部历史）。选最宽档作为默认，
+ * 是为了让默认视图与改动前**尽量一致**（仅当历史超过 90 天时才会略窄），而不是把默认改成某个更短窗口。
+ */
+export const DEFAULT_WEIGHT_RANGE_DAYS: WeightRangeDays = 90;
+
+/**
+ * 按日期区间切片：保留落在 `[today-(days-1), today]` 内的体重点（升序）。
+ *
+ * **纯函数、不读系统时间**（`today` 由调用方注入），离线也能用。
+ * 区间端点**闭区间**：`days = 7` 时恰好包含今天在内往前 7 个自然日。
+ */
+export function slicePointsByRange(
+  points: readonly WeightTrendPoint[],
+  days: number,
+  today: string,
+): WeightTrendPoint[] {
+  const span = Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 1;
+  const windowStart = addDays(today, -(span - 1));
+  return sortTrendPoints(points).filter(
+    (point) => point.date >= windowStart && point.date <= today,
+  );
+}
+
+/**
+ * 把（全量算得的）移动平均**对齐**到指定日期序列，输出可与 `dates` 平行使用的 `value[]`。
+ *
+ * 关键：移动平均必须在**全量数据**上计算（窗口跨区间边界时需要区间外的历史），
+ * 因此这里只做「按日期取值」，而不是先切片再算平均 —— 否则区间左端前 6 天的均线会因缺历史而偏小。
+ * 找不到对应日期的位置填 `null`（图表按断点处理，不臆造数值）。
+ */
+export function alignMovingAverage(
+  movingAverage: readonly MovingAveragePoint[],
+  points: readonly WeightTrendPoint[],
+): Array<number | null> {
+  const byDate = new Map<string, number | null>();
+  for (const item of movingAverage) {
+    byDate.set(item.date, item.value);
+  }
+  return points.map((point) => byDate.get(point.date) ?? null);
 }
 
 /** 供测试复用：从日期键还原本地 Date。 */

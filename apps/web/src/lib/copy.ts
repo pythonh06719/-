@@ -19,6 +19,23 @@ export const COPY = {
   mealLoggedAnnounce: '记录已添加，本餐热量已更新',
   /** 体重上涨时的中性说明（TC-34） */
   weightFluctuation: '波动很正常，看趋势就好',
+  /**
+   * 体重区间视图（C4）—— 让用户自己选看近 7 / 30 / 90 天。
+   * 只是「把哪一段摊开看」，措辞中性、不评判、不催。
+   */
+  weightRangeLabel: '查看范围',
+  weightRange7: '近 7 天',
+  weightRange30: '近 30 天',
+  weightRange90: '近 90 天',
+  /** 区间统计小卡的中性标签（数值由纯函数算出，仅作陈述） */
+  weightStatMin: '最低',
+  weightStatMax: '最高',
+  weightStatMean: '均值',
+  weightStatChange: '净变化',
+  /** 区间说明：把「当前在看哪一段」讲清楚，不催、不评判 */
+  weightRangeOlderHint: '想看更早的记录，把上面的范围调大一点就好。',
+  /** 选了较短区间、这一段内恰好没有记录时的中性引导（有历史、只是不在此区间） */
+  weightRangeEmpty: '这个范围里还没有记录，换个更大的范围看看。',
   /** 目标进度卡（R2.7）——标题 / 维持模式 / 注脚；措辞中性，不做打分与催促 */
   goalProgressTitle: '距离目标',
   goalProgressRingLabel: '目标进度',
@@ -227,6 +244,32 @@ export function plateauSlopeHint(kgPerWeek: number): string {
 export function habitCalendarAria(checkedDays: number): string {
   const days = Number.isFinite(checkedDays) ? Math.max(0, Math.floor(checkedDays)) : 0;
   return `最近 35 天里，有 ${days} 天打过卡`;
+}
+
+// ---------------------------------------------------------------------------
+// 体重区间视图（C4）
+// 语气规范同 §7：区间只是「把哪一段摊开看」，数字如实陈述，不做评判、不催。
+// ---------------------------------------------------------------------------
+
+/** 区间标签（「近 N 天」）；未知天数兜底为「近 N 天」，不抛错。 */
+export function weightRangeName(days: number): string {
+  if (days === 7) return COPY.weightRange7;
+  if (days === 30) return COPY.weightRange30;
+  if (days === 90) return COPY.weightRange90;
+  const safe = Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 1;
+  return `近 ${safe} 天`;
+}
+
+/**
+ * 区间说明句：当前范围、记录笔数、起始日期。
+ *
+ * 例：`当前查看近 30 天：共 12 笔记录，起始于 2026年9月1日。`
+ * 无记录时不带「起始于」从句（避免出现空日期）。
+ */
+export function weightRangeCaption(days: number, count: number, sinceLabel: string | null): string {
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  const head = `当前查看${weightRangeName(days)}：共 ${safeCount} 笔记录`;
+  return sinceLabel === null ? `${head}。` : `${head}，起始于 ${sinceLabel}。`;
 }
 
 // ---------------------------------------------------------------------------
