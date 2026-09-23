@@ -6,11 +6,15 @@ import type {
   ListMealsResponse,
   MealGroup,
   MealLog,
+  Paginated,
+  WeightLog,
+  WeightTrendResponse,
 } from '@qsh/shared-types';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, todayKey } from '@/lib/format';
+import { normalizeTrendResponse } from '@/lib/trend';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { COPY } from '@/lib/copy';
 import { emojiForFoodName } from '@/lib/food-emoji';
@@ -78,6 +82,25 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       cacheSet(CACHE_KEYS.meals(date), mealsQuery.data);
     }
   }, [mealsQuery.data, date]);
+
+  // 一日档案（N2）：把这一天的体重一并展示。
+  // 只拉一次全量趋势（交给 react-query 缓存），再按当前日期匹配 —— 切日期不会重复请求。
+  const weightsQuery = useQuery({
+    queryKey: queryKeys.weightTrend,
+    queryFn: () => api.get<WeightTrendResponse | Paginated<WeightLog>>('/weights', { limit: 200 }),
+  });
+
+  /** 当前查看日的体重记录（没有则为 null，页面给中性提示而不是留空）。 */
+  const weightOfDay = useMemo(() => {
+    if (weightsQuery.data === undefined) return null;
+    return normalizeTrendResponse(weightsQuery.data).find((point) => point.date === date) ?? null;
+  }, [weightsQuery.data, date]);
+
+  /**
+   * 是否正在查看今天 —— 决定「今天一共 / 这天一共」这类措辞。
+   * （修掉一个既有误导：翻到历史某一天时，卡片仍写着「今天一共」。）
+   */
+  const isToday = date === todayKey();
 
   const groups = useMemo(
     () => normalizeGroups(mealsQuery.data ?? cacheGet<ListMealsResponse>(CACHE_KEYS.meals(date)) ?? undefined),
@@ -248,8 +271,37 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         </div>
       </div>
 
+      {/* 一日档案（N2）：直接翻到任意一天。
+          原先只能靠 ‹ › 逐日翻 —— 想看三个月前的某一天要点几十次，实际上等于看不了。
+          用原生 `<input type="date">`，不引第三方日历库；上限设为今天（未来没有记录）。 */}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-sm text-slate-600 dark:text-slate-300" htmlFor="diary-date">
+          翻到
+          <input
+            id="diary-date"
+            type="date"
+            value={date}
+            max={todayKey()}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (next !== '') setDate(next);
+            }}
+            className="ml-1.5 rounded-lg border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </label>
+        {!isToday && (
+          <button
+            type="button"
+            onClick={() => setDate(todayKey())}
+            className="qsh-touch-target rounded-lg px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 dark:text-brand-300 dark:ring-slate-700"
+          >
+            回到今天
+          </button>
+        )}
+      </div>
+
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-        <p className="text-sm text-slate-500 dark:text-slate-400">今天一共</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{isToday ? '今天一共' : '这天一共'}</p>
         <p className="qsh-tnum mt-1 text-3xl font-bold text-brand-700 dark:text-brand-300">
           {toDisplayEnergy(todayTotal, unit)}
           <span className="ml-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -266,9 +318,25 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             </div>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               参考预算 {toDisplayEnergy(dailyBudget, unit)} {energyLabel(unit)}
-              {progressRatio > 1 ? ' · 今天吃得丰富一些，明天照常就好' : ''}
+              {progressRatio > 1 && isToday ? ' · 今天吃得丰富一些，明天照常就好' : ''}
             </p>
           </div>
+        )}
+      </div>
+
+      {/* 一日档案（N2）：这一天的体重。
+          有记录就展示；没有给一句中性提示 —— 不留空档，也不催你去称。 */}
+      <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">这一天的体重</h2>
+        {weightOfDay === null ? (
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            这天没有称体重的记录。想补的话去「变化」页加一条就好。
+          </p>
+        ) : (
+          <p className="qsh-tnum mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">
+            {weightOfDay.weightKg.toFixed(1)}
+            <span className="ml-1 text-sm font-medium text-slate-500 dark:text-slate-400">kg</span>
+          </p>
         )}
       </div>
 

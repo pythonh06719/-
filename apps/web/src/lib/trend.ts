@@ -1,4 +1,10 @@
-import type { MovingAveragePoint, WeightTrendPoint } from '@qsh/shared-types';
+import type {
+  MovingAveragePoint,
+  Paginated,
+  WeightLog,
+  WeightTrendPoint,
+  WeightTrendResponse,
+} from '@qsh/shared-types';
 import { addDays, diffDays, parseDateKey, todayKey } from './format';
 
 /**
@@ -107,6 +113,25 @@ export function toTrendPoints(
     points.push({ date, weightKg: log.weightKg });
   }
   return sortTrendPoints(points);
+}
+
+/**
+ * 把 `/weights` 的**任意返回形态**归一为趋势点。
+ *
+ * 同一端点在不同分区会返回三种形态之一：`WeightTrendResponse`（含 `points`）、
+ * `Paginated<WeightLog>`（含 `items`）或裸 `WeightLog[]`。体重页与饮食页（一日档案）
+ * 都要消费它，放在这里共用，避免两处各自复制这段分支。
+ */
+export function normalizeTrendResponse(
+  response: WeightTrendResponse | Paginated<WeightLog> | WeightLog[],
+): WeightTrendPoint[] {
+  if (Array.isArray(response)) {
+    return toTrendPoints(response);
+  }
+  if ('points' in response) {
+    return toTrendPoints(response.points);
+  }
+  return toTrendPoints(response.items ?? []);
 }
 
 /**
