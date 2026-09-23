@@ -550,6 +550,50 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑧ 周报里的对比与达成率怎么读（C2） */}
+      <section
+        aria-labelledby="why-weekly-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-weekly-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑧ 周报里的对比与达成率怎么读
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          周报里新增了一张「摄入 vs 运动」对比图和一行习惯达成率。它们的口径都写在下面 ——
+          数字只是把这一周发生的事摊开，不给你打分。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="摄入 vs 运动 柱高" value="按 7 天单日峰值统一缩放" hint="两组同一尺度，可直接目视对比" />
+          <DerivationRow term="摄入合计" value="一周内所有饮食记录热量之和" />
+          <DerivationRow term="运动合计" value="一周内所有运动记录消耗之和" />
+          <DerivationRow
+            term="习惯达成率"
+            value="一周累计打卡次数 ÷ (7 天 × 每日习惯数)"
+            hint="没有习惯时不显示 0%，改给一句引导"
+          />
+          <DerivationRow term="体重变化" value="本周内最后一条 − 最早一条" hint="不足两条记录则不给数字" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么运动那根柱总比摄入矮</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              这是事实：日常运动消耗通常远小于一天的摄入，靠运动「抵消」吃进去的热量并不现实。
+              我们照实画出来，是希望你据此安排节奏，而不是把运动当成惩罚。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么体重涨了也不标红</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              一周的体重变化会被水分、食物重量、作息推着走。我们只做中性陈述，把判断留给你和趋势本身 ——
+              涨一点不代表这周白过。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          周报为健康生活参考，不构成医疗建议。数值异常或身体不适时请咨询专业医师。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link
