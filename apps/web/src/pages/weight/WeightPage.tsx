@@ -14,9 +14,19 @@ import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatFullDate, formatSigned, todayKey } from '@/lib/format';
-import { COPY } from '@/lib/copy';
+import { COPY, weightRangeCaption, weightRangeName } from '@/lib/copy';
 import { detectWeightPlateau } from '@qsh/core';
-import { computeMovingAverage7d, computeTrendStats, isWeightRising, toTrendPoints } from '@/lib/trend';
+import {
+  DEFAULT_WEIGHT_RANGE_DAYS,
+  WEIGHT_RANGE_DAYS_OPTIONS,
+  alignMovingAverage,
+  computeMovingAverage7d,
+  computeTrendStats,
+  isWeightRising,
+  slicePointsByRange,
+  toTrendPoints,
+} from '@/lib/trend';
+import type { WeightRangeDays } from '@/lib/trend';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 import GoalProgressCard from './GoalProgressCard';
@@ -101,6 +111,11 @@ export default function WeightPage(): ReactElement {
   const [weight, setWeight] = useState('');
   const [note, setNote] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * 区间视图（C4）：默认选**最宽**的 90 天 —— 尽量贴近改动前「固定展示最近 200 笔」的观感。
+   * 只改变「把哪一段摊开看」，不改变取数逻辑（仍只发一次 `/weights` 请求）。
+   */
+  const [rangeDays, setRangeDays] = useState<WeightRangeDays>(DEFAULT_WEIGHT_RANGE_DAYS);
 
   const trendQuery = useQuery({
     queryKey: queryKeys.weightTrend,
@@ -113,30 +128,54 @@ export default function WeightPage(): ReactElement {
     }
   }, [trendQuery.data]);
 
+  const today = todayKey();
   const cachedPoints = cacheGet<WeightTrendPoint[]>(CACHE_KEYS.weightPoints) ?? [];
-  const points = useMemo<WeightTrendPoint[]>(
+  /** 全量点：区间切片与平台期判定都以它为基准（移动平均也必须在全量上计算）。 */
+  const allPoints = useMemo<WeightTrendPoint[]>(
     () => (trendQuery.data !== undefined ? normalizePoints(trendQuery.data) : cachedPoints),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [trendQuery.data],
   );
-  const movingAverage = useMemo(
-    () => resolveMovingAverage(trendQuery.data, points),
-    [trendQuery.data, points],
+  /**
+   * 全量 7 日均线（优先后端 `movingAverage7`，离线时本地算）。
+   *
+   * 必须在**全量**点集上算：窗口跨区间左边界时需要区间外的历史，先切片再算会让左端 6 天偏小。
+   */
+  const fullMovingAverage = useMemo(
+    () => resolveMovingAverage(trendQuery.data, allPoints),
+    [trendQuery.data, allPoints],
   );
+  /** 当前区间的点（近 `rangeDays` 天，闭区间）。 */
+  const points = useMemo(
+    () => slicePointsByRange(allPoints, rangeDays, today),
+    [allPoints, rangeDays, today],
+  );
+  /** 与 `points` 平行对齐的均线值（按日期取值，缺失填 `null`）。 */
+  const movingAverage = useMemo(
+    () => alignMovingAverage(fullMovingAverage, points),
+    [fullMovingAverage, points],
+  );
+  /** 区间统计（最低 / 最高 / 均值 / 净变化）—— `computeTrendStats` 只吃当前区间的点。 */
   const stats = useMemo(() => computeTrendStats(points), [points]);
   const rising = useMemo(() => isWeightRising(points), [points]);
   const forecast = useMemo(() => resolveForecast(trendQuery.data), [trendQuery.data]);
   const goalProgress = useMemo(() => resolveGoalProgress(trendQuery.data), [trendQuery.data]);
   /**
    * 平台期判定（R2.7）：用 `@qsh/core` 纯函数在前端算（离线也能用，不新增请求）。
-   * 优先吃后端算好的 7 日均线；`asOf` 注入今天，用于「记录已停更就不谈平台期」的保护。
+   * **吃全量数据，而不是当前区间** —— 平台期是「最近几周」的大图景判断，与图表看哪一段无关；
+   * 这样切换 7/30/90 天区间也不会让平台期卡忽隐忽现。
+   * 优先用后端算好的 7 日均线；`asOf` 注入今天，用于「记录已停更就不谈平台期」的保护。
    */
   const plateau = useMemo(
     () =>
-      points.length === 0
+      allPoints.length === 0
         ? null
-        : detectWeightPlateau({ points, movingAverage, asOf: todayKey() }),
-    [points, movingAverage],
+        : detectWeightPlateau({
+            points: allPoints,
+            movingAverage: fullMovingAverage,
+            asOf: todayKey(),
+          }),
+    [allPoints, fullMovingAverage],
   );
 
   const addWeight = useMutation({
@@ -160,7 +199,8 @@ export default function WeightPage(): ReactElement {
     () => ({
       dates: points.map((point) => point.date),
       weights: points.map((point) => point.weightKg),
-      movingAverage: movingAverage.map((point) => point.value),
+      // `movingAverage` 已由 `alignMovingAverage` 对齐为与 `dates` 平行的 `number|null[]`
+      movingAverage,
       forecast,
     }),
     [points, movingAverage, forecast],
@@ -253,8 +293,34 @@ export default function WeightPage(): ReactElement {
 
       <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
         <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
+
+        {/* 区间切换（C4）：近 7 / 30 / 90 天。分段控件语义用 role=group + aria-pressed。
+            只切换「看哪一段」，不触发新请求；默认 90 天，尽量贴近改动前的观感。 */}
+        <div role="group" aria-label={COPY.weightRangeLabel} className="mt-2 flex flex-wrap gap-1.5 px-1">
+          {WEIGHT_RANGE_DAYS_OPTIONS.map((days) => {
+            const active = days === rangeDays;
+            return (
+              <button
+                key={days}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setRangeDays(days)}
+                className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition ${
+                  active
+                    ? 'bg-brand-600 text-white'
+                    : 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                {weightRangeName(days)}
+              </button>
+            );
+          })}
+        </div>
+
         {points.length === 0 ? (
-          <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">{COPY.emptyWeight}</p>
+          <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">
+            {allPoints.length === 0 ? COPY.emptyWeight : COPY.weightRangeEmpty}
+          </p>
         ) : (
           <div className="mt-2 h-64 w-full" aria-label="体重趋势折线图">
             <Suspense
@@ -284,21 +350,27 @@ export default function WeightPage(): ReactElement {
         />
       )}
 
-      <dl className="grid grid-cols-3 gap-3 text-center">
+      <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">最低</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
             {stats.minKg === null ? '—' : stats.minKg.toFixed(1)}
           </dd>
         </div>
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">最高</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
             {stats.maxKg === null ? '—' : stats.maxKg.toFixed(1)}
           </dd>
         </div>
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">净变化</dt>
+          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
+          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+            {stats.meanKg === null ? '—' : stats.meanKg.toFixed(1)}
+          </dd>
+        </div>
+        <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
             {stats.changeKg === null ? '—' : formatSigned(stats.changeKg)}
           </dd>
@@ -306,12 +378,15 @@ export default function WeightPage(): ReactElement {
       </dl>
 
       <p className="px-1 text-xs text-slate-600 dark:text-slate-400">
-        趋势图默认展示最近 {points.length} 笔记录
-        {points.length > 0 ? `，起始于 ${formatFullDate(points[0]?.date ?? todayKey())}` : ''}。
-        {points.length > 0 && movingAverage.length > 0
-          ? ` 7 日均线为最近 ${Math.min(7, points.length)} 个自然日的平均值。`
+        {weightRangeCaption(
+          rangeDays,
+          points.length,
+          points.length > 0 ? formatFullDate(points[0]?.date ?? today) : null,
+        )}
+        {movingAverage.some((value) => value !== null)
+          ? ' 7 日均线在每个记录日往前 7 个自然日的窗口内取平均。'
           : ''}
-        想看更早的记录，可以继续往上翻。
+        {COPY.weightRangeOlderHint}
       </p>
 
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">

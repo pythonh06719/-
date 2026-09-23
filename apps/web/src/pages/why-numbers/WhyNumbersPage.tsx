@@ -506,6 +506,50 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑦ 体重区间怎么统计（C4） */}
+      <section
+        aria-labelledby="why-weight-range-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-weight-range-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑦ 体重区间（近 7 / 30 / 90 天）怎么统计
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          体重页可以切换看最近 7 / 30 / 90 天。换区间只是换看哪一段，取数方式没变，也不会改动你的任何记录 ——
+          下面的「最低 / 最高 / 均值 / 净变化」跟着你选的区间一起变。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="区间窗口" value="[今天 − (N−1) 天, 今天]" hint="闭区间，含今天" />
+          <DerivationRow term="最低 / 最高" value="窗口内记录的最小 / 最大体重" />
+          <DerivationRow term="均值" value="窗口内所有记录的算术平均" hint="与 7 日均线不是一回事" />
+          <DerivationRow term="净变化" value="窗口内最后 − 最早（可正可负）" />
+          <DerivationRow
+            term="7 日均线"
+            value="每个记录日往前 7 个自然日窗口内取平均"
+            hint="窗口跨区间边界时仍用区间外的历史"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么默认给你看 90 天</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              默认选最宽的一段，是为了尽量把记录都摊在你眼前 —— 想聚焦近况再切到 7 / 30 天就好。
+              换区间不改动任何数据，只是换个看的角度。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么切了区间，平台期说明还在</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              平台期判定看的是最近几周的整体情况，与图表正在显示哪一段无关，所以它始终用你的全部记录来算 ——
+              这样不会因为你把区间切到 7 天，就误以为「平台期消失了」。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          区间统计只是帮你看清某一段的记录，不构成医疗建议。体重长期异常变化请咨询专业医师。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link
