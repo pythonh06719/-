@@ -65,6 +65,13 @@ export const COPY = {
   /** 习惯打卡（二期） */
   habitChecked: '打卡成功，慢慢来就好',
   habitUnchecked: '已取消今日打卡',
+  /**
+   * 习惯「连续日历」（C3）—— 只陈述「哪天打了卡」，**不评判断签**：
+   * 断签渲染成空心格，绝不出现红叉 / 「已断 N 天」/ 任何惩罚性表述。
+   */
+  habitCalendarTitle: '最近 35 天',
+  habitCalendarHint: '实心是打过卡的日子，空心只是那天没记 —— 歇一歇也很正常',
+  habitCalendarEmpty: '还没有打卡记录，从今天开始就很好',
   /** 断食（二期）——不做怂恿，随时可以停（R8.3） */
   fastingReminder: '断食适合与否因人而异，随时可以停下来',
   fastingWarningTitle: '开始前，想先和你说清楚几件事',
@@ -203,6 +210,23 @@ export function plateauSlopeHint(kgPerWeek: number): string {
     return '拉长看，这几周略微上浮，波动很正常。';
   }
   return '拉长看，这几周基本持平。';
+}
+
+// ---------------------------------------------------------------------------
+// 习惯连续日历（C3）
+// 语气规范同 §7：把日历当「一起走过的日子」的旁观记录，**不催、不评断签**。
+// ---------------------------------------------------------------------------
+
+/**
+ * 连续日历的无障碍标签。
+ *
+ * 只播报「有几天打了卡」这一事实，**不播报「断了几天」**（避免把留白读成缺失）。
+ *
+ * @param checkedDays 窗口内已打卡天数（0 ~ 35）
+ */
+export function habitCalendarAria(checkedDays: number): string {
+  const days = Number.isFinite(checkedDays) ? Math.max(0, Math.floor(checkedDays)) : 0;
+  return `最近 35 天里，有 ${days} 天打过卡`;
 }
 
 // ---------------------------------------------------------------------------

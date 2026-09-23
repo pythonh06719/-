@@ -19,7 +19,17 @@ export interface HabitWithStats {
   currentStreak: number;
   /** 历史最佳连续 */
   bestStreak: number;
+  /**
+   * 近 {@link RECENT_WINDOW_DAYS} 天内**已打卡**的日期（`YYYY-MM-DD`，升序）。
+   *
+   * 供前端渲染「连续日历」网格：只列**打过卡**的日子，窗口内没打卡的日期不在此数组里
+   * （前端按 35 天窗口自行补空心）—— 与 streak 一样只做陈述，不做惩罚性标注。
+   */
+  recentDates: string[];
 }
+
+/** 「连续日历」向后看的自然日窗口长度（7×5 网格 = 35 天）。 */
+export const RECENT_WINDOW_DAYS = 35;
 
 /**
  * 习惯服务（R7.3 / R7.4）。
@@ -53,6 +63,9 @@ export class HabitsService {
       byHabit.set(checkin.habitId, bucket);
     }
 
+    // 「连续日历」窗口：最近 35 天（含今天）。数据已在上面一次查出，这里只做切片，不新增查询。
+    const windowStart = this.shiftDays(today, -(RECENT_WINDOW_DAYS - 1));
+
     return {
       today,
       habits: habits.map((habit) => {
@@ -68,6 +81,7 @@ export class HabitsService {
           doneToday: dates.has(today),
           currentStreak: streak.current,
           bestStreak: streak.best,
+          recentDates: this.recentDates(dates, windowStart, today),
         };
       }),
     };
@@ -95,6 +109,7 @@ export class HabitsService {
       doneToday: false,
       currentStreak: 0,
       bestStreak: 0,
+      recentDates: [],
     };
   }
 
@@ -161,6 +176,15 @@ export class HabitsService {
     }
 
     return { current, best: Math.max(best, current) };
+  }
+
+  /**
+   * 取 `[windowStart, today]` 内已打卡的日期（升序）。
+   *
+   * 断签**不填、不标注** —— 只如实列出打过卡的日子，把「没记」留白给前端渲染成空心格。
+   */
+  private recentDates(dates: Set<string>, windowStart: string, today: string): string[] {
+    return [...dates].filter((date) => date >= windowStart && date <= today).sort();
   }
 
   /** 两个 `YYYY-MM-DD` 之间的天数差（本地时区）。 */
