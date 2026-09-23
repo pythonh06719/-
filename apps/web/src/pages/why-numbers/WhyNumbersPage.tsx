@@ -16,6 +16,7 @@ import {
   PLATEAU_WINDOW_DAYS,
   SAFETY_FLOOR,
   SLOPE_WINDOW_DAYS,
+  TAPER_REMAINING_KG,
   ageFromBirthDate,
   buildSafetyMessages,
   deriveWeeklyLossKg,
@@ -591,6 +592,64 @@ export default function WhyNumbersPage(): ReactElement {
         </dl>
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
           周报为健康生活参考，不构成医疗建议。数值异常或身体不适时请咨询专业医师。
+        </p>
+      </section>
+
+      {/* ⑨ taper（R2.7）：新增的「速度自动放慢」必须可解释（NFR-11） */}
+      <section
+        aria-labelledby="why-taper-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-taper-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑨ 快到目标时，为什么建议会自动变宽松
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          离目标只剩一点点时，你会看到建议摄入悄悄变高（缺口变小）。这不是算错了，而是刻意的收尾设计 ——
+          规则和理由都在下面。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="触发条件"
+            value={`剩余需减 ≤ ${TAPER_REMAINING_KG} kg`}
+            hint="剩余 = 当前体重 − 目标体重"
+          />
+          <DerivationRow
+            term="收窄系数"
+            value={`剩余量 ÷ ${TAPER_REMAINING_KG}`}
+            hint="剩 1kg → 速度减半；剩 0.5kg → 剩四分之一"
+          />
+          <DerivationRow
+            term="已达成时"
+            value="不收窄，转为维持"
+            hint="缺口归零、摄入回到 TDEE（见 ⑤）"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么要放慢</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              最后几公斤若还维持大缺口，一旦达标骤然恢复饮食，身体很容易反弹。提前把速度线性降到 0，
+              是给身体一个过渡 —— 慢一点到，比快一点到又弹回去要好。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么是 2 公斤</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              大约相当于温和节奏下的 2~4 周量，足够平缓又不至于拖太久；而且这时体重的日常波动（±0.5~1.5kg）
+              已经和剩下的目标差不多了，再盯着大缺口也没有意义。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">它会不会动到安全底线</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              不会。收窄只改「减重速度」这一项，后面的 30% 缺口上限与安全下限照旧生效、优先级也不变 ——
+              所以放慢只会让建议更宽松，绝不会让你吃得更少。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          阈值取自引擎常量 <span className="font-mono">TAPER_REMAINING_KG</span>
+          ，本页直接从 @qsh/core 引入，不会与算法本身脱节。
         </p>
       </section>
 

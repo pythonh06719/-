@@ -27,6 +27,20 @@ export const KCAL_PER_KG_FAT = 7700;
 /** 每日缺口上限比例（TDEE × 30%，PRD R2.4）。 */
 export const DEFICIT_CAP_RATIO = 0.3;
 
+/**
+ * taper 触发阈值（kg，PRD R2.7）：**剩余需减重量**低于此值时，缺口按剩余量线性收窄。
+ *
+ * 为什么要有 taper：最后几公斤若仍维持大缺口，一旦达标骤然恢复饮食极易反弹 ——
+ * 这正是需求里「防反弹」的用意。在阈值内把速度线性降到 0，给身体一个过渡。
+ *
+ * 为什么取 2kg：约相当于温和节奏下的 2~4 周量，足够平缓又不至于拖太久；
+ * 而且此时体重的日常波动（±0.5~1.5kg）已与目标差同量级，再维持大缺口没有意义。
+ *
+ * 注意：**已达成（remaining <= 0）不属于 taper**，那时由维持模式（R11.2）接管 ——
+ * 缺口归零、摄入回到 TDEE。
+ */
+export const TAPER_REMAINING_KG = 2;
+
 /** 默认宏量营养素比例（蛋白 25% / 脂肪 25% / 碳水 50%，PRD R2.8）。 */
 export const DEFAULT_MACRO_RATIO: MacroRatio = { protein: 25, fat: 25, carb: 50 };
 

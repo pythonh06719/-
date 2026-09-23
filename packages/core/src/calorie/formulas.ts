@@ -4,6 +4,7 @@ import {
   DEFICIT_CAP_RATIO,
   KCAL_PER_KG_FAT,
   SAFETY_FLOOR,
+  TAPER_REMAINING_KG,
   WARNING_CODES,
 } from './constants';
 import { calcMacros } from './macros';
@@ -93,8 +94,18 @@ export function computeCalorieBudget(input: CalorieInput): CalorieResult {
   const tdeeFloat = calcTDEE(bmrFloat, input.activityLevel);
 
   // 3) 每周目标减重（显式优先，否则由体重差 / 周数推导）
-  const weeklyLoss =
+  const weeklyLossBase =
     input.weeklyLossKg ?? deriveWeeklyLossKg(input.weightKg, input.targetWeightKg, input.targetWeeks);
+
+  // 3.5) taper（PRD R2.7）：剩余需减重量进入收尾区间时，把速度按剩余量**线性收窄**。
+  //   以阈值 2kg 为例：剩 1kg → 速度减半；剩 0.5kg → 剩四分之一；剩 0（已达成）→ 不收窄，
+  //   已达成由维持模式（R11.2）接管：缺口归零、摄入回到 TDEE。
+  //   这里只改「速度」，不动后续 4→13 步 —— 截断上限与钳下限的优先级保持不变。
+  const remainingKg = input.weightKg - input.targetWeightKg;
+  const taperApplied = remainingKg > 0 && remainingKg <= TAPER_REMAINING_KG;
+  const weeklyLoss = taperApplied
+    ? weeklyLossBase * (remainingKg / TAPER_REMAINING_KG)
+    : weeklyLossBase;
 
   // 4) 原始每日缺口
   const rawDeficit = (weeklyLoss * KCAL_PER_KG_FAT) / 7;
@@ -151,6 +162,7 @@ export function computeCalorieBudget(input: CalorieInput): CalorieResult {
     warnings,
     macros,
     weeklyLossEffectiveKg: round2(weeklyLossEffectiveKg),
+    taperApplied,
     etaWeeks: etaWeeksRaw === null ? null : round2(etaWeeksRaw),
   };
 }

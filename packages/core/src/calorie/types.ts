@@ -81,6 +81,12 @@ export interface CalorieResult {
   macros: MacroResult;
   /** 按最终摄入反推的每周实际减重（2 位小数 kg） */
   weeklyLossEffectiveKg: number;
+  /**
+   * 是否触发 taper（PRD R2.7）：剩余需减重量已进入收尾区间，目标减重速度按剩余量
+   * **线性收窄**，避免最后几公斤还维持大缺口（达标后骤然恢复饮食极易反弹）。
+   * 收窄系数 = 剩余量 ÷ `TAPER_REMAINING_KG`；**已达成时为 false**（那时由维持模式接管）。
+   */
+  taperApplied: boolean;
   /** 按有效缺口预测达成目标所需周数（2 位小数，无法预测时为 null） */
   etaWeeks: number | null;
 }
