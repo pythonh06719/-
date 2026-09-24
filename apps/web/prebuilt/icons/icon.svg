@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" role="img" aria-label="轻生活">
+  <defs>
+    <linearGradient id="qshGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4fbf94" />
+      <stop offset="100%" stop-color="#248263" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="url(#qshGradient)" />
+  <circle cx="96" cy="96" r="58" fill="none" stroke="#ffffff" stroke-width="7" stroke-opacity="0.5" />
+  <path d="M96 40a56 56 0 0 1 52 36" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" />
+  <text x="96" y="120" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="62" font-weight="600" fill="#ffffff">轻</text>
+</svg>
