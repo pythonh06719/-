@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -62,18 +62,37 @@ async function bootstrap(): Promise<void> {
   if (config.nodeEnv === 'production') {
     // 候选路径：①编译产物相对（dist/apps/api/src 上溯 6 级 = 仓库根）
     // ②cwd = 仓库根（Render startCommand 场景）③cwd = apps/api（本地冒烟场景）
-    const webDistCandidates = [
-      resolve(__dirname, '../../../../../../apps/web/dist'),
-      resolve(process.cwd(), 'apps/web/dist'),
-      resolve(process.cwd(), '../../apps/web/dist'),
-      // 云端发布沙箱兜底：沙箱内不一定能产出前端构建物（实测多种 startCmd 组合下
-      // dist 始终不存在，导致非 /api 请求全部落到 Nest 路由返回 JSON 404）。
-      // 因此仓库里额外保存一份**预构建产物** `apps/web/prebuilt/`。
-      // 目录名刻意避开 `dist` / `build` —— 否则会被发布流程当作构建产物直接排除、不上传。
-      resolve(__dirname, '../../../../../../apps/web/prebuilt'),
-      resolve(process.cwd(), '../../apps/web/prebuilt'),
-      resolve(process.cwd(), 'apps/web/prebuilt'),
-    ];
+    /**
+     * 从前端产物所在层级**逐级上溯**定位 `apps/web/<name>/index.html`。
+     *
+     * 为什么不写死相对层级：本机产物停在 `apps/api/dist/apps/api/src`、云端发布沙箱的
+     * 部署层级又不一样 —— 写死的 `../../../../../../` 在沙箱里就没命中，结果是静态伺服
+     * 整块不注册，所有非 /api 请求都落到 Nest 路由、返回 JSON 404（实测踩过）。
+     * 这里改为从 `__dirname` 与 `process.cwd()` 两个起点各自向上找，最多 10 级。
+     */
+    const findWebRoot = (name: string): string | null => {
+      for (const start of [__dirname, process.cwd()]) {
+        let current = start;
+        for (let depth = 0; depth < 10; depth += 1) {
+          const candidate = join(current, 'apps', 'web', name);
+          if (existsSync(join(candidate, 'index.html'))) {
+            return candidate;
+          }
+          const parent = dirname(current);
+          if (parent === current) {
+            break;
+          }
+          current = parent;
+        }
+      }
+      return null;
+    };
+
+    // 优先真实的构建产物 dist；云端沙箱构建物缺失时退回仓库内的预构建产物 prebuilt
+    // （目录名刻意避开 dist/build，否则会被发布流程当作构建产物排除而不上传）。
+    const webDistCandidates = [findWebRoot('dist'), findWebRoot('prebuilt')].filter(
+      (candidate): candidate is string => candidate !== null,
+    );
     const webDist = webDistCandidates.find((candidate) => existsSync(join(candidate, 'index.html')));
     if (webDist !== undefined) {
       const expressApp = app.getHttpAdapter().getInstance() as import('express').Express;
