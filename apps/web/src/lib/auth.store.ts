@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AuthResponse, User } from '@qsh/shared-types';
+import { cacheClearAll } from './local-cache';
 
 /**
  * 登录态 Store（zustand）—— ARCHITECTURE §1.7「Access Token 内存保存」。
@@ -94,6 +95,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   clear: () => {
     mirrorToken(null);
+    // 退出登录 / 401 自动登出时**必须清空本地缓存**：
+    // localStorage 的 `qsh:cache:*`（饮食、体重、看板、预算）是按「日期 + 资源」存的，
+    // **不含用户身份** —— 留着它们，同浏览器换账号后离线兜底会把上一个账号的数据展示出来。
+    // 这个 `clear()` 是登出与 401 两条路径的共同入口，放在这里才能一次覆盖。
+    cacheClearAll();
     set({ accessToken: null, user: null, onboardingCompleted: false, status: 'anonymous' });
   },
 }));
