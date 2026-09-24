@@ -1,0 +1,28 @@
+{
+  "name": "轻生活 · 把减肥融入日常生活",
+  "short_name": "轻生活",
+  "description": "不节食、不极端的生活化减肥工具：科学热量预算 + 3 次点击记一餐 + 无负罪感设计。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f7f4",
+  "theme_color": "#2f9e78",
+  "categories": ["health", "lifestyle", "food"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

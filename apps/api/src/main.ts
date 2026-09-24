@@ -66,6 +66,13 @@ async function bootstrap(): Promise<void> {
       resolve(__dirname, '../../../../../../apps/web/dist'),
       resolve(process.cwd(), 'apps/web/dist'),
       resolve(process.cwd(), '../../apps/web/dist'),
+      // 云端发布沙箱兜底：沙箱内不一定能产出前端构建物（实测多种 startCmd 组合下
+      // dist 始终不存在，导致非 /api 请求全部落到 Nest 路由返回 JSON 404）。
+      // 因此仓库里额外保存一份**预构建产物** `apps/web/prebuilt/`。
+      // 目录名刻意避开 `dist` / `build` —— 否则会被发布流程当作构建产物直接排除、不上传。
+      resolve(__dirname, '../../../../../../apps/web/prebuilt'),
+      resolve(process.cwd(), '../../apps/web/prebuilt'),
+      resolve(process.cwd(), 'apps/web/prebuilt'),
     ];
     const webDist = webDistCandidates.find((candidate) => existsSync(join(candidate, 'index.html')));
     if (webDist !== undefined) {
