@@ -312,13 +312,29 @@ export default function WeightPage(): ReactElement {
         )}
       </form>
 
+      {/* 体重波动的日常原因（N3）。
+          ⚠️ 刻意**不做**数据因果归因（不说「因为你昨天吃多了」）—— 那会把身体正常的起伏
+          变成一种指责，直接违背「无负罪感」这条硬约束。这里只陈述日常里本来就会让数字上浮的事，
+          不做因果推断，判断权留给用户自己。 */}
       {rising && (
-        <p
-          role="status"
-          className="rounded-2xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+        <section
+          aria-labelledby="weight-rise-title"
+          className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
         >
-          {COPY.weightFluctuation}
-        </p>
+          <h2 id="weight-rise-title" className="font-semibold">
+            {COPY.weightRiseTitle}
+          </h2>
+          <p role="status" className="mt-1">
+            {COPY.weightFluctuation}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>{COPY.weightRiseReasonWater}</li>
+            <li>{COPY.weightRiseReasonFood}</li>
+            <li>{COPY.weightRiseReasonSalt}</li>
+            <li>{COPY.weightRiseReasonSleep}</li>
+          </ul>
+          <p className="mt-2 font-medium">{COPY.weightRiseClosing}</p>
+        </section>
       )}
 
       <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
