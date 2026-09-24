@@ -1,0 +1,38 @@
+{
+  "name": "@qsh/miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "description": "轻生活微信小程序（Taro + React，复用 @qsh/core 与 @qsh/shared-types）",
+  "scripts": {
+    "build:weapp": "taro build --type weapp",
+    "dev:weapp": "npm run build:weapp -- --watch"
+  },
+  "dependencies": {
+    "@qsh/core": "*",
+    "@qsh/shared-types": "*",
+    "@tarojs/components": "3.6.23",
+    "@tarojs/react": "3.6.23",
+    "@tarojs/runtime": "3.6.23",
+    "@tarojs/shared": "3.6.23",
+    "@tarojs/taro": "3.6.23",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/runtime": "^7.24.0",
+    "@tarojs/cli": "3.6.23",
+    "@tarojs/helper": "3.6.23",
+    "@tarojs/plugin-framework-react": "3.6.23",
+    "@tarojs/plugin-platform-weapp": "3.6.23",
+    "@tarojs/webpack5-runner": "3.6.23",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/webpack-env": "^1.18.0",
+    "babel-preset-taro": "3.6.23",
+    "typescript": "^5.5.4",
+    "webpack": "5.95.0",
+    "webpack-chain": "^6.5.1"
+  }
+}

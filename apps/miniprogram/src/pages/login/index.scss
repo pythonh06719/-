@@ -1,0 +1,26 @@
+.login {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-head {
+  margin: 40rpx 0 48rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-title {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 4rpx;
+}
+
+.login-head .muted {
+  margin-top: 12rpx;
+}
+
+.login .btn {
+  margin-top: 8rpx;
+}

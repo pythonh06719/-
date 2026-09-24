@@ -1,0 +1,46 @@
+.remain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx;
+}
+
+.remain-num {
+  display: flex;
+  align-items: baseline;
+  margin: 12rpx 0;
+}
+
+.bar {
+  height: 20rpx;
+  background: #0f172a;
+  border-radius: 999rpx;
+  overflow: hidden;
+  margin-top: 16rpx;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  transition: width 0.3s ease;
+}
+
+.encourage {
+  font-size: 30rpx;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  margin-top: 8rpx;
+}
+
+.actions .btn {
+  flex: 1;
+}
+
+.logout {
+  color: #94a3b8;
+  font-size: 28rpx;
+}

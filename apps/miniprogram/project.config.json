@@ -1,0 +1,16 @@
+{
+  "miniprogramRoot": "dist/",
+  "projectname": "qingshenghuo-miniprogram",
+  "description": "轻生活微信小程序",
+  "appid": "touristappid",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": false
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.6.23"
+}
