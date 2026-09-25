@@ -58,6 +58,22 @@ export function isNetworkError(error: unknown): boolean {
   return error instanceof ApiClientError && error.code === NETWORK_ERROR_CODE;
 }
 
+/**
+ * 把「业务错误」转成给用户看的中性提示。
+ *
+ * - `ApiClientError`（且非网络层）：优先用服务端下发 / `FRIENDLY_BY_STATUS` 映射好的温和文案；
+ * - 其它未知异常：回退到调用方给的兜底文案。
+ *
+ * ⚠️ **网络层错误不要用本函数** —— 断网应走「入队 + 本地乐观更新」的离线路径
+ * （否则会把一条永远发不出去的请求当作普通失败，既没入队也没重放机会）。
+ */
+export function noticeFromError(error: unknown, fallback: string): string {
+  if (error instanceof ApiClientError && error.message.trim() !== '') {
+    return error.message;
+  }
+  return fallback;
+}
+
 /** 状态码 → 温和的中文提示（PRD §7：不指责、不恐吓）。 */
 const FRIENDLY_BY_STATUS: Record<number, string> = {
   400: '这次填写的信息好像还没填全，检查一下再试试就好',

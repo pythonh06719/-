@@ -46,6 +46,33 @@ export function isValidLocalDateKey(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && toLocalDateKey(date) === value;
 }
 
+/** 两位补零。 */
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/**
+ * 把「日粒度」字段值归一为 `YYYY-MM-DD`。
+ *
+ * 为什么需要这个函数：`logged_at` 在当前 SQLite schema 下是 `String`，直接 `.slice(0, 10)`
+ * 可用；但迁移到 PG 的 `DateTime @db.Date` 后，Prisma 会返回 **`Date`**（UTC 00:00），
+ * 对 `Date` 调 `.slice` 会直接 `TypeError`（本地不可复现的线上崩溃）。
+ *
+ * - `string`：取日期头部（兼容 `'YYYY-MM-DD'` 与 `dbgenerated` 写入的
+ *   `'YYYY-MM-DDThh:mm:ss.sssZ'` 两种形态）；
+ * - `Date`：date-only 列按 **UTC 分量**取值 —— `@db.Date` 语义就是「无时区的日历日」，
+ *   Prisma 以 UTC 00:00 承载；用本地分量会在负时区把日期往回偏移一天。
+ *
+ * ⚠️ 这里刻意**不用** `value.toISOString().slice(0, 10)`：文件头已明令禁止该写法
+ * （它对「当前时刻」会把 UTC 日误当本地日）；本函数只服务于**已是日期粒度**的值。
+ */
+export function toDateKey(value: string | Date): string {
+  if (value instanceof Date) {
+    return `${value.getUTCFullYear()}-${pad2(value.getUTCMonth() + 1)}-${pad2(value.getUTCDate())}`;
+  }
+  return value.slice(0, 10);
+}
+
 /** 两个日期键之间的天数差（`to − from`，按本地日历天）。 */
 export function diffDays(fromKey: string, toKey: string): number {
   const from = parseLocalDateKey(fromKey).getTime();

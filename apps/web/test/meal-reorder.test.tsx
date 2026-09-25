@@ -301,6 +301,48 @@ describe('R3.8 失败 / 离线（AC-3.8.9）', () => {
       expect(COPY.reorderFailed).not.toContain(banned);
     }
   });
+
+  it('业务错误（如记录已被删除）→ **不入队**，回滚 + 中性提示（避免毒消息堵死离线队列）', async () => {
+    // 覆盖默认 stub：reorder 返回 HTTP 400 业务错误（可达但被拒，不是网络层错误）
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
+        const method = init?.method ?? 'GET';
+        if (url.includes('/meals/reorder')) {
+          captured.push({ url, method, body: init?.body === undefined ? undefined : JSON.parse(init.body) });
+          return {
+            ok: false,
+            status: 400,
+            json: async () => ({
+              data: null,
+              error: { code: 'E_BAD_REORDER', message: '有几条记录不在这一天' },
+            }),
+          };
+        }
+        if (url.includes('/weights')) {
+          return ok({ points: [], movingAverage7: [], stats: {}, forecast: [], goalProgress: null });
+        }
+        return ok(mealsResponse());
+      }),
+    );
+
+    renderPage();
+    await waitForRows();
+
+    fireEvent.click(screen.getByLabelText('把「番茄炒蛋」下移'));
+
+    // 展示服务端下发的（温和）业务提示
+    await waitFor(() => {
+      expect(screen.getByText('有几条记录不在这一天')).toBeInTheDocument();
+    });
+
+    // 关键不变量：业务错误**不进入离线队列** —— 否则会被永久重放，变成毒消息
+    await waitFor(() => {
+      expect(captured).toHaveLength(1);
+    });
+    const queued = await listQueuedRequests();
+    expect(queued).toHaveLength(0);
+  });
 });
 
 describe('R3.8 引导条', () => {

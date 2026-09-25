@@ -10,7 +10,7 @@ import type {
   WeightTrendPoint,
   WeightTrendResponse,
 } from '@qsh/shared-types';
-import { api } from '@/lib/api';
+import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatFullDate, formatSigned, todayKey } from '@/lib/format';
@@ -218,11 +218,18 @@ export default function WeightPage(): ReactElement {
       await queryClient.invalidateQueries({ queryKey: queryKeys.weightTrend });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(todayKey()) });
     },
-    onError: async (_error, variables) => {
-      await enqueueRequest({ path: '/weights', method: 'POST', body: variables });
-      setWeight('');
-      setNote('');
-      setNotice(COPY.offlineQueued);
+    onError: async (error, variables) => {
+      if (isNetworkError(error)) {
+        // 真离线：入队待联网重放 + 立即反馈
+        await enqueueRequest({ path: '/weights', method: 'POST', body: variables });
+        setWeight('');
+        setNote('');
+        setNotice(COPY.offlineQueued);
+        return;
+      }
+      // 业务错误（如日期不合法 / 已存在）：不入队（重放只会一直失败变毒消息），
+      // 保留输入让用户修正，并给出中性提示。
+      setNotice(noticeFromError(error, '这次体重没有记上，稍后再试一次就好'));
     },
   });
 

@@ -26,7 +26,7 @@ import {
   searchOpenFoodFacts,
 } from './external/off.client';
 import type { ExternalFoodDraft } from './external/off.client';
-import { keywordWhere, visibleFoodWhere } from './foods.util';
+import { FOOD_IDENTITY_PROJECTION_LIMIT, keywordWhere, visibleFoodWhere } from './foods.util';
 import { VectorSearchService } from './rag/vector-search.service';
 import type { RagFoodHit } from './rag/vector-search.service';
 
@@ -208,19 +208,22 @@ export class FoodsService {
     const to = todayLocalKey();
     const from = addDays(to, -(windowDays - 1));
 
-    // ① 最小投影：(身份候选, 日期) 二元组
+    // ① 最小投影：(身份候选, 日期) 二元组。`take` 为纵深防御上限（见常量注释）。
     const grouped = await this.prisma.mealLog.groupBy({
       by: ['foodItemId', 'customName', 'loggedDate'],
       where: { userId, loggedDate: { gte: from, lte: to } },
       orderBy: [{ loggedDate: 'asc' }, { foodItemId: 'asc' }, { customName: 'asc' }],
+      take: FOOD_IDENTITY_PROJECTION_LIMIT,
     });
 
-    // ② 一次 `in` 查询反查显示名，避免 N+1（D-6）
+    // ② 一次 `in` 查询反查显示名，避免 N+1（D-6）。
+    // ⚠️ 必须叠加 `visibleFoodWhere(userId)`（K7 纵深防御）：否则可能反查出**他人私有**自定义食物的名称。
+    // 正常数据下不会命中不可见项，叠加后行为不变，仅堵住越权展示的可能。
     const ids = [...new Set(grouped.map((row) => row.foodItemId).filter((id): id is number => id !== null))];
     const nameById = new Map<number, string>();
     if (ids.length > 0) {
       const rows = await this.prisma.foodItem.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, ...visibleFoodWhere(userId) },
         select: { id: true, name: true },
       });
       for (const row of rows) {
@@ -246,11 +249,14 @@ export class FoodsService {
       return { days: windowDays, items: [] };
     }
 
-    // ④ 一次取完整条目，供 Composer 复用既有「份量确认 → 确认记录」路径
+    // ④ 一次取完整条目，供 Composer 复用既有「份量确认 → 确认记录」路径。
+    // ⚠️ 同样叠加 `visibleFoodWhere(userId)`（K7）：详情不高于列表/名称的可见性。
     const resultIds = [...new Set(ranked.map((item) => item.foodItemId).filter((id): id is number => id !== null))];
     const foodById = new Map<number, FoodItem>();
     if (resultIds.length > 0) {
-      const rows = await this.prisma.foodItem.findMany({ where: { id: { in: resultIds } } });
+      const rows = await this.prisma.foodItem.findMany({
+        where: { id: { in: resultIds }, ...visibleFoodWhere(userId) },
+      });
       for (const row of rows) {
         foodById.set(row.id, toFoodItem(row));
       }

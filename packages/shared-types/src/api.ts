@@ -545,7 +545,10 @@ export interface ReorderMealsRequest {
 /** `PATCH /api/meals/reorder` 响应。 */
 export interface ReorderMealsResponse {
   /**
-   * 本次请求涉及的**全部**记录的最新映射（含被 compact 牵连的其它餐次）。
+   * 本次写入**实际发生了改变**的记录的最新映射（含被 compact 牵连的其它餐次）。
+   *
+   * ⚠️ 只含**真正被改动**的行（`mealType` / `sortOrder` 有变化的），未变的行不会出现
+   * —— 不是「请求里涉及的全部记录」。响应可能为空数组（空操作 / 仅重复提交相同顺序）。
    *
    * 前端据此刷新本地缓存；**服务端顺序为唯一权威**（K13）。
    */

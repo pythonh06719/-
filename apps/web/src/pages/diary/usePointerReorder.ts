@@ -16,6 +16,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * - `pointermove` → 命中检测（坐标落在哪个餐次 → 目标餐；餐内按指针 Y 与条目中点比较 → 目标 index）；
  * - `pointerup` / `pointercancel` → 计算 `nextIds` → `onCommit(nextIds, targetMealType)`。
  *
+ * ## ⚠️ 落位归类的**顺序无关**原则（本轮修的一个真实缺陷）
+ *
+ * 旧实现把「向上找 `data-meal-type` 祖先」写在了 **item 的 ref 回调**里，并要求该餐次
+ * **已在 `zonesRef` 中注册** —— 而 React 的 ref 回调是**子先父后**（`<li ref>` 早于
+ * `<section ref>`），且 ref 工厂每次渲染都返回**新函数身份**（触发全量 detach/attach），
+ * 于是 item 的注册必然发生在 zone 注册之前 → 所有 item 都被静默丢弃 →
+ * `middles` 恒为空 → 命中下标恒为 0 → **拖到第 N 位松手后一律跑到第 1 位**。
+ *
+ * 修法（**不试图调 ref 顺序，直接消除对顺序的依赖**）：
+ * - item 元素只进一张**扁平表** `itemsRef`（与餐次无关）；
+ * - 「归类到哪个餐次」推迟到 {@link snapshot}（真正需要几何信息时）再做；
+ * - ref 工厂**按 id / mealType 缓存**，身份稳定 → 不再每次渲染全量 detach/attach。
+ *
  * ⚠️ 本 hook 是**可选的增强**：不挂载它，{@link MealItemRow} 的降级控件（上移 / 下移 / 移动到某餐）
  * 也照常工作（AC-3.8.7 一票否决项）。
  *
@@ -52,11 +65,6 @@ export interface UsePointerReorderOptions<T extends string> {
   longPressMs?: number;
   /** 判定为「页面滚动」的移动容差（px），默认 8 */
   moveTolerance?: number;
-  /**
-   * 注册一个餐次容器，供命中检测缓存 rect。
-   * 组件侧在 `<section ref={...}>` 上调用本函数。
-   */
-  registerZone?: (mealType: T, element: HTMLElement | null, itemElements: HTMLElement[]) => void;
 }
 
 /** hook 返回值。 */
@@ -71,9 +79,9 @@ export interface PointerReorderState<T extends string> {
   targetIndex: number;
   /** 开始一次拖拽（绑定到拖拽手柄的 `onPointerDown`） */
   startDrag: (event: React.PointerEvent, id: number) => void;
-  /** 注册餐次容器 ref */
+  /** 注册餐次容器 ref（**身份稳定**：同一 mealType 永远返回同一个函数） */
   setZoneRef: (mealType: T) => (element: HTMLElement | null) => void;
-  /** 注册单条记录的 ref（用于取各条中点） */
+  /** 注册单条记录的 ref（**身份稳定**：同一 id 永远返回同一个函数） */
   setItemRef: (id: number) => (element: HTMLElement | null) => void;
 }
 
@@ -82,6 +90,23 @@ export const DEFAULT_LONG_PRESS_MS = 300;
 
 /** 默认移动容差（> 8px 判定为页面滚动）。 */
 export const DEFAULT_MOVE_TOLERANCE_PX = 8;
+
+/**
+ * 从元素向上冒泡找到最近的餐次容器（带 `data-meal-type`）的 mealType。
+ *
+ * 只在 {@link UsePointerReorder.snapshot} 里调用（当时机不依赖任何 ref 注册顺序）。
+ */
+function findZoneMealType(element: HTMLElement): string | null {
+  let node: HTMLElement | null = element.parentElement;
+  while (node !== null) {
+    const mealType = node.dataset?.mealType;
+    if (typeof mealType === 'string' && mealType.length > 0) {
+      return mealType;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
 
 /**
  * 手写 Pointer Events 拖拽。
@@ -98,7 +123,13 @@ export function usePointerReorder<T extends string>(
   const [targetMealType, setTargetMealType] = useState<T | null>(null);
   const [targetIndex, setTargetIndex] = useState(0);
 
-  const zonesRef = useRef(new Map<T, { element: HTMLElement; items: Map<number, HTMLElement> }>());
+  /** 餐次容器（`<section data-meal-type>`）→ 元素。 */
+  const zonesRef = useRef(new Map<T, HTMLElement>());
+  /** **扁平**的条目元素表（id → 元素）；归属哪个餐次在 `snapshot()` 时才判定。 */
+  const itemsRef = useRef(new Map<number, HTMLElement>());
+  /** ref 回调缓存（身份稳定，避免每次渲染全量 detach/attach）。 */
+  const zoneRefCache = useRef(new Map<T, (element: HTMLElement | null) => void>());
+  const itemRefCache = useRef(new Map<number, (element: HTMLElement | null) => void>());
   /** 进入拖拽态时**快照一次**的落区（避免每次 `pointermove` 都触发 `getBoundingClientRect`）。 */
   const snapshotRef = useRef<DropZone[]>([]);
   /** 当前手势挂在 window 上的监听器的**解绑函数**（`reset` 与卸载时都要调用）。 */
@@ -139,21 +170,35 @@ export function usePointerReorder<T extends string>(
 
   useEffect(() => reset, [reset]);
 
-  /** 缓存各餐次落区（进入拖拽态时调用一次，避免每帧 `getBoundingClientRect`）。 */
+  /**
+   * 缓存各餐次落区（进入拖拽态时调用一次，避免每帧 `getBoundingClientRect`）。
+   *
+   * **关键**：条目按「向上冒泡找到的 `data-meal-type` 祖先」归类 —— 这一步与
+   * ref 的注册顺序无关（`<li>` 是否早于 `<section>` 注册都不影响结果）。
+   */
   const snapshot = useCallback((): DropZone[] => {
-    const zones: DropZone[] = [];
-    for (const [mealType, entry] of zonesRef.current) {
-      const rect = entry.element.getBoundingClientRect();
-      const middles: number[] = [];
-      for (const id of groupsRef.current.find((group) => group.mealType === mealType)?.ids ?? []) {
-        const el = entry.items.get(id);
-        if (el !== undefined) {
-          const itemRect = el.getBoundingClientRect();
-          middles.push(itemRect.top + itemRect.height / 2);
-        }
+    const itemsByZone = new Map<string, HTMLElement[]>();
+    for (const element of itemsRef.current.values()) {
+      const mealType = findZoneMealType(element);
+      if (mealType === null) continue;
+      const bucket = itemsByZone.get(mealType);
+      if (bucket === undefined) {
+        itemsByZone.set(mealType, [element]);
+      } else {
+        bucket.push(element);
       }
-      middles.sort((a, b) => a - b);
-      zones.push({ mealType: mealType as string, rect, middles });
+    }
+
+    const zones: DropZone[] = [];
+    for (const [mealType, element] of zonesRef.current) {
+      const rect = element.getBoundingClientRect();
+      const middles = (itemsByZone.get(mealType) ?? [])
+        .map((item) => {
+          const itemRect = item.getBoundingClientRect();
+          return itemRect.top + itemRect.height / 2;
+        })
+        .sort((a, b) => a - b);
+      zones.push({ mealType, rect, middles });
     }
     return zones;
   }, []);
@@ -186,26 +231,26 @@ export function usePointerReorder<T extends string>(
    * 计算提交用的 `orderedIds`：把 `draggingId` 从原位置摘出，插到目标餐的目标下标。
    *
    * 结果 = **目标餐次的完整期望顺序**（D-1），上移 / 下移 / 跨餐 / 拖拽共用同一条接口。
+   * 源餐的剩余项由服务端 compact 归零归一（D-2），前端无需表达。
    */
-  const computeNextIds = useCallback(
-    (id: number, mealType: T, index: number): number[] => {
-      const source = groupsRef.current.find((group) => group.ids.includes(id));
-      const target = groupsRef.current.find((group) => group.mealType === mealType);
-      const targetIds = [...(target?.ids ?? [])].filter((item) => item !== id);
-      const safeIndex = Math.max(0, Math.min(index, targetIds.length));
-      const next = [...targetIds];
-      next.splice(safeIndex, 0, id);
-      void source; // 源餐的剩余项由服务端 compact 归零归一（D-2），前端无需表达
-      return next;
-    },
-    [],
-  );
+  const computeNextIds = useCallback((id: number, mealType: T, index: number): number[] => {
+    const target = groupsRef.current.find((group) => group.mealType === mealType);
+    const targetIds = [...(target?.ids ?? [])].filter((item) => item !== id);
+    const safeIndex = Math.max(0, Math.min(index, targetIds.length));
+    const next = [...targetIds];
+    next.splice(safeIndex, 0, id);
+    return next;
+  }, []);
 
   /** 拖拽手柄按下：启动长按计时器。 */
   const startDrag = useCallback(
     (event: React.PointerEvent, id: number): void => {
       // 只响应主键（鼠标左键 / 触摸 / 笔）：副键按下不该触发拖拽
       if (event.button > 0) return;
+      // 已有手势在进行（双指同时按下的第二根手指 / 上一次手势未收尾）→ 忽略。
+      // 单槽 `detachRef` 只有在「同一时刻至多一段手势」的前提下才安全，这个守卫是它的前提。
+      if (draggingRef.current || startRef.current !== null) return;
+
       const element = event.currentTarget as HTMLElement;
       startRef.current = { x: event.clientX, y: event.clientY, id };
       if (typeof element.setPointerCapture === 'function') {
@@ -281,52 +326,44 @@ export function usePointerReorder<T extends string>(
     [computeNextIds, hitTest, longPressMs, moveTolerance, reset, snapshot],
   );
 
-  /** 注册餐次容器。 */
-  const setZoneRef = useCallback(
-    (mealType: T) =>
-      (element: HTMLElement | null): void => {
-        if (element === null) {
-          zonesRef.current.delete(mealType);
-          return;
-        }
-        const existing = zonesRef.current.get(mealType);
-        if (existing === undefined) {
-          zonesRef.current.set(mealType, { element, items: new Map() });
-        } else {
-          existing.element = element;
-        }
-      },
-    [],
-  );
+  /** 注册餐次容器（返回**身份稳定**的回调，避免每次渲染全量 detach/attach）。 */
+  const setZoneRef = useCallback((mealType: T): ((element: HTMLElement | null) => void) => {
+    const cached = zoneRefCache.current.get(mealType);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const callback = (element: HTMLElement | null): void => {
+      if (element === null) {
+        zonesRef.current.delete(mealType);
+        return;
+      }
+      zonesRef.current.set(mealType, element);
+    };
+    zoneRefCache.current.set(mealType, callback);
+    return callback;
+  }, []);
 
-  /** 注册单条记录。 */
-  const setItemRef = useCallback(
-    (id: number) =>
-      (element: HTMLElement | null): void => {
-        if (element === null) {
-          for (const entry of zonesRef.current.values()) {
-            entry.items.delete(id);
-          }
-          return;
-        }
-        // 找到最近的餐次容器（向上冒泡到带 `data-meal-type` 的祖先）
-        let node: HTMLElement | null = element.parentElement;
-        while (node !== null) {
-          const mealType = node.dataset?.mealType as T | undefined;
-          if (mealType !== undefined) {
-            for (const [key, entry] of zonesRef.current) {
-              if (key === mealType) {
-                entry.items.set(id, element);
-                return;
-              }
-            }
-            return;
-          }
-          node = node.parentElement;
-        }
-      },
-    [],
-  );
+  /**
+   * 注册单条记录（返回**身份稳定**的回调）。
+   *
+   * 这里**只登记元素**，不判定归属餐次 —— 归属由 {@link snapshot} 在需要几何信息时
+   * 向上冒泡判定（消除对 ref 注册顺序的依赖，见文件头说明）。
+   */
+  const setItemRef = useCallback((id: number): ((element: HTMLElement | null) => void) => {
+    const cached = itemRefCache.current.get(id);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const callback = (element: HTMLElement | null): void => {
+      if (element === null) {
+        itemsRef.current.delete(id);
+        return;
+      }
+      itemsRef.current.set(id, element);
+    };
+    itemRefCache.current.set(id, callback);
+    return callback;
+  }, []);
 
   return { dragging, draggingId, targetMealType, targetIndex, startDrag, setZoneRef, setItemRef };
 }

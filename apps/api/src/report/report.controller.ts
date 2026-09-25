@@ -5,6 +5,7 @@ import type { PeriodDays, PeriodReport, WeeklyReport } from '@qsh/shared-types';
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PeriodReportDto } from './dto/period-report.dto';
+import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { ReportService } from './report.service';
 
 /** 周报 / 阶段回顾控制器（`/api/report/**`，R4.1 / R4.2 / R11.1 / R11.3 / R11.7）。 */
@@ -15,8 +16,8 @@ export class ReportController {
 
   /** 近 7 天周报（`?endDate=YYYY-MM-DD`，缺省今天）。R11.7：响应新增多样性三字段（向后兼容）。 */
   @Get('weekly')
-  weekly(@CurrentUser() userId: number, @Query('endDate') endDate?: string): Promise<WeeklyReport> {
-    return this.reportService.weekly(userId, endDate);
+  weekly(@CurrentUser() userId: number, @Query() query: WeeklyReportDto): Promise<WeeklyReport> {
+    return this.reportService.weekly(userId, query.endDate);
   }
 
   /**

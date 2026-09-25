@@ -342,13 +342,22 @@ describe('A · sortOrder 分配口径（QA 独立证伪）', () => {
     expect(res.body.error.code).toBe('E_NOTFOUND_MEAL');
   });
 
-  it('A7 · 不存在的 id → 400 E_VALID_INPUT，fields.orderedIds 指明是哪几个', async () => {
-    const res = await reorder({ loggedDate: day(-47), mealType: 'lunch', orderedIds: [987000001, 987000002] });
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('E_VALID_INPUT');
-    const field = String(res.body.error.fields?.orderedIds);
-    expect(field).toContain('987000001');
-    expect(field).toContain('987000002');
+  /**
+   * 代码审查修复：不存在的 id 必须与「他人的 id」返回**同一个** 404
+   * （旧实现 400/404 可区分 → 状态码差异就是一个存在性 oracle）。
+   */
+  it('A7 · 不存在的 id → 404，且与「他人的 id」同码同文案（无存在性 oracle）', async () => {
+    const date = day(-47);
+    const theirs = await createMeal(date, 'lunch', 'QA-A7-他人');
+    const foreignRes = await reorder({ loggedDate: date, mealType: 'lunch', orderedIds: [theirs] }, tokenOther);
+    const absentRes = await reorder({ loggedDate: date, mealType: 'lunch', orderedIds: [987000001, 987000002] });
+
+    expect(absentRes.status).toBe(404);
+    expect(absentRes.body.error.code).toBe('E_NOTFOUND_MEAL');
+    expect(foreignRes.status).toBe(404);
+    expect(absentRes.body.error.code).toBe(foreignRes.body.error.code);
+    expect(absentRes.body.error.message).toBe(foreignRes.body.error.message);
+    expect(absentRes.body.error.fields).toEqual(foreignRes.body.error.fields);
   });
 
   it('A8 · 空数组 → 200 no-op', async () => {

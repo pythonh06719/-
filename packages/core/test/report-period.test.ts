@@ -64,6 +64,19 @@ describe('resolvePeriodWindow（区间解析）', () => {
   it('endDate 合法且不晚于今天 → 按请求的结束日期', () => {
     expect(resolvePeriodWindow(30, '2026-09-01', TODAY)).toEqual({ from: '2026-08-03', to: '2026-09-01' });
   });
+
+  it('★ endDate 是不存在的日期（2026-02-31）→ 不再静默进位，视同缺省用今天', () => {
+    // 修复前：`new Date(2026, 1, 31)` 滚成 2026-03-03 被当成合法结束日期；
+    // 修复后：回环校验判非法 → normalizeDateKey 返回 null → 按缺省（今天）处理。
+    expect(resolvePeriodWindow(30, '2026-02-31', TODAY)).toEqual({ from: '2026-08-25', to: TODAY });
+    expect(resolvePeriodWindow(30, '2026-13-01', TODAY)).toEqual({ from: '2026-08-25', to: TODAY });
+  });
+
+  it('endDate 合法（2 月末）→ 采纳；宽松月/日归一后仍合法', () => {
+    expect(resolvePeriodWindow(30, '2026-02-28', TODAY)).toEqual({ from: '2026-01-30', to: '2026-02-28' });
+    // 宽松到 1 位月/日：`2026-2-3` 归一为 `2026-02-03`（不应因严格化而被误杀）
+    expect(resolvePeriodWindow(30, '2026-2-3', TODAY)).toEqual({ from: '2026-01-05', to: '2026-02-03' });
+  });
 });
 
 describe('summarizePeriod（白名单聚合）', () => {

@@ -14,7 +14,7 @@ import type {
   WeightTrendResponse,
 } from '@qsh/shared-types';
 import { applyReorder } from '@qsh/core';
-import { api } from '@/lib/api';
+import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, todayKey } from '@/lib/format';
@@ -231,20 +231,25 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       await api.patch<ReorderMealsResponse>('/meals/reorder', body);
       setAnnouncement(mealMovedLine(MEAL_TYPE_LABELS[mealType]));
       await invalidate();
-    } catch {
-      // ③ 失败 / 离线：入队 → 回滚 → 中性提示
-      await enqueueRequest({ path: '/meals/reorder', method: 'PATCH', body });
-      cacheSet(CACHE_KEYS.meals(date), {
+    } catch (error) {
+      // ③ 无论哪种失败都要回滚乐观更新（先回到提交前的顺序）
+      const rollback: ListMealsResponse = {
         date,
         groups: before as MealGroup[],
         totalKcal: before.reduce((total, group) => total + group.totalKcal, 0),
-      });
-      queryClient.setQueryData(queryKeys.meals(date), {
-        date,
-        groups: before as MealGroup[],
-        totalKcal: before.reduce((total, group) => total + group.totalKcal, 0),
-      });
-      setNotice(COPY.reorderFailed);
+      };
+      cacheSet(CACHE_KEYS.meals(date), rollback);
+      queryClient.setQueryData(queryKeys.meals(date), rollback);
+
+      if (isNetworkError(error)) {
+        // 真离线：入队待联网重放 + 中性提示
+        await enqueueRequest({ path: '/meals/reorder', method: 'PATCH', body });
+        setNotice(COPY.reorderFailed);
+      } else {
+        // 业务错误（如记录已被删除 / 已不在这一天）：**不入队** —— 重放只会一直失败，
+        // 反而变成「毒消息」。直接按服务端文案给中性提示，让用户刷新后重试。
+        setNotice(noticeFromError(error, COPY.reorderFailed));
+      }
     }
   };
 
@@ -349,15 +354,21 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已按套餐记录`);
         await invalidate();
         return;
-      } catch {
-        await enqueueRequest({
-          path: `/meal-combos/${payload.comboId}/apply`,
-          method: 'POST',
-          body: { loggedDate: date, mealType },
-        });
-        setComposerMeal(null);
-        setNotice(COPY.offlineQueued);
-        setAnnouncement(COPY.mealLoggedAnnounce);
+      } catch (error) {
+        if (isNetworkError(error)) {
+          // 真离线：入队待联网重放 + 立即反馈
+          await enqueueRequest({
+            path: `/meal-combos/${payload.comboId}/apply`,
+            method: 'POST',
+            body: { loggedDate: date, mealType },
+          });
+          setComposerMeal(null);
+          setNotice(COPY.offlineQueued);
+          setAnnouncement(COPY.mealLoggedAnnounce);
+          return;
+        }
+        // 业务错误（如套餐已被删除）：不入队、不关面板，给中性提示让用户自行处理。
+        setNotice(noticeFromError(error, '这个套餐这次没能记录，稍后再试一次就好'));
         return;
       }
     }
@@ -368,45 +379,51 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       setNotice(null);
       setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${kcal} kcal`);
       await invalidate();
-    } catch {
-      // 离线：入队 + 本地乐观更新，界面立即反馈（不阻塞用户）
-      await enqueueRequest({
-        path: '/meals',
-        method: 'POST',
-        body: request,
-      });
-      // AC-3.8.5：本地乐观条目也按「本餐当前最大值 + 1」排在最后
-      // （服务端是唯一权威，这里只是让离线时的展示顺序与上线后一致）。
-      const localMax = (groups.find((group) => group.mealType === mealType)?.logs ?? []).reduce(
-        (max, log) => Math.max(max, log.sortOrder),
-        -1,
-      );
-      applyOptimistic(mealType, {
-        id: Date.now(),
-        userId: 0,
-        loggedDate: date,
-        mealType,
-        foodItemId: payload.kind === 'food' ? payload.food.id : null,
-        customName: payload.kind === 'quick' ? payload.name : null,
-        grams: payload.kind === 'food' ? payload.grams : null,
-        servingUnit: payload.kind === 'food' ? payload.servingUnit : null,
-        servingQty: null,
-        kcal,
-        proteinG: null,
-        fatG: null,
-        carbG: null,
-        fiberG: null,
-        sodiumMg: null,
-        source: payload.kind === 'quick' ? 'quick_add' : (payload.source ?? 'search'),
-        comboId: null,
-        note: null,
-        sortOrder: localMax + 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      setComposerMeal(null);
-      setNotice(COPY.offlineQueued);
-      setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${kcal} kcal`);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        // 离线：入队 + 本地乐观更新，界面立即反馈（不阻塞用户）
+        await enqueueRequest({
+          path: '/meals',
+          method: 'POST',
+          body: request,
+        });
+        // AC-3.8.5：本地乐观条目也按「本餐当前最大值 + 1」排在最后
+        // （服务端是唯一权威，这里只是让离线时的展示顺序与上线后一致）。
+        const localMax = (groups.find((group) => group.mealType === mealType)?.logs ?? []).reduce(
+          (max, log) => Math.max(max, log.sortOrder),
+          -1,
+        );
+        applyOptimistic(mealType, {
+          id: Date.now(),
+          userId: 0,
+          loggedDate: date,
+          mealType,
+          foodItemId: payload.kind === 'food' ? payload.food.id : null,
+          customName: payload.kind === 'quick' ? payload.name : null,
+          grams: payload.kind === 'food' ? payload.grams : null,
+          servingUnit: payload.kind === 'food' ? payload.servingUnit : null,
+          servingQty: null,
+          kcal,
+          proteinG: null,
+          fatG: null,
+          carbG: null,
+          fiberG: null,
+          sodiumMg: null,
+          source: payload.kind === 'quick' ? 'quick_add' : (payload.source ?? 'search'),
+          comboId: null,
+          note: null,
+          sortOrder: localMax + 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        setComposerMeal(null);
+        setNotice(COPY.offlineQueued);
+        setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${kcal} kcal`);
+        return;
+      }
+      // 业务错误（如校验未通过 / 日期不合法）：**不入队**、不做本地乐观插入
+      // （服务端已明确拒绝，乐观插入会显示一条根本存不下的记录）。保留面板让用户修正。
+      setNotice(noticeFromError(error, '这条记录这次没能加上，看看提示再试一次就好'));
     }
   };
 

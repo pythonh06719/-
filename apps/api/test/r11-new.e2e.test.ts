@@ -448,6 +448,24 @@ describe('R11.3 · GET /api/report/period', () => {
     expect(weight).toEqual({ startKg: 70, endKg: 67.8, deltaKg: -2.2 });
   });
 
+  it('★ endDate=2026-02-31 → 400（不存在的日期不得被静默进位到 3 月）', async () => {
+    const res = await request(server as never)
+      .get(`${API}/report/period`)
+      .query({ days: 30, endDate: '2026-02-31' })
+      .set(auth(tokenB))
+      .expect(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(res.body.error.fields.endDate).toBeDefined();
+  });
+
+  it('endDate 合法 → 200', async () => {
+    await request(server as never)
+      .get(`${API}/report/period`)
+      .query({ days: 30, endDate: '2026-02-28' })
+      .set(auth(tokenB))
+      .expect(200);
+  });
+
   it('无令牌 → 401', async () => {
     const res = await request(server as never).get(`${API}/report/period`).query({ days: 30 }).expect(401);
     expect(res.body.error).not.toBeNull();
@@ -488,6 +506,24 @@ describe('R11.7 · GET /api/report/weekly 向后兼容扩展', () => {
     expect(data.days).toHaveLength(7);
     expect(typeof data.avgIntakeKcal).toBe('number');
     expect(Array.isArray(data.micronutrients)).toBe(true);
+  });
+
+  it('★ endDate=2026-02-31 → 400（此前 weekly 的 endDate 是裸参数，完全未校验）', async () => {
+    const res = await request(server as never)
+      .get(`${API}/report/weekly`)
+      .query({ endDate: '2026-02-31' })
+      .set(auth(tokenA))
+      .expect(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(res.body.error.fields.endDate).toBeDefined();
+  });
+
+  it('endDate 合法 → 200（口径与 /report/period 一致）', async () => {
+    await request(server as never)
+      .get(`${API}/report/weekly`)
+      .query({ endDate: '2026-02-28' })
+      .set(auth(tokenA))
+      .expect(200);
   });
 });
 

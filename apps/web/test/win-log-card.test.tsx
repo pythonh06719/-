@@ -35,6 +35,10 @@ function stubFetch(options: {
   wins?: WinLog[];
   failPost?: boolean;
   failDelete?: boolean;
+  /** GET 返回 HTTP 500（模拟「读不到」，用于 #8② 错误态文案） */
+  failGet?: boolean;
+  /** DELETE 返回 HTTP 可达的业务错误（用于 #8① 删除失败不再静默） */
+  deleteError?: { status: number; code: string; message: string };
 }): { calls: Array<{ url: string; method: string }> } {
   const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
@@ -45,6 +49,16 @@ function stubFetch(options: {
       calls.push({ url, method });
 
       if (method === 'GET' && url.includes('/api/wins')) {
+        if (options.failGet === true) {
+          return {
+            ok: false,
+            status: 500,
+            json: async () => ({
+              data: null,
+              error: { code: 'E_HTTP_500', message: '服务端在开小差，稍后我们再来一次' },
+            }),
+          } as Response;
+        }
         return {
           ok: true,
           status: 200,
@@ -63,6 +77,17 @@ function stubFetch(options: {
         } as Response;
       }
       if (method === 'DELETE' && url.includes('/api/wins/')) {
+        const deleteError = options.deleteError;
+        if (deleteError !== undefined) {
+          return {
+            ok: false,
+            status: deleteError.status,
+            json: async () => ({
+              data: null,
+              error: { code: deleteError.code, message: deleteError.message },
+            }),
+          } as Response;
+        }
         if (options.failDelete) {
           throw new TypeError('Failed to fetch');
         }
@@ -227,6 +252,82 @@ describe('WinLogCard 零压力口径（R11.4）', () => {
     await waitFor(() => {
       expect(screen.getByText(COPY.winCardListEmpty)).toBeDefined();
     });
+  });
+
+  // ---- 代码审查 #8 回归 ----
+
+  it('#8② 读取失败 → 显示「暂时读不到」，**不得**误说成「还没有记过」', async () => {
+    stubFetch({ wins: [], failGet: true });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('win-list-error').textContent).toBe(COPY.winCardListError);
+    });
+    // 语义相反：读不到 ≠ 没记过
+    expect(screen.queryByText(COPY.winCardListEmpty)).toBeNull();
+  });
+
+  it('#8① 删除遇到业务错误 → 不再静默，给中性陈述（且不用「失败 / 错误」等词）', async () => {
+    const win = makeWin(7, '睡眠变好了');
+    stubFetch({
+      wins: [win],
+      deleteError: { status: 404, code: 'E_NOTFOUND_WIN', message: '没有找到这条内容' },
+    });
+    renderCard();
+
+    const deleteButton = await waitFor(() => screen.getByTestId('win-delete-7'));
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('win-notice').textContent).toBe(COPY.winCardDeleteFailed);
+    });
+    // 语气硬约束：中性陈述
+    for (const banned of ['失败', '错误', '警告', '请重试']) {
+      expect(COPY.winCardDeleteFailed).not.toContain(banned);
+    }
+    // 业务错误不入离线队列（重放也没用）
+    expect(await listQueuedRequests()).toHaveLength(0);
+  });
+
+  it('#8③ 离线提交入队的是**本次提交的正文**，而非提交后又改动的输入框内容', async () => {
+    const control: { rejectPost: ((reason?: unknown) => void) | null } = { rejectPost: null };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        const method = init?.method ?? 'GET';
+        if (method === 'GET' && url.includes('/api/wins')) {
+          return { ok: true, status: 200, json: async () => ({ data: [], error: null }) } as Response;
+        }
+        if (method === 'POST' && url.includes('/api/wins')) {
+          // 挂起的 POST：由测试稍后手动以「网络错误」拒绝
+          return new Promise<Response>((_resolve, reject) => {
+            control.rejectPost = reject;
+          });
+        }
+        throw new Error(`测试桩未覆盖的请求：${method} ${url}`);
+      }),
+    );
+    renderCard();
+
+    await typeAndSubmit('刚才提交的内容');
+    // 提交在途时，用户又改了输入框
+    fireEvent.change(screen.getByTestId('win-input'), { target: { value: '后来改的内容' } });
+
+    await waitFor(() => {
+      expect(control.rejectPost).not.toBeNull();
+    });
+    control.rejectPost?.(new TypeError('Failed to fetch'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('win-notice').textContent).toBe(COPY.winCardOfflineSaved);
+    });
+
+    const queued = await listQueuedRequests();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.body).toEqual({ text: '刚才提交的内容' }); // 关键：不是「后来改的内容」
+    expect(screen.getByText('刚才提交的内容')).toBeDefined();
+    expect(screen.queryByText('后来改的内容')).toBeNull();
   });
 
   it('无游戏化元素：整卡不出现 徽章/成就/等级/积分/连续/奖励/解锁/星级（AC-11.4.5）', async () => {

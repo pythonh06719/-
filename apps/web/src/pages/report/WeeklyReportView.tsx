@@ -29,12 +29,17 @@ export default function WeeklyReportView(): ReactElement {
 
   const report = reportQuery.data;
 
+  // 防御（无 ErrorBoundary → 越界字段会整页白屏）：数组字段一律先 `Array.isArray` 收口，
+  // 兼容旧缓存 / 测试桩通用返回 / 后端字段缺失等情况。
+  const reportDays = report !== undefined && Array.isArray(report.days) ? report.days : [];
+  const micronutrients = report !== undefined && Array.isArray(report.micronutrients) ? report.micronutrients : [];
+
   /**
    * 习惯达成率（C2）：一周累计打卡次数 ÷ 一周应打卡槽位（7 天 × 每日习惯数）。
    * 无任何习惯（槽位为 0）时为 `null` —— 此时不显示 0%，而是给一句中性引导。
    */
-  const habitsDoneTotal = (report?.days ?? []).reduce((sum, day) => sum + day.habitsDone, 0);
-  const habitsSlotsTotal = (report?.days ?? []).reduce((sum, day) => sum + day.habitsTotal, 0);
+  const habitsDoneTotal = reportDays.reduce((sum, day) => sum + day.habitsDone, 0);
+  const habitsSlotsTotal = reportDays.reduce((sum, day) => sum + day.habitsTotal, 0);
   const habitRate = habitsSlotsTotal > 0 ? Math.round((habitsDoneTotal / habitsSlotsTotal) * 100) : null;
 
   return (
@@ -85,12 +90,12 @@ export default function WeeklyReportView(): ReactElement {
             </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
             <div className="mt-2">
-              <IntakeExerciseChart days={report.days} />
+              <IntakeExerciseChart days={reportDays} />
             </div>
 
             {/* 逐日精确数值（图表给对比、列表给数字），沿用既有列表形式 */}
             <ul className="mt-4 space-y-1.5" aria-label="每日摄入与运动">
-              {report.days.map((day) => (
+              {reportDays.map((day) => (
                 <li
                   key={day.date}
                   className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
@@ -141,7 +146,7 @@ export default function WeeklyReportView(): ReactElement {
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
             <ul className="mt-3 space-y-3">
-              {report.micronutrients.map((item) => {
+              {micronutrients.map((item) => {
                 const percent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
                 const onTrack = item.direction === 'atLeast' ? item.dailyAvg >= item.reference : item.dailyAvg <= item.reference;
                 return (

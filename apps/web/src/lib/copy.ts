@@ -202,8 +202,12 @@ export const COPY = {
   winCardOfflineSaved: '已经记下啦（还没同步）',
   winCardDeleted: '已经删掉了',
   winCardTooLong: '最多能写 60 个字',
+  /** 删除未成功（业务错误）：中性陈述，不用「失败 / 错误」等词（PRD §7 语气规范） */
+  winCardDeleteFailed: '这条这次没有删掉，稍后再试试',
   winCardListTitle: '回头看',
   winCardListEmpty: '还没有记过，想起来就写一句',
+  /** 列表读取失败：**不得**复用空态文案「还没有记过」（会把「读不到」误说成「没记过」） */
+  winCardListError: '暂时读不到，稍后再看看',
   /** 每日轻提醒（R5 附加，本轮仅本地通知，不做服务端推送） */
   reminderToggleTitle: '每日轻提醒',
   reminderToggleDesc: '应用打开时，一天一条温和的提醒。默认关闭，随时可以停用',

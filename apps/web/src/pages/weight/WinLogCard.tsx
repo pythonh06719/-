@@ -57,28 +57,27 @@ export default function WinLogCard(): ReactElement {
       setNotice(COPY.winCardSaved);
       void queryClient.invalidateQueries({ queryKey: queryKeys.wins(WINS_WINDOW_DAYS) });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       if (isNetworkError(error)) {
-        // 离线：入队 + 本地先展示一条临时记录（同步后会被真实数据替换）
-        const cleaned = checkWinText(text);
-        if (cleaned.ok) {
-          void enqueueRequest({ path: '/wins', method: 'POST', body: { text: cleaned.text } });
-          const now = new Date();
-          const temp: WinLog = {
-            id: -now.getTime(),
-            userId: 0,
-            loggedDate: todayKey(now),
-            text: cleaned.text,
-            createdAt: now.toISOString(),
-            updatedAt: now.toISOString(),
-          };
-          queryClient.setQueryData<WinLog[]>(queryKeys.wins(WINS_WINDOW_DAYS), (previous) => [
-            ...(previous ?? []),
-            temp,
-          ]);
-          setText('');
-          setNotice(COPY.winCardOfflineSaved);
-        }
+        // 离线：入队 + 本地先展示一条临时记录（同步后会被真实数据替换）。
+        // ⚠️ 必须用 **`variables`（本次提交的正文）** 而不是 `text` 状态：请求失败是异步的，
+        // 用户很可能已改了输入框 —— 用 `text` 会把「后改的内容」当成「刚才提交的内容」入队/展示。
+        void enqueueRequest({ path: '/wins', method: 'POST', body: { text: variables } });
+        const now = new Date();
+        const temp: WinLog = {
+          id: -now.getTime(),
+          userId: 0,
+          loggedDate: todayKey(now),
+          text: variables,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        };
+        queryClient.setQueryData<WinLog[]>(queryKeys.wins(WINS_WINDOW_DAYS), (previous) => [
+          ...(previous ?? []),
+          temp,
+        ]);
+        setText('');
+        setNotice(COPY.winCardOfflineSaved);
         return;
       }
       if (error instanceof ApiClientError) {
@@ -110,7 +109,9 @@ export default function WinLogCard(): ReactElement {
         setNotice(COPY.winCardDeleted);
         return;
       }
-      setNotice(null);
+      // 业务错误（如记录已被删 / 不存在）：**不能再静默**（用户以为删掉了却还在），
+      // 给一句中性陈述；不用「失败 / 错误」作标题、不用红色警示语义（PRD §7）。
+      setNotice(COPY.winCardDeleteFailed);
     },
   });
 
@@ -180,6 +181,11 @@ export default function WinLogCard(): ReactElement {
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{COPY.winCardListTitle}</h3>
         {winsQuery.isLoading ? (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">读取中…</p>
+        ) : winsQuery.isError && wins.length === 0 ? (
+          // 读取失败且无缓存可展示 → 「读不到」，**不能**说成「还没有记过」（语义完全相反）
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" data-testid="win-list-error">
+            {COPY.winCardListError}
+          </p>
         ) : wins.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{COPY.winCardListEmpty}</p>
         ) : (

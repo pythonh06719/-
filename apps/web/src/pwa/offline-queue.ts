@@ -1,5 +1,5 @@
 import type { HttpMethod } from '@/lib/api';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, isNetworkError } from '@/lib/api';
 
 /**
  * 离线写入队列（pwa/offline-queue.ts）—— ARCHITECTURE §1.9 / D10 / Q7。
@@ -142,28 +142,67 @@ export interface FlushResult {
   synced: number;
   /** 仍未能同步（留在队列）条数 */
   remaining: number;
+  /** 本轮因业务错误被跳过（仍留在队列，待下轮再试）的条数 */
+  skipped: number;
+  /** 本轮因连续失败达上限而被丢弃的条数（毒消息，避免永久重试） */
+  dropped: number;
 }
+
+/**
+ * 单条请求连续失败多少次后丢弃。
+ *
+ * 为什么需要：某些请求会**永久**失败（如引用的记录已被删除、字段已不合法）。
+ * 若只是无限重试，「毒消息」会每次同步都白跑一遍（虽已不再阻塞别人，但噪音大且
+ * 可能一直占位）；连续失败到上限即丢弃，符合「本地最新时间」的冲突裁决语义。
+ */
+export const MAX_FLUSH_ATTEMPTS = 3;
+
+/** 每条请求的连续失败次数（内存即可；成功 / 丢弃 / 重置后清零）。 */
+const flushFailures = new Map<number, number>();
 
 /**
  * 尝试把队列中的请求按时间顺序发送出去。
  *
- * - 成功 → 从队列移除；
- * - 未成功（含网络仍不可达）→ 保留在队列，本次同步结束（不阻塞后续 UI）。
+ * 关键修正（缺陷回归）：旧实现遇到**第一条**失败就 `break`，导致一条坏消息
+ * 会把后面所有健康请求一起堵死（离线能力形同瘫痪）。现改为：
+ *
+ * - 成功 → 从队列移除、清零该条失败计数；
+ * - **网络层错误** → 说明网络仍不可达，本轮到此为止（条目全部留在队列，下轮再试）；
+ * - **业务错误** → 跳过这一条并计数，**继续处理后面的请求**；同一路径连续失败
+ *   达 {@link MAX_FLUSH_ATTEMPTS} 次则丢弃，避免毒消息被永久重试。
+ *
+ * 全程不抛异常、不阻塞 UI（`registerSW` 以 `void` 调用）。
  */
 export async function flushQueue(): Promise<FlushResult> {
   const queued = await listQueuedRequests();
   let synced = 0;
+  let skipped = 0;
+  let dropped = 0;
   for (const entry of queued) {
     try {
       await apiRequest(entry.path, { method: entry.method, body: entry.body });
       await removeQueuedRequest(entry.id);
+      flushFailures.delete(entry.id);
       synced += 1;
-    } catch {
-      break;
+    } catch (error) {
+      // 网络仍不可达：后续请求多半同样发不出去，本轮结束，条目全部保留。
+      if (isNetworkError(error)) {
+        break;
+      }
+      // 业务错误：跳过并计数，绝不拖累队列里后面的请求。
+      const attempts = (flushFailures.get(entry.id) ?? 0) + 1;
+      if (attempts >= MAX_FLUSH_ATTEMPTS) {
+        await removeQueuedRequest(entry.id);
+        flushFailures.delete(entry.id);
+        dropped += 1;
+      } else {
+        flushFailures.set(entry.id, attempts);
+        skipped += 1;
+      }
     }
   }
   const remaining = (await listQueuedRequests()).length;
-  return { synced, remaining };
+  return { synced, remaining, skipped, dropped };
 }
 
 /** 队列长度（用于 UI 展示「N 条待同步」）。 */
@@ -175,4 +214,5 @@ export async function queueLength(): Promise<number> {
 export function __resetMemoryQueueForTest(): void {
   memoryQueue = [];
   memoryIdSeed = 1;
+  flushFailures.clear();
 }

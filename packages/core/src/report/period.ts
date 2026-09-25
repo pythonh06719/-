@@ -154,7 +154,13 @@ export function summarizePeriod(
   };
 }
 
-/** 归一 `YYYY-MM-DD`；非法输入返回 `null`（宽松到 1 位月/日，归一成两位）。 */
+/**
+ * 归一 `YYYY-MM-DD`；非法输入返回 `null`（宽松到 1 位月/日，归一成两位）。
+ *
+ * **严格回环校验**：拒绝 `2026-02-31` / `2026-13-01` 这类「引擎会静默进位」的不存在日期
+ * —— `new Date(2026, 1, 31)` 会滚成 3 月 3 日，若不校验就会把非法输入当成合法日期处理
+ * （缺陷根因）。合法日期照旧归一（`2026-2-3` → `2026-02-03`）。
+ */
 function normalizeDateKey(value: string | null | undefined): string | null {
   if (typeof value !== 'string') {
     return null;
@@ -171,6 +177,10 @@ function normalizeDateKey(value: string | null | undefined): string | null {
   }
   const date = new Date(year, month - 1, day);
   if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  // 回环：引擎进位 / 截断（如 2 月 31 日、13 月）都会让分量对不上 → 判非法。
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
     return null;
   }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

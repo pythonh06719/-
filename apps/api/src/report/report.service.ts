@@ -12,7 +12,8 @@ import { DISTINCT_FOOD_LIMIT, distinctFoodKeys, resolvePeriodWindow, summarizePe
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
-import { addDays, todayLocalKey } from '../common/utils/date.util';
+import { addDays, toDateKey, todayLocalKey } from '../common/utils/date.util';
+import { FOOD_IDENTITY_PROJECTION_LIMIT, visibleFoodWhere } from '../foods/foods.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -209,8 +210,10 @@ export class ReportService {
         ...habitDateGroups.map((row) => row.loggedDate),
         ...waterGroups.map((row) => row.loggedDate),
         ...winGroups.map((row) => row.loggedDate),
-        ...(weightFirst !== null ? [weightFirst.loggedAt.slice(0, 10)] : []),
-        ...(weightLast !== null ? [weightLast.loggedAt.slice(0, 10)] : []),
+        // ⚠️ 用 `toDateKey` 而非 `.slice(0, 10)`：PG 的 `DateTime @db.Date` 下 Prisma 返回
+        // `Date`（UTC 00:00），对 Date 调 `.slice` 会崩溃（#7 / PG 兼容）。
+        ...(weightFirst !== null ? [toDateKey(weightFirst.loggedAt)] : []),
+        ...(weightLast !== null ? [toDateKey(weightLast.loggedAt)] : []),
       ],
       foodRows: mealGroups.projection,
       mealEntryCount,
@@ -226,11 +229,11 @@ export class ReportService {
       weightFirst:
         weightFirst === null
           ? null
-          : { id: weightFirst.id, date: weightFirst.loggedAt.slice(0, 10), weightKg: weightFirst.weightKg },
+          : { id: weightFirst.id, date: toDateKey(weightFirst.loggedAt), weightKg: weightFirst.weightKg },
       weightLast:
         weightLast === null
           ? null
-          : { id: weightLast.id, date: weightLast.loggedAt.slice(0, 10), weightKg: weightLast.weightKg },
+          : { id: weightLast.id, date: toDateKey(weightLast.loggedAt), weightKg: weightLast.weightKg },
       winCount: winGroups.reduce((sum, row) => sum + row._count._all, 0),
     };
 
@@ -251,13 +254,16 @@ export class ReportService {
       by: ['foodItemId', 'customName', 'loggedDate'],
       where: { userId, loggedDate: { gte: from, lte: to } },
       orderBy: [{ loggedDate: 'asc' }, { foodItemId: 'asc' }, { customName: 'asc' }],
+      // 纵深防御上限（见 `FOOD_IDENTITY_PROJECTION_LIMIT` 注释）
+      take: FOOD_IDENTITY_PROJECTION_LIMIT,
     });
 
+    // ⚠️ 名称反查叠加 `visibleFoodWhere(userId)`（K7）：不得反查出**他人私有**自定义食物的名称。
     const ids = [...new Set(grouped.map((row) => row.foodItemId).filter((id): id is number => id !== null))];
     const nameById = new Map<number, string>();
     if (ids.length > 0) {
       const rows = await this.prisma.foodItem.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, ...visibleFoodWhere(userId) },
         select: { id: true, name: true },
       });
       for (const row of rows) {

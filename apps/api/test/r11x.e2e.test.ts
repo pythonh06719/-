@@ -319,13 +319,25 @@ describe('R3.8 · PATCH /api/meals/reorder', () => {
     expect(res.body.error.message).toBe('没有找到这条记录');
   });
 
-  it('不存在的 id → 400，并在 fields.orderedIds 指明是哪几个', async () => {
-    const res = await reorder(tokenA, { loggedDate: today, mealType: 'lunch', orderedIds: [999000001, 999000002] });
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('E_VALID_INPUT');
-    const field = res.body.error.fields?.orderedIds as string;
-    expect(field).toContain('999000001');
-    expect(field).toContain('999000002');
+  /**
+   * 代码审查修复（越权响应构成存在性 oracle）：
+   * 「他人的 id」与「根本不存在的 id」必须返回**完全一致**的 404（同码、同文案、无区分性 fields），
+   * 否则攻击者可用自己账号逐个探测自增 id，从状态码差异推断他人资源是否存在。
+   */
+  it('不存在的 id 与「他人的 id」返回**同一个** 404（不构成存在性 oracle）', async () => {
+    const date = shiftDays(today, -9);
+    const theirs = await createMeal(tokenA, { loggedDate: date, mealType: 'lunch', customName: 'R38-oracle-他人' });
+
+    const foreignProbe = await reorder(tokenB, { loggedDate: date, mealType: 'lunch', orderedIds: [theirs] });
+    const absentProbe = await reorder(tokenB, { loggedDate: date, mealType: 'lunch', orderedIds: [999000001] });
+
+    expect(foreignProbe.status).toBe(404);
+    expect(absentProbe.status).toBe(404);
+    expect(foreignProbe.body.error.code).toBe('E_NOTFOUND_MEAL');
+    // 状态码、错误码、文案、fields 全部一致 → 无法区分「存在但非我」与「不存在」
+    expect(absentProbe.body.error.code).toBe(foreignProbe.body.error.code);
+    expect(absentProbe.body.error.message).toBe(foreignProbe.body.error.message);
+    expect(absentProbe.body.error.fields).toEqual(foreignProbe.body.error.fields);
   });
 
   it('属于本人但不在这一天 → 400', async () => {
@@ -372,6 +384,73 @@ describe('R3.8 · PATCH /api/meals/reorder', () => {
     const logs = await logsOf(tokenA, date, 'lunch');
     expect(logs.map((log) => log.customName)).toEqual(['R38-DTO-A', 'R38-DTO-B']);
     expect(logs.map((log) => log.sortOrder)).toEqual([0, 1]);
+  });
+
+  /**
+   * ★ 代码审查 #3 回归：`nextSortOrder` 的并发撞号。
+   *
+   * 修复前 `nextSortOrder` 在事务外读 `max(sortOrder)`，N 个并发新增会读到同一个 max，
+   * 于是分配出**相同的 sortOrder**（排序错乱）。修复后「读-算-写」在同一个交互式事务内，
+   * SQLite 串行化保证每个请求都能看到前一个已提交的行。
+   */
+  it('★ 并发新增同一餐多条（#3 撞号回归）：sortOrder 无重复，恰为 0..N-1', async () => {
+    const date = shiftDays(today, -30);
+    const N = 6;
+    const responses = await Promise.all(
+      Array.from({ length: N }, (_, index) =>
+        request(server as never)
+          .post(`${API}/meals`)
+          .set(auth(tokenA))
+          .send({ loggedDate: date, mealType: 'snack', customName: `R38-并发-${index}`, customKcal: 100 }),
+      ),
+    );
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+      expect(res.body.error).toBeNull();
+    }
+
+    const logs = await logsOf(tokenA, date, 'snack');
+    expect(logs).toHaveLength(N);
+    const sortOrders = logs.map((log) => log.sortOrder).sort((left, right) => left - right);
+    expect(new Set(sortOrders).size).toBe(N); // 无撞号
+    expect(sortOrders).toEqual(Array.from({ length: N }, (_, index) => index)); // 恰好 0..N-1
+  });
+
+  /**
+   * ★ 代码审查 #2 回归：reorder 的并发「读-算-写」覆盖。
+   *
+   * 修复前三个查询彼此独立：并发请求可能读到 A 提交前的快照，再按旧快照写回，
+   * 把 A 的改动整体覆盖，留下**撕裂状态**（如某餐 sortOrder 出现重复值）。
+   * 修复后整段在一个交互式事务内，断言的不变量在任何串行化顺序下都成立。
+   */
+  it('★ 并发 reorder（#2 覆盖回归）：多条并发「移到同一餐」不撕裂，每餐 sortOrder 恰为 0..n-1、无行丢失', async () => {
+    const date = shiftDays(today, -31);
+    // 三个**各自独立**的源餐（各 1 条）→ 并发移到同一个空餐（加餐）。
+    // 每个请求只改自己那一条（源餐变空，无需 compact 其它行），故三个写集合互不相交。
+    // 旧实现下三者都按「加餐为空」算出 sortOrder=0 → 加餐出现三个 0（撞号 / 撕裂）。
+    const a = await createMeal(tokenA, { loggedDate: date, mealType: 'breakfast', customName: 'R38-并发-a' });
+    const d = await createMeal(tokenA, { loggedDate: date, mealType: 'dinner', customName: 'R38-并发-d' });
+    const l = await createMeal(tokenA, { loggedDate: date, mealType: 'lunch', customName: 'R38-并发-l' });
+
+    const responses = await Promise.all([
+      reorder(tokenA, { loggedDate: date, mealType: 'snack', orderedIds: [a] }),
+      reorder(tokenA, { loggedDate: date, mealType: 'snack', orderedIds: [d] }),
+      reorder(tokenA, { loggedDate: date, mealType: 'snack', orderedIds: [l] }),
+    ]);
+    expect(responses.map((res) => res.status)).toEqual([200, 200, 200]);
+
+    const all = await allLogs(tokenA, date);
+    // ① 无行丢失：3 条一个不少
+    expect(new Set(all.map((log) => log.id))).toEqual(new Set([a, d, l]));
+    // ② 无撕裂：每个餐次内的 sortOrder 恰好是 0..n-1（无重复、无空洞）
+    const byMeal = new Map<string, number[]>();
+    for (const log of all) {
+      byMeal.set(log.mealType, [...(byMeal.get(log.mealType) ?? []), log.sortOrder]);
+    }
+    for (const sortOrders of byMeal.values()) {
+      const sorted = [...sortOrders].sort((left, right) => left - right);
+      expect(sorted).toEqual(sorted.map((_, index) => index));
+    }
   });
 });
 

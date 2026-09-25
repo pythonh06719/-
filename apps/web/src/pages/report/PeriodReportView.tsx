@@ -59,7 +59,16 @@ export default function PeriodReportView(): ReactElement {
   });
 
   const hasReport = report !== undefined && reportQuery.isSuccess;
-  const topItems: TopFoodItem[] = topQuery.data?.items ?? [];
+  const topItems: TopFoodItem[] =
+    topQuery.data !== undefined && Array.isArray(topQuery.data.items) ? topQuery.data.items : [];
+
+  // 防御（无 ErrorBoundary → 字段缺失 / 形态异常会整页白屏）：数组先 `Array.isArray`，
+  // 对象先判存在并兜底默认值，`report` 可能来自旧缓存 / 测试桩通用返回。
+  const topHabits = report !== undefined && Array.isArray(report.topHabits) ? report.topHabits : [];
+  const exercise = report?.exercise;
+  const exerciseSessions = exercise !== undefined && Number.isFinite(exercise.sessions) ? exercise.sessions : 0;
+  const exerciseMinutes = exercise !== undefined && Number.isFinite(exercise.totalMinutes) ? exercise.totalMinutes : 0;
+  const weight = report?.weight ?? null;
 
   return (
     <div className="flex flex-col gap-4" aria-label={COPY.reportTabPeriod}>
@@ -107,22 +116,22 @@ export default function PeriodReportView(): ReactElement {
             <li>{periodLoggedDaysLine(report.loggedDays)}</li>
             <li>{periodDistinctLine(report.distinctFoodCount)}</li>
             <li>{periodMealEntryLine(report.mealEntryCount)}</li>
-            {report.topHabits.length > 0 && <li>{periodHabitsLine(report.topHabits)}</li>}
-            {report.exercise.sessions > 0 && (
-              <li>{periodExerciseLine(report.exercise.sessions, report.exercise.totalMinutes)}</li>
+            {topHabits.length > 0 && <li>{periodHabitsLine(topHabits)}</li>}
+            {exerciseSessions > 0 && (
+              <li>{periodExerciseLine(exerciseSessions, exerciseMinutes)}</li>
             )}
             {report.winCount > 0 && <li data-testid="period-win-count">{periodWinCountLine(report.winCount)}</li>}
           </ul>
 
           {/* 体重变化：只有首末两条**不同**记录才渲染；只说方向与差值，不接判断句（QR-4） */}
-          {report.weight !== null && report.weight.deltaKg !== 0 && (
+          {weight !== null && weight.deltaKg !== 0 && (
             <p
               className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
               data-testid="period-weight"
             >
-              {report.weight.deltaKg < 0
-                ? periodWeightDownLine(report.weight.deltaKg)
-                : periodWeightUpLine(report.weight.deltaKg)}
+              {weight.deltaKg < 0
+                ? periodWeightDownLine(weight.deltaKg)
+                : periodWeightUpLine(weight.deltaKg)}
             </p>
           )}
         </section>

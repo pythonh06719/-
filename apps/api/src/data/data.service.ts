@@ -12,6 +12,7 @@ import { parseWeightCsv } from '@qsh/core';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
+import { toDateKey } from '../common/utils/date.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** 体重导入行（§9.3）。 */
@@ -195,18 +196,24 @@ export class DataService {
     return { rows };
   }
 
-  /** 组装一行概览（日期统一截取 `YYYY-MM-DD`，缺失为 `null`）。 */
+  /**
+   * 组装一行概览（日期统一归一为 `YYYY-MM-DD`，缺失为 `null`）。
+   *
+   * ⚠️ `firstDate/lastDate` 同时接受 `string | Date`：SQLite 下 `logged_at` 是 `String`，
+   * 迁移到 PG 的 `DateTime @db.Date` 后 Prisma 返回 `Date` —— 统一走 `toDateKey` 归一，
+   * 避免直接 `.slice` 在 `Date` 上崩溃（#7 / PG 兼容）。
+   */
   private toRow(
     key: RecordOverviewKey,
     count: number,
-    firstDate: string | null,
-    lastDate: string | null,
+    firstDate: string | Date | null,
+    lastDate: string | Date | null,
   ): RecordOverviewRow {
     return {
       key,
       count,
-      firstDate: firstDate === null ? null : firstDate.slice(0, 10),
-      lastDate: lastDate === null ? null : lastDate.slice(0, 10),
+      firstDate: firstDate === null ? null : toDateKey(firstDate),
+      lastDate: lastDate === null ? null : toDateKey(lastDate),
     };
   }
 

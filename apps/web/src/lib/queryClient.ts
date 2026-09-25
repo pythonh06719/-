@@ -44,8 +44,8 @@ export const queryKeys = {
   /** 常吃榜（R11.5）：按统计窗口与条数上限分键 */
   foodTop: (days: number, limit: number) => ['foods', 'top', days, limit] as const,
   foodFavorites: ['foods', 'favorites'] as const,
-  /** 记录概览（R11.6）：只读聚合，不缓存（Q-8） */
-  dataOverview: ['data', 'overview'] as const,
+  // 注：记录概览（R11.6）走 `DataOverviewCard` 的手动 fetch，不缓存、无 react-query 键，
+  // 故此处**不再声明** `dataOverview`（曾为死键，零引用，已删）。
   combos: ['meal-combos'] as const,
   weightTrend: ['weights', 'trend'] as const,
   profile: ['profile'] as const,
