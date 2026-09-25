@@ -55,6 +55,10 @@ export const queryKeys = {
   waterDay: (date: string) => ['water', date] as const,
   habits: ['habits'] as const,
   weeklyReport: (endDate: string) => ['report', 'weekly', endDate] as const,
+  /** 阶段回顾（R11.3）：按档位与结束日期分键 */
+  periodReport: (days: number, endDate: string) => ['report', 'period', days, endDate] as const,
+  /** 「体重之外的变化」时间线（R11.4）：按回看天数分键 */
+  wins: (days: number) => ['wins', days] as const,
   fastingSettings: ['fasting', 'settings'] as const,
   fastingCurrent: ['fasting', 'current'] as const,
   // 三期（T05 三期）：AI 助手（结果按日期 / 问题缓存，敏感接口不落盘、仅内存）

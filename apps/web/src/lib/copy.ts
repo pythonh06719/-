@@ -173,6 +173,37 @@ export const COPY = {
   dataOverviewTitle: '记录概览',
   dataOverviewDesc: '这里列出你已经记下了多少、跨度多久。只做陈述，不评判任何一条记录。',
   dataOverviewEmpty: '还没有记录，什么时候想记都可以。',
+  /**
+   * 阶段回顾（R11.3）—— 指标全部是**独立陈述句**（AC-11.3.2 白名单 / AC-11.3.3 黑名单）。
+   *
+   * ⚠️ 红线：不出现「完成度 / 达成率 / 连续 / 断签 / 缺失」；记录天数**没有分母**，
+   * 不写「48/365 天」或百分比；体重只说方向与差值，**后面不接任何判断句**（QR-4）。
+   * 所有数字句一律由下方 `period*Line()` 函数生成，组件里不允许内联拼数字。
+   */
+  reportTabWeekly: '本周',
+  reportTabPeriod: '这段时间',
+  periodDayOptionPrefix: '近',
+  periodDayOptionSuffix: '天',
+  periodEmpty: '这段时间还没有记录，什么时候想起来都可以开始',
+  periodTopTitle: '这段时间吃得最多的是',
+  periodWinTitle: '体重之外的变化',
+  /** 周报多样性行（R11.7）—— 只计数，不打分（AC-11.7.3） */
+  diversityExpand: '看看到底有哪些',
+  diversityCollapse: '先收起来',
+  diversityListTitle: '这周吃过的',
+  diversityTruncated: '已经很多啦，先显示这些',
+  /** 「体重之外的变化」（R11.4）—— 零压力入口（AC-11.4.1） */
+  winCardTitle: '体重之外的变化',
+  winCardDesc: '有些变化秤称不出来，但你自己知道',
+  winCardPlaceholder: '比如：今天爬楼没那么喘了 / 裤子松了一圈',
+  winCardInputLabel: '记一条体重之外的变化',
+  winCardSubmit: '记下来',
+  winCardSaved: '记下啦，回头看的时候会很开心',
+  winCardOfflineSaved: '已经记下啦（还没同步）',
+  winCardDeleted: '已经删掉了',
+  winCardTooLong: '最多能写 60 个字',
+  winCardListTitle: '回头看',
+  winCardListEmpty: '还没有记过，想起来就写一句',
   /** 每日轻提醒（R5 附加，本轮仅本地通知，不做服务端推送） */
   reminderToggleTitle: '每日轻提醒',
   reminderToggleDesc: '应用打开时，一天一条温和的提醒。默认关闭，随时可以停用',
@@ -690,4 +721,114 @@ export function reminderMessage(dateKey: string): string {
     hash = (hash * 31 + char.charCodeAt(0)) % 100_000;
   }
   return REMINDER_MESSAGES[hash % REMINDER_MESSAGES.length] ?? REMINDER_MESSAGES[0]!;
+}
+
+// ---------------------------------------------------------------------------
+// 阶段回顾（R11.3）
+// 语气规范（AC-11.3.2 / 11.3.3 / QR-4）：指标全部是**独立陈述句**，
+// 禁止 X/Y 分数式与百分比；体重只说方向与差值，不接任何判断句。
+// 组件里**不允许**内联拼数字句 —— 集中在这里过红线审。
+// ---------------------------------------------------------------------------
+
+/** 档位按钮：「近 30 天」「近 365 天」（沿用体重区间措辞风格）。 */
+export function periodDayOptionLabel(days: number): string {
+  return `${COPY.periodDayOptionPrefix} ${days} ${COPY.periodDayOptionSuffix}`;
+}
+
+/** 区间说明：「近 30 天 · 8月25日 ~ 9月23日」。 */
+export function periodRangeLine(days: number, from: string, to: string, format: (key: string) => string): string {
+  return `${periodDayOptionLabel(days)} · ${format(from)} ~ ${format(to)}`;
+}
+
+/** ① 「这段时间，你有 48 天记下了点什么」—— 只有分子，**没有分母**（AC-11.3.3）。 */
+export function periodLoggedDaysLine(days: number): string {
+  const count = Number.isFinite(days) ? Math.max(0, Math.floor(days)) : 0;
+  return `这段时间，你有 ${count} 天记下了点什么`;
+}
+
+/** ② 「吃过的东西有 112 种」。 */
+export function periodDistinctLine(count: number): string {
+  const safe = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return `吃过的东西有 ${safe} 种`;
+}
+
+/** ③ 「餐桌上一共记下了 N 笔饮食」。 */
+export function periodMealEntryLine(count: number): string {
+  const safe = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return `餐桌上一共记下了 ${safe} 笔饮食`;
+}
+
+/** ④ 「记到最多的习惯是 喝水（41 次）」；两个并列用「、」连接。 */
+export function periodHabitsLine(habits: ReadonlyArray<{ name: string; count: number }>): string {
+  const list = habits
+    .map((habit) => {
+      const count = Number.isFinite(habit.count) ? Math.max(0, Math.floor(habit.count)) : 0;
+      return `${habit.name}（${count} 次）`;
+    })
+    .join('、');
+  return `记到最多的习惯是 ${list}`;
+}
+
+/** ⑤ 「运动了 12 次，一共 360 分钟」。 */
+export function periodExerciseLine(sessions: number, totalMinutes: number): string {
+  const safeSessions = Number.isFinite(sessions) ? Math.max(0, Math.floor(sessions)) : 0;
+  const safeMinutes = Number.isFinite(totalMinutes) ? Math.max(0, Math.floor(totalMinutes)) : 0;
+  return `运动了 ${safeSessions} 次，一共 ${safeMinutes} 分钟`;
+}
+
+/** ⑥ 下降：「这段时间体重减少了 2.3 kg」—— 后面**不接任何判断句**（QR-4）。 */
+export function periodWeightDownLine(deltaKg: number): string {
+  const value = Math.abs(Number.isFinite(deltaKg) ? deltaKg : 0);
+  return `这段时间体重减少了 ${value} kg`;
+}
+
+/** ⑥ 上涨：「这段时间体重增加了 0.4 kg」—— 同样只是陈述，不评价。 */
+export function periodWeightUpLine(deltaKg: number): string {
+  const value = Math.abs(Number.isFinite(deltaKg) ? deltaKg : 0);
+  return `这段时间体重增加了 ${value} kg`;
+}
+
+/** 「你写下了 N 条体重之外的变化」（唯一计数出口，AC-11.4.6）。 */
+export function periodWinCountLine(count: number): string {
+  const safe = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return `你写下了 ${safe} 条体重之外的变化`;
+}
+
+/** 常吃榜右侧的天数：「有 41 天」。 */
+export function periodTopDaysText(dayCount: number): string {
+  const days = Number.isFinite(dayCount) ? Math.max(0, Math.floor(dayCount)) : 0;
+  return `有 ${days} 天`;
+}
+
+// ---------------------------------------------------------------------------
+// 周报多样性行（R11.7）
+// 语气规范（AC-11.7.3）：只计数，不打分 —— 不评分、不推荐种类数、不说「还差 N 种」。
+// ---------------------------------------------------------------------------
+
+/** 「这周吃到了 23 种不同的食物」。 */
+export function diversityCountLine(count: number): string {
+  const safe = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return `这周吃到了 ${safe} 种不同的食物`;
+}
+
+/** 展开行的读屏语句（AC-11.7.1）。 */
+export function diversityAria(count: number, expanded: boolean): string {
+  return `${diversityCountLine(count)}，${expanded ? '已展开清单' : '展开可看清单'}`;
+}
+
+// ---------------------------------------------------------------------------
+// 「体重之外的变化」（R11.4）
+// 语气规范（AC-11.4.1 / 11.4.5 / 11.4.6）：零压力入口 —— 无必填校验、无徽章、无里程碑；
+// 不出现 徽章/成就/等级/积分/连续/奖励/解锁/星级 一类词根（标识符黑名单见 PRD §4.3）。
+// ---------------------------------------------------------------------------
+
+/** 列表日期：「今天」或「9月23日」（只记今天，列表里旧记录按天显示）。 */
+export function winDateLine(dateKey: string, today: string, format: (key: string) => string): string {
+  return dateKey === today ? '今天' : format(dateKey);
+}
+
+/** 「删掉这条」按钮的读屏语句（含正文前几个字，便于区分同日多条）。 */
+export function winDeleteAria(text: string): string {
+  const head = text.length > 8 ? `${Array.from(text).slice(0, 8).join('')}…` : text;
+  return `删掉这条：${head}`;
 }

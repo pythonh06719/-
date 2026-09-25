@@ -64,6 +64,7 @@ model User {
   fastingSessions   FastingSession[]
   aiUsage           AiUsage[]
   aiTraces          AiTrace[]
+  wins              WinLog[]
 
   @@map("users")
 }
@@ -503,4 +504,28 @@ model AiTrace {
 
   @@index([userId, id], map: "ix_ai_traces_user_id")
   @@map("ai_traces")
+}
+
+// -----------------------------------------------------------------------------
+// 22. win_logs —— 体重之外的变化（R11.4，四期）
+//   与 schema.prisma 的 WinLog 逐字段对齐；按本文件（PG）既有写法转换类型：
+//     - 自增主键 / userId → BigInt @default(autoincrement())
+//     - logged_date → DateTime @db.Date（本地日粒度）
+//     - 时间戳 → DateTime @default(now()) @db.Timestamptz(6)
+// ⚠️ 刻意**不加** (userId, loggedDate) 唯一约束：同一天允许多条 ——
+//    这是「随手记」而不是「每日打卡」，加唯一约束会把它变成一天只能完成一次的任务，
+//    直接违反约束 3（反游戏化）。不得"顺手补上"。
+// -----------------------------------------------------------------------------
+model WinLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  loggedDate DateTime @map("logged_date") @db.Date
+  text       String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedDate], map: "ix_win_user_date")
+  @@map("win_logs")
 }

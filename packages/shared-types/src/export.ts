@@ -110,6 +110,14 @@ export interface ExportSettings {
   fastingEnabled: boolean;
 }
 
+/** `wins[]` 元素（来源 `win_logs`）。语义是用户自由文本，与其他业务实体无外键，导出时不联表。 */
+export interface ExportWinRow {
+  /** `YYYY-MM-DD`（`win_logs.logged_date`） */
+  date: string;
+  /** 正文（≤60 字，应用层校验） */
+  text: string;
+}
+
 /** **导出 JSON 顶层结构（PRD §9.1，字段名逐字一致）**。 */
 export interface ExportJsonPayload {
   meta: ExportMeta;
@@ -120,11 +128,13 @@ export interface ExportJsonPayload {
   exercises: ExportExerciseRow[];
   habits: ExportHabitRow[];
   water: ExportWaterRow[];
+  /** R11.4 新增顶层键（schemaVersion 2 起，QR-6） */
+  wins: ExportWinRow[];
   settings: ExportSettings;
 }
 
-/** 当前导出结构版本（写入 `meta.schemaVersion`）。 */
-export const EXPORT_SCHEMA_VERSION = 1;
+/** 当前导出结构版本（1 → 2：新增 `wins` 顶层键，QR-6）。读取侧见 `@qsh/core` 的 `readExportWins`。 */
+export const EXPORT_SCHEMA_VERSION = 2;
 
 /** 固定应用标识。 */
 export const EXPORT_APP_ID = 'qingshenghuo' as const;

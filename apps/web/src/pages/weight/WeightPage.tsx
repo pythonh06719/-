@@ -38,6 +38,7 @@ import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 import GoalProgressCard from './GoalProgressCard';
 import PlateauCard from './PlateauCard';
+import WinLogCard from './WinLogCard';
 
 /** 趋势图按需加载（`React.lazy`），不占首屏主包（NFR-3）。 */
 const WeightChart = lazy(() => import('./WeightChart'));
@@ -464,6 +465,9 @@ export default function WeightPage(): ReactElement {
           参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
         </p>
       </div>
+
+      {/* 「体重之外的变化」（R11.4）：挂在体重页底部 —— 秤称不出来的变化也值得记（AC-11.4.1） */}
+      <WinLogCard />
     </section>
   );
 }

@@ -352,6 +352,25 @@ CREATE TABLE IF NOT EXISTS ai_usage (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ai_usage_user_day_feature ON ai_usage(user_id, usage_date, feature);
 
+-- -----------------------------------------------------------------------------
+-- 22. win_logs —— 体重之外的变化（R11.4，四期）
+-- -----------------------------------------------------------------------------
+-- ⚠️ 刻意**不加** (user_id, logged_date) 唯一约束：同一天允许多条 ——
+--    这是「随手记」而不是「每日打卡」，加唯一约束会把它变成一天只能完成一次的任务，
+--    直接违反约束 3（反游戏化）。不得"顺手补上"（由 e2e 显式保护该行为）。
+-- ⚠️ `text` 长度由应用层校验（≤60 字码点），DB 不加 CHECK（Prisma 无法表达，
+--    裸 SQL 与 ORM 会漂移，见架构文档 Q-8）。
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS win_logs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  logged_date TEXT    NOT NULL,             -- 'YYYY-MM-DD' 本地日粒度；服务端生成，只能记今天（QR-5）
+  text        TEXT    NOT NULL,             -- ≤ 60 字（应用层校验）
+  created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS ix_win_user_date ON win_logs(user_id, logged_date);
+
 -- =============================================================================
 -- updated_at 维护说明（SQLite 无 ON UPDATE）
 -- 应用层（Prisma）在每次 UPDATE 时显式写入 updated_at；如需 DB 级兜底，

@@ -822,6 +822,63 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑬ 阶段回顾的六个数字怎么来（R11.3，T03 同批交付） */}
+      <section aria-labelledby="why-period-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-period-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑬「这段时间」里的六个数字怎么来
+        </h2>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="有记录的天数" value="当日体重 / 饮食 / 运动 / 习惯 / 饮水 / 这句话，任一有记录即计数" hint="区间含今天" />
+          <DerivationRow term="食物种类数" value="与周报是同一个函数（distinctFoodKeys）" hint="归一化显示名优先" />
+          <DerivationRow term="餐次条目" value="饮食记录的行数" />
+          <DerivationRow term="记到最多的习惯" value="按完成的那次打卡计数" hint="并列时最多展示 2 个" />
+          <DerivationRow term="运动" value="次数与时长求和" />
+          <DerivationRow
+            term="体重变化量"
+            value="取区间内**有记录**的首条与末条之差，不是日历首末日"
+            hint="只有一条记录时整块不显示"
+          />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          回顾只陈述事实：没有完成度、没有达成率、也不给建议 —— 这些数字不参与任何评分。
+        </p>
+      </section>
+
+      {/* ⑭ 不同食物的种类是怎么数出来的（R11.7 / R11.3 共用口径，T02 同批交付） */}
+      <section aria-labelledby="why-distinct-foods-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-distinct-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑭ 不同食物的种类是怎么数出来的
+        </h2>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="数据来源" value="区间内你记下的饮食条目" />
+          <DerivationRow term="身份口径" value="归一化后的显示名优先，缺失时按食物库编号" hint="「种类」是用户的语言" />
+          <DerivationRow term="同名合并" value="库内条目与同名的快速记录算同一种" />
+          <DerivationRow term="同日多次" value="同一天吃多次只算 1 种" />
+          <DerivationRow term="展示上限" value="清单最多显示 200 条" hint="超出时提示「已经很多啦，先显示这些」" />
+          <DerivationRow term="这个数字的用途" value="只用来回看" hint="不参与任何评分或推荐" />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          「吃了多少种」没有好坏，也不是目标 —— 周报和阶段回顾用的是同一个数法，两处数字永远一致。
+        </p>
+      </section>
+
+      {/* ⑮ 「体重之外的变化」这个数字怎么用（R11.4，T05 同批交付） */}
+      <section aria-labelledby="why-wins-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-wins-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑮「体重之外的变化」这个数字怎么用
+        </h2>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="数据来源" value="区间内你写下的句子条数" />
+          <DerivationRow term="只能记今天" value="不支持补录" hint="把补录做成任务会带来完成压力" />
+          <DerivationRow term="删除" value="不进回收站" hint="随账号删除一并清除" />
+          <DerivationRow term="导出" value="备份文件里是独立的 wins 段（结构版本 2）" hint="旧备份没有这段也能正常打开" />
+          <DerivationRow term="这个数字的用途" value="只在回顾页出现这一句计数" hint="不参与热量、体重或目标的任何计算" />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          这句话只用来回看 —— 不计分、不评级、不设目标，也不是每天必须完成的任务。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

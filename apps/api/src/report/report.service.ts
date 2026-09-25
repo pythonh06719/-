@@ -1,7 +1,19 @@
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service';
+import type {
+  MicronutrientSummary,
+  PeriodDays,
+  PeriodReport,
+  ReportDay,
+  WeeklyReport,
+} from '@qsh/shared-types';
+import type { FoodRefRow } from '@qsh/core';
+import { DISTINCT_FOOD_LIMIT, distinctFoodKeys, resolvePeriodWindow, summarizePeriod, type PeriodFacts } from '@qsh/core';
+
+import { ERROR_CODES } from '../common/constants/error-codes';
+import { ApiException } from '../common/exceptions/api.exception';
 import { addDays, todayLocalKey } from '../common/utils/date.util';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * 微量营养素参考值（D7 默认：《中国居民膳食营养素参考摄入量》成人一般人群，DRI）。
@@ -23,31 +35,17 @@ export const DRI_REFERENCES = [
 
 export type MicronutrientKey = (typeof DRI_REFERENCES)[number]['key'];
 
-/** 单日汇总。 */
-export interface ReportDay {
-  date: string;
-  intakeKcal: number;
-  exerciseKcal: number;
-  waterMl: number;
-  habitsDone: number;
-  habitsTotal: number;
-}
-
-/** 周报（R4.1 / R11.1）。 */
-export interface WeeklyReport {
-  from: string;
-  to: string;
-  days: ReportDay[];
-  avgIntakeKcal: number;
-  totalExerciseKcal: number;
-  weightChangeKg: number | null;
-  /** 微量营养素：10 项日均 + DRI 参考（R4.1 / R4.2） */
-  micronutrients: Array<{ key: string; name: string; unit: string; dailyAvg: number; reference: number; direction: string }>;
-  /** 参考来源声明（R2.8 数字可溯源） */
-  referenceNote: string;
-}
-
-/** 周报服务（二期）。全部聚合在服务端完成，前端只渲染。 */
+/**
+ * 周报 + 阶段回顾服务（二期 R4.1 / R11.1 · 四期 R11.3 / R11.7）。
+ *
+ * 全部聚合在服务端完成，前端只渲染。
+ *
+ * ⚠️ `WeeklyReport` / `ReportDay` / `MicronutrientSummary` **收敛到 `@qsh/shared-types`**（D-2）：
+ * 本文件与 `ReportPage.tsx` 各持一份本地定义是 QA 指出的漂移风险，本轮扩展该类型前先收敛。
+ *
+ * ⚠️ 食物种类口径（K16）：R11.3 的「食物种类数」与 R11.7 的「N 种不同的食物」
+ * **调用 `@qsh/core` 的同一个 `distinctFoodKeys`**，任何一侧不得自行实现去重。
+ */
 @Injectable()
 export class ReportService {
   constructor(private readonly prisma: PrismaService) {}
@@ -57,7 +55,7 @@ export class ReportService {
     const to = endDate ?? todayLocalKey();
     const from = addDays(to, -6);
 
-    const [meals, exercises, waters, habits, weights, micronutrientRows] = await Promise.all([
+    const [meals, exercises, waters, habits, weights, micronutrientRows, identityGroups] = await Promise.all([
       this.prisma.mealLog.findMany({
         where: { userId, loggedDate: { gte: from, lte: to } },
         select: { loggedDate: true, kcal: true },
@@ -80,6 +78,8 @@ export class ReportService {
         select: { loggedAt: true, weightKg: true },
       }),
       this.micronutrientRows(userId, from, to),
+      // R11.7：食物身份投影（与 `foods.top` / `period()` 同构的最小投影，D-1）
+      this.foodIdentityGroups(userId, from, to),
     ]);
 
     const habitTotal = habits.length;
@@ -105,6 +105,9 @@ export class ReportService {
     const weightChangeKg =
       weights.length >= 2 ? this.round2(weights[weights.length - 1]!.weightKg - weights[0]!.weightKg) : null;
 
+    // R11.7：种类口径交给 core 的唯一实现（库内条目与同名快加条目合并为 1 种，K16）
+    const distinct = distinctFoodKeys(identityGroups.projection, { limit: DISTINCT_FOOD_LIMIT });
+
     return {
       from,
       to,
@@ -121,7 +124,155 @@ export class ReportService {
         direction: reference.direction,
       })),
       referenceNote: '微量营养素参考值默认采用《中国居民膳食营养素参考摄入量》成人一般人群口径；公式与数据来源见「参考来源」页。',
+      // ---- R11.7 向后兼容扩展（纯加字段，老客户端忽略未知字段，AC-11.7.6）----
+      distinctFoodCount: distinct.count,
+      distinctFoods: distinct.names,
+      distinctFoodsTruncated: distinct.truncated,
     };
+  }
+
+  /**
+   * 阶段回顾（R11.3 / AC-11.3.2 白名单 6 类指标）。
+   *
+   * - **聚合全部 SQL 下推**（K15 / AC-11.3.8）：10 个并发查询，每个都是
+   *   `groupBy` / `aggregate` / `findFirst` 的最小投影，365 天档每个 ≤365 行；
+   * - `days` 非 30 / 365 → 400（`resolvePeriodWindow` 返回 `null`，不允许隐式默认）；
+   * - 指标归并交给 `@qsh/core` 的 `summarizePeriod`（口径唯一实现，本服务只做编排）。
+   */
+  async period(userId: number, days: PeriodDays, endDate?: string): Promise<PeriodReport> {
+    const window = resolvePeriodWindow(days, endDate ?? null, todayLocalKey());
+    if (window === null) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '阶段回顾只支持近 30 天或近 365 天', {
+        days: '阶段回顾只支持近 30 天或近 365 天',
+      });
+    }
+    const { from, to } = window;
+
+    const [mealGroups, mealEntryCount, exerciseGroups, habitDateGroups, habitDoneGroups, habitDefs, weightFirst, weightLast, waterGroups, winGroups] =
+      await Promise.all([
+        // ① 食物身份投影（最小投影：(身份候选, 日期) 二元组，与 `foods.top` 同构）
+        this.foodIdentityGroups(userId, from, to),
+        // ② 餐次条目总数（行数口径）
+        this.prisma.mealLog.count({ where: { userId, loggedDate: { gte: from, lte: to } } }),
+        // ④ 运动聚合
+        this.prisma.exerciseLog.groupBy({
+          by: ['loggedDate'],
+          where: { userId, loggedDate: { gte: from, lte: to } },
+          _count: { _all: true },
+          _sum: { minutes: true },
+        }),
+        // ⑤「有记录的天数」用：习惯打卡（含 done=false —— 记过就算，与 /data/overview 口径一致）
+        this.prisma.habitCheckin.groupBy({
+          by: ['loggedDate'],
+          where: { userId, loggedDate: { gte: from, lte: to } },
+        }),
+        // 指标 ④ 候选：仅 done=true 计数
+        this.prisma.habitCheckin.groupBy({
+          by: ['habitId'],
+          where: { userId, loggedDate: { gte: from, lte: to }, done: true },
+          _count: { _all: true },
+        }),
+        // 指标 ④ 名称反查（系统内置 + 自建，一次取全，避免 N+1）
+        this.prisma.habitDefinition.findMany({
+          where: { OR: [{ userId }, { userId: null }] },
+          select: { id: true, name: true },
+        }),
+        // 指标 ⑥ 体重首末条（两次轻查询，不拉全量 —— AC-11.3.4 取**有记录的**首末条）
+        this.prisma.weightLog.findFirst({
+          where: { userId, loggedAt: { gte: from, lte: to } },
+          orderBy: { loggedAt: 'asc' },
+          select: { id: true, loggedAt: true, weightKg: true },
+        }),
+        this.prisma.weightLog.findFirst({
+          where: { userId, loggedAt: { gte: from, lte: to } },
+          orderBy: { loggedAt: 'desc' },
+          select: { id: true, loggedAt: true, weightKg: true },
+        }),
+        // ①「有记录的天数」用：饮水
+        this.prisma.waterLog.groupBy({
+          by: ['loggedDate'],
+          where: { userId, loggedDate: { gte: from, lte: to } },
+        }),
+        // R11.4：win 条数 +「有记录的天数」并集
+        this.prisma.winLog.groupBy({
+          by: ['loggedDate'],
+          where: { userId, loggedDate: { gte: from, lte: to } },
+          _count: { _all: true },
+        }),
+      ]);
+
+    const facts: PeriodFacts = {
+      // 有记录的天数 = 各表日期键的并集（含体重首末日）
+      loggedDates: [
+        ...mealGroups.dates,
+        ...exerciseGroups.map((row) => row.loggedDate),
+        ...habitDateGroups.map((row) => row.loggedDate),
+        ...waterGroups.map((row) => row.loggedDate),
+        ...winGroups.map((row) => row.loggedDate),
+        ...(weightFirst !== null ? [weightFirst.loggedAt.slice(0, 10)] : []),
+        ...(weightLast !== null ? [weightLast.loggedAt.slice(0, 10)] : []),
+      ],
+      foodRows: mealGroups.projection,
+      mealEntryCount,
+      habitCounts: habitDoneGroups.map((row) => ({
+        habitId: row.habitId,
+        name: habitDefs.find((definition) => definition.id === row.habitId)?.name ?? '习惯',
+        count: row._count._all,
+      })),
+      exercise: {
+        sessions: exerciseGroups.reduce((sum, row) => sum + row._count._all, 0),
+        totalMinutes: exerciseGroups.reduce((sum, row) => sum + (row._sum.minutes ?? 0), 0),
+      },
+      weightFirst:
+        weightFirst === null
+          ? null
+          : { id: weightFirst.id, date: weightFirst.loggedAt.slice(0, 10), weightKg: weightFirst.weightKg },
+      weightLast:
+        weightLast === null
+          ? null
+          : { id: weightLast.id, date: weightLast.loggedAt.slice(0, 10), weightKg: weightLast.weightKg },
+      winCount: winGroups.reduce((sum, row) => sum + row._count._all, 0),
+    };
+
+    const summary = summarizePeriod(facts, { from, to });
+    return { ...summary, days };
+  }
+
+  /**
+   * 食物身份投影（R11.7 / R11.3 共用）：`groupBy` 最小投影 + 一次 `in` 反查显示名（避免 N+1，D-6）。
+   * 与 `foods.service.top()` 是同一套已验证的模式。
+   */
+  private async foodIdentityGroups(
+    userId: number,
+    from: string,
+    to: string,
+  ): Promise<{ projection: FoodRefRow[]; dates: string[] }> {
+    const grouped = await this.prisma.mealLog.groupBy({
+      by: ['foodItemId', 'customName', 'loggedDate'],
+      where: { userId, loggedDate: { gte: from, lte: to } },
+      orderBy: [{ loggedDate: 'asc' }, { foodItemId: 'asc' }, { customName: 'asc' }],
+    });
+
+    const ids = [...new Set(grouped.map((row) => row.foodItemId).filter((id): id is number => id !== null))];
+    const nameById = new Map<number, string>();
+    if (ids.length > 0) {
+      const rows = await this.prisma.foodItem.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      });
+      for (const row of rows) {
+        nameById.set(row.id, row.name);
+      }
+    }
+
+    const projection: FoodRefRow[] = grouped.map((row) => ({
+      foodItemId: row.foodItemId,
+      customName: row.customName,
+      foodName: row.foodItemId === null ? null : (nameById.get(row.foodItemId) ?? null),
+      loggedDate: row.loggedDate,
+    }));
+
+    return { projection, dates: grouped.map((row) => row.loggedDate) };
   }
 
   /** 微量营养素：按 `grams/100` 折算食物条目的每 100g 营养素并汇总（快速加卡无微量数据，跳过）。 */

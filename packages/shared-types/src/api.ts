@@ -33,6 +33,7 @@ import type {
   VerificationPurpose,
   WeightLog,
   WeightLogSource,
+  WinLog,
 } from './entities';
 
 // ---------------------------------------------------------------------------
@@ -613,6 +614,134 @@ export interface RecordOverviewRow {
 export interface DataOverviewResponse {
   /** 固定 6 行，顺序与 `RecordOverviewKey` 声明顺序一致；无记录的行 `count = 0`、日期为 `null` */
   rows: RecordOverviewRow[];
+}
+
+// ---------------------------------------------------------------------------
+// 周报 / 阶段回顾契约（R4.1 / R11.1 / R11.3 / R11.7）
+// ---------------------------------------------------------------------------
+
+/** 单日汇总（原 `report.service.ts` 本地定义，收敛到契约层，D-2 防漂移）。 */
+export interface ReportDay {
+  date: string;
+  intakeKcal: number;
+  exerciseKcal: number;
+  waterMl: number;
+  habitsDone: number;
+  habitsTotal: number;
+}
+
+/** 微量营养素行（原内联匿名类型收敛，D-2）。 */
+export interface MicronutrientSummary {
+  key: string;
+  name: string;
+  unit: string;
+  dailyAvg: number;
+  reference: number;
+  direction: string;
+}
+
+/** 周报（R4.1 / R11.1 / **R11.7 扩展**）。 */
+export interface WeeklyReport {
+  from: string;
+  to: string;
+  days: ReportDay[];
+  avgIntakeKcal: number;
+  totalExerciseKcal: number;
+  weightChangeKg: number | null;
+  /** 微量营养素：10 项日均 + DRI 参考（R4.1 / R4.2） */
+  micronutrients: MicronutrientSummary[];
+  /** 参考来源声明（R2.8 数字可溯源） */
+  referenceNote: string;
+  // ---- R11.7 向后兼容扩展（新增三个字段，老客户端忽略未知字段即可，AC-11.7.6）----
+  /** 不同食物种类数（与 R11.3 共用 `distinctFoodKeys` 口径，K16） */
+  distinctFoodCount: number;
+  /** 食物名称清单（≤200，按首次出现顺序 = 最早出现日期序） */
+  distinctFoods: string[];
+  /** 清单是否被 200 上限截断（UI 据此展示「已经很多啦，先显示这些」） */
+  distinctFoodsTruncated: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// R11.7 · 饮食多样性（零新接口，weekly 扩展承载）
+// ---------------------------------------------------------------------------
+
+/** `GET /api/report/weekly` 的完整响应（D-2 收敛后的契约名，供 web / api 双侧导入）。 */
+export type WeeklyReportResponse = WeeklyReport;
+
+// ---------------------------------------------------------------------------
+// R11.3 · 阶段回顾
+// ---------------------------------------------------------------------------
+
+/** 阶段回顾允许的档位（QR-3：只 30/365 两档，不做 90 天档）。 */
+export type PeriodDays = 30 | 365;
+
+/** 记到最多的习惯（白名单指标 ④，最多 2 个）。 */
+export interface PeriodTopHabit {
+  habitId: number;
+  name: string;
+  count: number;
+}
+
+/**
+ * `GET /api/report/period` 响应 —— 指标**白名单制**（AC-11.3.2）：
+ * 只允许出现下列 6 类，出现白名单外指标即判定不通过。
+ * 常吃 Top5 **刻意不在本类型内**（D-4：复用 `GET /foods/top`，防止白名单被"顺手"突破）。
+ */
+export interface PeriodReport {
+  from: string;
+  to: string;
+  days: PeriodDays;
+  /** 供整屏空态判断（区间内零记录 → 前端不渲染任何指标卡，AC-11.3.5） */
+  hasAnyData: boolean;
+  /** ① 有记录的天数（任一表当日有行即计数；含未来日期则被裁剪，AC-11.3.7） */
+  loggedDays: number;
+  /** ② 不同食物种类数（与 R11.7 共用 `distinctFoodKeys`，K16） */
+  distinctFoodCount: number;
+  /** ③ 餐次条目总数（`meal_logs` 行数口径） */
+  mealEntryCount: number;
+  /** ④ 记到最多的习惯（最多 2 个；并列时按 habitId 升序截断） */
+  topHabits: PeriodTopHabit[];
+  /** ⑤ 运动次数与总时长 */
+  exercise: { sessions: number; totalMinutes: number };
+  /**
+   * ⑥ 体重变化量 —— **取有记录的首末条**，而非日历首末日；
+   * 任一端缺失（含区间内仅 1 条）为 `null`，前端**整块隐藏**（不显示 0、不显示「—」）。
+   */
+  weight: { startKg: number; endKg: number; deltaKg: number } | null;
+  /** 「体重之外的变化」条数（仅 `> 0` 时由前端渲染，AC-11.4.6 唯一计数出口） */
+  winCount: number;
+}
+
+/** `GET /api/report/period` 请求查询参数（`days` 缺省 / 非 30|365 → 400，不允许隐式默认）。 */
+export interface PeriodReportQuery {
+  /** `YYYY-MM-DD`，可选，缺省今天；晚于今天裁剪到今天 */
+  endDate?: string;
+  /** 档位（必填） */
+  days: PeriodDays;
+}
+
+// ---------------------------------------------------------------------------
+// R11.4 · 体重之外的变化（wins）
+// ---------------------------------------------------------------------------
+
+/** `POST /api/wins` 请求。⚠️ 不含 loggedDate：由服务端按本地今天生成（QR-5，不支持补录）。 */
+export interface CreateWinRequest {
+  /** 正文，≤60 字码点（超限 400，不静默截断，AC-11.4.2） */
+  text: string;
+}
+
+/** `GET /api/wins` 查询参数。 */
+export interface ListWinsQuery {
+  /** 往前追溯的天数（含今天），默认 90；允许 1–365，越界 400 */
+  days?: number;
+}
+
+/** `GET /api/wins` 响应：裸数组，**最新 200 条**按 `createdAt` **升序**返回（D-5 / K23）。 */
+export type ListWinsResponse = WinLog[];
+
+/** `DELETE /api/wins/:id` 响应（无二次确认，AC-11.4.4）。 */
+export interface DeleteWinResponse {
+  deleted: true;
 }
 
 // ---------------------------------------------------------------------------

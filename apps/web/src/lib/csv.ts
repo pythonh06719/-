@@ -133,6 +133,8 @@ export function createEmptyExportPayload(exportedAtIso: string): ExportJsonPaylo
     exercises: [],
     habits: [],
     water: [],
+    // R11.4（schemaVersion 2）：`wins` 为必填顶层键，导出骨架必须带空数组
+    wins: [],
     settings: { unit: 'kcal', darkMode: false, fastingEnabled: false },
   };
 }

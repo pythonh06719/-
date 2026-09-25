@@ -55,6 +55,7 @@ model User {
   fastingSessions   FastingSession[]
   aiUsage           AiUsage[]
   aiTraces          AiTrace[]
+  wins              WinLog[]
 
   @@map("users")
 }
@@ -502,4 +503,27 @@ model AiTrace {
 
   @@index([userId, id], map: "ix_ai_traces_user_id")
   @@map("ai_traces")
+}
+
+// -----------------------------------------------------------------------------
+// 22. win_logs —— 体重之外的变化（R11.4，四期）
+// -----------------------------------------------------------------------------
+// ⚠️ 刻意**不加** (userId, loggedDate) 唯一约束：同一天允许多条 ——
+//    这是「随手记」而不是「每日打卡」，加唯一约束会把它变成一天只能完成一次的任务，
+//    直接违反约束 3（反游戏化）。PM §4.3 已拍板，不得"顺手补上"。
+//    该决定由 e2e 用例显式保护（r11-new.e2e.test.ts：同一天两条 wins 共存）。
+// ⚠️ `text` 长度由应用层校验（≤60 字码点，checkWinText），DB 不约束 ——
+//    超限返回 400 且**不静默截断**（AC-11.4.2），避免「我写的和我存的不一样」。
+model WinLog {
+  id         Int    @id @default(autoincrement())
+  userId     Int    @map("user_id")
+  loggedDate String @map("logged_date") // 'YYYY-MM-DD' 本地日粒度；服务端生成，只能记今天（QR-5）
+  text       String // 正文 ≤ 60 字（应用层校验）
+  createdAt  String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  updatedAt  String @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedDate], map: "ix_win_user_date")
+  @@map("win_logs")
 }

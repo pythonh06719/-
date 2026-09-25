@@ -18,6 +18,7 @@ import { MealsModule } from './meals/meals.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportModule } from './report/report.module';
 import { UsersModule } from './users/users.module';
+import { WinsModule } from './wins/wins.module';
 import { WaterModule } from './water/water.module';
 import { WeightsModule } from './weights/weights.module';
 
@@ -56,6 +57,8 @@ import { WeightsModule } from './weights/weights.module';
     ReportModule,
     DataModule,
     DashboardModule,
+    // 四期（R11.4）：体重之外的变化
+    WinsModule,
     // 三期（T05 三期）：AI 助手（R9.x / R3.7）
     AiModule,
     HealthModule,

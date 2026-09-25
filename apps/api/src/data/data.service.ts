@@ -40,7 +40,7 @@ export class DataService {
 
   /** 组装导出 JSON（字段名与 PRD §9.1 逐字一致，由 `@qsh/shared-types` 约束）。 */
   async exportAll(userId: number): Promise<ExportJsonPayload> {
-    const [profile, goal, settings, weights, meals, exercises, habits, waters] = await Promise.all([
+    const [profile, goal, settings, weights, meals, exercises, habits, waters, wins] = await Promise.all([
       this.prisma.userProfile.findUnique({ where: { userId } }),
       this.prisma.userGoal.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }),
       this.prisma.userSettings.findUnique({ where: { userId } }),
@@ -57,6 +57,11 @@ export class DataService {
         include: { habit: { select: { code: true } } },
       }),
       this.prisma.waterLog.findMany({ where: { userId }, orderBy: { loggedDate: 'asc' } }),
+      // R11.4：`wins` 作为独立顶层键导出（schemaVersion 2）；与其他实体无外键，不联表（§6.6）
+      this.prisma.winLog.findMany({
+        where: { userId },
+        orderBy: [{ loggedDate: 'asc' }, { id: 'asc' }],
+      }),
     ]);
 
     const mealsByDay = new Map<string, ExportJsonPayload['meals'][number]>();
@@ -115,6 +120,7 @@ export class DataService {
         done: checkin.done,
       })),
       water: waters.map((water) => ({ date: water.loggedDate, ml: water.amountMl })),
+      wins: wins.map((win) => ({ date: win.loggedDate, text: win.text })),
       settings: {
         unit: (settings?.unit ?? 'kcal') === 'kj' ? ('kj' as const) : ('kcal' as const),
         darkMode: settings?.darkMode ?? false,
@@ -132,11 +138,11 @@ export class DataService {
    *
    * 6 个 `aggregate` 并发下推给 SQLite，**不把任何原始行拉进内存**（K15，Q-8 不缓存）。
    *
-   * ⚠️ `wins` 属于 R11.4（本轮不做），接口**照常返回**该行、恒为 0 ——
-   * 前端按 `count === 0` 整行隐藏，将来 R11.4 上线前后端都不用改（Q-6）。
+   * ⚠️ `wins` 行自 R11.4（四期）起为**真实计数**（Q-6 预留位的兑现）：
+   * R11.4 上线前恒为 0 / 前端整行隐藏，上线后自动出现 —— 前端 `DataOverviewCard` 零改动。
    */
   async overview(userId: number): Promise<DataOverviewResponse> {
-    const [weights, meals, exercises, habits, water] = await Promise.all([
+    const [weights, meals, exercises, habits, water, wins] = await Promise.all([
       this.prisma.weightLog.aggregate({
         where: { userId },
         _count: { _all: true },
@@ -168,6 +174,12 @@ export class DataService {
         _min: { loggedDate: true },
         _max: { loggedDate: true },
       }),
+      this.prisma.winLog.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedDate: true },
+        _max: { loggedDate: true },
+      }),
     ]);
 
     const rows: RecordOverviewRow[] = [
@@ -176,8 +188,8 @@ export class DataService {
       this.toRow('exercises', exercises._count._all, exercises._min.loggedDate, exercises._max.loggedDate),
       this.toRow('habits', habits._count._all, habits._min.loggedDate, habits._max.loggedDate),
       this.toRow('water', water._count._all, water._min.loggedDate, water._max.loggedDate),
-      // R11.4 未实现：恒为 0，前端整行隐藏
-      { key: 'wins', count: 0, firstDate: null, lastDate: null },
+      // R11.4：真实计数；`win_logs.logged_date` 本就是 `YYYY-MM-DD` 文本
+      this.toRow('wins', wins._count._all, wins._min.loggedDate, wins._max.loggedDate),
     ];
 
     return { rows };

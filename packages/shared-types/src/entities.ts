@@ -600,3 +600,22 @@ export interface AiUsage {
   /** db: updated_at */
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// 21. win_logs —— 体重之外的变化（R11.4，四期）
+// ---------------------------------------------------------------------------
+
+/** 表 `win_logs` —— 体重之外的变化（R11.4）。⚠️ 刻意无 (userId, loggedDate) 唯一约束。 */
+export interface WinLog {
+  id: number;
+  /** db: user_id */
+  userId: number;
+  /** db: logged_date —— `YYYY-MM-DD` 本地日粒度；**服务端生成，只能记今天**（QR-5） */
+  loggedDate: string;
+  /** db: text —— ≤60 字（应用层校验，超限 400 不截断） */
+  text: string;
+  /** db: created_at —— ISO8601 UTC */
+  createdAt: string;
+  /** db: updated_at */
+  updatedAt: string;
+}

@@ -97,11 +97,12 @@ describe('serializeExportBundle', () => {
     const parsed = JSON.parse(jsonFile?.content ?? '{}') as Record<string, unknown>;
     expect(parsed.meta).toEqual({
       app: 'qingshenghuo',
-      schemaVersion: 1,
+      // R11.4（四期）：`wins` 独立顶层键随 schemaVersion 2 引入（K25 只增不减）
+      schemaVersion: 2,
       exportedAt: '2026-09-12T00:00:00.000Z',
     });
     expect(Object.keys(parsed)).toEqual(
-      expect.arrayContaining(['meta', 'profile', 'goals', 'weights', 'meals', 'exercises', 'habits', 'water', 'settings']),
+      expect.arrayContaining(['meta', 'profile', 'goals', 'weights', 'meals', 'exercises', 'habits', 'water', 'wins', 'settings']),
     );
   });
 });

@@ -177,3 +177,34 @@ export {
   type ReorderItem,
   type ReorderUpdate,
 } from './meal/reorder';
+
+// ---------------------------------------------------------------------------
+// 四期全新项（R11.3 / R11.4 / R11.7）
+// ---------------------------------------------------------------------------
+
+// 阶段回顾聚合（R11.3）：SQL 下推事实 → 白名单 6 类指标（K15 / AC-11.3.2）
+export {
+  PERIOD_DAY_OPTIONS,
+  PERIOD_TOP_HABITS,
+  resolvePeriodWindow,
+  summarizePeriod,
+  type PeriodDaysOption,
+  type PeriodFacts,
+  type PeriodSummary,
+} from './report/period';
+
+// 「体重之外的变化」文本清洗（R11.4）：前端拦截与服务端校验同源（AC-11.4.2 / 11.4.9）
+export {
+  WIN_TEXT_MAX_LENGTH,
+  checkWinText,
+  normalizeWinText,
+  winTextLength,
+  type WinTextCheck,
+} from './win/text';
+
+// 导出 payload 兼容读法（R11.4 / QR-6）：v1 数据读 `wins` 不报错（K25）
+export {
+  EXPORT_SCHEMA_VERSION_MIN_WINS,
+  readExportWins,
+  type ExportWinRowLike,
+} from './export/payload';
