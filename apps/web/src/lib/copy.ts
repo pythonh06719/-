@@ -8,6 +8,7 @@
  */
 
 import { PLATEAU_THRESHOLD_KG } from '@qsh/core';
+import type { RecordOverviewKey } from '@qsh/shared-types';
 import { WATER_ML_PER_CUP } from '@/theme/tokens';
 
 export const COPY = {
@@ -155,6 +156,23 @@ export const COPY = {
   dataBackupFailed: '这次没有整理成功，晚一点再试就好',
   dataBackupNever: '还没有备份过，什么时候想留一份都可以',
   dataBackupToday: '上次备份就是今天',
+  /**
+   * 餐次排序（R3.8）—— 拖拽只是「把顺序理一理」，措辞不能变成任务或评价。
+   */
+  reorderGuide: '按住条目可以拖动，也能把它拖到别的餐',
+  reorderGuideAriaClose: '不再显示这条拖动说明',
+  /** 移动成功：`已经放到午餐了`（主语是这条记录，不是「你做对了」） */
+  reorderMovedPrefix: '已经放到',
+  reorderMovedSuffix: '了',
+  /** 离线 / 失败：**中性陈述**，不以「失败」作标题、不用红色（AC-3.8.9） */
+  reorderFailed: '这次没有移动成功，稍后再试试',
+  /** 常吃榜（R11.5）—— 只呈现频次，零营养评判（AC-11.5.3 / AC-11.5.4） */
+  topFoodsTab: '常吃',
+  topFoodsTitle: '你常吃的',
+  /** 记录概览（R11.6）—— 只陈述事实，不做任何「异常 / 离群」判定（AC-11.6.7） */
+  dataOverviewTitle: '记录概览',
+  dataOverviewDesc: '这里列出你已经记下了多少、跨度多久。只做陈述，不评判任何一条记录。',
+  dataOverviewEmpty: '还没有记录，什么时候想记都可以。',
   /** 每日轻提醒（R5 附加，本轮仅本地通知，不做服务端推送） */
   reminderToggleTitle: '每日轻提醒',
   reminderToggleDesc: '应用打开时，一天一条温和的提醒。默认关闭，随时可以停用',
@@ -374,6 +392,133 @@ export function lastBackupLabel(daysSince: number | null): string {
     return COPY.dataBackupToday;
   }
   return `上次备份于 ${days} 天前`;
+}
+
+/**
+ * ≥ 30 天未备份的**温和提示**（R11.6 / AC-11.6.2）。
+ *
+ * ⚠️ 与 {@link lastBackupLabel} **并存、不合并**：`lastBackupLabel` 是事实陈述（C6 基座，
+ * 回归保护项，只增不删），本函数是**额外**的一行提示。< 30 天返回 `null`（不渲染），
+ * 避免把「提示」变成日常噪音。
+ *
+ * 语气红线（AC-11.6.4 / AC-11.6.5）：
+ * - 主语是「距离上次备份」，**不是**「你已经 N 天没备份」（不把天数写成欠账）；
+ * - 以「什么时候方便」「不留也没关系」这类**非指令性**短语收尾；
+ * - 禁用词（危险 / 丢失 / 风险 / 即将 / 务必 / 一定 / 立刻 / 现在就 / 紧急 / 警告 / 失效 / 备份以待万一）一个都不出现。
+ *
+ * @param days 距上次备份的天数；`null` / 非有限值（从未备份）→ `null`
+ * @returns 提示文案；不需要提示时 `null`
+ */
+export function backupHintCopy(days: number | null): string | null {
+  if (days === null || !Number.isFinite(days)) {
+    return null; // 从未备份：沿用 dataBackupNever（lastBackupLabel 已覆盖）
+  }
+  const d = Math.max(0, Math.floor(days));
+  if (d < 30) return null;
+  if (d < 90) return `距离上次备份有 ${d} 天了。数据都还在账号里，什么时候方便再留一份就行`;
+  return `距离上次备份 ${d} 天了。随时可以再留一份，不留也没关系`;
+}
+
+// ---------------------------------------------------------------------------
+// 餐次排序（R3.8）
+// 语气规范同 §7：只说「这条记录被放到哪儿了」，不评价、不催促、不用失败/错误作标题。
+// ---------------------------------------------------------------------------
+
+/** 「把「番茄炒蛋」上移」——降级控件的完整无障碍标签（AC-3.8.7）。 */
+export function mealMoveUpAria(name: string): string {
+  return `把「${name}」上移`;
+}
+
+/** 「把「番茄炒蛋」下移」。 */
+export function mealMoveDownAria(name: string): string {
+  return `把「${name}」下移`;
+}
+
+/**
+ * 「把「番茄炒蛋」移动到午餐」——跨餐移动的完整无障碍标签（AC-3.8.7）。
+ *
+ * @param name 食物名称
+ * @param mealLabel 目标餐次中文名（早/午/晚餐、加餐）
+ */
+export function mealMoveToAria(name: string, mealLabel: string): string {
+  return `把「${name}」移动到${mealLabel}`;
+}
+
+/** 「把「番茄炒蛋」移动到另一餐」——`<select>` 本身的标签。 */
+export function mealMoveSelectAria(name: string): string {
+  return `把「${name}」移动到另一餐`;
+}
+
+/** 移动成功播报：`已经放到午餐了`。 */
+export function mealMovedLine(mealLabel: string): string {
+  return `${COPY.reorderMovedPrefix}${mealLabel}${COPY.reorderMovedSuffix}`;
+}
+
+// ---------------------------------------------------------------------------
+// 常吃榜（R11.5）
+// 语气规范同 §7 + 约束 4：**只呈现频次**，禁止任何营养评判（AC-11.5.3 / AC-11.5.4）。
+// ---------------------------------------------------------------------------
+
+/**
+ * 「12 天」——**只给天数这一个数字**，不标热量、不标营养素、不给等级（AC-11.5.3）。
+ */
+export function topFoodDaysLabel(dayCount: number): string {
+  const days = Number.isFinite(dayCount) ? Math.max(0, Math.floor(dayCount)) : 0;
+  return `${days} 天`;
+}
+
+/**
+ * 「近 90 天里，米饭出现了 12 天」——**一句事实陈述**，不是一句评语。
+ *
+ * ⚠️ 绝不可改写成「你摄入了过多糖分」「建议少喝」这类句式（PRD §7 反例）。
+ */
+export function topFoodsAria(name: string, dayCount: number, days: number): string {
+  const window = Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 90;
+  const count = Number.isFinite(dayCount) ? Math.max(0, Math.floor(dayCount)) : 0;
+  return `近 ${window} 天里，${name}出现了 ${count} 天`;
+}
+
+// ---------------------------------------------------------------------------
+// 记录概览（R11.6）
+// 语气规范同 §7：只陈述「有几条、跨度多久」这一事实，
+// **不做任何异常 / 离群值判定**（AC-11.6.7 —— 「异常」本身即评判）。
+// ---------------------------------------------------------------------------
+
+/** 概览各行的中性标签。 */
+export const OVERVIEW_KEY_LABELS: Readonly<Record<RecordOverviewKey, string>> = {
+  weights: '体重',
+  meals: '餐次条目',
+  exercises: '运动',
+  habits: '习惯打卡',
+  water: '饮水',
+  wins: '体重之外的变化',
+};
+
+/**
+ * 「128 条，从 5月2日 到今天」——概览行的**右半段**（不含标签）。
+ *
+ * ⚠️ **刻意不带标签**：概览卡用 `<dl>` 渲染，`<dt>` 已经是标签本身；
+ * 若把整句再塞进 `<dd>`，读屏会读成「体重 / 体重 128 条…」的重复。
+ * 拆成「左标签（`<dt>`）+ 右事实（`<dd>`）」两半，既符合 `dl` 语义，也不重复朗读。
+ *
+ * - `count = 0` → 调用方**整行隐藏**（不显示 0，避免被读成一种成绩）；
+ * - 只有一天记录 → 「就在 5月2日」，不编造跨度；
+ * - 日期缺失 → 只说条数。
+ */
+export function dataOverviewDetail(
+  count: number,
+  firstDate: string | null,
+  lastDate: string | null,
+  format: (dateKey: string) => string,
+): string {
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  if (firstDate === null || lastDate === null) {
+    return `${safeCount} 条`;
+  }
+  if (firstDate === lastDate) {
+    return `${safeCount} 条，就在 ${format(firstDate)}`;
+  }
+  return `${safeCount} 条，从 ${format(firstDate)} 到 ${format(lastDate)}`;
 }
 
 // ---------------------------------------------------------------------------

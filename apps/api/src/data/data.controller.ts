@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 
+import type { DataOverviewResponse } from '@qsh/shared-types';
+
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { DataService, type ImportResult, type WeightImportRow } from './data.service';
@@ -19,6 +21,17 @@ export class DataController {
   @Get('export')
   exportAll(@CurrentUser() userId: number) {
     return this.dataService.exportAll(userId);
+  }
+
+  /**
+   * 记录概览（R11.6 / AC-11.6.6）：各类记录的条数与最早/最晚日期，**只读**。
+   *
+   * ⚠️ 与 `/data/export` 一样是**本地下载链路里的只读 GET**；
+   * 本轮备份链路只有这两个 GET，**没有任何上传类调用**（AC-11.6.9）。
+   */
+  @Get('overview')
+  overview(@CurrentUser() userId: number): Promise<DataOverviewResponse> {
+    return this.dataService.overview(userId);
   }
 
   /** 导入历史体重（`{ csvText }` 或 `{ rows }`）。 */

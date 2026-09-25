@@ -11,6 +11,11 @@ build/
 # 还在构建中的 dist_tmp（历史里因此留下 ~1.5MB 构建产物，共两处）。
 dist_tmp/
 coverage/
+# 带后缀的覆盖率输出（如 `packages/core/coverage-r11x/`）：同样是 istanbul 生成物，不入库
+coverage-*/
+# vitest 临时目录：本机 `TEMP` 需指向仓库内路径才能绕开 EPERM 丢测试文件的问题，
+# 这个目录就是那个临时 `TEMP`，纯运行时产物
+.tmp-vitest/
 *.tsbuildinfo
 
 # env / secrets

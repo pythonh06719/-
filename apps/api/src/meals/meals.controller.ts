@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -17,9 +18,10 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
+import { ReorderMealsDto } from './dto/reorder-meals.dto';
 import { MealsService } from './meals.service';
 import type { DayTotals, MealWriteResult } from './meals.service';
-import type { ListMealsResponse } from '@qsh/shared-types';
+import type { ListMealsResponse, ReorderMealsResponse } from '@qsh/shared-types';
 
 /**
  * 饮食记录控制器（`/api/meals/**`，R3.4 / R3.5 / R3.8 / R3.10）。
@@ -52,6 +54,18 @@ export class MealsController {
   @HttpCode(HttpStatus.OK)
   quickAdd(@CurrentUser() userId: number, @Body() dto: QuickAddDto): Promise<MealWriteResult> {
     return this.mealsService.quickAdd(userId, dto);
+  }
+
+  /**
+   * 餐内排序 / 跨餐移动（R3.8 / AC-3.8.3）。
+   *
+   * `orderedIds` 是**目标餐次的完整期望顺序** —— 上移 / 下移 / 跨餐 / 拖拽
+   * 四种操作共用这一条接口（D-1）。服务端顺序为唯一权威（K13）。
+   */
+  @Patch('reorder')
+  @HttpCode(HttpStatus.OK)
+  reorder(@CurrentUser() userId: number, @Body() dto: ReorderMealsDto): Promise<ReorderMealsResponse> {
+    return this.mealsService.reorder(userId, dto);
   }
 
   /** 删除一条记录。 */

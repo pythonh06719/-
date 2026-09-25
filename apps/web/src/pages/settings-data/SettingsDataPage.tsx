@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -18,11 +18,12 @@ import { downloadExportBundle, downloadTextFile, readTextFile } from '@/lib/down
 import { clearLastBackupAt, daysSinceLastBackup, readLastBackupAt, saveLastBackupAt } from '@/lib/backup';
 import { clearPlateauVisibility } from '@/lib/plateau-visibility';
 import { todayKey } from '@/lib/format';
-import { COPY, lastBackupLabel } from '@/lib/copy';
+import { COPY, backupHintCopy, lastBackupLabel } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
 import { useAuthStore } from '@/lib/auth.store';
 import { clearQueuedRequests, enqueueRequest } from '@/pwa/offline-queue';
 import { toTrendPoints } from '@/lib/trend';
+import DataOverviewCard from './DataOverviewCard';
 
 /**
  * 数据管理（`/settings/data`，PRD §9 / R10 / US-18 / US-19 / TC-39 / TC-40 / TC-41）。
@@ -49,6 +50,17 @@ export default function SettingsDataPage(): ReactElement {
   /** 上次备份时间戳（C6）：初始值从本机 `localStorage` 读取，成功后滚动更新 */
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(() => readLastBackupAt());
   const [backupState, setBackupState] = useState<string | null>(null);
+
+  /**
+   * ≥ 30 天未备份的温和提示（R11.6 / AC-11.6.2）。
+   *
+   * ⚠️ **纯渲染层条件判断**：不注册任何 `setInterval` / Notification / Service Worker 定时触发，
+   * 也不做弹窗与横幅（AC-11.6.3 / NFR-10）。
+   *
+   * ⚠️ 与 `lastBackupLabel` **并存、不合并**：`lastBackupLabel` 是 C6 基座的事实陈述（回归保护），
+   * 本行只是它**下面追加**的一句温和提醒；< 30 天时 `backupHintCopy` 返回 `null`，整行不渲染。
+   */
+  const backupHint = useMemo(() => backupHintCopy(daysSinceLastBackup(lastBackupAt)), [lastBackupAt]);
 
   /** 汇总导出数据：优先服务端，未成功时回退本地缓存（保证导出按钮在离线时也可用）。 */
   const gatherPayload = async (): Promise<ExportJsonPayload> => {
@@ -230,18 +242,34 @@ export default function SettingsDataPage(): ReactElement {
         >
           {COPY.dataBackupButton}
         </button>
+        {/* C6 基座：三态事实陈述（回归保护，AC-11.6.1 —— 只增不删、只加不改） */}
         <p
           data-testid="last-backup"
           className="mt-2 text-xs text-slate-500 dark:text-slate-400"
         >
           {lastBackupLabel(daysSinceLastBackup(lastBackupAt))}
         </p>
+        {/* ≥ 30 天未备份的温和提示（新增，与上面一行**并列**而非替换）。
+            文字色**刻意**与上一行 `last-backup` 保持一致（`slate-500 / dark:slate-400`）：
+            两行是同一段话的上下句，分出两种灰会被读成两个层级；
+            该组色在本卡底色上为 4.76:1（浅）/ 5.71:1（深），满足 WCAG AA 正文标准。 */}
+        {backupHint !== null && (
+          <p
+            data-testid="backup-hint"
+            className="mt-1.5 text-xs text-slate-500 dark:text-slate-400"
+          >
+            {backupHint}
+          </p>
+        )}
         {backupState !== null && (
           <p role="status" aria-live="polite" className="mt-2 text-sm text-brand-700 dark:text-brand-300">
             {backupState}
           </p>
         )}
       </section>
+
+      {/* 记录概览（R11.6 缺口 ②）：只读聚合，`count = 0` 的行由卡内部整行隐藏 */}
+      <DataOverviewCard />
 
       {/* 导入 */}
       <section

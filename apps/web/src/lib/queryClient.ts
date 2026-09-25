@@ -41,7 +41,11 @@ export const queryKeys = {
   foodLiveSearch: (keyword: string) => ['foods', 'live-search', keyword] as const,
   foodCategories: ['foods', 'categories'] as const,
   foodRecent: ['foods', 'recent'] as const,
+  /** 常吃榜（R11.5）：按统计窗口与条数上限分键 */
+  foodTop: (days: number, limit: number) => ['foods', 'top', days, limit] as const,
   foodFavorites: ['foods', 'favorites'] as const,
+  /** 记录概览（R11.6）：只读聚合，不缓存（Q-8） */
+  dataOverview: ['data', 'overview'] as const,
   combos: ['meal-combos'] as const,
   weightTrend: ['weights', 'trend'] as const,
   profile: ['profile'] as const,

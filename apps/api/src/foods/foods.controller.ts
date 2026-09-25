@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
@@ -12,8 +13,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
 
-import type { BarcodeLookupResponse, FoodItem, LiveSearchResponse } from '@qsh/shared-types';
+import type {
+  BarcodeLookupResponse,
+  FoodItem,
+  LiveSearchResponse,
+  TopFoodsResponse,
+} from '@qsh/shared-types';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -63,6 +70,21 @@ export class FoodsController {
   @Get('recent')
   recent(@CurrentUser() userId: number): Promise<FoodItem[]> {
     return this.foodsService.recent(userId);
+  }
+
+  /**
+   * **我的常吃榜**（R11.5 / AC-11.5.8）：近 `days` 天按出现天数降序的前 `limit` 项。
+   *
+   * 与 `recent`（时间倒序去重）**并列存在、互不影响**（D-3）：这里是「频次」口径。
+   * 数据不足时返回 `items: []`，UI 整块隐藏（AC-11.5.2）。
+   */
+  @Get('top')
+  top(
+    @CurrentUser() userId: number,
+    @Query('days', new DefaultValuePipe(String(FREQUENT_FOOD_DEFAULTS.days)), ParseIntPipe) days: number,
+    @Query('limit', new DefaultValuePipe(String(FREQUENT_FOOD_DEFAULTS.limit)), ParseIntPipe) limit: number,
+  ): Promise<TopFoodsResponse> {
+    return this.foodsService.top(userId, days, limit);
   }
 
   /** 收藏列表。 */

@@ -1,16 +1,21 @@
 import { Injectable } from '@nestjs/common';
 
+import { FREQUENT_FOOD_DEFAULTS, rankFrequentFoods } from '@qsh/core';
+import type { FrequentFoodRow } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
   FoodItem,
   LiveSearchResponse,
+  TopFoodItem,
+  TopFoodsResponse,
 } from '@qsh/shared-types';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
 import { toFoodItem } from '../common/mappers/entity.mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { addDays, todayLocalKey } from '../common/utils/date.util';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
 import {
@@ -165,6 +170,100 @@ export class FoodsService {
       }
     }
     return items;
+  }
+
+  /**
+   * **我的常吃榜**（R11.5 / AC-11.5.1）：近 N 天按**出现天数**（distinct `loggedDate`）降序取前 N。
+   *
+   * 全部聚合由 SQL `groupBy` 下推（K15）：最小投影为
+   * `(foodItemId, customName, loggedDate)` 三元组 —— 「出现天数」在数学上**无法**
+   * 用比「（身份候选, 日期）二元组」更小的数据算出，这是最小必要投影，不是妥协（D-5）。
+   * 排名与身份归一交给 `@qsh/core` 的 `rankFrequentFoods`，与前端展示同一口径（NFR-11）。
+   *
+   * ⚠️ 与 `recent()`（时间倒序去重，服务「最近」tab）**语义并列、互不影响**：
+   * 改 `recent()` 会造成回归，故本轮另开 `/foods/top`（D-3）。
+   *
+   * 数据不足（出现天数 < 3）→ `items: []`（**不是 null、不是缺字段**，UI 整块隐藏）。
+   *
+   * @param days 统计窗口（天，含今天），1–365
+   * @param limit 返回条数上限，1–50
+   */
+  async top(
+    userId: number,
+    days: number = FREQUENT_FOOD_DEFAULTS.days,
+    limit: number = FREQUENT_FOOD_DEFAULTS.limit,
+  ): Promise<TopFoodsResponse> {
+    if (!Number.isFinite(days) || days < 1 || days > 365) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '统计天数应在 1 到 365 之间', {
+        days: '统计天数应在 1 到 365 之间',
+      });
+    }
+    if (!Number.isFinite(limit) || limit < 1 || limit > 50) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '返回条数应在 1 到 50 之间', {
+        limit: '返回条数应在 1 到 50 之间',
+      });
+    }
+
+    const windowDays = Math.floor(days);
+    const to = todayLocalKey();
+    const from = addDays(to, -(windowDays - 1));
+
+    // ① 最小投影：(身份候选, 日期) 二元组
+    const grouped = await this.prisma.mealLog.groupBy({
+      by: ['foodItemId', 'customName', 'loggedDate'],
+      where: { userId, loggedDate: { gte: from, lte: to } },
+      orderBy: [{ loggedDate: 'asc' }, { foodItemId: 'asc' }, { customName: 'asc' }],
+    });
+
+    // ② 一次 `in` 查询反查显示名，避免 N+1（D-6）
+    const ids = [...new Set(grouped.map((row) => row.foodItemId).filter((id): id is number => id !== null))];
+    const nameById = new Map<number, string>();
+    if (ids.length > 0) {
+      const rows = await this.prisma.foodItem.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      });
+      for (const row of rows) {
+        nameById.set(row.id, row.name);
+      }
+    }
+
+    // ③ 组装最小投影行，交给 core 排名
+    const projection: FrequentFoodRow[] = grouped.map((row) => ({
+      foodItemId: row.foodItemId,
+      customName: row.customName,
+      foodName: row.foodItemId === null ? null : (nameById.get(row.foodItemId) ?? null),
+      loggedDate: row.loggedDate,
+    }));
+
+    const ranked = rankFrequentFoods(projection, {
+      days: windowDays,
+      limit: Math.floor(limit),
+      minDays: FREQUENT_FOOD_DEFAULTS.minDays,
+    });
+
+    if (ranked.length === 0) {
+      return { days: windowDays, items: [] };
+    }
+
+    // ④ 一次取完整条目，供 Composer 复用既有「份量确认 → 确认记录」路径
+    const resultIds = [...new Set(ranked.map((item) => item.foodItemId).filter((id): id is number => id !== null))];
+    const foodById = new Map<number, FoodItem>();
+    if (resultIds.length > 0) {
+      const rows = await this.prisma.foodItem.findMany({ where: { id: { in: resultIds } } });
+      for (const row of rows) {
+        foodById.set(row.id, toFoodItem(row));
+      }
+    }
+
+    const items: TopFoodItem[] = ranked.map((item) => ({
+      name: item.name,
+      dayCount: item.dayCount,
+      foodItemId: item.foodItemId,
+      food: item.foodItemId === null ? null : (foodById.get(item.foodItemId) ?? null),
+    }));
+
+    return { days: windowDays, items };
   }
 
   /** 收藏列表。 */

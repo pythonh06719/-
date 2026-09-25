@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { round1 } from '@qsh/core';
+import { applyReorder, round1 } from '@qsh/core';
 import type {
   FoodItem,
   ListMealsResponse,
@@ -9,18 +9,20 @@ import type {
   MealGroup,
   MealLog,
   MealType,
+  ReorderMealsResponse,
 } from '@qsh/shared-types';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
 import { toFoodItem, toMealCombo, toMealLog } from '../common/mappers/entity.mapper';
-import { todayLocalKey } from '../common/utils/date.util';
+import { isValidLocalDateKey, todayLocalKey } from '../common/utils/date.util';
 import { FoodsService } from '../foods/foods.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyComboDto, ComboItemDto, CreateComboDto } from './dto/combo.dto';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
+import { ReorderMealsDto } from './dto/reorder-meals.dto';
 
 /** 当日营养合计。 */
 export interface DayTotals {
@@ -43,6 +45,17 @@ export interface MealWriteResult {
 export interface ComboApplyResult {
   entries: MealLog[];
   dayTotals: DayTotals;
+}
+
+/**
+ * `PATCH /meals/reorder` 的最小输入行（供 `applyReorder` 消费）。
+ *
+ * 只投影 `id / mealType / sortOrder` —— 不把整行拉进内存。
+ */
+interface ReorderRow {
+  id: number;
+  mealType: string;
+  sortOrder: number;
 }
 
 /** 份量解析结果。 */
@@ -160,6 +173,8 @@ export class MealsService {
         servingQty: dto.servingQty,
       });
       const nutrients = this.computeNutrients(food, amount.grams);
+      // AC-3.8.5：sortOrder 一律由服务端分配（本用户·本日·本餐 max + 1），排在最后。
+      const sortOrder = await this.nextSortOrder(userId, loggedDate, dto.mealType);
 
       const row = await this.prisma.mealLog.create({
         data: {
@@ -179,6 +194,7 @@ export class MealsService {
           sodiumMg: nutrients.sodiumMg,
           source: dto.source ?? 'search',
           note: dto.note ?? null,
+          sortOrder,
         },
       });
 
@@ -192,6 +208,8 @@ export class MealsService {
           customKcal: '请填写热量',
         });
       }
+      // AC-3.8.5：同上，服务端分配 sortOrder。
+      const sortOrder = await this.nextSortOrder(userId, loggedDate, dto.mealType);
       const row = await this.prisma.mealLog.create({
         data: {
           userId,
@@ -208,6 +226,7 @@ export class MealsService {
           carbG: null,
           source: 'quick_add',
           note: dto.note ?? null,
+          sortOrder,
         },
       });
       return { entry: toMealLog(row), dayTotals: await this.dayTotals(userId, loggedDate) };
@@ -235,6 +254,8 @@ export class MealsService {
       throw new ApiException(400, ERROR_CODES.VALID_INPUT, '请填写名称与热量', fields);
     }
 
+    // AC-3.8.5：同上，服务端分配 sortOrder。
+    const sortOrder = await this.nextSortOrder(userId, loggedDate, dto.mealType);
     const row = await this.prisma.mealLog.create({
       data: {
         userId,
@@ -251,10 +272,124 @@ export class MealsService {
         carbG: dto.carbG ?? null,
         source: 'quick_add',
         note: dto.note ?? null,
+        sortOrder,
       },
     });
 
     return { entry: toMealLog(row), dayTotals: await this.dayTotals(userId, loggedDate) };
+  }
+
+  /**
+   * 餐内排序 / 跨餐移动（R3.8 / AC-3.8.3 / AC-3.8.4）。
+   *
+   * 语义：`orderedIds` = **目标餐次的完整期望顺序**，列出的记录被置为 `mealType`
+   * 并按序赋 `sortOrder = index`。上移 / 下移 / 跨餐 / 拖拽四种操作共用本接口（D-1）。
+   *
+   * 错误分支（**顺序固定，不可调换**）：
+   * - 完全不存在的 id → 400 `E_VALID_INPUT`，`fields.orderedIds` 列出具体 id；
+   * - 存在但属于他人 → 404 `E_NOTFOUND_MEAL`（不暴露他人资源存在性）；
+   * - 存在且属于本人但不在这一天 → 400 `E_VALID_INPUT`。
+   *
+   * 幂等：同一 payload 重复提交结果一致（compact 归零归一，D-2）。
+   */
+  async reorder(userId: number, dto: ReorderMealsDto): Promise<ReorderMealsResponse> {
+    if (!isValidLocalDateKey(dto.loggedDate)) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '日期格式应为 YYYY-MM-DD', {
+        loggedDate: '日期格式应为 YYYY-MM-DD',
+      });
+    }
+
+    const uniqueIds: number[] = [...new Set(dto.orderedIds ?? [])];
+    if (uniqueIds.length === 0) {
+      return { updated: [] };
+    }
+
+    // 4. 本人 · 本日的行（三要素同时约束）
+    const mine = await this.prisma.mealLog.findMany({
+      where: { userId, loggedDate: dto.loggedDate, id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    const mineIds = new Set(mine.map((row) => row.id));
+
+    // 5a. 全表都查不到的 id → 400（列出具体 id）
+    const missing = uniqueIds.filter((id) => !mineIds.has(id));
+    if (missing.length > 0) {
+      const existing = await this.prisma.mealLog.findMany({
+        where: { id: { in: missing } },
+        select: { id: true, userId: true, loggedDate: true },
+      });
+      const existingById = new Map(existing.map((row) => [row.id, row]));
+
+      // 5b. 存在但属于他人 → 404（不暴露他人资源）
+      const foreign = missing.filter((id) => {
+        const row = existingById.get(id);
+        return row !== undefined && row.userId !== userId;
+      });
+      if (foreign.length > 0) {
+        throw new ApiException(404, ERROR_CODES.NOTFOUND_MEAL, '没有找到这条记录');
+      }
+
+      // 5c. 属于本人但不在这一天 → 400，说明该条不在这一天
+      const otherDay = missing.filter((id) => {
+        const row = existingById.get(id);
+        return row !== undefined && row.userId === userId && row.loggedDate !== dto.loggedDate;
+      });
+      if (otherDay.length > 0) {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '有几条记录不在这一天', {
+          orderedIds: `id 为 ${otherDay.join('、')} 的记录不在这一天`,
+        });
+      }
+
+      // 剩下的是「全表都不存在」的 id
+      const absent = missing.filter((id) => !existingById.has(id));
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '没有找到这几条记录', {
+        orderedIds: `没有找到 id 为 ${absent.join('、')} 的记录`,
+      });
+    }
+
+    // 6. 取出该用户该日**全部**记录（供 compact 用；单日数据量恒定很小）
+    const allRows = await this.prisma.mealLog.findMany({
+      where: { userId, loggedDate: dto.loggedDate },
+      select: { id: true, mealType: true, sortOrder: true },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    });
+
+    // 7. 纯函数计算新映射（core 是唯一真源，前端乐观更新用同一个函数）
+    const items = allRows.map(
+      (row): { id: number; mealType: MealType; sortOrder: number } => ({
+        id: row.id,
+        mealType: row.mealType as MealType,
+        sortOrder: row.sortOrder,
+      }),
+    );
+    const next = applyReorder(items, dto.mealType, uniqueIds, { compact: true });
+
+    // 8. 只把**实际发生变化**的行放进事务（避免无谓写入与 updatedAt 抖动）
+    const currentById = new Map(allRows.map((row) => [row.id, row]));
+    const changed = next.filter((row) => {
+      const current = currentById.get(row.id);
+      return current === undefined || current.mealType !== row.mealType || current.sortOrder !== row.sortOrder;
+    });
+
+    if (changed.length > 0) {
+      await this.prisma.$transaction(
+        changed.map((row) =>
+          this.prisma.mealLog.update({
+            where: { id: row.id },
+            data: { mealType: row.mealType, sortOrder: row.sortOrder },
+          }),
+        ),
+      );
+    }
+
+    // 9. 返回全部受影响行的新映射（含被 compact 牵连的其它餐次）
+    return {
+      updated: changed.map((row) => ({
+        id: row.id,
+        mealType: row.mealType,
+        sortOrder: row.sortOrder,
+      })),
+    };
   }
 
   /** 删除一条记录（越权 = 404，不泄露存在性）。 */
@@ -326,8 +461,12 @@ export class MealsService {
     const mealType = dto.mealType ?? (combo.mealType as MealType);
     const items = [...combo.items].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
 
+    // AC-3.8.5：套餐从「本餐当前最大值 + 1」起按明细顺序编号，
+    // **不再直接用模板的 `item.sortOrder`**（模板序号与当日实际序列无关，会把新记录插到最前）。
+    const baseSortOrder = await this.nextSortOrder(userId, loggedDate, mealType);
+
     const created = await this.prisma.$transaction(
-      items.map((item) =>
+      items.map((item, index) =>
         this.prisma.mealLog.create({
           data: {
             userId,
@@ -344,7 +483,7 @@ export class MealsService {
             carbG: item.carbG,
             source: 'combo',
             comboId: combo.id,
-            sortOrder: item.sortOrder,
+            sortOrder: baseSortOrder + index,
           },
         }),
       ),
@@ -359,6 +498,26 @@ export class MealsService {
   // -------------------------------------------------------------------------
   // 内部工具
   // -------------------------------------------------------------------------
+
+  /**
+   * **服务端单一入口**：取「本用户 · 本日 · 本餐」当前最大 `sortOrder` + 1（AC-3.8.5 / K14）。
+   *
+   * ⚠️ 这是本轮最容易漏的一处：`sort_order` 列、实体字段、读取时的双层 `orderBy`
+   * 全都是现成的，看起来"已经支持排序了"，但服务端新增时从不分配（Prisma `@default(0)`），
+   * 前端 `DiaryPage.tsx` 也硬编码 `sortOrder: 0`。只要漏掉这一改，
+   * 用户**拖完顺序之后**新记的一条就会插到最前面 —— 全新用户测试完全测不出来。
+   *
+   * `create()` / `quickAdd()` / `applyCombo()` **三处**都必须调用本方法。
+   *
+   * @returns 新的排序值（空餐时为 0）
+   */
+  private async nextSortOrder(userId: number, loggedDate: string, mealType: MealType | string): Promise<number> {
+    const agg = await this.prisma.mealLog.aggregate({
+      where: { userId, loggedDate, mealType },
+      _max: { sortOrder: true },
+    });
+    return (agg._max.sortOrder ?? -1) + 1;
+  }
 
   /** 解析份量：显式克数 > 份量单位换算 > 默认份量 > 100g。 */
   private resolveAmount(

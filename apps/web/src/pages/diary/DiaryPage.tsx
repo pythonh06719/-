@@ -6,22 +6,27 @@ import type {
   ListMealsResponse,
   MealGroup,
   MealLog,
+  MealType,
   Paginated,
+  ReorderMealsRequest,
+  ReorderMealsResponse,
   WeightLog,
   WeightTrendResponse,
 } from '@qsh/shared-types';
+import { applyReorder } from '@qsh/core';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, todayKey } from '@/lib/format';
 import { normalizeTrendResponse } from '@/lib/trend';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
-import { COPY } from '@/lib/copy';
-import { emojiForFoodName } from '@/lib/food-emoji';
+import { COPY, mealMovedLine } from '@/lib/copy';
 import EmptyState from '@/components/common/EmptyState';
 import { MEAL_BUDGET_SHARE, type ThemeBudget } from '@/theme/tokens';
 import MealComposer from './MealComposer';
 import type { ComposerSubmit } from './MealComposer';
+import MealItemRow from './MealItemRow';
+import { usePointerReorder } from './usePointerReorder';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, computeKcalFromFood, sumKcal } from './meal-utils';
 import { enqueueRequest } from '@/pwa/offline-queue';
 
@@ -52,6 +57,67 @@ function readDailyBudget(): number {
   return budget === null || !Number.isFinite(budget.intakeRecommended) ? 0 : budget.intakeRecommended;
 }
 
+/**
+ * 拖拽引导条的「仅一次」本机键（Q-7）。
+ *
+ * 复用 `lib/plateau-visibility.ts` 的本地持久化思路（纯 UI 偏好，非用户数据），
+ * **刻意不用 `qsh:cache:*` 前缀** —— 避免被 `cacheClearAll()` 顺带清掉。
+ */
+const REORDER_GUIDE_KEY = 'mealReorderGuideDismissed';
+
+function readGuideDismissed(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  try {
+    return window.localStorage.getItem(REORDER_GUIDE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function dismissGuide(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(REORDER_GUIDE_KEY, '1');
+  } catch {
+    // 隐私模式 / 容量超限：不影响主流程
+  }
+}
+
+/**
+ * 把 `applyReorder`（`@qsh/core`）算出的映射套回分组结构。
+ *
+ * ⚠️ 前端乐观更新**必须**与服务端用同一个纯函数，否则两端的顺序会漂移（K13 / NFR-11）。
+ */
+function applyMapping(
+  groups: readonly MealGroup[],
+  mapping: ReadonlyMap<number, { mealType: MealType; sortOrder: number }>,
+): MealGroup[] {
+  const all = groups.flatMap((group) => group.logs);
+  const buckets = new Map<MealType, MealLog[]>();
+  for (const log of all) {
+    const next = mapping.get(log.id);
+    const mealType = next?.mealType ?? log.mealType;
+    const sortOrder = next?.sortOrder ?? log.sortOrder;
+    const bucket = buckets.get(mealType);
+    const entry = { ...log, mealType, sortOrder };
+    if (bucket === undefined) {
+      buckets.set(mealType, [entry]);
+    } else {
+      bucket.push(entry);
+    }
+  }
+  return MEAL_TYPE_ORDER.map((mealType) => {
+    const logs = (buckets.get(mealType) ?? [])
+      .slice()
+      .sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id);
+    return { mealType, logs, totalKcal: sumKcal(logs) };
+  });
+}
+
 /** 把接口返回的 groups 归一为「四个餐次都有」的结构。 */
 function normalizeGroups(response: ListMealsResponse | undefined): MealGroup[] {
   const byType = new Map<string, MealLog[]>();
@@ -71,6 +137,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   const [composerMeal, setComposerMeal] = useState<MealGroup['mealType'] | null>(null);
   const [announcement, setAnnouncement] = useState<string>('');
   const [notice, setNotice] = useState<string | null>(null);
+  /** 拖拽引导条（首次进入、可关闭，仅一次）。 */
+  const [guideDismissed, setGuideDismissed] = useState<boolean>(() => readGuideDismissed());
 
   const mealsQuery = useQuery({
     queryKey: queryKeys.meals(date),
@@ -126,6 +194,103 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       await invalidate();
     },
     onError: () => setNotice('暂时没能删除这条记录，稍后再试一次就好'),
+  });
+
+  /**
+   * 提交一次排序 / 跨餐移动（R3.8 / AC-3.8.9）。
+   *
+   * 流程：**乐观更新 → PATCH → 成功 invalidate / 失败或离线入队 + 回滚 + 中性提示**。
+   * 乐观更新用 `@qsh/core` 的 `applyReorder`，与服务端同一个纯函数（K13）。
+   *
+   * ⚠️ 失败提示必须是中性陈述（「这次没有移动成功，稍后再试试」）：
+   * 不以「失败」作标题、不用红色警示语义（PRD §7）。
+   */
+  const commitReorder = async (orderedIds: number[], mealType: MealType): Promise<void> => {
+    const before = groups;
+    const items = before.flatMap((group) =>
+      group.logs.map((log) => ({ id: log.id, mealType: log.mealType, sortOrder: log.sortOrder })),
+    );
+    const next = applyReorder(items, mealType, orderedIds, { compact: true });
+    const mapping = new Map(next.map((row) => [row.id, { mealType: row.mealType, sortOrder: row.sortOrder }]));
+
+    const optimistic: ListMealsResponse = {
+      date,
+      groups: applyMapping(before, mapping),
+      totalKcal: 0,
+    };
+    optimistic.totalKcal = optimistic.groups.reduce((total, group) => total + group.totalKcal, 0);
+
+    // ① 乐观更新（立即重排）
+    cacheSet(CACHE_KEYS.meals(date), optimistic);
+    queryClient.setQueryData(queryKeys.meals(date), optimistic);
+    setNotice(null);
+
+    const body: ReorderMealsRequest = { loggedDate: date, mealType, orderedIds };
+    try {
+      // ② 提交；成功后以**服务端顺序**为准（K13）
+      await api.patch<ReorderMealsResponse>('/meals/reorder', body);
+      setAnnouncement(mealMovedLine(MEAL_TYPE_LABELS[mealType]));
+      await invalidate();
+    } catch {
+      // ③ 失败 / 离线：入队 → 回滚 → 中性提示
+      await enqueueRequest({ path: '/meals/reorder', method: 'PATCH', body });
+      cacheSet(CACHE_KEYS.meals(date), {
+        date,
+        groups: before as MealGroup[],
+        totalKcal: before.reduce((total, group) => total + group.totalKcal, 0),
+      });
+      queryClient.setQueryData(queryKeys.meals(date), {
+        date,
+        groups: before as MealGroup[],
+        totalKcal: before.reduce((total, group) => total + group.totalKcal, 0),
+      });
+      setNotice(COPY.reorderFailed);
+    }
+  };
+
+  /** 本餐内当前顺序（供上移 / 下移 / 拖拽计算完整期望顺序）。 */
+  const idsOf = (mealType: MealType): number[] =>
+    (groups.find((group) => group.mealType === mealType)?.logs ?? []).map((log) => log.id);
+
+  /** 上移：与本餐前一条交换 → 提交本餐完整顺序。 */
+  const handleMoveUp = (id: number): void => {
+    const mealType = groups.find((group) => group.logs.some((log) => log.id === id))?.mealType;
+    if (mealType === undefined) return;
+    const ids = idsOf(mealType);
+    const index = ids.indexOf(id);
+    if (index <= 0) return;
+    const nextIds = [...ids];
+    const prev = nextIds[index - 1];
+    if (prev === undefined) return;
+    nextIds[index - 1] = id;
+    nextIds[index] = prev;
+    void commitReorder(nextIds, mealType);
+  };
+
+  /** 下移：与本餐后一条交换 → 提交本餐完整顺序。 */
+  const handleMoveDown = (id: number): void => {
+    const mealType = groups.find((group) => group.logs.some((log) => log.id === id))?.mealType;
+    if (mealType === undefined) return;
+    const ids = idsOf(mealType);
+    const index = ids.indexOf(id);
+    if (index < 0 || index >= ids.length - 1) return;
+    const nextIds = [...ids];
+    const next = nextIds[index + 1];
+    if (next === undefined) return;
+    nextIds[index + 1] = id;
+    nextIds[index] = next;
+    void commitReorder(nextIds, mealType);
+  };
+
+  /** 移动到某餐：**追加到目标餐末尾**（Q-1：简单、可预期，不做「智能插位」）。 */
+  const handleMoveTo = (id: number, target: MealType): void => {
+    void commitReorder([...idsOf(target), id], target);
+  };
+
+  // 手写 Pointer Events 拖拽（**可选增强**：不挂载时降级控件照常工作）
+  const reorder = usePointerReorder<MealType>({
+    groups: groups.map((group) => ({ mealType: group.mealType, ids: group.logs.map((log) => log.id) })),
+    onCommit: (orderedIds, mealType) => void commitReorder(orderedIds, mealType),
   });
 
   /** 记录成功后：本地乐观更新缓存 + 播报（离线时也立即反馈）。 */
@@ -210,6 +375,12 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         method: 'POST',
         body: request,
       });
+      // AC-3.8.5：本地乐观条目也按「本餐当前最大值 + 1」排在最后
+      // （服务端是唯一权威，这里只是让离线时的展示顺序与上线后一致）。
+      const localMax = (groups.find((group) => group.mealType === mealType)?.logs ?? []).reduce(
+        (max, log) => Math.max(max, log.sortOrder),
+        -1,
+      );
       applyOptimistic(mealType, {
         id: Date.now(),
         userId: 0,
@@ -229,7 +400,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         source: payload.kind === 'quick' ? 'quick_add' : (payload.source ?? 'search'),
         comboId: null,
         note: null,
-        sortOrder: 0,
+        sortOrder: localMax + 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -340,6 +511,29 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         )}
       </div>
 
+      {/* 拖拽引导（R3.8）：**首次进入显示一次**，可关闭。
+          纯渲染层 + 本地一个布尔偏好，不注册任何定时器 / 后台任务。 */}
+      {!guideDismissed && !isEmptyDay && (
+        <div
+          role="note"
+          data-testid="reorder-guide"
+          className="flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+        >
+          <span>{COPY.reorderGuide}</span>
+          <button
+            type="button"
+            onClick={() => {
+              dismissGuide();
+              setGuideDismissed(true);
+            }}
+            aria-label={COPY.reorderGuideAriaClose}
+            className="qsh-touch-target shrink-0 rounded-lg px-2 text-xs text-brand-700 dark:text-brand-200"
+          >
+            知道了
+          </button>
+        </div>
+      )}
+
       {/* 空状态（共用组件第一处接入）：品牌花替代原先的 emoji 插画位，
           文案保持原样不动（语气规范由 copy.ts 统一把关） */}
       {isEmptyDay && <EmptyState title={COPY.emptyTodayDiary} />}
@@ -360,8 +554,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         return (
           <section
             key={group.mealType}
+            ref={reorder.setZoneRef(group.mealType)}
+            data-meal-type={group.mealType}
             aria-label={MEAL_TYPE_LABELS[group.mealType]}
-            className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+            className={[
+              'qsh-surface rounded-2xl p-5 transition dark:bg-slate-800 dark:ring-slate-700',
+              // 落区高亮：环色需 ≥3:1（WCAG 1.4.11）—— 白底用 brand-500（3.34:1）、深底用 brand-400（6.42:1）
+              reorder.targetMealType === group.mealType ? 'ring-2 ring-brand-500 dark:ring-brand-400' : '',
+            ].join(' ')}
           >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
@@ -382,38 +582,31 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               </p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {group.logs.map((log) => (
-                  <li
+                {group.logs.map((log, index) => (
+                  <MealItemRow
                     key={log.id}
-                    className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 ring-1 ring-brand-100 dark:ring-slate-700"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span aria-hidden="true" className="text-lg">
-                        {emojiForFoodName(log.customName)}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm text-slate-800 dark:text-slate-100">
-                          {log.customName ?? `食物 #${log.foodItemId ?? '—'}`}
-                        </p>
-                        <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
-                          {toDisplayEnergy(log.kcal, unit)} {energyLabel(unit)}
-                          {log.grams !== null ? ` · ${log.grams}g` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof log.id === 'number' && log.id > 0) {
-                          remove.mutate(log.id);
-                        }
-                      }}
-                      className="qsh-touch-target shrink-0 rounded-lg px-3 text-xs text-slate-500 hover:text-coral-600 dark:text-slate-400"
-                      aria-label={`删除 ${log.customName ?? '这条记录'}`}
-                    >
-                      删除
-                    </button>
-                  </li>
+                    log={log}
+                    name={log.customName ?? `食物 #${log.foodItemId ?? '—'}`}
+                    kcalLabel={`${toDisplayEnergy(log.kcal, unit)} ${energyLabel(unit)}`}
+                    gramsLabel={log.grams !== null ? `${log.grams}g` : null}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < group.logs.length - 1}
+                    otherMeals={MEAL_TYPE_ORDER.filter((type) => type !== group.mealType).map((type) => ({
+                      mealType: type,
+                      label: MEAL_TYPE_LABELS[type],
+                    }))}
+                    onRemove={(id) => {
+                      if (typeof id === 'number' && id > 0) {
+                        remove.mutate(id);
+                      }
+                    }}
+                    onMoveUp={handleMoveUp}
+                    onMoveDown={handleMoveDown}
+                    onMoveTo={handleMoveTo}
+                    onDragHandlePointerDown={reorder.startDrag}
+                    dragging={reorder.draggingId === log.id}
+                    itemRef={reorder.setItemRef(log.id)}
+                  />
                 ))}
               </ul>
             )}

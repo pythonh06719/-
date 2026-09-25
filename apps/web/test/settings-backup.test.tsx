@@ -77,8 +77,20 @@ describe('SettingsDataPage 备份（C6）', () => {
     });
 
     // 触发：请求的是服务端权威导出端点
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/api/data/export');
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/api/data/export'))).toBe(true);
+
+    /**
+     * AC-11.6.9 网络请求快照：备份链路**只允许 GET**，且只有
+     * `GET /data/export`（本页既有的权威快照）与 `GET /data/overview`
+     * （R11.6 新增的只读记录概览）两个端点 —— **没有任何上传类调用**。
+     */
+    for (const call of fetchMock.mock.calls) {
+      const init = call[1] as { method?: string } | undefined;
+      expect(init?.method ?? 'GET').toBe('GET');
+      const url = String(call[0]);
+      expect(url.includes('/api/data/export') || url.includes('/api/data/overview')).toBe(true);
+    }
 
     // 下载文件的形状：一个带日期的 JSON，内容是服务端返回的载荷
     const file = (downloadTextFile as unknown as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {

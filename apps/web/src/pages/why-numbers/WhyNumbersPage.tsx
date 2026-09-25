@@ -653,6 +653,175 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑩ 餐次顺序（R3.8）：新增的「顺序」必须可解释（NFR-11） */}
+      <section
+        aria-labelledby="why-meal-order-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-meal-order-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑩ 餐次里的顺序是怎么定的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          一餐里的条目可以按你实际吃的顺序排，也能整条挪到别的餐。
+          顺序只是「摆放位置」，规则都在下面。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="存在哪儿"
+            value="sort_order（0 开始的小整数）"
+            hint="一餐内从 0 排到 n-1"
+          />
+          <DerivationRow
+            term="新增记录排在哪"
+            value="本餐当前最大值 + 1"
+            hint="新记的一条总是排在最后，不会插到最前面"
+          />
+          <DerivationRow
+            term="读取时的排序"
+            value="sortOrder 升序，再按 id 升序"
+            hint="顺序完全确定，不会因为刷新而跳动"
+          />
+          <DerivationRow
+            term="拖动 / 上移 / 下移 / 移到某餐"
+            value="只改 meal_type 与 sort_order"
+            hint="四种操作走同一条接口"
+          />
+          <DerivationRow
+            term="移动会不会改热量"
+            value="不会"
+            hint="kcal / 蛋白质 / 脂肪 / 碳水一律不变、不重算"
+          />
+          <DerivationRow
+            term="以谁为准"
+            value="服务端顺序"
+            hint="前端先乐观更新，重新拉取后一律以服务端为准"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么拖来拖去不会改变热量</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              顺序是「你记得的先后」，热量是「那一条记了多少」。把番茄炒蛋从午餐挪到加餐，
+              它还是那条番茄炒蛋 —— 我们只是把它换个位置摆，不去重新算它。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不用拖动也能完成同样的操作</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              长按拖动在触屏和读屏上不一定顺手，所以每条都另配了「上移 / 下移 / 移动到某餐」三个按钮，
+              效果和拖动完全一样。拖动只是一个可选项，不是唯一办法。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          顺序只影响展示的先后，不影响任何热量、营养与预算数字 —— 也不参与任何评价。
+        </p>
+      </section>
+
+      {/* ⑪ 常吃榜（R11.5） */}
+      <section
+        aria-labelledby="why-top-foods-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-top-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑪ 常吃榜是怎么排出来的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          「你常吃的」是你自己记出来的结果：不猜、不推荐、不评价，只把你这段时间出现得最多的几样列出来。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="时间窗" value="近 90 天，含今天" />
+          <DerivationRow
+            term="怎么算「同一种」"
+            value="归一化显示名称优先"
+            hint="名称缺失时回落食物库 id；库内条目与同名快加条目合并为同一种"
+          />
+          <DerivationRow
+            term="计数口径"
+            value="出现天数，不是出现次数"
+            hint="同一天记两次只算 1 天 —— 「常」说的是日子"
+          />
+          <DerivationRow term="最低门槛" value="出现 ≥ 3 天" hint="不足 3 天整块不显示" />
+          <DerivationRow term="展示上限" value="12 条" />
+          <DerivationRow term="并列时怎么排" value="最近出现过的排在前面" hint="再并列按名称定序，结果不会跳动" />
+          <DerivationRow term="排序依据" value="只有频次" hint="不含热量、不含营养素、不含任何健康度" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么算「天数」而不是「次数」</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              一天里喝了两次牛奶，说「喝过 2 次」听起来多，说「有 1 天喝了」才是它真实的日常程度。
+              我们要描述的是「它在你生活里出现的日子有多密」，不是那一条记了几次。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不给它配任何评价</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              排名只按频次 —— 它不代表营养、不代表健康，也不是一份「该少吃什么」的清单。
+              榜上出现奶茶只是说明你这阵子常喝，仅此而已。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          榜单只陈述频次，不评判食物，也不参与任何热量或目标的判断。
+        </p>
+      </section>
+
+      {/* ⑫ 备份提醒与记录概览（R11.6） */}
+      <section
+        aria-labelledby="why-backup-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 id="why-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑫ 备份提醒与记录概览
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          「多久没备份」和「我到底记了多少」这两个数字，口径都在下面 ——
+          它们只是陈述，不是催你做事。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="上次备份存在哪儿"
+            value="本机 localStorage 的 lastBackupAt"
+            hint="一个时间戳，不上传、不参与账号数据"
+          />
+          <DerivationRow
+            term="天数怎么算"
+            value="先按本地时区折成日期键，再算日历差"
+            hint="不直接截 ISO 的 UTC 日期部分，否则「今天备份」会被误判成「昨天」"
+          />
+          <DerivationRow term="提示阈值" value="≥ 30 天出现一行，≥ 90 天换一档说法" hint="< 30 天不提示" />
+          <DerivationRow term="提示出现在哪" value="只在「数据管理」页的备份区块里" hint="不弹窗、不推送、不定时触发" />
+          <DerivationRow
+            term="记录概览的条数"
+            value="各表的行数"
+            hint="体重 / 餐次条目 / 运动 / 习惯打卡 / 饮水"
+          />
+          <DerivationRow term="记录概览的跨度" value="最早与最晚的记录日期" hint="某项一条都没有时整行隐藏" />
+          <DerivationRow term="备份文件去哪了" value="只在本机生成一个文件" hint="不上传任何地方" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不做定时提醒</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              备份是你想起来的事，不是我们替你安排的事。所以只有你打开「数据管理」页时才会看到那一行 ——
+              没有弹窗、没有通知、没有后台任务，也不会在你没打开应用的时候冒出来。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不做「异常记录」检测</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              「异常」本身就是一个评判 —— 它暗示你的记录错了。而定义什么叫异常需要阈值，
+              任何阈值都会变成你看不见的隐性标准。所以这里只陈述事实：记了多少条、跨度多久，
+              至于哪条记录对不对，判断权留给你。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          备份全程只在本机生成文件，不经过任何第三方；记录概览只做陈述，不做任何异常判定。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

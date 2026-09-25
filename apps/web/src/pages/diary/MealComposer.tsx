@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
@@ -9,11 +10,13 @@ import type {
   MealComboWithItems,
   MealType,
   SearchFoodsResponse,
+  TopFoodItem,
+  TopFoodsResponse,
 } from '@qsh/shared-types';
 import { ApiClientError, api } from '@/lib/api';
 import BarcodeScanner from '@/components/common/BarcodeScanner';
 import { queryKeys } from '@/lib/queryClient';
-import { COPY } from '@/lib/copy';
+import { COPY, topFoodDaysLabel, topFoodsAria } from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
@@ -47,11 +50,19 @@ export interface MealComposerProps {
   onSubmit: (payload: ComposerSubmit) => Promise<void>;
 }
 
-type TabKey = 'search' | 'recent' | 'favorite' | 'quick' | 'combo';
+type TabKey = 'search' | 'recent' | 'top' | 'favorite' | 'quick' | 'combo';
+
+/** 常吃榜（R11.5）的统计窗口与展示上限（服务端常量，不开放给用户配置，Q-3）。 */
+const TOP_DAYS = FREQUENT_FOOD_DEFAULTS.days;
+const TOP_LIMIT = FREQUENT_FOOD_DEFAULTS.limit;
+/** 搜索空态里置顶展示的条数（AC-11.5.6）。 */
+const TOP_IN_EMPTY_STATE = 5;
 
 const TABS: ReadonlyArray<{ key: TabKey; label: string }> = [
   { key: 'search', label: '搜索' },
   { key: 'recent', label: '最近' },
+  // 常吃榜：位置在「最近」之后（AC-11.5.5）
+  { key: 'top', label: COPY.topFoodsTab },
   { key: 'favorite', label: '收藏' },
   { key: 'quick', label: '快加' },
   { key: 'combo', label: '套餐' },
@@ -105,6 +116,17 @@ export default function MealComposer({
     enabled: tab === 'recent',
   });
 
+  /**
+   * 常吃榜（R11.5 / AC-11.5.8）：`GET /foods/top`，与 `recent` / `favorites` **隔离**的独立查询键。
+   *
+   * 搜索 tab 下也会请求 —— 供**搜索空态置顶**使用（AC-11.5.6）。
+   */
+  const topQuery = useQuery({
+    queryKey: queryKeys.foodTop(TOP_DAYS, TOP_LIMIT),
+    queryFn: () => api.get<TopFoodsResponse>('/foods/top', { days: TOP_DAYS, limit: TOP_LIMIT }),
+    enabled: tab === 'top' || tab === 'search',
+  });
+
   const favoriteQuery = useQuery({
     queryKey: queryKeys.foodFavorites,
     queryFn: () => api.get<FoodItem[]>('/foods/favorites'),
@@ -122,6 +144,50 @@ export default function MealComposer({
       setNote('这部分内容暂时取不到，先用「快加」也能记下这一餐');
     }
   }, [searchQuery.isError, recentQuery.isError, favoriteQuery.isError, comboQuery.isError]);
+
+  /**
+   * 常吃榜：只保留**可反查份量**的条目（`food !== null`）。
+   *
+   * 快加条目（`foodItemId` 为 `null`）无法反查份量，按 Q-4 **不渲染为可点按钮**。
+   */
+  const topItems: TopFoodItem[] = (topQuery.data?.items ?? []).filter((item) => item.food !== null);
+  /** 搜索空态里置顶的 Top 5（数据不足 → 空数组 → 整块不渲染）。 */
+  const emptyStateTopItems = topItems.slice(0, TOP_IN_EMPTY_STATE);
+
+  /**
+   * 常吃榜列表项：**只有名称 + 天数**，没有任何营养字段、没有 `role="meter"`（AC-11.5.3 / AC-11.5.4）。
+   *
+   * 点击行为与 `recent` / `favorite` **完全一致**：走既有 `chooseFood()` → 份量确认 → 确认记录
+   * （跳过份量会让热量记录失真，这是硬红线）。
+   *
+   * UI 规范（`docs/VISUAL-SYSTEM.md`）：圆角用语义令牌 `rounded-control`，
+   * 触控目标 `qsh-touch-target`（≥44×44），12px 文字用 `slate-600 / dark:slate-300`（§5 约束）。
+   */
+  const renderTopList = (items: readonly TopFoodItem[], days: number): ReactElement => (
+    <ul className="mt-3 space-y-2">
+      {items.map((item) => (
+        <li key={item.foodItemId ?? item.name}>
+          <button
+            type="button"
+            onClick={() => {
+              if (item.food !== null) {
+                chooseFood(item.food);
+              }
+            }}
+            aria-label={topFoodsAria(item.name, item.dayCount, days)}
+            className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+          >
+            <span className="min-w-0 truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+              {item.name}
+            </span>
+            <span className="qsh-tnum shrink-0 text-xs text-slate-600 dark:text-slate-300">
+              {topFoodDaysLabel(item.dayCount)}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 
   const chooseFood = (food: FoodItem, source: 'search' | 'barcode' = 'search'): void => {
     const serving = resolveDefaultServing(food);
@@ -228,9 +294,9 @@ export default function MealComposer({
         </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{date}</p>
 
-        {/* 记录方式标签 */}
+        {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2） */}
         <div role="tablist" aria-label="记录方式" className="mt-4 flex gap-1.5 overflow-x-auto">
-          {TABS.map((item) => (
+          {TABS.filter((item) => (item.key === 'top' ? (topQuery.data?.items ?? []).length > 0 : true)).map((item) => (
             <button
               key={item.key}
               role="tab"
@@ -297,6 +363,21 @@ export default function MealComposer({
 
             {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">搜索中…</p>}
             {searchQuery.data !== undefined && renderFoodList(searchQuery.data.items)}
+
+            {/* 搜索空态置顶「你常吃的」（R11.5 / AC-11.5.6）：
+                **只在搜索结果为空时**渲染；有结果时整块不出现，不干扰 ≤3 次点击。
+                位置在「没有找到这条食物」那条空态文案**之前**。 */}
+            {keyword.trim() !== '' &&
+              localEmpty &&
+              !searchQuery.isFetching &&
+              emptyStateTopItems.length > 0 && (
+                <div className="mt-3" data-testid="top-foods-empty-state">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    {COPY.topFoodsTitle}
+                  </h3>
+                  {renderTopList(emptyStateTopItems, topQuery.data?.days ?? TOP_DAYS)}
+                </div>
+              )}
 
             {/* 本地为空 → 在线兜底（Open Food Facts，ODbL 1.0） */}
             {keyword.trim() !== '' && localEmpty && !searchQuery.isFetching && (
@@ -383,6 +464,26 @@ export default function MealComposer({
               }
               return renderFoodList(items);
             })()}
+          </div>
+        )}
+
+        {/* 常吃榜（R11.5）：点击行为与「最近 / 收藏」完全一致（份量确认 → 确认记录）。
+            数据不足（< 3 天）时**整块不渲染** —— 不留空卡、不给引导语（AC-11.5.2）。
+            读取中与「最近 / 收藏」保持同一种提示，避免面板空白被误读成「什么都没有」。 */}
+        {tab === 'top' && (
+          <div className="mt-4">
+            {topQuery.isLoading ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>
+            ) : (
+              topItems.length > 0 && (
+                <>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    近 {topQuery.data?.days ?? TOP_DAYS} 天里出现得最多的几样，只按频次排，不代表任何评价。
+                  </p>
+                  {renderTopList(topItems, topQuery.data?.days ?? TOP_DAYS)}
+                </>
+              )
+            )}
           </div>
         )}
 

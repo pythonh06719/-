@@ -519,6 +519,103 @@ export interface DashboardResponse {
 }
 
 // ---------------------------------------------------------------------------
+// 餐次排序 / 跨餐移动（R3.8）
+// ---------------------------------------------------------------------------
+
+/**
+ * `PATCH /api/meals/reorder` 请求。
+ *
+ * ⚠️ 不含 `userId`：服务端一律从 JWT 取（NFR-2 / K7）。
+ */
+export interface ReorderMealsRequest {
+  /** 记录日期 `YYYY-MM-DD`（本地日粒度） */
+  loggedDate: string;
+  /** **目标餐次**：列出的记录会被置为该餐次 */
+  mealType: MealType;
+  /**
+   * 目标餐次的**完整期望顺序**（去重后按序赋值 `sortOrder = index`）。
+   * - 空数组 → 200 no-op；
+   * - 含重复 id → 服务端按首次出现去重；
+   * - 含未知 id → 400 并在 `error.fields.orderedIds` 指明是哪些。
+   */
+  orderedIds: number[];
+}
+
+/** `PATCH /api/meals/reorder` 响应。 */
+export interface ReorderMealsResponse {
+  /**
+   * 本次请求涉及的**全部**记录的最新映射（含被 compact 牵连的其它餐次）。
+   *
+   * 前端据此刷新本地缓存；**服务端顺序为唯一权威**（K13）。
+   */
+  updated: Array<{
+    id: number;
+    mealType: MealType;
+    sortOrder: number;
+  }>;
+}
+
+// ---------------------------------------------------------------------------
+// 常吃榜（R11.5）
+// ---------------------------------------------------------------------------
+
+/** `GET /api/foods/top` 查询参数。 */
+export interface TopFoodsQuery {
+  /** 统计窗口天数（含今天），默认 90，允许 1–365 */
+  days?: number;
+  /** 返回条数上限，默认 12，允许 1–50 */
+  limit?: number;
+}
+
+/** 常吃榜条目（**只呈现频次，零营养评判**，AC-11.5.3 / AC-11.5.4）。 */
+export interface TopFoodItem {
+  /** 展示名称（已按身份口径归一：库内条目与同名快加条目合并为一项） */
+  name: string;
+  /** **出现天数**（distinct `loggedDate`），不是出现次数（QR-1） */
+  dayCount: number;
+  /** 食物库条目 id；纯快加条目为 `null` */
+  foodItemId: number | null;
+  /**
+   * `foodItemId` 非空时的完整食物条目，供 MealComposer 复用既有
+   * `chooseFood()` → 份量确认 → 确认记录 路径；
+   * 为 `null` 时该行**只展示名称 + 天数**（快加条目无法反查份量，Q-4）。
+   */
+  food: FoodItem | null;
+}
+
+/** `GET /api/foods/top` 响应。 */
+export interface TopFoodsResponse {
+  /** 实际使用的统计窗口天数（便于 UI 写「近 N 天」） */
+  days: number;
+  /** 已按 `dayCount` 降序、过滤掉不足门槛项；**数据不足时为空数组**（UI 整块隐藏，无文案） */
+  items: TopFoodItem[];
+}
+
+// ---------------------------------------------------------------------------
+// 记录概览（R11.6）
+// ---------------------------------------------------------------------------
+
+/** 记录概览的实体键（固定 6 行，顺序即声明顺序）。 */
+export type RecordOverviewKey = 'weights' | 'meals' | 'exercises' | 'habits' | 'water' | 'wins';
+
+/** 记录概览单行（**只陈述事实**：条数 + 最早/最晚日期，不含任何异常判定）。 */
+export interface RecordOverviewRow {
+  key: RecordOverviewKey;
+  /** 记录条数（行数口径） */
+  count: number;
+  /** 最早记录日期 `YYYY-MM-DD`；无记录为 `null` */
+  firstDate: string | null;
+  /** 最晚记录日期 `YYYY-MM-DD`；无记录为 `null` */
+  lastDate: string | null;
+}
+
+/** `GET /api/data/overview` 响应。 */
+export interface DataOverviewResponse {
+  /** 固定 6 行，顺序与 `RecordOverviewKey` 声明顺序一致；无记录的行 `count = 0`、日期为 `null` */
+  rows: RecordOverviewRow[];
+}
+
+// ---------------------------------------------------------------------------
 // 通用：健康检查
 // ---------------------------------------------------------------------------
 

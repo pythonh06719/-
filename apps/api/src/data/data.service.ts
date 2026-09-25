@@ -1,6 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { EXPORT_APP_ID, EXPORT_SCHEMA_VERSION, type ExportJsonPayload } from '@qsh/shared-types';
+import {
+  EXPORT_APP_ID,
+  EXPORT_SCHEMA_VERSION,
+  type DataOverviewResponse,
+  type ExportJsonPayload,
+  type RecordOverviewKey,
+  type RecordOverviewRow,
+} from '@qsh/shared-types';
 import { parseWeightCsv } from '@qsh/core';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
@@ -113,6 +120,81 @@ export class DataService {
         darkMode: settings?.darkMode ?? false,
         fastingEnabled: settings?.fastingEnabled ?? false,
       },
+    };
+  }
+
+  /**
+   * **记录概览**（R11.6 / AC-11.6.6）：各类记录的**条数与最早/最晚日期**。
+   *
+   * 只陈述事实，**不做任何离群值 / 异常值判定**（AC-11.6.7 硬约束，本轮禁止实现）——
+   * 「异常」本身就是一种评判，且定义阈值会变成用户看不见的隐性标准，
+   * 与「每个数字都可解释」（NFR-11）相冲突。
+   *
+   * 6 个 `aggregate` 并发下推给 SQLite，**不把任何原始行拉进内存**（K15，Q-8 不缓存）。
+   *
+   * ⚠️ `wins` 属于 R11.4（本轮不做），接口**照常返回**该行、恒为 0 ——
+   * 前端按 `count === 0` 整行隐藏，将来 R11.4 上线前后端都不用改（Q-6）。
+   */
+  async overview(userId: number): Promise<DataOverviewResponse> {
+    const [weights, meals, exercises, habits, water] = await Promise.all([
+      this.prisma.weightLog.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedAt: true },
+        _max: { loggedAt: true },
+      }),
+      this.prisma.mealLog.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedDate: true },
+        _max: { loggedDate: true },
+      }),
+      this.prisma.exerciseLog.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedDate: true },
+        _max: { loggedDate: true },
+      }),
+      // 习惯打卡：`done` 真假都算 —— 只要记过就算一条（口径：行数）
+      this.prisma.habitCheckin.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedDate: true },
+        _max: { loggedDate: true },
+      }),
+      this.prisma.waterLog.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _min: { loggedDate: true },
+        _max: { loggedDate: true },
+      }),
+    ]);
+
+    const rows: RecordOverviewRow[] = [
+      this.toRow('weights', weights._count._all, weights._min.loggedAt, weights._max.loggedAt),
+      this.toRow('meals', meals._count._all, meals._min.loggedDate, meals._max.loggedDate),
+      this.toRow('exercises', exercises._count._all, exercises._min.loggedDate, exercises._max.loggedDate),
+      this.toRow('habits', habits._count._all, habits._min.loggedDate, habits._max.loggedDate),
+      this.toRow('water', water._count._all, water._min.loggedDate, water._max.loggedDate),
+      // R11.4 未实现：恒为 0，前端整行隐藏
+      { key: 'wins', count: 0, firstDate: null, lastDate: null },
+    ];
+
+    return { rows };
+  }
+
+  /** 组装一行概览（日期统一截取 `YYYY-MM-DD`，缺失为 `null`）。 */
+  private toRow(
+    key: RecordOverviewKey,
+    count: number,
+    firstDate: string | null,
+    lastDate: string | null,
+  ): RecordOverviewRow {
+    return {
+      key,
+      count,
+      firstDate: firstDate === null ? null : firstDate.slice(0, 10),
+      lastDate: lastDate === null ? null : lastDate.slice(0, 10),
     };
   }
 

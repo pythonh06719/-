@@ -144,3 +144,36 @@ export {
   type PlateauPoint,
   type PlateauResult,
 } from './weight/plateau';
+
+// ---------------------------------------------------------------------------
+// 四期补完（R3.8 / R11.5）
+// ---------------------------------------------------------------------------
+
+// 食物身份归一（R11.5 / R11.7 共用唯一口径，K16）
+export {
+  DISTINCT_FOOD_LIMIT,
+  displayFoodName,
+  distinctFoodKeys,
+  foodIdentity,
+  normalizeFoodName,
+  type DistinctFoodsOptions,
+  type DistinctFoodsResult,
+  type FoodRefRow,
+} from './food/identity';
+
+// 常吃榜排名（R11.5，出现天数口径）
+export {
+  FREQUENT_FOOD_DEFAULTS,
+  rankFrequentFoods,
+  type FrequentFood,
+  type FrequentFoodRow,
+  type RankFrequentFoodsOptions,
+} from './food/frequency';
+
+// 餐次排序 / 跨餐移动（R3.8）
+export {
+  applyReorder,
+  type ApplyReorderOptions,
+  type ReorderItem,
+  type ReorderUpdate,
+} from './meal/reorder';
