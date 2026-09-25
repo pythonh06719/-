@@ -56,3 +56,8 @@ qa-probe-*
 qa-verify/
 tmp-qa/
 _qsh-*
+
+# QA/PM 历史轮次的取证截图（playwright 截屏，可随时重生成，不入库）
+_r2-shot-*.png
+_v7-*.png
+qa-r26-evidence-*.png
