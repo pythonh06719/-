@@ -465,41 +465,27 @@ describe('B · 常吃榜 tab 与面板一致性（QA 独立证伪）', () => {
   });
 
   /**
-   * ⚠️ 这是本文件**预期会暴露问题**的用例：
-   * 榜单里只有快加条目（`food: null`）时，tab 的显隐条件用的是**未过滤**的
-   * `items.length > 0`，而面板渲染用的是过滤后的 `topItems.length > 0`（只保留 `food !== null`）
-   * —— 两者不一致：tab 会出现，面板却一片空白。
-   */
-  /**
-   * BUG-QA-01（P2，前端 UI 一致性）—— 用 `it.failing` 钉住：
+   * BUG-QA-01（P2，前端 UI 一致性）—— **已修复**，本用例断言修复后行为：
    *
-   * 「常吃」tab 的显隐条件是 `(topQuery.data?.items ?? []).length > 0`（**未过滤**），
+   * 原缺陷：「常吃」tab 的显隐条件是 `(topQuery.data?.items ?? []).length > 0`（**未过滤**），
    * 而面板渲染用的是 `topItems.length > 0`（已过滤掉 `food === null` 的快加条目）。
    * 当榜单里**只有快加条目**时：tab 出现 → 点进去一片空白，既没有条目、也没有任何说明。
    *
-   * 复现路径：同一个自定义名称（如「妈妈做的汤」）在 ≥ 3 个不同日期被快加记录
-   * → `GET /foods/top` 返回 `foodItemId: null / food: null` 的条目 → 面板为空。
-   *
-   * 修复后本用例**会失败**（它钉的是当前缺陷行为），提示应当改回「条目存在」的断言。
+   * 修复（MealComposer.tsx）：tab 显隐与面板渲染**同源**，都走过滤后的 `topItems`。
+   * 因此榜单只有 `food: null` 条目时，tab **整块不出现**（AC-11.5.2「不留空卡」）。
    */
-  it('B-QA1 · [已知缺陷 BUG-QA-01] 榜单只有快加条目时「常吃」tab 出现但面板为空', async () => {
+  it('B-QA1 · 榜单只有快加条目时「常吃」tab 整块隐藏（BUG-QA-01 已修复）', async () => {
     stubTop([
       { name: '自制酸奶', dayCount: 5, foodItemId: null, food: null },
       { name: '手冲咖啡', dayCount: 4, foodItemId: null, food: null },
     ]);
     renderComposer();
 
+    // 修复后：tab 显隐与面板同源（都用过滤后的 topItems），只有 food:null 条目时 tab 不出现。
     const topTab = await findTopTab();
-    // ☞ 现状（缺陷）：tab 出现了
-    expect(topTab).not.toBeNull();
-    fireEvent.click(topTab as HTMLElement);
-    await waitFor(() => {
-      expect(screen.queryByText('读取中…')).toBeNull();
-    });
-    // ☞ 现状（缺陷）：面板里一条条目都没有，也没有任何说明文字 —— 空白面板。
-    //   修复后下面两行会失败，届时应改为 `expect(screen.getByText('自制酸奶')).toBeInTheDocument()`。
-    expect(screen.queryByText('自制酸奶')).toBeNull();
-    expect(screen.queryByText('手冲咖啡')).toBeNull();
+    expect(topTab).toBeNull();
+    // 空白面板也就不存在了 —— 「常吃」面板标题不会在未选中时渲染。
+    expect(screen.queryByText(COPY.topFoodsTitle)).toBeNull();
   });
 
   it('B-QA2 · 有可点条目时，tab 与面板一致（正向对照）', async () => {

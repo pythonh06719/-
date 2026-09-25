@@ -296,7 +296,10 @@ export default function MealComposer({
 
         {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2） */}
         <div role="tablist" aria-label="记录方式" className="mt-4 flex gap-1.5 overflow-x-auto">
-          {TABS.filter((item) => (item.key === 'top' ? (topQuery.data?.items ?? []).length > 0 : true)).map((item) => (
+          {/* tab 显隐与面板渲染**同源**（都用过滤后的 `topItems`）：BUG-QA-01 ——
+              榜单里只有快加条目（food 为 null）时，旧写法用未过滤的 items.length
+              会让 tab 出现、点进去却是空白面板，违反 AC-11.5.2「不留空卡」。 */}
+          {TABS.filter((item) => (item.key === 'top' ? topItems.length > 0 : true)).map((item) => (
             <button
               key={item.key}
               role="tab"
