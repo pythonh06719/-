@@ -66,8 +66,11 @@ export default function PeriodReportView(): ReactElement {
   // 对象先判存在并兜底默认值，`report` 可能来自旧缓存 / 测试桩通用返回。
   const topHabits = report !== undefined && Array.isArray(report.topHabits) ? report.topHabits : [];
   const exercise = report?.exercise;
-  const exerciseSessions = exercise !== undefined && Number.isFinite(exercise.sessions) ? exercise.sessions : 0;
-  const exerciseMinutes = exercise !== undefined && Number.isFinite(exercise.totalMinutes) ? exercise.totalMinutes : 0;
+  // 守卫须覆盖 null（不能只判 undefined）：异常响应 / 旧缓存可能给 null，
+  // 与 `weight ?? null` 的对称写法保持一致（QA P3）。
+  const hasExercise = exercise !== undefined && exercise !== null;
+  const exerciseSessions = hasExercise && Number.isFinite(exercise.sessions) ? exercise.sessions : 0;
+  const exerciseMinutes = hasExercise && Number.isFinite(exercise.totalMinutes) ? exercise.totalMinutes : 0;
   const weight = report?.weight ?? null;
 
   return (
