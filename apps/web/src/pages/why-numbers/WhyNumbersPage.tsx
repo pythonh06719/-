@@ -327,7 +327,7 @@ export default function WhyNumbersPage(): ReactElement {
           ③ 数据来源与许可
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          食物库共 1688 条，逐条标注来源与许可；代码为 MIT，数据是混合来源（详见仓库 DATA-LICENSE.md）。
+          食物库共 1773 条，逐条标注来源与许可；代码为 MIT，数据是混合来源（详见仓库 DATA-LICENSE.md）。
           其中《中国食物成分表》扩量条目仅限个人非商业自用，不参与对外分发。
         </p>
         <table className="mt-3 w-full border-collapse text-sm">
@@ -357,7 +357,7 @@ export default function WhyNumbersPage(): ReactElement {
             </tr>
             <tr className="border-t border-slate-100 dark:border-slate-700">
               <td className="py-1.5">《中国食物成分表》（个人非商业自用，不参与对外分发）</td>
-              <td className="qsh-tnum py-1.5 text-right">1245</td>
+              <td className="qsh-tnum py-1.5 text-right">1330</td>
               <td className="py-1.5">个人非商业自用</td>
             </tr>
           </tbody>

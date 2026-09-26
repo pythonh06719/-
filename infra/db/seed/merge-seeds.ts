@@ -16,10 +16,15 @@
  *
  * 数据质量保障（T4/T6）：
  * - 所有输出条目（含既有 local）一律经 `mapFoodCategory` 归一，杜绝脏分类回灌；
+ * - **写出前自动补全 `namePinyin`**（唯一真源 `pinyin.ts`；见下方 P2-1），无需再单独跑 fill-pinyin；
  * - `_meta.sources` 计数**按 items 真实来源统计**（旧实现拿 `existing.items.length`
  *   当 local 数，是错的）；
  * - 输出前**逐条校验**（name 非空 / category ∈ 9 类 / 0 ≤ kcalPer100g ≤ 900 /
  *   每个 servingUnit.grams > 0），任一不合法即抛错并指出第几条、哪个字段。
+ *
+ * 跨源去重（`normalizeName`，P2-2）：取「括号前主体 + 有区分意义的括号限定词」——
+ * 形态/口味/部位/规格（干/鲜/罐头/北/白皮…）**保留**，统计标记/纯数值/品牌产地**丢弃**。
+ * 既避免误杀不同形态（如「紫菜(干)」不再被「紫菜（鲜）」顶掉），又保证真同名仍去重。
  *
  * 说明：kcal 下界用 `>= 0` 而非 `> 0` —— 0 是**合法**值（如「无糖气泡水」0 kcal），
  * 强制 > 0 会误杀真实的零热量条目；上界 900 对应纯油脂的物理上限（与采集脚本一致）。
@@ -31,6 +36,8 @@ import { fileURLToPath } from 'node:url';
 
 import { FOOD_CATEGORIES, isFoodCategory, mapFoodCategory } from '@qsh/core';
 
+import { fillPinyin } from './pinyin';
+
 const here = dirname(fileURLToPath(import.meta.url));
 const SEED_PATH = resolve(here, 'food_items.seed.json');
 const OFF_PATH = resolve(here, 'food_items.openfoodfacts.raw.json');
@@ -38,12 +45,71 @@ const USDA_PATH = resolve(here, 'food_items.usda.candidates.json');
 const USDA_MAP_PATH = resolve(here, 'usda_zh_map.json');
 const CFCD_PATH = resolve(here, 'food_items.cfcd.json');
 
-/** 归一化名称：去「括号及内容」+ 空白 + 常用标点，转小写（用于跨源去重比对）。 */
+/** 括号组（中/英/方括号，半/全角，开闭可混用）。 */
+const BRACKET = /[（(［[]([^）)］\]]*)[）)］\]]/g;
+/** 统计标记类限定词（比对去重时忽略）：如「均值」「代表值」。 */
+const MARKER_TOKEN = /^(代表值|均值|平均|平均值|mean|avg|约|大概|近似)$/i;
+/** 纯测量值限定词（忽略）：以数字开头，如百分比 `38％`、温度 `150℃`、时长 `10分`、度数 `55度`。 */
+const MEASURE_TOKEN = /^\d/;
+/** 品牌后缀（忽略）：如「可淇牌」「三元牌」。 */
+const BRAND_SUFFIX = /牌$/;
+/** 常见品牌 / 产地补充说明（忽略）：平台把这些写在括号里、与主体无区分意义。 */
+const BRAND_OR_ORIGIN = new Set<string>([
+  '雀巢',
+  '美赞臣',
+  '肯德基',
+  '惠氏',
+  '亨氏',
+  '阿香婆',
+  '卡夫',
+  '中国',
+  '台湾',
+  '以色列',
+]);
+
+/**
+ * 判断括号限定词是否「无区分意义」（去重比对时丢弃）。
+ *
+ * 区分两类限定词（P2-2 修复）：
+ * - **无区分意义**（丢弃）：统计标记、纯数值/温度/时长/度数、品牌/产地补充说明；
+ * - **有区分意义**（**保留**）：形态（干/鲜/罐头/油浸/煮/蒸/生）、口味（烧烤/香辣/原味）、
+ *   部位/规格（北/南/内酯/白皮/红皮/土鸡/干切面/白/黄）等 —— 这些是**不同食物**，不能归一。
+ *
+ * @param tok 单个括号限定词
+ */
+function isMeaninglessToken(tok: string): boolean {
+  return (
+    MARKER_TOKEN.test(tok) || MEASURE_TOKEN.test(tok) || BRAND_SUFFIX.test(tok) || BRAND_OR_ORIGIN.has(tok)
+  );
+}
+
+/**
+ * 归一化名称（用于跨源去重比对）。
+ *
+ * 取「括号前主体 + **有区分意义**的括号限定词」，去空白/常用标点、转小写。
+ * 例：`紫菜(干)`→`紫菜干`（**≠** `紫菜（鲜）`→`紫菜鲜`，故「干紫菜」不再被「鲜紫菜」误杀）；
+ * 而 `苹果`→`苹果` 与既有 `苹果` 真同名**仍会去重**。
+ *
+ * ⚠️ 与旧实现的关键差异：旧版把括号内容**全部删除**，导致 `紫菜(干)` 与 `紫菜（鲜）`
+ * 归一为同名 → 误杀干制品/不同形态；本版仅丢弃「无区分意义」的限定词。
+ *
+ * @param name 原始食物名
+ */
 function normalizeName(name: string): string {
-  return String(name)
-    .replace(/[（(［[]([^）)］\]]*)[）)］\]]/g, '')
+  const raw = String(name);
+  const base = raw.split(/[（(［[]/)[0].trim();
+  const kept: string[] = [];
+  for (const match of raw.matchAll(BRACKET)) {
+    for (const part of match[1].split(/[，,、/]/)) {
+      const tok = part.trim();
+      if (tok !== '' && !isMeaninglessToken(tok)) {
+        kept.push(tok);
+      }
+    }
+  }
+  return (base + kept.join(''))
     .replace(/[\s\u3000]+/g, '')
-    .replace(/[，,、。.·・\-—_/]/g, '')
+    .replace(/[，,、。.·・\-—_/％%]/g, '')
     .toLowerCase();
 }
 
@@ -205,6 +271,11 @@ for (const item of cfcdFile.items ?? []) {
 
 const items: SeedItem[] = [...localItems, ...offItems, ...usdaItems, ...cfcdItems];
 
+// P2-1：写出前**自动补全拼音**（唯一真源 `pinyin.ts`）。
+// 背景：CFCD 条目由下面的 CFCD 段重建、`namePinyin` 为 null；若靠「记得单独跑 fill-pinyin」
+// 极易遗漏（曾导致 cfcd 拼音 0/1245、拼音搜索失效）。内聚进 merge 后，任何重跑都不会再丢。
+const pinyinResult = fillPinyin(items);
+
 // T6：输出前校验（失败即抛错，绝不写脏数据）
 validateItems(items, '合并结果');
 
@@ -264,6 +335,10 @@ console.log(
   `_meta.sources 按真实来源统计：local ${sourceCount.get('local') ?? 0} / ` +
     `openfoodfacts ${sourceCount.get('openfoodfacts') ?? 0} / usda ${sourceCount.get('usda') ?? 0} / ` +
     `cfcd ${sourceCount.get('cfcd') ?? 0}`,
+);
+console.log(
+  `拼音补全：原有 ${pinyinResult.kept} + 新补 ${pinyinResult.filled} = ` +
+    `${pinyinResult.kept + pinyinResult.filled}/${items.length}（跳过 ${pinyinResult.skipped.length}：纯日文/英文名）`,
 );
 if (skippedNoMap.length > 0) {
   console.log(`（${skippedNoMap.length} 个 ndb 在候选中未找到，已跳过：${skippedNoMap.join(',')}）`);
