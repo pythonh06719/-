@@ -209,7 +209,7 @@ model FoodItem {
   servingUnits             String   @default("[]") @map("serving_units")
   defaultServingGrams      Float?   @map("default_serving_grams")
   barcode                  String?  @unique(map: "ux_food_barcode")
-  source                   String   @default("builtin")
+  source                   String   @default("builtin") // builtin | openfoodfacts | usda | user_custom
   createdByUserId          BigInt?  @map("created_by_user_id")
   isVerified               Boolean  @default(false) @map("is_verified")
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

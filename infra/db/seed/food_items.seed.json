@@ -5,16 +5,16 @@
     "precision": "全部为每 100g 数值；样例集取常识中位值，OFF/USDA 为原始测定/申报值（保留 1 位小数）。数据用于日常记录参考，不构成营养诊断",
     "sources": {
       "local": {
-        "count": 367,
+        "count": 57,
         "license": "自建常识样例"
       },
       "openfoodfacts": {
-        "count": 76,
+        "count": 258,
         "license": "ODbL 1.0（需署名并同许可共享）",
         "url": "https://world.openfoodfacts.org"
       },
       "usda": {
-        "count": 0,
+        "count": 128,
         "license": "Public Domain（USDA FoodData Central SR Legacy）",
         "url": "https://fdc.nal.usda.gov"
       }
@@ -686,7 +686,7 @@
         "波霸奶茶",
         "奶茶"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 90,
       "protein": 1.2,
       "fat": 3,
@@ -712,7 +712,7 @@
         "美式",
         "黑咖啡"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 2,
       "protein": 0.1,
       "fat": 0,
@@ -737,7 +737,7 @@
       "aliases": [
         "拿铁"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 55,
       "protein": 3,
       "fat": 3,
@@ -763,7 +763,7 @@
         "可乐",
         "肥宅快乐水"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 43,
       "protein": 0,
       "fat": 0,
@@ -793,7 +793,7 @@
         "苏打水",
         "气泡水"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 0,
       "protein": 0,
       "fat": 0,
@@ -818,7 +818,7 @@
       "aliases": [
         "橙汁"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 45,
       "protein": 0.7,
       "fat": 0.2,
@@ -843,7 +843,7 @@
       "aliases": [
         "豆浆"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 31,
       "protein": 3,
       "fat": 1.6,
@@ -868,7 +868,7 @@
       "aliases": [
         "酸奶"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 72,
       "protein": 2.5,
       "fat": 2.7,
@@ -893,7 +893,7 @@
       "aliases": [
         "牛奶"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 65,
       "protein": 3.3,
       "fat": 3.6,
@@ -1535,11 +1535,11 @@
     },
     {
       "name": "娃哈哈 AD 钙奶原味",
-      "namePinyin": null,
+      "namePinyin": "wahahagainaiyuanwei",
       "aliases": [
         "Wahaha"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 36.4,
       "protein": 1.4,
       "fat": 0.9,
@@ -1565,12 +1565,12 @@
     },
     {
       "name": "纯牛奶",
-      "namePinyin": null,
+      "namePinyin": "chunniunai",
       "aliases": [
         "特仑苏",
         "蒙牛"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 73.9,
       "protein": 3.6,
       "fat": 4.4,
@@ -1596,11 +1596,11 @@
     },
     {
       "name": "金典",
-      "namePinyin": null,
+      "namePinyin": "jindian",
       "aliases": [
         "伊利"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 73.8,
       "protein": 3.6,
       "fat": 4.4,
@@ -1621,11 +1621,11 @@
     },
     {
       "name": "蒙牛纯牛奶",
-      "namePinyin": null,
+      "namePinyin": "mengniuchunniunai",
       "aliases": [
         "蒙牛"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 67.9,
       "protein": 3.2,
       "fat": 4,
@@ -1651,12 +1651,12 @@
     },
     {
       "name": "经典原味薯片",
-      "namePinyin": null,
+      "namePinyin": "jingdianyuanweishupian",
       "aliases": [
         "Lay's",
         "乐事"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 546.5,
       "protein": 5.7,
       "fat": 35,
@@ -1682,9 +1682,9 @@
     },
     {
       "name": "伊利",
-      "namePinyin": null,
+      "namePinyin": "yili",
       "aliases": [],
-      "category": "全脂灭菌纯牛奶",
+      "category": "奶茶",
       "kcalPer100g": 69.2,
       "protein": 3.3,
       "fat": 4,
@@ -1710,11 +1710,11 @@
     },
     {
       "name": "冰露",
-      "namePinyin": null,
+      "namePinyin": "binglu",
       "aliases": [
         "可口可乐"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 1,
       "protein": 0,
       "fat": 0,
@@ -1735,12 +1735,12 @@
     },
     {
       "name": "红烧牛肉面",
-      "namePinyin": null,
+      "namePinyin": "hongshaoniuroumian",
       "aliases": [
         "Master Kong",
         "康师傅"
       ],
-      "category": "plant",
+      "category": "主食",
       "kcalPer100g": 512,
       "protein": 12.6,
       "fat": 21.9,
@@ -1766,11 +1766,11 @@
     },
     {
       "name": "醇品速溶咖啡",
-      "namePinyin": null,
+      "namePinyin": "chunpinsurongkafei",
       "aliases": [
         "雀巢咖啡"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 257.2,
       "protein": 16.8,
       "fat": 2,
@@ -1791,11 +1791,11 @@
     },
     {
       "name": "农夫山泉 茶π果味茶饮料 蜜桃乌龙茶",
-      "namePinyin": null,
+      "namePinyin": "nongfushanquanchaguoweichayinliaomitaowulongcha",
       "aliases": [
         "农夫山泉"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 32,
       "protein": 0,
       "fat": 0,
@@ -1821,12 +1821,12 @@
     },
     {
       "name": "纯净发酵乳 原味",
-      "namePinyin": null,
+      "namePinyin": "chunjingfajiaoruyuanwei",
       "aliases": [
         "Bright",
         "光明"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 79.6,
       "protein": 4.1,
       "fat": 4.6,
@@ -1852,12 +1852,12 @@
     },
     {
       "name": "北冰洋橙汁汽水",
-      "namePinyin": null,
+      "namePinyin": "beibingyangchengzhiqishui",
       "aliases": [
         "Arctic Ocean",
         "北冰洋"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 49.2,
       "protein": 0,
       "fat": 0,
@@ -1883,11 +1883,11 @@
     },
     {
       "name": "冰红茶",
-      "namePinyin": null,
+      "namePinyin": "binghongcha",
       "aliases": [
         "康师傅"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 39,
       "protein": 0,
       "fat": 0,
@@ -1913,12 +1913,12 @@
     },
     {
       "name": "李子园甜牛奶乳饮料",
-      "namePinyin": null,
+      "namePinyin": "liziyuantianniunairuyinliao",
       "aliases": [
         "LIZIYUAN",
         "李子园"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 37.8,
       "protein": 1,
       "fat": 1.2,
@@ -1944,11 +1944,11 @@
     },
     {
       "name": "可乐",
-      "namePinyin": null,
+      "namePinyin": "kele",
       "aliases": [
         "可口可乐"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 43,
       "protein": 0,
       "fat": 0,
@@ -1969,11 +1969,11 @@
     },
     {
       "name": "西柚电解质",
-      "namePinyin": null,
+      "namePinyin": "xiyoudianjiezhi",
       "aliases": [
         "补水了"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 24.9,
       "protein": 0,
       "fat": 0,
@@ -1999,11 +1999,11 @@
     },
     {
       "name": "青柠维生素饮料",
-      "namePinyin": null,
+      "namePinyin": "qingningweishengsuyinliao",
       "aliases": [
         "脉动"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 16.3,
       "protein": 0,
       "fat": 0,
@@ -2029,11 +2029,11 @@
     },
     {
       "name": "烘烤混合坚果仁",
-      "namePinyin": null,
+      "namePinyin": "hongkaohunhejianguoren",
       "aliases": [
         "Member's Mark"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 626.4,
       "protein": 17.9,
       "fat": 55.5,
@@ -2059,11 +2059,11 @@
     },
     {
       "name": "简醇",
-      "namePinyin": null,
+      "namePinyin": "jianchun",
       "aliases": [
         "君乐宝"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 61.8,
       "protein": 3,
       "fat": 1.4,
@@ -2089,11 +2089,11 @@
     },
     {
       "name": "完达山",
-      "namePinyin": null,
+      "namePinyin": "wandashan",
       "aliases": [
         "完达山"
       ],
-      "category": "zh",
+      "category": "other",
       "kcalPer100g": 65.7,
       "protein": 3.2,
       "fat": 3.8,
@@ -2114,11 +2114,11 @@
     },
     {
       "name": "极致",
-      "namePinyin": null,
+      "namePinyin": "jizhi",
       "aliases": [
         "三元"
       ],
-      "category": "zh",
+      "category": "other",
       "kcalPer100g": 73.8,
       "protein": 3.6,
       "fat": 4.4,
@@ -2139,11 +2139,11 @@
     },
     {
       "name": "白小纯",
-      "namePinyin": null,
+      "namePinyin": "baixiaochun",
       "aliases": [
         "君乐宝"
       ],
-      "category": "zh",
+      "category": "other",
       "kcalPer100g": 67.4,
       "protein": 3.3,
       "fat": 3.9,
@@ -2164,12 +2164,12 @@
     },
     {
       "name": "意大利香浓红烩味薯片",
-      "namePinyin": null,
+      "namePinyin": "yidalixiangnonghonghuiweishupian",
       "aliases": [
         "Lay's",
         "Lay's 乐事"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 536.6,
       "protein": 5.8,
       "fat": 33.3,
@@ -2195,11 +2195,11 @@
     },
     {
       "name": "高纤维全麦切片面包",
-      "namePinyin": null,
+      "namePinyin": "gaoxianweiquanmaiqiepianmianbao",
       "aliases": [
         "曼可顿"
       ],
-      "category": "plant",
+      "category": "主食",
       "kcalPer100g": 266,
       "protein": 11,
       "fat": 5.1,
@@ -2225,11 +2225,11 @@
     },
     {
       "name": "法式软面包（香橙味）",
-      "namePinyin": null,
+      "namePinyin": "fashiruanmianbao",
       "aliases": [
         "达利园"
       ],
-      "category": "plant",
+      "category": "主食",
       "kcalPer100g": 395,
       "protein": 10,
       "fat": 20,
@@ -2255,11 +2255,11 @@
     },
     {
       "name": "李子面包",
-      "namePinyin": null,
+      "namePinyin": "lizimianbao",
       "aliases": [
         "栗子"
       ],
-      "category": "plant",
+      "category": "主食",
       "kcalPer100g": 349.7,
       "protein": 7.2,
       "fat": 12.8,
@@ -2285,11 +2285,11 @@
     },
     {
       "name": "桃汁饮料",
-      "namePinyin": null,
+      "namePinyin": "taozhiyinliao",
       "aliases": [
         "汇源"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 17.9,
       "protein": 0,
       "fat": 0,
@@ -2315,11 +2315,11 @@
     },
     {
       "name": "脉动维生素饮料",
-      "namePinyin": null,
+      "namePinyin": "maidongweishengsuyinliao",
       "aliases": [
         "达能"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 21,
       "protein": 0,
       "fat": 0,
@@ -2345,12 +2345,12 @@
     },
     {
       "name": "大块腐乳",
-      "namePinyin": null,
+      "namePinyin": "dakuaifuru",
       "aliases": [
         "WANGZHIHE",
         "王致和"
       ],
-      "category": "plant",
+      "category": "蛋白",
       "kcalPer100g": 175.2,
       "protein": 10,
       "fat": 12,
@@ -2371,9 +2371,9 @@
     },
     {
       "name": "雙趣蛋",
-      "namePinyin": null,
+      "namePinyin": "shuangqudan",
       "aliases": [],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 341.8,
       "protein": 5.5,
       "fat": 0.6,
@@ -2394,11 +2394,11 @@
     },
     {
       "name": "王老吉凉茶",
-      "namePinyin": null,
+      "namePinyin": "wanglaojiliangcha",
       "aliases": [
         "王老吉"
       ],
-      "category": "茶饮料",
+      "category": "奶茶",
       "kcalPer100g": 37,
       "protein": 0,
       "fat": 0,
@@ -2424,11 +2424,11 @@
     },
     {
       "name": "草菇老抽",
-      "namePinyin": null,
+      "namePinyin": "caogulaochou",
       "aliases": [
         "海天"
       ],
-      "category": "酿造酱油",
+      "category": "other",
       "kcalPer100g": 166.7,
       "protein": 9.3,
       "fat": 0,
@@ -2454,12 +2454,12 @@
     },
     {
       "name": "十三香",
-      "namePinyin": null,
+      "namePinyin": "shisanxiang",
       "aliases": [
         "WSY",
         "王守义"
       ],
-      "category": "plant",
+      "category": "other",
       "kcalPer100g": 397,
       "protein": 9,
       "fat": 8.4,
@@ -2480,11 +2480,11 @@
     },
     {
       "name": "有机鲜牛奶",
-      "namePinyin": null,
+      "namePinyin": "youjixianniunai",
       "aliases": [
         "三元"
       ],
-      "category": "zh",
+      "category": "奶茶",
       "kcalPer100g": 71.7,
       "protein": 3.5,
       "fat": 4.2,
@@ -2505,11 +2505,11 @@
     },
     {
       "name": "芝士点",
-      "namePinyin": null,
+      "namePinyin": "zhishidian",
       "aliases": [
         "伊利"
       ],
-      "category": "zh",
+      "category": "蛋白",
       "kcalPer100g": 102.5,
       "protein": 3.1,
       "fat": 4.2,
@@ -2530,11 +2530,11 @@
     },
     {
       "name": "涨芝士啦",
-      "namePinyin": null,
+      "namePinyin": "zhangzhishila",
       "aliases": [
         "君乐宝"
       ],
-      "category": "zh",
+      "category": "蛋白",
       "kcalPer100g": 100.8,
       "protein": 3.1,
       "fat": 4,
@@ -2555,11 +2555,11 @@
     },
     {
       "name": "浪味仙创意花式薯卷（田园蔬菜味）",
-      "namePinyin": null,
+      "namePinyin": "langweixianchuangyihuashishujuan",
       "aliases": [
         "旺旺"
       ],
-      "category": "膨化食品",
+      "category": "零食",
       "kcalPer100g": 350,
       "protein": 2.1,
       "fat": 19.6,
@@ -2580,12 +2580,12 @@
     },
     {
       "name": "蜜桃茶",
-      "namePinyin": null,
+      "namePinyin": "mitaocha",
       "aliases": [
         "Vita",
         "维他"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 37.8,
       "protein": 0,
       "fat": 0,
@@ -2606,12 +2606,12 @@
     },
     {
       "name": "营养快线 草莓味",
-      "namePinyin": null,
+      "namePinyin": "yingyangkuaixiancaomeiwei",
       "aliases": [
         "Wahaha",
         "娃哈哈"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 45,
       "protein": 1,
       "fat": 0.9,
@@ -2637,11 +2637,11 @@
     },
     {
       "name": "浪味仙创意花式薯卷（意式番茄味）",
-      "namePinyin": null,
+      "namePinyin": "langweixianchuangyihuashishujuan",
       "aliases": [
         "旺旺"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 531,
       "protein": 4,
       "fat": 29.3,
@@ -2671,7 +2671,7 @@
       "aliases": [
         "Asahi"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 52,
       "protein": 0,
       "fat": 0,
@@ -2692,11 +2692,11 @@
     },
     {
       "name": "小小酥（原味）",
-      "namePinyin": null,
+      "namePinyin": "xiaoxiaosu",
       "aliases": [
         "旺旺"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 550,
       "protein": 3.5,
       "fat": 33.5,
@@ -2722,11 +2722,11 @@
     },
     {
       "name": "薄盐生抽",
-      "namePinyin": null,
+      "namePinyin": "baoyanshengchou",
       "aliases": [
         "Lee Kum Kee"
       ],
-      "category": "light soy sauce",
+      "category": "other",
       "kcalPer100g": 116.3,
       "protein": 6.7,
       "fat": 0,
@@ -2752,9 +2752,9 @@
     },
     {
       "name": "红牛",
-      "namePinyin": null,
+      "namePinyin": "hongniu",
       "aliases": [],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 55.7,
       "protein": 0,
       "fat": 0,
@@ -2780,11 +2780,11 @@
     },
     {
       "name": "风味发酵乳",
-      "namePinyin": null,
+      "namePinyin": "fengweifajiaoru",
       "aliases": [
         "伊利"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 77.1,
       "protein": 2.8,
       "fat": 3.1,
@@ -2805,11 +2805,11 @@
     },
     {
       "name": "老酸奶",
-      "namePinyin": null,
+      "namePinyin": "laosuannai",
       "aliases": [
         "君乐宝"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 84.7,
       "protein": 3.3,
       "fat": 3.5,
@@ -2835,11 +2835,11 @@
     },
     {
       "name": "娃哈哈 营养快线 香草冰淇淋味",
-      "namePinyin": null,
+      "namePinyin": "wahahayingyangkuaixianxiangcaobingqilinwei",
       "aliases": [
         "娃哈哈"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 45,
       "protein": 1,
       "fat": 1.2,
@@ -2865,11 +2865,11 @@
     },
     {
       "name": "特仑苏有机纯牛奶",
-      "namePinyin": null,
+      "namePinyin": "telunsuyoujichunniunai",
       "aliases": [
         "特仑苏"
       ],
-      "category": "全脂灭菌乳",
+      "category": "奶茶",
       "kcalPer100g": 74,
       "protein": 3.6,
       "fat": 4.4,
@@ -2890,11 +2890,11 @@
     },
     {
       "name": "有机纯牛奶",
-      "namePinyin": null,
+      "namePinyin": "youjichunniunai",
       "aliases": [
         "圣牧"
       ],
-      "category": "牛奶",
+      "category": "奶茶",
       "kcalPer100g": 68.3,
       "protein": 3.3,
       "fat": 3.9,
@@ -2915,11 +2915,11 @@
     },
     {
       "name": "轻果茶·葡萄黑加仑乌龙茶",
-      "namePinyin": null,
+      "namePinyin": "qingguochaputaoheijialunwulongcha",
       "aliases": [
         "Heytea"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 16.7,
       "protein": 0,
       "fat": 0,
@@ -2945,11 +2945,11 @@
     },
     {
       "name": "奥利奥 树莓味+蓝莓味",
-      "namePinyin": null,
+      "namePinyin": "aoliaoshumeiweilanmeiwei",
       "aliases": [
         "亿滋"
       ],
-      "category": "夹心饼干",
+      "category": "零食",
       "kcalPer100g": 463.9,
       "protein": 4.6,
       "fat": 20.6,
@@ -2975,11 +2975,11 @@
     },
     {
       "name": "谷焙奇酸奶沙琪玛",
-      "namePinyin": null,
+      "namePinyin": "gubeiqisuannaishaqima",
       "aliases": [
         "谷焙奇"
       ],
-      "category": "Cold",
+      "category": "零食",
       "kcalPer100g": 126,
       "protein": 2.1,
       "fat": 4.3,
@@ -3005,11 +3005,11 @@
     },
     {
       "name": "手撕素牛排（黑椒味）",
-      "namePinyin": null,
+      "namePinyin": "shousisuniupai",
       "aliases": [
         "红派"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 252.4,
       "protein": 18.6,
       "fat": 16.4,
@@ -3035,11 +3035,11 @@
     },
     {
       "name": "三好明畅酱香大鸡腿",
-      "namePinyin": null,
+      "namePinyin": "sanhaomingchangjiangxiangdajitui",
       "aliases": [
         "三好明畅"
       ],
-      "category": "酱卤肉制品",
+      "category": "蛋白",
       "kcalPer100g": 105.3,
       "protein": 16.4,
       "fat": 4,
@@ -3065,11 +3065,11 @@
     },
     {
       "name": "农夫山泉100%NFC橙汁",
-      "namePinyin": null,
+      "namePinyin": "nongfushanquanchengzhi",
       "aliases": [
         "农夫山泉"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 5.4,
       "protein": 0.1,
       "fat": 0,
@@ -3095,11 +3095,11 @@
     },
     {
       "name": "亲亲金沙蛋黄小龙虾味虾条",
-      "namePinyin": null,
+      "namePinyin": "qinqinjinshadanhuangxiaolongxiaweixiatiao",
       "aliases": [
         "亲亲"
       ],
-      "category": "膨化食品",
+      "category": "零食",
       "kcalPer100g": 699.6,
       "protein": 10.4,
       "fat": 30.1,
@@ -3125,11 +3125,11 @@
     },
     {
       "name": "泡翅（鲍汁味）",
-      "namePinyin": null,
+      "namePinyin": "paochi",
       "aliases": [
         "天搏"
       ],
-      "category": "meats",
+      "category": "蛋白",
       "kcalPer100g": 386.6,
       "protein": 41.5,
       "fat": 17.5,
@@ -3155,11 +3155,11 @@
     },
     {
       "name": "100% NFC黄桃汁",
-      "namePinyin": null,
+      "namePinyin": "huangtaozhi",
       "aliases": [
         "汇多滋"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 4.8,
       "protein": 0,
       "fat": 0,
@@ -3185,9 +3185,9 @@
     },
     {
       "name": "腰果",
-      "namePinyin": null,
+      "namePinyin": "yaoguo",
       "aliases": [],
-      "category": "腰果",
+      "category": "零食",
       "kcalPer100g": 606.6,
       "protein": 18.1,
       "fat": 37.9,
@@ -3208,11 +3208,11 @@
     },
     {
       "name": "维多粒果冻爽（葡萄味）",
-      "namePinyin": null,
+      "namePinyin": "weiduoliguodongshuang",
       "aliases": [
         "旺旺"
       ],
-      "category": "果冻",
+      "category": "零食",
       "kcalPer100g": 61,
       "protein": 0,
       "fat": 0,
@@ -3233,12 +3233,12 @@
     },
     {
       "name": "亨氏番茄沙司",
-      "namePinyin": null,
+      "namePinyin": "hengshifanqieshasi",
       "aliases": [
         "Heinz China",
         "亨氏"
       ],
-      "category": "plant",
+      "category": "other",
       "kcalPer100g": 99.7,
       "protein": 1.1,
       "fat": 0,
@@ -3264,11 +3264,11 @@
     },
     {
       "name": "双拼果粒 莓莓满满",
-      "namePinyin": null,
+      "namePinyin": "shuangpinguolimeimeimanman",
       "aliases": [
         "蒙牛"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 79.4,
       "protein": 2.6,
       "fat": 3,
@@ -3294,11 +3294,11 @@
     },
     {
       "name": "娃哈哈 AD钙 AD钙奶饮料",
-      "namePinyin": null,
+      "namePinyin": "wahahagaigainaiyinliao",
       "aliases": [
         "娃哈哈"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 34.3,
       "protein": 1,
       "fat": 0.7,
@@ -3324,11 +3324,11 @@
     },
     {
       "name": "老味糕点",
-      "namePinyin": null,
+      "namePinyin": "laoweigaodian",
       "aliases": [
         "北方威力发"
       ],
-      "category": "月饼",
+      "category": "零食",
       "kcalPer100g": 435.8,
       "protein": 8.4,
       "fat": 16.2,
@@ -3354,12 +3354,12 @@
     },
     {
       "name": "旺仔奶类饮品",
-      "namePinyin": null,
+      "namePinyin": "wangzainaileiyinpin",
       "aliases": [
         "hot kid",
         "旺仔"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 62.9,
       "protein": 2.6,
       "fat": 1.8,
@@ -3385,11 +3385,11 @@
     },
     {
       "name": "鈣思寶無糖原味豆奶",
-      "namePinyin": null,
+      "namePinyin": "gaisibaowutangyuanweidounai",
       "aliases": [
         "Vitasoy Calci-Plus Hi-Calcium"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 22,
       "protein": 1.8,
       "fat": 1.2,
@@ -3415,11 +3415,11 @@
     },
     {
       "name": "熱浪蕃茄味薯片",
-      "namePinyin": null,
+      "namePinyin": "relangfanqieweishupian",
       "aliases": [
         "Calbee"
       ],
-      "category": "Spicy crisps",
+      "category": "零食",
       "kcalPer100g": 542,
       "protein": 5.3,
       "fat": 36,
@@ -3440,12 +3440,12 @@
     },
     {
       "name": "安慕希酸奶",
-      "namePinyin": null,
+      "namePinyin": "anmuxisuannai",
       "aliases": [
         "Ambpoeial",
         "安慕希"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 90.5,
       "protein": 3.1,
       "fat": 3.3,
@@ -3471,11 +3471,11 @@
     },
     {
       "name": "固力果炭燒百力滋家庭裝",
-      "namePinyin": null,
+      "namePinyin": "guliguotanshaobailizijiatingzhuang",
       "aliases": [
         "Pretz"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 451.6,
       "protein": 9.7,
       "fat": 16.1,
@@ -3501,11 +3501,11 @@
     },
     {
       "name": "卡樂B",
-      "namePinyin": null,
+      "namePinyin": "kale",
       "aliases": [
         "卡樂B"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 515,
       "protein": 5.6,
       "fat": 28.3,
@@ -3531,11 +3531,11 @@
     },
     {
       "name": "黑八寶粥",
-      "namePinyin": null,
+      "namePinyin": "heibabaozhou",
       "aliases": [
         "華威八寶坊"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 73.6,
       "protein": 1.8,
       "fat": 0.6,
@@ -3556,11 +3556,11 @@
     },
     {
       "name": "橙汁",
-      "namePinyin": null,
+      "namePinyin": "chengzhi",
       "aliases": [
         "碧林"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 39.4,
       "protein": 0.8,
       "fat": 0,
@@ -3581,11 +3581,11 @@
     },
     {
       "name": "黑芝麻黑豆粉（無添加糖）",
-      "namePinyin": null,
+      "namePinyin": "heizhimaheidoufen",
       "aliases": [
         "點點綠"
       ],
-      "category": "天然材料",
+      "category": "蛋白",
       "kcalPer100g": 460,
       "protein": 23.6,
       "fat": 27.3,
@@ -3611,11 +3611,11 @@
     },
     {
       "name": "黑芝麻粉",
-      "namePinyin": null,
+      "namePinyin": "heizhimafen",
       "aliases": [
         "薌匯"
       ],
-      "category": "清真食品",
+      "category": "other",
       "kcalPer100g": 633,
       "protein": 16.7,
       "fat": 53.3,
@@ -3641,11 +3641,11 @@
     },
     {
       "name": "烏龍奶茶",
-      "namePinyin": null,
+      "namePinyin": "wulongnaicha",
       "aliases": [
         "極品"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 32,
       "protein": 1,
       "fat": 1.3,
@@ -3671,11 +3671,11 @@
     },
     {
       "name": "杏桃祼麥酸種吐司",
-      "namePinyin": null,
+      "namePinyin": "xingtaoguanmaisuanzhongtusi",
       "aliases": [
         "SELECT"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 378.6,
       "protein": 13.1,
       "fat": 10.7,
@@ -3701,12 +3701,12 @@
     },
     {
       "name": "出前一丁",
-      "namePinyin": null,
+      "namePinyin": "chuqianyiding",
       "aliases": [
         "Nissin",
         "Nissin Demae"
       ],
-      "category": "plant",
+      "category": "other",
       "kcalPer100g": 480,
       "protein": 11,
       "fat": 23,
@@ -3732,11 +3732,11 @@
     },
     {
       "name": "頂好牌花生醬",
-      "namePinyin": null,
+      "namePinyin": "dinghaopaihuashengjiang",
       "aliases": [
         "Skippy"
       ],
-      "category": "plant",
+      "category": "other",
       "kcalPer100g": 581,
       "protein": 22.5,
       "fat": 48.7,
@@ -3757,11 +3757,11 @@
     },
     {
       "name": "檸檬薏米水",
-      "namePinyin": null,
+      "namePinyin": "ningmengyimishui",
       "aliases": [
         "健康工房"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 29,
       "protein": 0,
       "fat": 0,
@@ -3787,11 +3787,11 @@
     },
     {
       "name": "低糖朱古力牛奶飲品",
-      "namePinyin": null,
+      "namePinyin": "ditangzhuguliniunaiyinpin",
       "aliases": [
         "vitasoy"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 60,
       "protein": 2.2,
       "fat": 2.6,
@@ -3817,11 +3817,11 @@
     },
     {
       "name": "DHA 牛奶飲品",
-      "namePinyin": null,
+      "namePinyin": "niunaiyinpin",
       "aliases": [
         "Dutch LADY"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 57,
       "protein": 2.5,
       "fat": 0,
@@ -3847,11 +3847,11 @@
     },
     {
       "name": "維他奶 Soyabean Milk",
-      "namePinyin": null,
+      "namePinyin": "weitanai",
       "aliases": [
         "Vitasoy"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 47,
       "protein": 1.8,
       "fat": 1.5,
@@ -3877,11 +3877,11 @@
     },
     {
       "name": "質立希臘式優格（無加糖）",
-      "namePinyin": null,
+      "namePinyin": "zhilixilashiyouge",
       "aliases": [
         "台灣比菲多"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 114,
       "protein": 4,
       "fat": 5,
@@ -3907,11 +3907,11 @@
     },
     {
       "name": "有機紅棗枸杞銀耳露",
-      "namePinyin": null,
+      "namePinyin": "youjihongzaogouqiyinerlu",
       "aliases": [
         "統一生機"
       ],
-      "category": "Tremella fuciformis",
+      "category": "蔬菜",
       "kcalPer100g": 16,
       "protein": 0,
       "fat": 0,
@@ -3937,11 +3937,11 @@
     },
     {
       "name": "無糖高纖豆漿",
-      "namePinyin": null,
+      "namePinyin": "wutanggaoxiandoujiang",
       "aliases": [
         "統一陽光"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 41.9,
       "protein": 3.8,
       "fat": 1.9,
@@ -3967,11 +3967,11 @@
     },
     {
       "name": "義大利香料",
-      "namePinyin": null,
+      "namePinyin": "yidalixiangliao",
       "aliases": [
         "小磨坊"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 368,
       "protein": 13,
       "fat": 8,
@@ -3992,11 +3992,11 @@
     },
     {
       "name": "燕麥棒巧克力風味",
-      "namePinyin": null,
+      "namePinyin": "yanmaibangqiaokelifengwei",
       "aliases": [
         "宴麥森林"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 490.6,
       "protein": 9.4,
       "fat": 23.8,
@@ -4022,11 +4022,11 @@
     },
     {
       "name": "希臘蜂蜜優格",
-      "namePinyin": null,
+      "namePinyin": "xilafengmiyouge",
       "aliases": [
         "質立"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 123.3,
       "protein": 4,
       "fat": 4.9,
@@ -4052,11 +4052,11 @@
     },
     {
       "name": "富為他牛奶",
-      "namePinyin": null,
+      "namePinyin": "fuweitaniunai",
       "aliases": [
         "光泉"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 230,
       "protein": 6,
       "fat": 7.6,
@@ -4082,11 +4082,11 @@
     },
     {
       "name": "無加糖濃豆漿",
-      "namePinyin": null,
+      "namePinyin": "wujiatangnongdoujiang",
       "aliases": [
         "光泉"
       ],
-      "category": "plant",
+      "category": "奶茶",
       "kcalPer100g": 50.6,
       "protein": 5.1,
       "fat": 2.6,
@@ -4112,11 +4112,11 @@
     },
     {
       "name": "特級燕麥片",
-      "namePinyin": null,
+      "namePinyin": "tejiyanmaipian",
       "aliases": [
         "廣吉"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 380,
       "protein": 12,
       "fat": 10,
@@ -4142,11 +4142,11 @@
     },
     {
       "name": "FIN補充飲料",
-      "namePinyin": null,
+      "namePinyin": "buchongyinliao",
       "aliases": [
         "黑松"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 17.2,
       "protein": 0,
       "fat": 0,
@@ -4172,12 +4172,12 @@
     },
     {
       "name": "大醇豆無加糖豆漿",
-      "namePinyin": null,
+      "namePinyin": "dachundouwujiatangdoujiang",
       "aliases": [
         "Wei-Chuan",
         "味全"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 43,
       "protein": 4.2,
       "fat": 2.3,
@@ -4203,11 +4203,11 @@
     },
     {
       "name": "水果麥片",
-      "namePinyin": null,
+      "namePinyin": "shuiguomaipian",
       "aliases": [
         "Calbee"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 442,
       "protein": 7.4,
       "fat": 15.8,
@@ -4233,11 +4233,11 @@
     },
     {
       "name": "草莓優格飲",
-      "namePinyin": null,
+      "namePinyin": "caomeiyougeyin",
       "aliases": [
         "YOIIS"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 76.3,
       "protein": 3.2,
       "fat": 1,
@@ -4263,11 +4263,11 @@
     },
     {
       "name": "無加糖 黑豆奶",
-      "namePinyin": null,
+      "namePinyin": "wujiatangheidounai",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 34.3,
       "protein": 3.4,
       "fat": 1.8,
@@ -4293,11 +4293,11 @@
     },
     {
       "name": "藍莓優格飲",
-      "namePinyin": null,
+      "namePinyin": "lanmeiyougeyin",
       "aliases": [
         "優意思"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 75.8,
       "protein": 3.2,
       "fat": 1,
@@ -4323,11 +4323,11 @@
     },
     {
       "name": "草莓銅鑼燒",
-      "namePinyin": null,
+      "namePinyin": "caomeitongluoshao",
       "aliases": [
         "宏噠食品"
       ],
-      "category": "銅鑼燒",
+      "category": "零食",
       "kcalPer100g": 129,
       "protein": 2.5,
       "fat": 1.9,
@@ -4353,11 +4353,11 @@
     },
     {
       "name": "北豆腐（卤水）",
-      "namePinyin": null,
+      "namePinyin": "beidoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 78,
       "protein": 9,
       "fat": 4.2,
@@ -4379,11 +4379,11 @@
     },
     {
       "name": "南豆腐（嫩豆腐）",
-      "namePinyin": null,
+      "namePinyin": "nandoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 61,
       "protein": 7.2,
       "fat": 3.7,
@@ -4405,11 +4405,11 @@
     },
     {
       "name": "老豆腐（硬豆腐）",
-      "namePinyin": null,
+      "namePinyin": "laodoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 145,
       "protein": 12.7,
       "fat": 10,
@@ -4431,11 +4431,11 @@
     },
     {
       "name": "内酯豆腐（绢豆腐）",
-      "namePinyin": null,
+      "namePinyin": "neizhidoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 62,
       "protein": 6.9,
       "fat": 2.7,
@@ -4457,11 +4457,11 @@
     },
     {
       "name": "油豆腐（炸豆腐）",
-      "namePinyin": null,
+      "namePinyin": "youdoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 270,
       "protein": 18.8,
       "fat": 20.2,
@@ -4483,11 +4483,11 @@
     },
     {
       "name": "冻豆腐",
-      "namePinyin": null,
+      "namePinyin": "dongdoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 477,
       "protein": 52.5,
       "fat": 30.3,
@@ -4509,11 +4509,11 @@
     },
     {
       "name": "腐乳",
-      "namePinyin": null,
+      "namePinyin": "furu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 116,
       "protein": 8.2,
       "fat": 8,
@@ -4535,11 +4535,11 @@
     },
     {
       "name": "原味豆浆",
-      "namePinyin": null,
+      "namePinyin": "yuanweidoujiang",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 54,
       "protein": 3.3,
       "fat": 1.8,
@@ -4561,11 +4561,11 @@
     },
     {
       "name": "巧克力豆浆",
-      "namePinyin": null,
+      "namePinyin": "qiaokelidoujiang",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 63,
       "protein": 2.3,
       "fat": 1.5,
@@ -4587,11 +4587,11 @@
     },
     {
       "name": "黄豆（干）",
-      "namePinyin": null,
+      "namePinyin": "huangdou",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆类",
+      "category": "蛋白",
       "kcalPer100g": 446,
       "protein": 36.5,
       "fat": 19.9,
@@ -4613,11 +4613,11 @@
     },
     {
       "name": "黄豆（煮熟）",
-      "namePinyin": null,
+      "namePinyin": "huangdou",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆类",
+      "category": "蛋白",
       "kcalPer100g": 172,
       "protein": 18.2,
       "fat": 9,
@@ -4639,11 +4639,11 @@
     },
     {
       "name": "炒黄豆",
-      "namePinyin": null,
+      "namePinyin": "chaohuangdou",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆类",
+      "category": "蛋白",
       "kcalPer100g": 469,
       "protein": 38.6,
       "fat": 25.4,
@@ -4665,7 +4665,7 @@
     },
     {
       "name": "毛豆（生）",
-      "namePinyin": null,
+      "namePinyin": "maodou",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4691,7 +4691,7 @@
     },
     {
       "name": "炒毛豆",
-      "namePinyin": null,
+      "namePinyin": "chaomaodou",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4717,11 +4717,11 @@
     },
     {
       "name": "绿豆（干）",
-      "namePinyin": null,
+      "namePinyin": "lvdou",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆类",
+      "category": "蛋白",
       "kcalPer100g": 347,
       "protein": 23.9,
       "fat": 1.2,
@@ -4743,11 +4743,11 @@
     },
     {
       "name": "绿豆（煮熟）",
-      "namePinyin": null,
+      "namePinyin": "lvdou",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆类",
+      "category": "蛋白",
       "kcalPer100g": 105,
       "protein": 7,
       "fat": 0.4,
@@ -4769,7 +4769,7 @@
     },
     {
       "name": "豆芽（生）",
-      "namePinyin": null,
+      "namePinyin": "douya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4795,7 +4795,7 @@
     },
     {
       "name": "豆芽（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "douya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4821,7 +4821,7 @@
     },
     {
       "name": "炒豆芽",
-      "namePinyin": null,
+      "namePinyin": "chaodouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4847,7 +4847,7 @@
     },
     {
       "name": "紫菜（鲜）",
-      "namePinyin": null,
+      "namePinyin": "zicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4873,7 +4873,7 @@
     },
     {
       "name": "海带（鲜）",
-      "namePinyin": null,
+      "namePinyin": "haidai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4899,7 +4899,7 @@
     },
     {
       "name": "裙带菜（鲜）",
-      "namePinyin": null,
+      "namePinyin": "qundaicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4925,7 +4925,7 @@
     },
     {
       "name": "竹笋（生）",
-      "namePinyin": null,
+      "namePinyin": "zhusun",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4951,7 +4951,7 @@
     },
     {
       "name": "竹笋（罐头）",
-      "namePinyin": null,
+      "namePinyin": "zhusun",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -4977,11 +4977,11 @@
     },
     {
       "name": "白蘑菇（口蘑）",
-      "namePinyin": null,
+      "namePinyin": "baimogu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 22,
       "protein": 3.1,
       "fat": 0.3,
@@ -5003,11 +5003,11 @@
     },
     {
       "name": "香菇（干）",
-      "namePinyin": null,
+      "namePinyin": "xianggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 296,
       "protein": 9.6,
       "fat": 1,
@@ -5029,11 +5029,11 @@
     },
     {
       "name": "香菇（鲜）",
-      "namePinyin": null,
+      "namePinyin": "xianggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 34,
       "protein": 2.2,
       "fat": 0.5,
@@ -5055,11 +5055,11 @@
     },
     {
       "name": "金针菇",
-      "namePinyin": null,
+      "namePinyin": "jinzhengu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 37,
       "protein": 2.7,
       "fat": 0.3,
@@ -5081,11 +5081,11 @@
     },
     {
       "name": "平菇",
-      "namePinyin": null,
+      "namePinyin": "pinggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 33,
       "protein": 3.3,
       "fat": 0.4,
@@ -5107,11 +5107,11 @@
     },
     {
       "name": "草菇（罐头）",
-      "namePinyin": null,
+      "namePinyin": "caogu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 32,
       "protein": 3.8,
       "fat": 0.7,
@@ -5133,11 +5133,11 @@
     },
     {
       "name": "舞茸菇",
-      "namePinyin": null,
+      "namePinyin": "wuronggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 31,
       "protein": 1.9,
       "fat": 0.2,
@@ -5159,11 +5159,11 @@
     },
     {
       "name": "粉丝（干）",
-      "namePinyin": null,
+      "namePinyin": "fensi",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "米面制品",
+      "category": "主食",
       "kcalPer100g": 351,
       "protein": 0.2,
       "fat": 0.1,
@@ -5185,11 +5185,11 @@
     },
     {
       "name": "方便面（干，牛肉味）",
-      "namePinyin": null,
+      "namePinyin": "fangbianmian",
       "aliases": [
         "Soups"
       ],
-      "category": "米面制品",
+      "category": "主食",
       "kcalPer100g": 441,
       "protein": 10.1,
       "fat": 17.7,
@@ -5211,11 +5211,11 @@
     },
     {
       "name": "方便面（干，鸡肉味）",
-      "namePinyin": null,
+      "namePinyin": "fangbianmian",
       "aliases": [
         "Soups"
       ],
-      "category": "米面制品",
+      "category": "主食",
       "kcalPer100g": 439,
       "protein": 10.2,
       "fat": 17.5,
@@ -5237,7 +5237,7 @@
     },
     {
       "name": "米果（米制脆饼）",
-      "namePinyin": null,
+      "namePinyin": "miguo",
       "aliases": [
         "Snacks"
       ],
@@ -5263,7 +5263,7 @@
     },
     {
       "name": "糙米饼（原味）",
-      "namePinyin": null,
+      "namePinyin": "caomibing",
       "aliases": [
         "Snacks"
       ],
@@ -5289,7 +5289,7 @@
     },
     {
       "name": "锅巴（糙米制）",
-      "namePinyin": null,
+      "namePinyin": "guoba",
       "aliases": [
         "Snacks"
       ],
@@ -5315,11 +5315,11 @@
     },
     {
       "name": "清酒（米酒）",
-      "namePinyin": null,
+      "namePinyin": "qingjiu",
       "aliases": [
         "Beverages"
       ],
-      "category": "酒饮",
+      "category": "奶茶",
       "kcalPer100g": 134,
       "protein": 0.5,
       "fat": 0,
@@ -5341,11 +5341,11 @@
     },
     {
       "name": "米乳（原味）",
-      "namePinyin": null,
+      "namePinyin": "miru",
       "aliases": [
         "Beverages"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 47,
       "protein": 0.3,
       "fat": 1,
@@ -5367,11 +5367,11 @@
     },
     {
       "name": "米糠油",
-      "namePinyin": null,
+      "namePinyin": "mikangyou",
       "aliases": [
         "Fats and Oils"
       ],
-      "category": "食用油",
+      "category": "other",
       "kcalPer100g": 884,
       "protein": 0,
       "fat": 100,
@@ -5393,12 +5393,12 @@
     },
     {
       "name": "铁观音茶",
-      "namePinyin": null,
+      "namePinyin": "tieguanyincha",
       "aliases": [
         "Chinatea",
         "中茶"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 250,
       "protein": 25,
       "fat": 0,
@@ -5419,11 +5419,11 @@
     },
     {
       "name": "无糖可口可乐汽水",
-      "namePinyin": null,
+      "namePinyin": "wutangkekoukeleqishui",
       "aliases": [
         "Coca cola"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 38,
       "protein": 0,
       "fat": 0,
@@ -5444,11 +5444,11 @@
     },
     {
       "name": "大白兔奶糖",
-      "namePinyin": null,
+      "namePinyin": "dabaitunaitang",
       "aliases": [
         "大白兔"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 429,
       "protein": 4.4,
       "fat": 9,
@@ -5469,11 +5469,11 @@
     },
     {
       "name": "精选老抽",
-      "namePinyin": null,
+      "namePinyin": "jingxuanlaochou",
       "aliases": [
         "Lee Kum Kee"
       ],
-      "category": "condiments",
+      "category": "other",
       "kcalPer100g": 166.7,
       "protein": 0,
       "fat": 0,
@@ -5499,11 +5499,11 @@
     },
     {
       "name": "new zealand butter 安佳黄油",
-      "namePinyin": null,
+      "namePinyin": "anjiahuangyou",
       "aliases": [
         "anchor"
       ],
-      "category": "fats",
+      "category": "other",
       "kcalPer100g": 725,
       "protein": 0.6,
       "fat": 81.4,
@@ -5529,11 +5529,11 @@
     },
     {
       "name": "奥利奥生日蛋糕味",
-      "namePinyin": null,
+      "namePinyin": "aoliaoshengridangaowei",
       "aliases": [
         "Oreo"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 500,
       "protein": 4.7,
       "fat": 20,
@@ -5559,12 +5559,12 @@
     },
     {
       "name": "鲜虾条",
-      "namePinyin": null,
+      "namePinyin": "xianxiatiao",
       "aliases": [
         "Oishi",
         "上好佳"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 424.5,
       "protein": 7,
       "fat": 9.7,
@@ -5590,12 +5590,12 @@
     },
     {
       "name": "維他奶鈣思寶大豆高鈣健康飲品 - 原味",
-      "namePinyin": null,
+      "namePinyin": "weitanaigaisibaodadougaogaijiankangyinpinyuanwei",
       "aliases": [
         "Calci-Plus",
         "Vitasoy"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 33,
       "protein": 1.8,
       "fat": 1.2,
@@ -5621,11 +5621,11 @@
     },
     {
       "name": "豆漿",
-      "namePinyin": null,
+      "namePinyin": "doujiang",
       "aliases": [
         "Vitasoy"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 56,
       "protein": 3.3,
       "fat": 2.3,
@@ -5651,11 +5651,11 @@
     },
     {
       "name": "ORIG Calbee Potato Chips 含添加防腐脂 【無添加 ●不含人工时 味精 原味",
-      "namePinyin": null,
+      "namePinyin": "hantianjiafangfuzhiwutianjiabuhanrengongshiweijingyuanwei",
       "aliases": [
         "Calbee"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 548,
       "protein": 5.1,
       "fat": 36,
@@ -5681,11 +5681,11 @@
     },
     {
       "name": "全天然 無加糖 松子玄米 什穀堅果飲",
-      "namePinyin": null,
+      "namePinyin": "quantianranwujiatangsongzixuanmishengujianguoyin",
       "aliases": [
         "Viva 萬歲牌"
       ],
-      "category": "soup mix",
+      "category": "奶茶",
       "kcalPer100g": 434.8,
       "protein": 13,
       "fat": 10.9,
@@ -5711,11 +5711,11 @@
     },
     {
       "name": "芝士棒",
-      "namePinyin": null,
+      "namePinyin": "zhishibang",
       "aliases": [
         "7 Select"
       ],
-      "category": "plant",
+      "category": "蛋白",
       "kcalPer100g": 417,
       "protein": 11.4,
       "fat": 20.6,
@@ -5736,11 +5736,11 @@
     },
     {
       "name": "若饭液体版 V3.7",
-      "namePinyin": null,
+      "namePinyin": "ruofanyetiban",
       "aliases": [
         "若饭"
       ],
-      "category": "zh",
+      "category": "主食",
       "kcalPer100g": 100,
       "protein": 4.5,
       "fat": 4.4,
@@ -5766,11 +5766,11 @@
     },
     {
       "name": "椰子奶",
-      "namePinyin": null,
+      "namePinyin": "yezinai",
       "aliases": [
         "維他"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 17.2,
       "protein": 0.4,
       "fat": 0.5,
@@ -5796,11 +5796,11 @@
     },
     {
       "name": "香辣小龍蝦味",
-      "namePinyin": null,
+      "namePinyin": "xianglaxiaolongxiawei",
       "aliases": [
         "Lay's"
       ],
-      "category": "plant",
+      "category": "蛋白",
       "kcalPer100g": 551,
       "protein": 4,
       "fat": 34.3,
@@ -5821,11 +5821,11 @@
     },
     {
       "name": "壹品豆漿 無糖 原味",
-      "namePinyin": null,
+      "namePinyin": "yipindoujiangwutangyuanwei",
       "aliases": [
         "壹品豆品 TOPSOYA"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 26.3,
       "protein": 2.7,
       "fat": 1.5,
@@ -5851,11 +5851,11 @@
     },
     {
       "name": "餃皇",
-      "namePinyin": null,
+      "namePinyin": "jiaohuang",
       "aliases": [
         "Bibigo"
       ],
-      "category": "meals",
+      "category": "主食",
       "kcalPer100g": 200,
       "protein": 7.2,
       "fat": 11.4,
@@ -5881,11 +5881,11 @@
     },
     {
       "name": "炭燒雞肉藜麥飯團",
-      "namePinyin": null,
+      "namePinyin": "tanshaojiroulimaifantuan",
       "aliases": [
         "7-Eleven"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 160,
       "protein": 5.6,
       "fat": 2.3,
@@ -5906,11 +5906,11 @@
     },
     {
       "name": "照燒鰻魚飯團",
-      "namePinyin": null,
+      "namePinyin": "zhaoshaomanyufantuan",
       "aliases": [
         "Circle K"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 143,
       "protein": 3.8,
       "fat": 2,
@@ -5936,11 +5936,11 @@
     },
     {
       "name": "明太子飯團",
-      "namePinyin": null,
+      "namePinyin": "mingtaizifantuan",
       "aliases": [
         "Circle K"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 132,
       "protein": 3.6,
       "fat": 0.8,
@@ -5966,11 +5966,11 @@
     },
     {
       "name": "櫻花蝦味薄脆豬",
-      "namePinyin": null,
+      "namePinyin": "yinghuaxiaweibaocuizhu",
       "aliases": [
         "Knot's Taste"
       ],
-      "category": "Pork jerky",
+      "category": "蛋白",
       "kcalPer100g": 302.8,
       "protein": 20.8,
       "fat": 12.3,
@@ -5996,11 +5996,11 @@
     },
     {
       "name": "海苔味薄脆魚",
-      "namePinyin": null,
+      "namePinyin": "haitaiweibaocuiyu",
       "aliases": [
         "Knot's Taste"
       ],
-      "category": "dried fish",
+      "category": "蛋白",
       "kcalPer100g": 433,
       "protein": 41.7,
       "fat": 15.3,
@@ -6026,11 +6026,11 @@
     },
     {
       "name": "生粉",
-      "namePinyin": null,
+      "namePinyin": "shengfen",
       "aliases": [
         "Knorr"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 352,
       "protein": 0,
       "fat": 0.8,
@@ -6060,7 +6060,7 @@
       "aliases": [
         "SAVAS"
       ],
-      "category": "飲み物",
+      "category": "奶茶",
       "kcalPer100g": 22.3,
       "protein": 3.5,
       "fat": 0,
@@ -6086,11 +6086,11 @@
     },
     {
       "name": "牛奶排包",
-      "namePinyin": null,
+      "namePinyin": "niunaipaibao",
       "aliases": [
         "7 Select"
       ],
-      "category": "plant",
+      "category": "主食",
       "kcalPer100g": 342,
       "protein": 9.7,
       "fat": 12,
@@ -6116,11 +6116,11 @@
     },
     {
       "name": "C维他命水",
-      "namePinyin": null,
+      "namePinyin": "weitamingshui",
       "aliases": [
         "力量帝"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 22.8,
       "protein": 0,
       "fat": 0,
@@ -6151,7 +6151,7 @@
         "Muji",
         "無印良品"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 104,
       "protein": 1.9,
       "fat": 0,
@@ -6172,12 +6172,12 @@
     },
     {
       "name": "維他清心棧竹蔗茅根",
-      "namePinyin": null,
+      "namePinyin": "weitaqingxinzhanzhuzhemaogen",
       "aliases": [
         "Tsing Shum Zhan",
         "Vita"
       ],
-      "category": "Sugar cane drink",
+      "category": "奶茶",
       "kcalPer100g": 25,
       "protein": 0,
       "fat": 0,
@@ -6198,12 +6198,12 @@
     },
     {
       "name": "子母天然純牧高鈣較低脂牛奶飲品",
-      "namePinyin": null,
+      "namePinyin": "zimutianranchunmugaogaijiaodizhiniunaiyinpin",
       "aliases": [
         "Dutch Lady",
         "PureFarm"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 52,
       "protein": 2.8,
       "fat": 2,
@@ -6229,11 +6229,11 @@
     },
     {
       "name": "UniFit運動飲料",
-      "namePinyin": null,
+      "namePinyin": "yundongyinliao",
       "aliases": [
         "統一"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 23.2,
       "protein": 0,
       "fat": 0,
@@ -6254,11 +6254,11 @@
     },
     {
       "name": "卡樂比富果減糖水果麥片",
-      "namePinyin": null,
+      "namePinyin": "kalebifuguojiantangshuiguomaipian",
       "aliases": [
         "Calbee"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 483.2,
       "protein": 18.6,
       "fat": 26.4,
@@ -6284,11 +6284,11 @@
     },
     {
       "name": "特濃黑豆漿RICH SOY MILK",
-      "namePinyin": null,
+      "namePinyin": "tenongheidoujiang",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 54.5,
       "protein": 5.1,
       "fat": 2.6,
@@ -6314,11 +6314,11 @@
     },
     {
       "name": "草莓口袋吐司",
-      "namePinyin": null,
+      "namePinyin": "caomeikoudaitusi",
       "aliases": [
         "READ"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 291.2,
       "protein": 6,
       "fat": 4.1,
@@ -6344,11 +6344,11 @@
     },
     {
       "name": "茶裏王白毫烏龍茶",
-      "namePinyin": null,
+      "namePinyin": "chaliwangbaihaowulongcha",
       "aliases": [
         "茶裏王"
       ],
-      "category": "Bottled Oriental Bea",
+      "category": "奶茶",
       "kcalPer100g": 17.2,
       "protein": 0,
       "fat": 0,
@@ -6374,11 +6374,11 @@
     },
     {
       "name": "無糖豆漿",
-      "namePinyin": null,
+      "namePinyin": "wutangdoujiang",
       "aliases": [
         "光泉"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 112.8,
       "protein": 10.6,
       "fat": 5.6,
@@ -6399,11 +6399,11 @@
     },
     {
       "name": "陽光 無加糖超優蛋白豆漿",
-      "namePinyin": null,
+      "namePinyin": "yangguangwujiatangchaoyoudanbaidoujiang",
       "aliases": [
         "統一"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 61.6,
       "protein": 5.5,
       "fat": 3.1,
@@ -6429,11 +6429,11 @@
     },
     {
       "name": "葡萄蘆薈",
-      "namePinyin": null,
+      "namePinyin": "putaoluhui",
       "aliases": [
         "植物的優"
       ],
-      "category": "包装食品",
+      "category": "水果",
       "kcalPer100g": 97,
       "protein": 4.1,
       "fat": 2.6,
@@ -6459,9 +6459,9 @@
     },
     {
       "name": "Pop-Smile 卡茲爆米花 美式焦糖牛奶風味",
-      "namePinyin": null,
+      "namePinyin": "kazibaomihuameishijiaotangniunaifengwei",
       "aliases": [],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 534,
       "protein": 2.4,
       "fat": 28.4,
@@ -6487,11 +6487,11 @@
     },
     {
       "name": "經典原味起司",
-      "namePinyin": null,
+      "namePinyin": "jingdianyuanweiqisi",
       "aliases": [
         "福樂"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 317,
       "protein": 19,
       "fat": 25.4,
@@ -6512,11 +6512,11 @@
     },
     {
       "name": "菊花枸杞銀耳露",
-      "namePinyin": null,
+      "namePinyin": "juhuagouqiyinerlu",
       "aliases": [
         "統一生機"
       ],
-      "category": "銀耳露",
+      "category": "蔬菜",
       "kcalPer100g": 16.8,
       "protein": 0,
       "fat": 0,
@@ -6542,11 +6542,11 @@
     },
     {
       "name": "全脂鮮乳",
-      "namePinyin": null,
+      "namePinyin": "quanzhixianru",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 65.6,
       "protein": 3.1,
       "fat": 3.7,
@@ -6572,11 +6572,11 @@
     },
     {
       "name": "知心水果軟糖",
-      "namePinyin": null,
+      "namePinyin": "zhixinshuiguoruantang",
       "aliases": [
         "義美"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 411,
       "protein": 1,
       "fat": 8.5,
@@ -6606,7 +6606,7 @@
       "aliases": [
         "Otsuka"
       ],
-      "category": "経口補水液",
+      "category": "奶茶",
       "kcalPer100g": 10,
       "protein": 0,
       "fat": 0,
@@ -6627,11 +6627,11 @@
     },
     {
       "name": "多多 原味",
-      "namePinyin": null,
+      "namePinyin": "duoduoyuanwei",
       "aliases": [
         "多多"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 73.2,
       "protein": 1.3,
       "fat": 0,
@@ -6652,12 +6652,12 @@
     },
     {
       "name": "美粒果柳橙汁",
-      "namePinyin": null,
+      "namePinyin": "meiliguoliuchengzhi",
       "aliases": [
         "Minute Maid",
         "Coca-Cola"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 37.1,
       "protein": 0,
       "fat": 0,
@@ -6683,11 +6683,11 @@
     },
     {
       "name": "檸檬綠茶",
-      "namePinyin": null,
+      "namePinyin": "ningmenglvcha",
       "aliases": [
         "純喫茶"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 40,
       "protein": 0,
       "fat": 0,
@@ -6713,11 +6713,11 @@
     },
     {
       "name": "蘋果西打",
-      "namePinyin": null,
+      "namePinyin": "pinguoxida",
       "aliases": [
         "蘋果西打"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 42,
       "protein": 0,
       "fat": 0,
@@ -6743,9 +6743,9 @@
     },
     {
       "name": "大甲媽酥餅",
-      "namePinyin": null,
+      "namePinyin": "dajiamasubing",
       "aliases": [],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 374.8,
       "protein": 5,
       "fat": 18.3,
@@ -6766,12 +6766,12 @@
     },
     {
       "name": "海鮮風味拉麵",
-      "namePinyin": null,
+      "namePinyin": "haixianfengweilamian",
       "aliases": [
         "ITOMAN",
         "關谷"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 471.9,
       "protein": 10.9,
       "fat": 21.9,
@@ -6792,11 +6792,11 @@
     },
     {
       "name": "可口可樂",
-      "namePinyin": null,
+      "namePinyin": "kekoukele",
       "aliases": [
         "可口可樂"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 139,
       "protein": 0,
       "fat": 0,
@@ -6822,11 +6822,11 @@
     },
     {
       "name": "黑糖松",
-      "namePinyin": null,
+      "namePinyin": "heitangsong",
       "aliases": [
         "綠的宣言"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 399,
       "protein": 0.7,
       "fat": 2.9,
@@ -6852,11 +6852,11 @@
     },
     {
       "name": "913 海苔 茶薯條",
-      "namePinyin": null,
+      "namePinyin": "haitaichashutiao",
       "aliases": [
         "喫茶趣ToGo"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 414,
       "protein": 3.6,
       "fat": 15.2,
@@ -6886,7 +6886,7 @@
       "aliases": [
         "ニッスイ"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 341,
       "protein": 33.8,
       "fat": 18.4,
@@ -6912,11 +6912,11 @@
     },
     {
       "name": "滿餡 果粒草莓",
-      "namePinyin": null,
+      "namePinyin": "manxianguolicaomei",
       "aliases": [
         "Family Mart"
       ],
-      "category": "包装食品",
+      "category": "水果",
       "kcalPer100g": 302,
       "protein": 7,
       "fat": 10,
@@ -6942,11 +6942,11 @@
     },
     {
       "name": "蔥肉酥餅",
-      "namePinyin": null,
+      "namePinyin": "congrousubing",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 324.5,
       "protein": 9.9,
       "fat": 17.8,
@@ -6976,7 +6976,7 @@
       "aliases": [
         "Meiji"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 546.9,
       "protein": 7.8,
       "fat": 32.5,
@@ -7006,7 +7006,7 @@
       "aliases": [
         "Morinaga"
       ],
-      "category": "dietary",
+      "category": "零食",
       "kcalPer100g": 50,
       "protein": 0,
       "fat": 0,
@@ -7036,7 +7036,7 @@
       "aliases": [
         "永谷園"
       ],
-      "category": "meals",
+      "category": "主食",
       "kcalPer100g": 150.1,
       "protein": 2.2,
       "fat": 0.3,
@@ -7062,11 +7062,11 @@
     },
     {
       "name": "担々麺",
-      "namePinyin": null,
+      "namePinyin": "dandanmian",
       "aliases": [
         "Seven"
       ],
-      "category": "meals",
+      "category": "主食",
       "kcalPer100g": 182.1,
       "protein": 5.1,
       "fat": 12.6,
@@ -7096,7 +7096,7 @@
       "aliases": [
         "Craft Boss"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 33,
       "protein": 0.7,
       "fat": 0.5,
@@ -7121,7 +7121,7 @@
       "aliases": [
         "コメダ珈琲店"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 71.5,
       "protein": 2.3,
       "fat": 1.2,
@@ -7151,7 +7151,7 @@
       "aliases": [
         "おやつカンパニー"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 526.2,
       "protein": 5.1,
       "fat": 29.5,
@@ -7181,7 +7181,7 @@
       "aliases": [
         "Georgia"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 19,
       "protein": 0.6,
       "fat": 0.5,
@@ -7207,11 +7207,11 @@
     },
     {
       "name": "統一布丁",
-      "namePinyin": null,
+      "namePinyin": "tongyibuding",
       "aliases": [
         "統一"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 113.9,
       "protein": 2,
       "fat": 2.8,
@@ -7241,7 +7241,7 @@
       "aliases": [
         "Morinaga"
       ],
-      "category": "dietary",
+      "category": "零食",
       "kcalPer100g": 50,
       "protein": 0,
       "fat": 0,
@@ -7267,11 +7267,11 @@
     },
     {
       "name": "難消化巧克力棒",
-      "namePinyin": null,
+      "namePinyin": "nanxiaohuaqiaokelibang",
       "aliases": [
         "Soyjoy"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 490,
       "protein": 16.7,
       "fat": 32.3,
@@ -7297,11 +7297,11 @@
     },
     {
       "name": "無加糖高纖豆漿",
-      "namePinyin": null,
+      "namePinyin": "wujiatanggaoxiandoujiang",
       "aliases": [
         "統一陽光"
       ],
-      "category": "plant based product",
+      "category": "奶茶",
       "kcalPer100g": 41,
       "protein": 3.4,
       "fat": 1.9,
@@ -7322,11 +7322,11 @@
     },
     {
       "name": "丸川彩球泡泡糖",
-      "namePinyin": null,
+      "namePinyin": "wanchuancaiqiupaopaotang",
       "aliases": [
         "丸川"
       ],
-      "category": "Gum",
+      "category": "零食",
       "kcalPer100g": 295.7,
       "protein": 0,
       "fat": 0,
@@ -7352,9 +7352,9 @@
     },
     {
       "name": "太珍香豆干",
-      "namePinyin": null,
+      "namePinyin": "taizhenxiangdougan",
       "aliases": [],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 393.6,
       "protein": 36.7,
       "fat": 20,
@@ -7375,9 +7375,9 @@
     },
     {
       "name": "蒜絲豆干",
-      "namePinyin": null,
+      "namePinyin": "suansidougan",
       "aliases": [],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 410,
       "protein": 17.4,
       "fat": 23.5,
@@ -7403,11 +7403,11 @@
     },
     {
       "name": "Aquarus 動元素運動飲料",
-      "namePinyin": null,
+      "namePinyin": "dongyuansuyundongyinliao",
       "aliases": [
         "Coca-Cola"
       ],
-      "category": "Sports drink",
+      "category": "奶茶",
       "kcalPer100g": 15,
       "protein": 0,
       "fat": 0,
@@ -7433,11 +7433,11 @@
     },
     {
       "name": "膳纖熟飯",
-      "namePinyin": null,
+      "namePinyin": "shanxianshufan",
       "aliases": [
         "南橋"
       ],
-      "category": "meal",
+      "category": "主食",
       "kcalPer100g": 147,
       "protein": 2.7,
       "fat": 0.2,
@@ -7463,11 +7463,11 @@
     },
     {
       "name": "膳纖熟飯 - 健康雙麥飯",
-      "namePinyin": null,
+      "namePinyin": "shanxianshufanjiankangshuangmaifan",
       "aliases": [
         "南橋"
       ],
-      "category": "meal",
+      "category": "主食",
       "kcalPer100g": 147,
       "protein": 4,
       "fat": 1,
@@ -7493,11 +7493,11 @@
     },
     {
       "name": "萬丹酪農戶限定鮮乳",
-      "namePinyin": null,
+      "namePinyin": "wandanlaononghuxiandingxianru",
       "aliases": [
         "味全"
       ],
-      "category": "dairies",
+      "category": "奶茶",
       "kcalPer100g": 67,
       "protein": 3.1,
       "fat": 3.8,
@@ -7518,11 +7518,11 @@
     },
     {
       "name": "伯朗咖啡藍山風味",
-      "namePinyin": null,
+      "namePinyin": "bolangkafeilanshanfengwei",
       "aliases": [
         "伯朗咖啡"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 41.7,
       "protein": 0.9,
       "fat": 0.8,
@@ -7548,11 +7548,11 @@
     },
     {
       "name": "飛行日記微糖黑咖啡",
-      "namePinyin": null,
+      "namePinyin": "feixingrijiweitangheikafei",
       "aliases": [
         "UCC"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 12,
       "protein": 0.3,
       "fat": 0,
@@ -7578,12 +7578,12 @@
     },
     {
       "name": "百吉檸檬棒棒冰",
-      "namePinyin": null,
+      "namePinyin": "baijiningmengbangbangbing",
       "aliases": [
         "POKI",
         "百吉"
       ],
-      "category": "desserts",
+      "category": "零食",
       "kcalPer100g": 93.7,
       "protein": 0,
       "fat": 0,
@@ -7604,11 +7604,11 @@
     },
     {
       "name": "華元 MIX 綜合脆片",
-      "namePinyin": null,
+      "namePinyin": "huayuanzonghecuipian",
       "aliases": [
         "華元"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 513.9,
       "protein": 8.2,
       "fat": 26.3,
@@ -7629,11 +7629,11 @@
     },
     {
       "name": "康貝特",
-      "namePinyin": null,
+      "namePinyin": "kangbeite",
       "aliases": [
         "葡萄王生技"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 57.6,
       "protein": 1,
       "fat": 0,
@@ -7659,11 +7659,11 @@
     },
     {
       "name": "Sunkist芭樂果汁飲料",
-      "namePinyin": null,
+      "namePinyin": "baleguozhiyinliao",
       "aliases": [
         "Sunkist"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 40,
       "protein": 0,
       "fat": 0,
@@ -7684,11 +7684,11 @@
     },
     {
       "name": "有機紅豆奶",
-      "namePinyin": null,
+      "namePinyin": "youjihongdounai",
       "aliases": [
         "Topmost"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 57,
       "protein": 2.6,
       "fat": 0.8,
@@ -7709,9 +7709,9 @@
     },
     {
       "name": "干貝醬",
-      "namePinyin": null,
+      "namePinyin": "ganbeijiang",
       "aliases": [],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 420.9,
       "protein": 18.9,
       "fat": 28.9,
@@ -7732,11 +7732,11 @@
     },
     {
       "name": "超大紅寶石葡萄乾",
-      "namePinyin": null,
+      "namePinyin": "chaodahongbaoshiputaoqian",
       "aliases": [
         "康健生機"
       ],
-      "category": "plant",
+      "category": "水果",
       "kcalPer100g": 320,
       "protein": 2.5,
       "fat": 0,
@@ -7757,11 +7757,11 @@
     },
     {
       "name": "蒙古拉麵",
-      "namePinyin": null,
+      "namePinyin": "menggulamian",
       "aliases": [
         "Nissin"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 444.3,
       "protein": 10.3,
       "fat": 18.9,
@@ -7787,11 +7787,11 @@
     },
     {
       "name": "大豆油（烹调）",
-      "namePinyin": null,
+      "namePinyin": "dadouyou",
       "aliases": [
         "Fats and Oils"
       ],
-      "category": "食用油",
+      "category": "other",
       "kcalPer100g": 884,
       "protein": 0,
       "fat": 100,
@@ -7813,7 +7813,7 @@
     },
     {
       "name": "荸荠（生）",
-      "namePinyin": null,
+      "namePinyin": "biqi",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7839,7 +7839,7 @@
     },
     {
       "name": "荸荠（罐头）",
-      "namePinyin": null,
+      "namePinyin": "biqi",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7865,7 +7865,7 @@
     },
     {
       "name": "小白菜（青梗菜）",
-      "namePinyin": null,
+      "namePinyin": "xiaobaicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7891,7 +7891,7 @@
     },
     {
       "name": "小白菜（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "xiaobaicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7917,7 +7917,7 @@
     },
     {
       "name": "大白菜（生）",
-      "namePinyin": null,
+      "namePinyin": "dabaicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7943,7 +7943,7 @@
     },
     {
       "name": "大白菜（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "dabaicai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7969,7 +7969,7 @@
     },
     {
       "name": "冬瓜（生）",
-      "namePinyin": null,
+      "namePinyin": "donggua",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -7995,7 +7995,7 @@
     },
     {
       "name": "冬瓜（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "donggua",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8021,7 +8021,7 @@
     },
     {
       "name": "香菜",
-      "namePinyin": null,
+      "namePinyin": "xiangcai",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8047,7 +8047,7 @@
     },
     {
       "name": "小萝卜（生）",
-      "namePinyin": null,
+      "namePinyin": "xiaoluobo",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8073,7 +8073,7 @@
     },
     {
       "name": "白萝卜（生）",
-      "namePinyin": null,
+      "namePinyin": "bailuobo",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8099,7 +8099,7 @@
     },
     {
       "name": "白萝卜（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "bailuobo",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8125,7 +8125,7 @@
     },
     {
       "name": "萝卜干",
-      "namePinyin": null,
+      "namePinyin": "luobogan",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8151,7 +8151,7 @@
     },
     {
       "name": "樱桃萝卜",
-      "namePinyin": null,
+      "namePinyin": "yingtaoluobo",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8177,7 +8177,7 @@
     },
     {
       "name": "红薯（生）",
-      "namePinyin": null,
+      "namePinyin": "hongshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8203,7 +8203,7 @@
     },
     {
       "name": "烤红薯",
-      "namePinyin": null,
+      "namePinyin": "kaohongshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8229,7 +8229,7 @@
     },
     {
       "name": "蒸红薯（去皮）",
-      "namePinyin": null,
+      "namePinyin": "zhenghongshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8255,7 +8255,7 @@
     },
     {
       "name": "红薯叶（生）",
-      "namePinyin": null,
+      "namePinyin": "hongshuye",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8281,7 +8281,7 @@
     },
     {
       "name": "红薯叶（蒸）",
-      "namePinyin": null,
+      "namePinyin": "hongshuye",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8307,7 +8307,7 @@
     },
     {
       "name": "红薯泥",
-      "namePinyin": null,
+      "namePinyin": "hongshuni",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8333,7 +8333,7 @@
     },
     {
       "name": "红薯（冷冻）",
-      "namePinyin": null,
+      "namePinyin": "hongshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8359,7 +8359,7 @@
     },
     {
       "name": "马铃薯（生）",
-      "namePinyin": null,
+      "namePinyin": "malingshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8385,7 +8385,7 @@
     },
     {
       "name": "烤马铃薯",
-      "namePinyin": null,
+      "namePinyin": "kaomalingshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8411,7 +8411,7 @@
     },
     {
       "name": "烤马铃薯（带皮）",
-      "namePinyin": null,
+      "namePinyin": "kaomalingshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8437,7 +8437,7 @@
     },
     {
       "name": "马铃薯（罐头）",
-      "namePinyin": null,
+      "namePinyin": "malingshu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8463,7 +8463,7 @@
     },
     {
       "name": "马铃薯泥",
-      "namePinyin": null,
+      "namePinyin": "malingshuni",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8489,7 +8489,7 @@
     },
     {
       "name": "马铃薯淀粉",
-      "namePinyin": null,
+      "namePinyin": "malingshudianfen",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8515,7 +8515,7 @@
     },
     {
       "name": "洋葱（甜）",
-      "namePinyin": null,
+      "namePinyin": "yangcong",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8541,7 +8541,7 @@
     },
     {
       "name": "玉米（白，生）",
-      "namePinyin": null,
+      "namePinyin": "yumi",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8567,7 +8567,7 @@
     },
     {
       "name": "玉米（黄，生）",
-      "namePinyin": null,
+      "namePinyin": "yumi",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8593,7 +8593,7 @@
     },
     {
       "name": "青椒（生）",
-      "namePinyin": null,
+      "namePinyin": "qingjiao",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8619,7 +8619,7 @@
     },
     {
       "name": "青椒（炒）",
-      "namePinyin": null,
+      "namePinyin": "qingjiao",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8645,7 +8645,7 @@
     },
     {
       "name": "红甜椒（生）",
-      "namePinyin": null,
+      "namePinyin": "hongtianjiao",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8671,7 +8671,7 @@
     },
     {
       "name": "红甜椒（炒）",
-      "namePinyin": null,
+      "namePinyin": "hongtianjiao",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8697,7 +8697,7 @@
     },
     {
       "name": "黄甜椒（生）",
-      "namePinyin": null,
+      "namePinyin": "huangtianjiao",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8723,11 +8723,11 @@
     },
     {
       "name": "白蘑菇（煮）",
-      "namePinyin": null,
+      "namePinyin": "baimogu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 28,
       "protein": 2.2,
       "fat": 0.5,
@@ -8749,11 +8749,11 @@
     },
     {
       "name": "白蘑菇（炒）",
-      "namePinyin": null,
+      "namePinyin": "baimogu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 26,
       "protein": 3.6,
       "fat": 0.3,
@@ -8775,11 +8775,11 @@
     },
     {
       "name": "蘑菇（罐头）",
-      "namePinyin": null,
+      "namePinyin": "mogu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 25,
       "protein": 1.9,
       "fat": 0.3,
@@ -8801,11 +8801,11 @@
     },
     {
       "name": "褐口蘑",
-      "namePinyin": null,
+      "namePinyin": "hekoumo",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 22,
       "protein": 2.5,
       "fat": 0.1,
@@ -8827,11 +8827,11 @@
     },
     {
       "name": "香菇（炒）",
-      "namePinyin": null,
+      "namePinyin": "xianggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 39,
       "protein": 3.5,
       "fat": 0.4,
@@ -8853,11 +8853,11 @@
     },
     {
       "name": "香菇（煮）",
-      "namePinyin": null,
+      "namePinyin": "xianggu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 56,
       "protein": 1.6,
       "fat": 0.2,
@@ -8879,11 +8879,11 @@
     },
     {
       "name": "鸡油菌",
-      "namePinyin": null,
+      "namePinyin": "jiyoujun",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 32,
       "protein": 1.5,
       "fat": 0.5,
@@ -8905,11 +8905,11 @@
     },
     {
       "name": "羊肚菌",
-      "namePinyin": null,
+      "namePinyin": "yangdujun",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 31,
       "protein": 3.1,
       "fat": 0.6,
@@ -8931,11 +8931,11 @@
     },
     {
       "name": "大褐菇（烤）",
-      "namePinyin": null,
+      "namePinyin": "dahegu",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
-      "category": "菌菇",
+      "category": "蔬菜",
       "kcalPer100g": 29,
       "protein": 3.3,
       "fat": 0.6,
@@ -8957,7 +8957,7 @@
     },
     {
       "name": "琼脂（干）",
-      "namePinyin": null,
+      "namePinyin": "qiongzhi",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -8983,7 +8983,7 @@
     },
     {
       "name": "竹笋（煮）",
-      "namePinyin": null,
+      "namePinyin": "zhusun",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9009,7 +9009,7 @@
     },
     {
       "name": "黄豆芽（生）",
-      "namePinyin": null,
+      "namePinyin": "huangdouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9035,7 +9035,7 @@
     },
     {
       "name": "黄豆芽（炒）",
-      "namePinyin": null,
+      "namePinyin": "huangdouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9061,7 +9061,7 @@
     },
     {
       "name": "黄豆芽（蒸）",
-      "namePinyin": null,
+      "namePinyin": "huangdouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9087,7 +9087,7 @@
     },
     {
       "name": "绿豆芽（焯熟）",
-      "namePinyin": null,
+      "namePinyin": "lvdouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9113,7 +9113,7 @@
     },
     {
       "name": "绿豆芽（罐头）",
-      "namePinyin": null,
+      "namePinyin": "lvdouya",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9139,7 +9139,7 @@
     },
     {
       "name": "芥蓝（熟）",
-      "namePinyin": null,
+      "namePinyin": "jielan",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9165,7 +9165,7 @@
     },
     {
       "name": "芥蓝（生）",
-      "namePinyin": null,
+      "namePinyin": "jielan",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9191,7 +9191,7 @@
     },
     {
       "name": "毛豆（煮熟）",
-      "namePinyin": null,
+      "namePinyin": "maodou",
       "aliases": [
         "Vegetables and Vegetable Products"
       ],
@@ -9217,7 +9217,7 @@
     },
     {
       "name": "红枣（鲜）",
-      "namePinyin": null,
+      "namePinyin": "hongzao",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9243,7 +9243,7 @@
     },
     {
       "name": "红枣（干）",
-      "namePinyin": null,
+      "namePinyin": "hongzao",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9269,7 +9269,7 @@
     },
     {
       "name": "荔枝",
-      "namePinyin": null,
+      "namePinyin": "lizhi",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9295,7 +9295,7 @@
     },
     {
       "name": "荔枝干",
-      "namePinyin": null,
+      "namePinyin": "lizhigan",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9321,7 +9321,7 @@
     },
     {
       "name": "桂圆（鲜）",
-      "namePinyin": null,
+      "namePinyin": "guiyuan",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9347,7 +9347,7 @@
     },
     {
       "name": "桂圆干",
-      "namePinyin": null,
+      "namePinyin": "guiyuangan",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9373,7 +9373,7 @@
     },
     {
       "name": "柿子（日本种）",
-      "namePinyin": null,
+      "namePinyin": "shizi",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9399,7 +9399,7 @@
     },
     {
       "name": "柿饼",
-      "namePinyin": null,
+      "namePinyin": "shibing",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9425,7 +9425,7 @@
     },
     {
       "name": "猕猴桃",
-      "namePinyin": null,
+      "namePinyin": "mihoutao",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9451,7 +9451,7 @@
     },
     {
       "name": "樱桃",
-      "namePinyin": null,
+      "namePinyin": "yingtao",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9477,7 +9477,7 @@
     },
     {
       "name": "菠萝",
-      "namePinyin": null,
+      "namePinyin": "boluo",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9503,7 +9503,7 @@
     },
     {
       "name": "黄桃罐头",
-      "namePinyin": null,
+      "namePinyin": "huangtaoguantou",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9529,7 +9529,7 @@
     },
     {
       "name": "梨罐头",
-      "namePinyin": null,
+      "namePinyin": "liguantou",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9555,7 +9555,7 @@
     },
     {
       "name": "菠萝罐头",
-      "namePinyin": null,
+      "namePinyin": "boluoguantou",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
@@ -9581,11 +9581,11 @@
     },
     {
       "name": "橙汁（浓缩还原）",
-      "namePinyin": null,
+      "namePinyin": "chengzhi",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 37,
       "protein": 0.6,
       "fat": 0.1,
@@ -9607,11 +9607,11 @@
     },
     {
       "name": "苹果汁（浓缩还原）",
-      "namePinyin": null,
+      "namePinyin": "pingguozhi",
       "aliases": [
         "Fruits and Fruit Juices"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 47,
       "protein": 0.1,
       "fat": 0.1,
@@ -9633,11 +9633,11 @@
     },
     {
       "name": "栗子（中国，生）",
-      "namePinyin": null,
+      "namePinyin": "lizi",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "坚果",
+      "category": "零食",
       "kcalPer100g": 224,
       "protein": 4.2,
       "fat": 1.1,
@@ -9659,11 +9659,11 @@
     },
     {
       "name": "板栗（烤）",
-      "namePinyin": null,
+      "namePinyin": "banli",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "坚果",
+      "category": "零食",
       "kcalPer100g": 239,
       "protein": 4.5,
       "fat": 1.2,
@@ -9685,11 +9685,11 @@
     },
     {
       "name": "板栗（蒸）",
-      "namePinyin": null,
+      "namePinyin": "banli",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "坚果",
+      "category": "零食",
       "kcalPer100g": 153,
       "protein": 2.9,
       "fat": 0.8,
@@ -9711,11 +9711,11 @@
     },
     {
       "name": "栗子（中国，干）",
-      "namePinyin": null,
+      "namePinyin": "lizi",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "坚果",
+      "category": "零食",
       "kcalPer100g": 363,
       "protein": 6.8,
       "fat": 1.8,
@@ -9737,11 +9737,11 @@
     },
     {
       "name": "椰子水",
-      "namePinyin": null,
+      "namePinyin": "yezishui",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 19,
       "protein": 0.7,
       "fat": 0.2,
@@ -9763,11 +9763,11 @@
     },
     {
       "name": "椰奶（罐头）",
-      "namePinyin": null,
+      "namePinyin": "yenai",
       "aliases": [
         "Nut and Seed Products"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 197,
       "protein": 2,
       "fat": 21.3,
@@ -9789,11 +9789,11 @@
     },
     {
       "name": "北豆腐（石膏点）",
-      "namePinyin": null,
+      "namePinyin": "beidoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 144,
       "protein": 17.3,
       "fat": 8.7,
@@ -9815,11 +9815,11 @@
     },
     {
       "name": "南豆腐（石膏点）",
-      "namePinyin": null,
+      "namePinyin": "nandoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 76,
       "protein": 8.1,
       "fat": 4.8,
@@ -9841,11 +9841,11 @@
     },
     {
       "name": "冻豆腐（石膏点）",
-      "namePinyin": null,
+      "namePinyin": "dongdoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 470,
       "protein": 52.4,
       "fat": 30.3,
@@ -9867,11 +9867,11 @@
     },
     {
       "name": "油豆腐（石膏点）",
-      "namePinyin": null,
+      "namePinyin": "youdoufu",
       "aliases": [
         "Legumes and Legume Products"
       ],
-      "category": "豆制品",
+      "category": "蛋白",
       "kcalPer100g": 270,
       "protein": 18.8,
       "fat": 20.2,
@@ -9893,11 +9893,11 @@
     },
     {
       "name": "淡水鲈鱼",
-      "namePinyin": null,
+      "namePinyin": "danshuiluyu",
       "aliases": [
         "Finfish and Shellfish Products"
       ],
-      "category": "水产",
+      "category": "蛋白",
       "kcalPer100g": 114,
       "protein": 18.9,
       "fat": 3.7,
@@ -9919,11 +9919,11 @@
     },
     {
       "name": "金枪鱼（水浸罐头）",
-      "namePinyin": null,
+      "namePinyin": "jinqiangyu",
       "aliases": [
         "Finfish and Shellfish Products"
       ],
-      "category": "水产",
+      "category": "蛋白",
       "kcalPer100g": 128,
       "protein": 23.6,
       "fat": 3,
@@ -9945,11 +9945,11 @@
     },
     {
       "name": "火腿（去骨）",
-      "namePinyin": null,
+      "namePinyin": "huotui",
       "aliases": [
         "Pork Products"
       ],
-      "category": "肉禽蛋",
+      "category": "蛋白",
       "kcalPer100g": 110,
       "protein": 17.3,
       "fat": 4,
@@ -9971,11 +9971,11 @@
     },
     {
       "name": "咖啡（现煮）",
-      "namePinyin": null,
+      "namePinyin": "kafei",
       "aliases": [
         "Beverages"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 1,
       "protein": 0.1,
       "fat": 0,
@@ -9997,11 +9997,11 @@
     },
     {
       "name": "红茶（冲泡）",
-      "namePinyin": null,
+      "namePinyin": "hongcha",
       "aliases": [
         "Beverages"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 1,
       "protein": 0,
       "fat": 0,
@@ -10023,11 +10023,11 @@
     },
     {
       "name": "速溶茶（无糖）",
-      "namePinyin": null,
+      "namePinyin": "surongcha",
       "aliases": [
         "Beverages"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 1,
       "protein": 0.1,
       "fat": 0,
@@ -10049,11 +10049,11 @@
     },
     {
       "name": "椰子水（即饮）",
-      "namePinyin": null,
+      "namePinyin": "yezishui",
       "aliases": [
         "Beverages"
       ],
-      "category": "饮品",
+      "category": "奶茶",
       "kcalPer100g": 18,
       "protein": 0.2,
       "fat": 0,
@@ -10075,11 +10075,11 @@
     },
     {
       "name": "康师傅 冰红茶",
-      "namePinyin": null,
+      "namePinyin": "kangshifubinghongcha",
       "aliases": [
         "康师傅"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 39,
       "protein": 0,
       "fat": 0,
@@ -10105,12 +10105,12 @@
     },
     {
       "name": "臻浓牛奶",
-      "namePinyin": null,
+      "namePinyin": "zhennongniunai",
       "aliases": [
         "yili",
         "伊利"
       ],
-      "category": "牛奶",
+      "category": "奶茶",
       "kcalPer100g": 74.3,
       "protein": 3.3,
       "fat": 4.6,
@@ -10136,11 +10136,11 @@
     },
     {
       "name": "点點心麵 Dim Sum Noodle 海鲜味 Seafood Flavour - DOLL",
-      "namePinyin": null,
+      "namePinyin": "diandianxinmianhaixianwei",
       "aliases": [
         "公仔 DOLL"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 426.5,
       "protein": 10,
       "fat": 18.2,
@@ -10166,12 +10166,12 @@
     },
     {
       "name": "茶π果味茶饮料 柑普柠檬茶",
-      "namePinyin": null,
+      "namePinyin": "chaguoweichayinliaoganpuningmengcha",
       "aliases": [
         "Nongfu Spring",
         "农夫山泉"
       ],
-      "category": "beverages",
+      "category": "奶茶",
       "kcalPer100g": 33,
       "protein": 0,
       "fat": 0,
@@ -10192,11 +10192,11 @@
     },
     {
       "name": "上好佳薯条",
-      "namePinyin": null,
+      "namePinyin": "shanghaojiashutiao",
       "aliases": [
         "上好佳"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 467,
       "protein": 5.3,
       "fat": 20.1,
@@ -10222,11 +10222,11 @@
     },
     {
       "name": "瓜子",
-      "namePinyin": null,
+      "namePinyin": "guazi",
       "aliases": [
         "老街口"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 584.6,
       "protein": 29.5,
       "fat": 41.8,
@@ -10252,9 +10252,9 @@
     },
     {
       "name": "青箭口香糖",
-      "namePinyin": null,
+      "namePinyin": "qingjiankouxiangtang",
       "aliases": [],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 9.3,
       "protein": 0,
       "fat": 0,
@@ -10275,11 +10275,11 @@
     },
     {
       "name": "林鳳營特濃重乳優格（無加糖）",
-      "namePinyin": null,
+      "namePinyin": "linfengyingtenongzhongruyouge",
       "aliases": [
         "林鳳營"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 77.4,
       "protein": 5.6,
       "fat": 3.4,
@@ -10305,11 +10305,11 @@
     },
     {
       "name": "穀拿滋棒-抹茶堅果",
-      "namePinyin": null,
+      "namePinyin": "gunazibangmochajianguo",
       "aliases": [
         "米大師"
       ],
-      "category": "plant",
+      "category": "零食",
       "kcalPer100g": 465.9,
       "protein": 13.8,
       "fat": 27.9,
@@ -10330,11 +10330,11 @@
     },
     {
       "name": "北海鱈魚香絲",
-      "namePinyin": null,
+      "namePinyin": "beihaixueyuxiangsi",
       "aliases": [
         "北海"
       ],
-      "category": "snacks",
+      "category": "零食",
       "kcalPer100g": 330.7,
       "protein": 23.9,
       "fat": 1.5,
@@ -10360,11 +10360,11 @@
     },
     {
       "name": "蒜香黑胡椒雞胸肉",
-      "namePinyin": null,
+      "namePinyin": "suanxiangheihujiaojixiongrou",
       "aliases": [
         "711"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 126,
       "protein": 21.4,
       "fat": 3.1,
@@ -10394,7 +10394,7 @@
       "aliases": [
         "Gao Ta (高塔)"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 220.1,
       "protein": 1.1,
       "fat": 0,
@@ -10420,11 +10420,11 @@
     },
     {
       "name": "椒麻雞胸肉 Simply Fit",
-      "namePinyin": null,
+      "namePinyin": "jiaomajixiongrou",
       "aliases": [
         "7-Eleven"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 117,
       "protein": 23.6,
       "fat": 1.8,
@@ -10450,11 +10450,11 @@
     },
     {
       "name": "溫泉蛋",
-      "namePinyin": null,
+      "namePinyin": "wenquandan",
       "aliases": [
         "石安牧場"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 140,
       "protein": 14.2,
       "fat": 7.6,
@@ -10480,11 +10480,11 @@
     },
     {
       "name": "舒迷雞胸肉",
-      "namePinyin": null,
+      "namePinyin": "shumijixiongrou",
       "aliases": [
         "大成"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 110,
       "protein": 22,
       "fat": 1.6,
@@ -10510,11 +10510,11 @@
     },
     {
       "name": "台灣鯛魚排",
-      "namePinyin": null,
+      "namePinyin": "taiwandiaoyupai",
       "aliases": [
         "善美的"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 110,
       "protein": 9.1,
       "fat": 1.8,
@@ -10540,11 +10540,11 @@
     },
     {
       "name": "一日野菜活力彩蔬",
-      "namePinyin": null,
+      "namePinyin": "yiriyecaihuolicaishu",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 59.2,
       "protein": 1.5,
       "fat": 2.1,
@@ -10574,7 +10574,7 @@
       "aliases": [
         "雪の恋"
       ],
-      "category": "desserts",
+      "category": "零食",
       "kcalPer100g": 288,
       "protein": 2.1,
       "fat": 4.5,
@@ -10600,11 +10600,11 @@
     },
     {
       "name": "玫瑰鹽水煮蛋",
-      "namePinyin": null,
+      "namePinyin": "meiguiyanshuizhudan",
       "aliases": [
         "卜蜂"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 128.9,
       "protein": 12.1,
       "fat": 8.2,
@@ -10630,11 +10630,11 @@
     },
     {
       "name": "芭樂切片",
-      "namePinyin": null,
+      "namePinyin": "baleqiepian",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "水果",
       "kcalPer100g": 47,
       "protein": 0.7,
       "fat": 0.2,
@@ -10660,11 +10660,11 @@
     },
     {
       "name": "一日野菜四色海藻",
-      "namePinyin": null,
+      "namePinyin": "yiriyecaisisehaizao",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 25.9,
       "protein": 1.2,
       "fat": 0.2,
@@ -10690,11 +10690,11 @@
     },
     {
       "name": "鹽味毛豆",
-      "namePinyin": null,
+      "namePinyin": "yanweimaodou",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 147,
       "protein": 12,
       "fat": 6.1,
@@ -10720,11 +10720,11 @@
     },
     {
       "name": "頂級蟹管肉",
-      "namePinyin": null,
+      "namePinyin": "dingjixieguanrou",
       "aliases": [
         "善美的"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 97,
       "protein": 19,
       "fat": 1.5,
@@ -10750,11 +10750,11 @@
     },
     {
       "name": "洋香瓜",
-      "namePinyin": null,
+      "namePinyin": "yangxianggua",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "水果",
       "kcalPer100g": 38.8,
       "protein": 1.2,
       "fat": 0,
@@ -10780,11 +10780,11 @@
     },
     {
       "name": "輕滷時蔬",
-      "namePinyin": null,
+      "namePinyin": "qinglushishu",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 29.9,
       "protein": 1.5,
       "fat": 1.2,
@@ -10810,11 +10810,11 @@
     },
     {
       "name": "美濃木瓜切片",
-      "namePinyin": null,
+      "namePinyin": "meinongmuguaqiepian",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "水果",
       "kcalPer100g": 36.2,
       "protein": 0.5,
       "fat": 0.3,
@@ -10840,11 +10840,11 @@
     },
     {
       "name": "BCAA 粉",
-      "namePinyin": null,
+      "namePinyin": "fen",
       "aliases": [
         "Decathlon"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 373.8,
       "protein": 61.3,
       "fat": 0.4,
@@ -10870,11 +10870,11 @@
     },
     {
       "name": "鮮蝦蔬果沙拉",
-      "namePinyin": null,
+      "namePinyin": "xianxiashuguoshala",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 70.2,
       "protein": 3.4,
       "fat": 2,
@@ -10904,7 +10904,7 @@
       "aliases": [
         "Kagetsudo (香月堂)"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 412.5,
       "protein": 5.8,
       "fat": 24.2,
@@ -10930,11 +10930,11 @@
     },
     {
       "name": "蘋果牛奶",
-      "namePinyin": null,
+      "namePinyin": "pinguoniunai",
       "aliases": [
         "福樂"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 68.8,
       "protein": 1.6,
       "fat": 1.5,
@@ -10959,7 +10959,7 @@
       "aliases": [
         "Pringles JP"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 522.6,
       "protein": 6.2,
       "fat": 29.2,
@@ -10989,7 +10989,7 @@
       "aliases": [
         "Jinglan (景蘭)"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 475.4,
       "protein": 6.1,
       "fat": 19.4,
@@ -11015,11 +11015,11 @@
     },
     {
       "name": "麥香減糖鮮奶麥片",
-      "namePinyin": null,
+      "namePinyin": "maixiangjiantangxiannaimaipian",
       "aliases": [
         "桂格"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 406.2,
       "protein": 7.4,
       "fat": 11.4,
@@ -11045,11 +11045,11 @@
     },
     {
       "name": "五香牛肉",
-      "namePinyin": null,
+      "namePinyin": "wuxiangniurou",
       "aliases": [
         "Aldi"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 212.7,
       "protein": 23.6,
       "fat": 12.8,
@@ -11075,11 +11075,11 @@
     },
     {
       "name": "醇奶茶乳清",
-      "namePinyin": null,
+      "namePinyin": "chunnaicharuqing",
       "aliases": [
         "Mars"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 391.4,
       "protein": 74.3,
       "fat": 7.4,
@@ -11105,11 +11105,11 @@
     },
     {
       "name": "水果麥片抹茶風味",
-      "namePinyin": null,
+      "namePinyin": "shuiguomaipianmochafengwei",
       "aliases": [
         "Calbee"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 444,
       "protein": 7.6,
       "fat": 15.6,
@@ -11135,11 +11135,11 @@
     },
     {
       "name": "Premium特濃抹茶巧克力雪糕",
-      "namePinyin": null,
+      "namePinyin": "tenongmochaqiaokelixuegao",
       "aliases": [
         "健司X辻利"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 304.4,
       "protein": 3.5,
       "fat": 21,
@@ -11165,11 +11165,11 @@
     },
     {
       "name": "大燕麥片",
-      "namePinyin": null,
+      "namePinyin": "dayanmaipian",
       "aliases": [
         "桂格"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 373.3,
       "protein": 13.1,
       "fat": 8,
@@ -11199,7 +11199,7 @@
       "aliases": [
         "おかめ納豆"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 200,
       "protein": 16.3,
       "fat": 10.1,
@@ -11225,11 +11225,11 @@
     },
     {
       "name": "里肌百匯三明治",
-      "namePinyin": null,
+      "namePinyin": "lijibaihuisanmingzhi",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 234,
       "protein": 11.5,
       "fat": 10.9,
@@ -11255,11 +11255,11 @@
     },
     {
       "name": "厚濃黑豆奶 無加糖",
-      "namePinyin": null,
+      "namePinyin": "hounongheidounaiwujiatang",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 50.5,
       "protein": 5.3,
       "fat": 2.4,
@@ -11285,11 +11285,11 @@
     },
     {
       "name": "泰式椰汁綠咖喱雞肉飯",
-      "namePinyin": null,
+      "namePinyin": "taishiyezhilvkalijiroufan",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 177,
       "protein": 5.2,
       "fat": 5.6,
@@ -11315,11 +11315,11 @@
     },
     {
       "name": "古早味滷排骨(Old Fashion Style Pork CHOPS)",
-      "namePinyin": null,
+      "namePinyin": "guzaoweilupaigu",
       "aliases": [
         "高津食品(GAO JIN FOOD)"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 163.3,
       "protein": 13.2,
       "fat": 8.9,
@@ -11345,11 +11345,11 @@
     },
     {
       "name": "桃木燻雞胸",
-      "namePinyin": null,
+      "namePinyin": "taomuxunjixiong",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 113.5,
       "protein": 22.6,
       "fat": 1.9,
@@ -11375,11 +11375,11 @@
     },
     {
       "name": "石安牧場溫泉蛋",
-      "namePinyin": null,
+      "namePinyin": "shianmuchangwenquandan",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 139.5,
       "protein": 14.2,
       "fat": 7.6,
@@ -11405,11 +11405,11 @@
     },
     {
       "name": "晶華霜降和牛飯糰",
-      "namePinyin": null,
+      "namePinyin": "jinghuashuangjiangheniufantuan",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 190,
       "protein": 4.8,
       "fat": 3.4,
@@ -11435,11 +11435,11 @@
     },
     {
       "name": "香草烤雞腿時蔬餐",
-      "namePinyin": null,
+      "namePinyin": "xiangcaokaojituishishucan",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "蔬菜",
       "kcalPer100g": 148.1,
       "protein": 8.8,
       "fat": 5,
@@ -11465,11 +11465,11 @@
     },
     {
       "name": "可可花生",
-      "namePinyin": null,
+      "namePinyin": "kekehuasheng",
       "aliases": [
         "MUJI"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 596,
       "protein": 13.1,
       "fat": 42,
@@ -11495,11 +11495,11 @@
     },
     {
       "name": "小龍蝦魚卵飯糰",
-      "namePinyin": null,
+      "namePinyin": "xiaolongxiayuluanfantuan",
       "aliases": [
         "7-11"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 206.3,
       "protein": 4.3,
       "fat": 5.6,
@@ -11525,11 +11525,11 @@
     },
     {
       "name": "黑糖奶茶 Pro",
-      "namePinyin": null,
+      "namePinyin": "heitangnaicha",
       "aliases": [
         "Body Goals"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 435,
       "protein": 67.5,
       "fat": 8.5,
@@ -11555,11 +11555,11 @@
     },
     {
       "name": "鮮奶豆漿",
-      "namePinyin": null,
+      "namePinyin": "xiannaidoujiang",
       "aliases": [
         "光泉"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 42.3,
       "protein": 3.7,
       "fat": 2.3,
@@ -11585,11 +11585,11 @@
     },
     {
       "name": "鮮乳",
-      "namePinyin": null,
+      "namePinyin": "xianru",
       "aliases": [
         "六甲田莊"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 67.3,
       "protein": 3.2,
       "fat": 3.7,
@@ -11615,11 +11615,11 @@
     },
     {
       "name": "草莓牛奶 Pro",
-      "namePinyin": null,
+      "namePinyin": "caomeiniunai",
       "aliases": [
         "Body Goals"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 432.5,
       "protein": 67.5,
       "fat": 7,
@@ -11645,11 +11645,11 @@
     },
     {
       "name": "A2Β酪蛋白鮮乳",
-      "namePinyin": null,
+      "namePinyin": "laodanbaixianru",
       "aliases": [
         "鮮乳坊"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 68,
       "protein": 3.2,
       "fat": 4,
@@ -11675,11 +11675,11 @@
     },
     {
       "name": "花生牛奶 Pro",
-      "namePinyin": null,
+      "namePinyin": "huashengniunai",
       "aliases": [
         "Body Goals"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 397.5,
       "protein": 67.5,
       "fat": 8.3,
@@ -11705,11 +11705,11 @@
     },
     {
       "name": "筍香肉包",
-      "namePinyin": null,
+      "namePinyin": "sunxiangroubao",
       "aliases": [
         "桂冠"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 258.6,
       "protein": 7.4,
       "fat": 7.1,
@@ -11735,11 +11735,11 @@
     },
     {
       "name": "法式可可 Pro",
-      "namePinyin": null,
+      "namePinyin": "fashikeke",
       "aliases": [
         "Body Goals"
       ],
-      "category": "包装食品",
+      "category": "other",
       "kcalPer100g": 407.5,
       "protein": 67.5,
       "fat": 7.3,
@@ -11765,11 +11765,11 @@
     },
     {
       "name": "酸菜牛肉麵",
-      "namePinyin": null,
+      "namePinyin": "suancainiuroumian",
       "aliases": [
         "Uni-President"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 153.4,
       "protein": 9.2,
       "fat": 3.9,
@@ -11795,11 +11795,11 @@
     },
     {
       "name": "雞胸肉",
-      "namePinyin": null,
+      "namePinyin": "jixiongrou",
       "aliases": [
         "博客"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 112,
       "protein": 20,
       "fat": 2.5,
@@ -11825,11 +11825,11 @@
     },
     {
       "name": "蛋白粉",
-      "namePinyin": null,
+      "namePinyin": "danbaifen",
       "aliases": [
         "GymMars"
       ],
-      "category": "包装食品",
+      "category": "蛋白",
       "kcalPer100g": 402.9,
       "protein": 74.3,
       "fat": 7.7,
@@ -11855,11 +11855,11 @@
     },
     {
       "name": "雞肉飯飯糰",
-      "namePinyin": null,
+      "namePinyin": "jiroufanfantuan",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 200.9,
       "protein": 6.1,
       "fat": 5.6,
@@ -11885,11 +11885,11 @@
     },
     {
       "name": "蕎麥麵",
-      "namePinyin": null,
+      "namePinyin": "qiaomaimian",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 141.8,
       "protein": 5.1,
       "fat": 2.3,
@@ -11915,11 +11915,11 @@
     },
     {
       "name": "皮蛋瘦肉粥",
-      "namePinyin": null,
+      "namePinyin": "pidanshourouzhou",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 71.4,
       "protein": 3.5,
       "fat": 4.2,
@@ -11945,11 +11945,11 @@
     },
     {
       "name": "起司貝果",
-      "namePinyin": null,
+      "namePinyin": "qisibeiguo",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 313.5,
       "protein": 9.6,
       "fat": 8.2,
@@ -11975,11 +11975,11 @@
     },
     {
       "name": "牧場限定鮮乳",
-      "namePinyin": null,
+      "namePinyin": "muchangxiandingxianru",
       "aliases": [
         "義美"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 68.3,
       "protein": 3.3,
       "fat": 3.9,
@@ -12005,11 +12005,11 @@
     },
     {
       "name": "Spark Pure 純生乳即溶乳清蛋白",
-      "namePinyin": null,
+      "namePinyin": "chunshengrujirongruqingdanbai",
       "aliases": [
         "Spark"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 409,
       "protein": 78,
       "fat": 7.3,
@@ -12035,11 +12035,11 @@
     },
     {
       "name": "細關東麵",
-      "namePinyin": null,
+      "namePinyin": "xiguandongmian",
       "aliases": [
         "五木"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 349.6,
       "protein": 12,
       "fat": 1.3,
@@ -12065,11 +12065,11 @@
     },
     {
       "name": "海鹽羅宋麵包",
-      "namePinyin": null,
+      "namePinyin": "haiyanluosongmianbao",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 400,
       "protein": 9.2,
       "fat": 16.6,
@@ -12095,11 +12095,11 @@
     },
     {
       "name": "肉鬆飯糰",
-      "namePinyin": null,
+      "namePinyin": "rousongfantuan",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 250.5,
       "protein": 5.3,
       "fat": 8.3,
@@ -12125,11 +12125,11 @@
     },
     {
       "name": "泰泰奶茶 Pro",
-      "namePinyin": null,
+      "namePinyin": "taitainaicha",
       "aliases": [
         "Body Goals"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 425,
       "protein": 67.5,
       "fat": 6,
@@ -12155,11 +12155,11 @@
     },
     {
       "name": "香草烤雞便當",
-      "namePinyin": null,
+      "namePinyin": "xiangcaokaojibiandang",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "外卖",
       "kcalPer100g": 148.1,
       "protein": 8.8,
       "fat": 5,
@@ -12185,11 +12185,11 @@
     },
     {
       "name": "豬肉水餃",
-      "namePinyin": null,
+      "namePinyin": "zhuroushuijiao",
       "aliases": [
         "及第"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 200.9,
       "protein": 6.6,
       "fat": 11.6,
@@ -12215,11 +12215,11 @@
     },
     {
       "name": "麻婆豆腐飯",
-      "namePinyin": null,
+      "namePinyin": "mapodoufufan",
       "aliases": [
         "Seven"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 137.6,
       "protein": 4.6,
       "fat": 3.3,
@@ -12245,11 +12245,11 @@
     },
     {
       "name": "幸運兒鮮乳",
-      "namePinyin": null,
+      "namePinyin": "xingyunerxianru",
       "aliases": [
         "幸運兒"
       ],
-      "category": "包装食品",
+      "category": "奶茶",
       "kcalPer100g": 68,
       "protein": 3.2,
       "fat": 4,
@@ -12275,11 +12275,11 @@
     },
     {
       "name": "咚兵衛烏冬麵",
-      "namePinyin": null,
+      "namePinyin": "dongbingweiwudongmian",
       "aliases": [
         "日清"
       ],
-      "category": "包装食品",
+      "category": "主食",
       "kcalPer100g": 420,
       "protein": 10.5,
       "fat": 17.1,
@@ -12305,11 +12305,11 @@
     },
     {
       "name": "超能蛋白 低脂・堅果可可口味",
-      "namePinyin": null,
+      "namePinyin": "chaonengdanbaidizhijianguokekekouwei",
       "aliases": [
         "Fresh delight"
       ],
-      "category": "包装食品",
+      "category": "零食",
       "kcalPer100g": 55.5,
       "protein": 5.5,
       "fat": 0.7,

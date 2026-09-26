@@ -126,6 +126,9 @@ async function cleanup(): Promise<void> {
   await prisma.mealLog.deleteMany({ where: { user: { email: USER_CC } } });
   await prisma.aiUsage.deleteMany({ where: { user: { email: USER_CC } } });
   await prisma.user.deleteMany({ where: { email: USER_CC } });
+  // 关键：本用例在 beforeAll 里 create 了一条 builtin 食物，若不删会在 dev.db 累积
+  // （T7 实测泄漏 149 条）。按「固定名 + source='builtin'」精确删除，绝不误伤真实种子。
+  await prisma.foodItem.deleteMany({ where: { name: '米饭（confirm 并发测试）', source: 'builtin' } });
 }
 
 const today = toLocalDateKey(new Date());

@@ -14,8 +14,9 @@
  * 许可：OFF 数据为 **ODbL 1.0**，须署名「© Open Food Facts contributors」（见 DATA-LICENSE.md）。
  */
 
-import { round1 } from '@qsh/core';
+import { DEFAULT_FOOD_CATEGORY, classifyCategoryByKeywords, round1 } from '@qsh/core';
 
+import type { FoodCategory } from '@qsh/core';
 import type { ServingUnit } from '@qsh/shared-types';
 
 /** 归一化后的「外部食物草稿」——尚未入库，故无 DB `id`。 */
@@ -25,7 +26,7 @@ export interface ExternalFoodDraft {
   /** 名称（中文优先，回退原文） */
   name: string;
   /** 映射到本项目分类（主食 / 家常菜 / 外卖 / 奶茶 / 零食 / 水果 / 蔬菜 / 蛋白 / other） */
-  category: string;
+  category: FoodCategory;
   kcalPer100g: number;
   proteinGPer100g: number;
   fatGPer100g: number;
@@ -131,48 +132,21 @@ function nonNegative(value: number | null): number {
   return value === null || value < 0 ? 0 : value;
 }
 
-/** 分类映射规则（顺序敏感：先具体后笼统）。 */
-const CATEGORY_RULES: ReadonlyArray<{ keywords: readonly string[]; category: string }> = [
-  {
-    keywords: ['beverage', 'drink', 'water', 'tea', 'coffee', 'juice', 'soda', '奶茶', '饮料', '咖啡'],
-    category: '饮料',
-  },
-  {
-    keywords: [
-      'snack', 'chocolate', 'candy', 'crisps', 'chips', 'biscuit', 'cookie', 'dessert', 'cake',
-      'ice cream', '零食', '薯片', '糖',
-    ],
-    category: '零食',
-  },
-  { keywords: ['fruit', '水果', '果汁'], category: '水果' },
-  { keywords: ['vegetable', 'veg', 'salad', '蔬菜', '番茄', '西红柿'], category: '蔬菜' },
-  {
-    keywords: [
-      'dairy', 'milk', 'cheese', 'yogurt', 'egg', 'meat', 'fish', 'poultry', 'protein',
-      '豆', '肉', '蛋', '奶', '水产', '海鲜',
-    ],
-    category: '蛋白',
-  },
-  {
-    keywords: ['cereal', 'bread', 'rice', 'pasta', 'noodle', 'grain', '主食', '面', '饭', '米粉'],
-    category: '主食',
-  },
-  { keywords: ['fast food', 'takeaway', 'ready meal', '外卖', '快餐', '盒饭'], category: '外卖' },
-];
-
-/** 把 OFF 分类文本映射到本项目分类；未命中归 `other`。 */
-function mapCategory(product: Record<string, unknown>): string {
+/**
+ * 把 OFF 分类文本（`categories` + `categories_tags`）与商品名映射到本项目 9 类。
+ *
+ * 分类口径已收敛到 `@qsh/core` 的 `classifyCategoryByKeywords`（唯一真源），
+ * 本函数只负责拼装待判定文本。相比旧实现有两处改进：
+ * - 旧的 `CATEGORY_RULES` 会产出 schema 并不存在的 `饮料`，现统一为 `奶茶`；
+ * - 额外把商品名纳入判定，命中率更高；未命中仍归 `other`（不硬塞）。
+ */
+function mapCategory(product: Record<string, unknown>): FoodCategory {
   const tags = Array.isArray(product.categories_tags)
     ? product.categories_tags.filter((item): item is string => typeof item === 'string')
     : [];
   const categories = typeof product.categories === 'string' ? product.categories : '';
-  const text = `${categories} ${tags.join(' ')}`.toLowerCase();
-  for (const rule of CATEGORY_RULES) {
-    if (rule.keywords.some((keyword) => text.includes(keyword))) {
-      return rule.category;
-    }
-  }
-  return 'other';
+  const text = `${categories} ${tags.join(' ')} ${pickName(product)}`.toLowerCase();
+  return classifyCategoryByKeywords(text) ?? DEFAULT_FOOD_CATEGORY;
 }
 
 /** 取名称：中文名优先，其次原文名 / 通用名；≤80 字。 */

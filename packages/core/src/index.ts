@@ -170,6 +170,17 @@ export {
   type RankFrequentFoodsOptions,
 } from './food/frequency';
 
+// 食物分类唯一口径（「食物库数据质量」T1：off.client / 种子脚本 / 校验共用）
+export {
+  DEFAULT_FOOD_CATEGORY,
+  FOOD_CATEGORIES,
+  FOOD_CATEGORY_BY_RAW,
+  classifyCategoryByKeywords,
+  isFoodCategory,
+  mapFoodCategory,
+  type FoodCategory,
+} from './food/category';
+
 // 餐次排序 / 跨餐移动（R3.8）
 export {
   applyReorder,

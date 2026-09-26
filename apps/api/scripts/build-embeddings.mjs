@@ -65,8 +65,15 @@ const vectors = items.map((item) => {
   return { key: item.name, vec: embedText(text).map((v) => Number(v.toFixed(6))) };
 });
 
+// 与仓库既有产物保持一致：**单行紧凑 JSON**（该文件是机器产物，紧凑格式可让 diff
+// 只反映向量数值变化，而不是上万行的缩进噪声）。
 writeFileSync(
   OUT_PATH,
-  JSON.stringify({ dim: DIM, count: vectors.length, generatedBy: 'apps/api/scripts/build-embeddings.mjs', vectors }, null, 1),
+  JSON.stringify({
+    dim: DIM,
+    count: vectors.length,
+    generatedBy: 'apps/api/scripts/build-embeddings.mjs',
+    vectors,
+  }),
 );
 console.log(`wrote ${vectors.length} embeddings (dim=${DIM}) -> ${OUT_PATH}`);

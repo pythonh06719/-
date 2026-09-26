@@ -186,7 +186,7 @@ describe('在线食物库兜底（Phase C-1）', () => {
     expect(item.externalId).toBe(SEARCH_CODE);
     expect(item.name).toBe('测试气泡水');
     expect(item.brand).toBe('FeelGood');
-    expect(item.category).toBe('饮料');
+    expect(item.category).toBe('奶茶');
     expect(item.kcalPer100g).toBe(2);
     expect(item.defaultServingGrams).toBe(330);
     expect(item.source).toBe('openfoodfacts');

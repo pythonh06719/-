@@ -11,7 +11,7 @@
 
 | 项 | 说明 |
 | --- | --- |
-| 条数 | **57 条**（可覆盖主食 / 家常菜 / 外卖常见 / 饮品 / 零食 / 水果 / 蔬菜 / 蛋白 八大类） |
+| 条数 | **57 条**（可覆盖主食 / 家常菜 / 外卖常见 / 奶茶 / 零食 / 水果 / 蔬菜 / 蛋白 / other 九大类） |
 | 计量口径 | 每 **100g 可食部**：`kcalPer100g`（kcal）、`protein`/`fat`/`carbs`/`fiber`/`sugar`（g）、`sodium`（mg） |
 | 份量单位 | `servingUnits` 提供「个/碗/杯/片/袋/块/根/只…」等自然份量 + 每单位克数（结构见 §3） |
 | 落库映射 | 种子 `source: "local"`（来源标记）→ 数据库 `food_items.source = 'builtin'` |
@@ -105,7 +105,7 @@ npm run db:seed -w @qsh/api
 
 ## 6. 第三方数据集署名（2026-09-12 引入）
 
-### 6.1 Open Food Facts（182 条，source='openfoodfacts'）
+### 6.1 Open Food Facts（258 条，source='openfoodfacts'）
 
 - 来源：https://world.openfoodfacts.org （官方 API v2，区域=中国大陆/中国香港/中国台湾）
 - 许可：**Open Database License (ODbL) 1.0**
@@ -125,4 +125,23 @@ npm run db:seed -w @qsh/api
 
 - 严禁从《中国食物成分表》（人民卫生出版社，版权作品）批量复制数据
 - 严禁编造营养数值；所有引入数据必须可溯源到上述来源之一，并在 `_meta.sources` 中登记
-- 三源合并脚本：`merge-seeds.mjs`（幂等，本地样例优先级最高）
+- 三源合并脚本：`merge-seeds.ts`（`npx tsx infra/db/seed/merge-seeds.ts`，幂等，本地样例优先级最高）
+
+---
+
+## 7. 数据质量约束（分类 / 拼音 / 校验）
+
+- **分类唯一口径**：`category` 只允许 9 类 —— `主食 / 家常菜 / 外卖 / 奶茶 / 零食 / 水果 / 蔬菜 / 蛋白 / other`
+  （与 `apps/api/prisma/schema.prisma` 一致；旧的 `饮品`、`饮料` 统一归入 `奶茶`）。
+  映射实现收敛到 `@qsh/core` 的 `mapFoodCategory`（唯一真源），
+  OFF 在线兜底（`off.client.ts`）、合并脚本、入库校验均引用它，杜绝「多处各写一份导致漂移」。
+  一次性分类修复脚本：`fix-data-quality.ts`（`npx tsx ... [--write]`）。
+- **拼音**：`namePinyin` 用于拼音搜索，覆盖率目标 ≥ 95%；缺失条目由
+  `fill-pinyin.mjs`（依赖 `pinyin-pro`，纯 JS）补齐；日文/纯英文名**留空**（宁缺勿错）。
+- **入库校验**（fail-fast）：`merge-seeds.ts` 与 `apps/api/prisma/seed.ts` 均校验
+  `name` 非空 / `category` ∈ 9 类 / `0 ≤ kcalPer100g ≤ 900` / 每个 `servingUnits[].grams > 0`，
+  失败即报错并指出「第几条 / 哪个字段」。
+- **向量重建**：改动 `name` / `namePinyin` / `aliases` / `category` 后必须重建
+  `food_embeddings.json`（`node apps/api/scripts/build-embeddings.mjs`）。
+- **本地测试残留清理**：`npx tsx apps/api/scripts/cleanup-e2e-food-rows.ts --write`
+  （只删 `source='builtin'` 且不在本地样例集内的行）。

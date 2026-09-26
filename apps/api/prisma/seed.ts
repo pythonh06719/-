@@ -21,6 +21,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PrismaClient } from '@prisma/client';
+import { FOOD_CATEGORIES, isFoodCategory } from '@qsh/core';
 import { config as loadEnv } from 'dotenv';
 
 // ---------------------------------------------------------------------------
@@ -119,6 +120,49 @@ async function main(): Promise<void> {
   }
 }
 
+/**
+ * 逐条校验食物种子（T6，fail-fast）。
+ *
+ * 规则（与 `infra/db/seed/merge-seeds.ts` 一致）：
+ * - `name` 非空；
+ * - `category` ∈ 9 类（`@qsh/core` 的唯一口径，杜绝脏分类入库）；
+ * - `0 ≤ kcalPer100g ≤ 900`（0 合法：如「无糖气泡水」；900 为纯油脂上限）；
+ * - 每个 `servingUnits[].grams > 0`。
+ *
+ * 任一不合法 → **抛错并列出全部问题**（第几条 / 哪个字段 / 何值）。
+ *
+ * @param items 种子条目
+ */
+function validateSeedFoods(items: SeedFoodItem[]): void {
+  const problems: string[] = [];
+  items.forEach((item, index) => {
+    const at = `第 ${index + 1} 条「${item.name ?? '<无名>'}」`;
+    if (typeof item.name !== 'string' || item.name.trim() === '') {
+      problems.push(`${at}：name 为空`);
+    }
+    if (!isFoodCategory(item.category)) {
+      problems.push(`${at}：category=${JSON.stringify(item.category)} 非法（应为 ${FOOD_CATEGORIES.join('/')}）`);
+    }
+    const kcal = item.kcalPer100g;
+    if (typeof kcal !== 'number' || !Number.isFinite(kcal) || kcal < 0 || kcal > 900) {
+      problems.push(`${at}：kcalPer100g=${JSON.stringify(kcal)} 必须在 [0, 900] 内`);
+    }
+    const units: SeedServingUnit[] = item.servingUnits ?? [];
+    if (!Array.isArray(units) || units.length === 0) {
+      problems.push(`${at}：servingUnits 为空`);
+    } else {
+      units.forEach((unit, unitIndex) => {
+        if (typeof unit.grams !== 'number' || !(unit.grams > 0)) {
+          problems.push(`${at}：servingUnits[${unitIndex}].grams=${JSON.stringify(unit.grams)} 必须 > 0`);
+        }
+      });
+    }
+  });
+  if (problems.length > 0) {
+    throw new Error(`种子校验未通过（${problems.length} 处，来源 ${SEED_PATH}）：\n  - ${problems.join('\n  - ')}`);
+  }
+}
+
 /** 食物库种子（一期）。 */
 async function seedFoods(prisma: PrismaClient): Promise<void> {
   const raw: string = readFileSync(SEED_PATH, 'utf8');
@@ -127,6 +171,10 @@ async function seedFoods(prisma: PrismaClient): Promise<void> {
   if (!Array.isArray(seed.items) || seed.items.length === 0) {
     throw new Error(`种子文件无有效 items：${SEED_PATH}`);
   }
+
+  // 入库前**逐条校验**（T6，fail-fast）：脏数据一律拦在写库之前，
+  // 明确报出「第几条 / 哪个字段 / 什么值」，绝不静默入库。
+  validateSeedFoods(seed.items);
 
   let created = 0;
   let updated = 0;

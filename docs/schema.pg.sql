@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS food_items (
   serving_units            TEXT    NOT NULL DEFAULT '[]',  -- JSON 文本（应用层 JSON.parse）
   default_serving_grams    DOUBLE PRECISION,
   barcode                  TEXT,
-  source                   TEXT    NOT NULL DEFAULT 'builtin' CHECK (source IN ('builtin','openfoodfacts','user_custom')),
+  source                   TEXT    NOT NULL DEFAULT 'builtin' CHECK (source IN ('builtin','openfoodfacts','usda','user_custom')),
   created_by_user_id       BIGINT  REFERENCES users(id) ON DELETE CASCADE,
   is_verified              BOOLEAN NOT NULL DEFAULT FALSE,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
