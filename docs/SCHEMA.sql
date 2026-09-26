@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS food_items (
   serving_units         TEXT    NOT NULL DEFAULT '[]',       -- JSON array<{unit,grams,isDefault?,label?}> (R3.3)
   default_serving_grams REAL,
   barcode               TEXT,                                 -- Open Food Facts (二期, R3.6)
-  source                TEXT    NOT NULL DEFAULT 'builtin' CHECK (source IN ('builtin','openfoodfacts','usda','user_custom')),
+  source                TEXT    NOT NULL DEFAULT 'builtin' CHECK (source IN ('builtin','openfoodfacts','usda','cfcd','user_custom')),
   created_by_user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,  -- user_custom 归属；builtin 为 NULL
   is_verified           INTEGER NOT NULL DEFAULT 0 CHECK (is_verified IN (0,1)),
   created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),

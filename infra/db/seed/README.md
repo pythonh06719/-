@@ -150,3 +150,53 @@ npm run db:seed -w @qsh/api
   `food_embeddings.json`（`node apps/api/scripts/build-embeddings.mjs`）。
 - **本地测试残留清理**：`npx tsx apps/api/scripts/cleanup-e2e-food-rows.ts --write`
   （只删 `source='builtin'` 且不在本地样例集内的行）。
+
+---
+
+## 8. 中国食物成分表（CFCD）扩量数据 —— 来源 / 许可 / 用途（**务必遵守**）
+
+### 数据来源
+- **平台**：中国食物成分表 在线查询平台（中国营养学会 / 中国疾病预防控制中心营养与健康所）
+  `https://nlc.chinanutri.cn/fq/`；`source` 标记为 **`cfcd`**。
+- **接口**：`POST https://nlc.chinanutri.cn/fq/FoodInfoQueryAction!queryFoodInfoList.do`，
+  按「20 个一级 / 91 个二级分类」串行分页抓取（每页 8 条，全库约 1360 条）。
+
+### 许可声明（原文抄录）
+> **未经中国营养学会/中国疾病预防控制中心营养与健康所书面允许不得用于商业目的。**
+
+### 本项目使用定位（红线）
+- 本项目对该数据集的定位为 **个人、非商业、自用（本机学习/开发）**。
+- **禁止**：上传到任何联网服务 / 云端同步、**再分发**（含随代码仓库公开）、商业用途。
+- **抓取礼仪**：**串行、每次请求间隔 ≥2s**、失败退避重试、支持断点续抓（避免重复打扰平台）。
+- 若后续需对外分发本仓库，**必须先移除** `food_items.cfcd.raw.json` / `food_items.cfcd.json`
+  及 `food_items.seed.json` 中的 `source='cfcd'` 条目。
+
+### 相关文件
+| 文件 | 作用 |
+| --- | --- |
+| `fetch-cfcd.mjs` | 抓取分类树 + 按二级分类串行分页 → `food_items.cfcd.raw.json`（raw 36 字段原样保留，便于审计） |
+| `import-cfcd.ts` | 转换：`kJ/4.184→kcal`、脏值（`—`→null / `Tr`→0）、字段映射、分类映射、名称清洗 → `food_items.cfcd.json` |
+| `serving-templates.ts` | 份量模板：覆盖 **81** 个有把握的二级分类；其余（多为「其它」/婴幼儿食品）**兜底 100 克**。平台无份量数据，故不捏造具体份量 |
+| `merge-seeds.ts` | 四源合并（本地/OFF/USDA/CFCD），CFCD 与既有种子按**归一化名**去重 |
+
+### 转换口径（`import-cfcd.ts`）
+- 能量：平台为 **kJ** → `kcalPer100g = round(kJ / 4.184)`。
+- 脏值：`"—"`（未检测）→ `null`；`"Tr"`（未检出/微量）→ `0`；空串/非数值 → `null`。**不把 null 当 0**。
+- 映射字段：热量 / 蛋白 / 脂肪 / 碳水 / 总膳食纤维 / 钠 / 钙 / 铁 / 钾 / 镁。
+- **明确留空**：`saturatedFat`（平台为**百分比**非克）、`sugar` / 维生素 D / B12（平台无此三项）。
+- 分类：调用 `@qsh/core` 的 `resolveCfcdCategory`（映射表 `CFCD_CATEGORY_BY_PATH` 在 core，单一真源）。
+- 份量：`serving-templates.ts` 的 `servingFor(一级, 二级)`。
+
+### 本次扩量结果（实测，2026-09 全量抓取）
+| 阶段 | 条数 | 说明 |
+| --- | --- | --- |
+| 抓取（raw） | **1354** | 20 一级 / 91 二级分类全量；raw 36 字段原样保留（可审计） |
+| 转换（cfcd.json） | **1345** | 跳过 **9** 条 —— 全为平台内**完全同名**条目，seed 幂等键含 name，同名会相互覆盖，故保留首条 |
+| 合并去重 | **1245** | 与既有 443 条（local/OFF/USDA）按**归一化名**比对，跳过同名 **100** |
+| 最终种子 | **1688** | local 57 + OFF 258 + USDA 128 + **cfcd 1245** |
+
+- 字段可用率（CFCD 1245 条）：kcal 1245 / 蛋白 1184 / 脂肪 1160 / 碳水 1245 / 纤维 220 /
+  钠 1146 / 钙 1177 / 铁 1173 / 钾 1122 / 镁 1099（`—`=未检测保留 null，不计入）。
+- 有别名（括号内容拆出）739 条；`namePinyin` 由 `fill-pinyin.mjs` 统一补（纯日文名无拼音）。
+- **反灌修正**：`merge-seeds.ts` 合并时**剔除**既有种子里的 `source='cfcd'` 条目、每次从
+  `food_items.cfcd.json` **重建** —— 否则修改 cfcd.json 后，旧 CFCD 会被当既有集合导致新数据全部「同名跳过」而无法反灌。

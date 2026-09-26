@@ -34,7 +34,7 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type MealLogSource = 'search' | 'quick_add' | 'barcode' | 'ai' | 'combo';
 
 /** `food_items.source` */
-export type FoodSource = 'builtin' | 'openfoodfacts' | 'user_custom';
+export type FoodSource = 'builtin' | 'openfoodfacts' | 'usda' | 'cfcd' | 'user_custom';
 
 /** `weight_logs.source` */
 export type WeightLogSource = 'manual' | 'import';

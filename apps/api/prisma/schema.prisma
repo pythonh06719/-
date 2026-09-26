@@ -209,7 +209,7 @@ model FoodItem {
   servingUnits             String  @default("[]") @map("serving_units")
   defaultServingGrams      Float?  @map("default_serving_grams") // 冗余默认单位克数
   barcode                  String? @unique(map: "ux_food_barcode") // Open Food Facts (二期)
-  source                   String  @default("builtin") // builtin | openfoodfacts | usda | user_custom
+  source                   String  @default("builtin") // builtin | openfoodfacts | usda | cfcd | user_custom
   createdByUserId          Int?    @map("created_by_user_id") // user_custom 归属；builtin 为 NULL
   isVerified               Boolean @default(false) @map("is_verified") // INTEGER(0/1)
   createdAt                String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")

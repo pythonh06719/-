@@ -172,6 +172,7 @@ export {
 
 // 食物分类唯一口径（「食物库数据质量」T1：off.client / 种子脚本 / 校验共用）
 export {
+  CFCD_CATEGORY_BY_PATH,
   DEFAULT_FOOD_CATEGORY,
   FOOD_CATEGORIES,
   FOOD_CATEGORY_BY_NAME,
@@ -179,6 +180,7 @@ export {
   classifyCategoryByKeywords,
   isFoodCategory,
   mapFoodCategory,
+  resolveCfcdCategory,
   type FoodCategory,
 } from './food/category';
 

@@ -1,9 +1,10 @@
 /**
- * 种子合并脚本：把「本地样例集 + Open Food Facts + USDA 精选」三源合并为最终种子文件。
+ * 种子合并脚本：把「本地样例集 + Open Food Facts + USDA 精选 + 中国食物成分表」合并为最终种子文件。
  *
  * - 本地样例（57 条，source='local' → 库内 'builtin'）：权威口径的常识值
  * - OFF（source='openfoodfacts'，ODbL 1.0）：中国区/港台区包装食品，署名要求见 README
  * - USDA（source='usda'，public domain）：SR Legacy 精选条目，中文名来自人工翻译映射
+ * - CFCD（source='cfcd'）：中国食物成分表（个人非商业自用；来源/许可见 README §8）
  *
  * 幂等：按名称跨源去重（本地样例优先级最高）。
  *
@@ -35,6 +36,16 @@ const SEED_PATH = resolve(here, 'food_items.seed.json');
 const OFF_PATH = resolve(here, 'food_items.openfoodfacts.raw.json');
 const USDA_PATH = resolve(here, 'food_items.usda.candidates.json');
 const USDA_MAP_PATH = resolve(here, 'usda_zh_map.json');
+const CFCD_PATH = resolve(here, 'food_items.cfcd.json');
+
+/** 归一化名称：去「括号及内容」+ 空白 + 常用标点，转小写（用于跨源去重比对）。 */
+function normalizeName(name: string): string {
+  return String(name)
+    .replace(/[（(［[]([^）)］\]]*)[）)］\]]/g, '')
+    .replace(/[\s\u3000]+/g, '')
+    .replace(/[，,、。.·・\-—_/]/g, '')
+    .toLowerCase();
+}
 
 /** 自然份量单位。 */
 interface ServingUnit {
@@ -103,10 +114,16 @@ const zhMap = JSON.parse(readFileSync(USDA_MAP_PATH, 'utf8')) as {
 };
 
 const usdaByNdb = new Map(usda.items.map((item) => [String(item.ndbNumber), item]));
-const seen = new Set(existing.items.map((item) => item.name));
 
-// 既有条目也过一遍归一（幂等；本地样例优先级最高，故先入 seen 并用其名字）
-const localItems: SeedItem[] = existing.items.map((item) => ({
+// ⚠️ 既有条目里的 **CFCD 部分一律剔除**：CFCD 以 `food_items.cfcd.json` 为**唯一真源**，
+// 每次合并都从 cfcd.json **重建**（见下方 cfcdItems）。
+// 否则：改了 cfcd.json（如新增「平台内同名去重」）后，merge 会拿这份旧 CFCD 当既有集合去比对，
+// 结果**所有新 CFCD 都被当成同名跳过**，旧数据（含重复条目）永久残留、无法反灌。
+const existingBase = existing.items.filter((item) => item.source !== 'cfcd');
+const seen = new Set(existingBase.map((item) => item.name));
+
+// 既有非 CFCD 条目也过一遍归一（幂等；本地样例优先级最高，故先入 seen 并用其名字）
+const localItems: SeedItem[] = existingBase.map((item) => ({
   ...item,
   category: mapFoodCategory(item.category, item.name),
 }));
@@ -165,7 +182,28 @@ for (const pick of zhMap.picks) {
   });
 }
 
-const items: SeedItem[] = [...localItems, ...offItems, ...usdaItems];
+// —— CFCD（中国食物成分表）扩量数据 ——
+// 去重：与「既有种子」按**归一化名**比对（去括号内容 + 空白 + 标点），命中即跳过；
+// 但**不**把 CFCD 自身加入 `seen` —— 平台内部同名不同 foodId（如「鸡蛋(白皮)/(红皮)」）
+// 需全部保留，故仅与既有集合比对。
+let cfcdFile: { items: SeedItem[] } = { items: [] };
+try {
+  cfcdFile = JSON.parse(readFileSync(CFCD_PATH, 'utf8')) as { items: SeedItem[] };
+} catch {
+  cfcdFile = { items: [] }; // 尚未抓取 / 转换时静默跳过
+}
+const existingNormalized = new Set(existingBase.map((item) => normalizeName(item.name)));
+const cfcdItems: SeedItem[] = [];
+let cfcdSkipped = 0;
+for (const item of cfcdFile.items ?? []) {
+  if (existingNormalized.has(normalizeName(item.name))) {
+    cfcdSkipped += 1;
+    continue;
+  }
+  cfcdItems.push({ ...item, category: mapFoodCategory(item.category, item.name) });
+}
+
+const items: SeedItem[] = [...localItems, ...offItems, ...usdaItems, ...cfcdItems];
 
 // T6：输出前校验（失败即抛错，绝不写脏数据）
 validateItems(items, '合并结果');
@@ -183,11 +221,12 @@ const sourceCount = countBySource(items);
 
 const merged = {
   _meta: {
-    description: '「轻生活」食物库种子：本地合规样例集 + Open Food Facts + USDA SR Legacy 精选',
+    description: '「轻生活」食物库种子：本地合规样例集 + Open Food Facts + USDA SR Legacy 精选 + 中国食物成分表',
     dataSource:
       '① 本地样例集：常识级公开营养值（57 条，权威口径）；' +
       '② Open Food Facts：开放许可 ODbL 1.0，© Open Food Facts contributors，采集区域为中国大陆/中国香港/中国台湾地区包装食品；' +
-      '③ USDA FoodData Central SR Legacy：美国农业部公有领域数据，中文名为人工翻译，来源已逐条标注',
+      '③ USDA FoodData Central SR Legacy：美国农业部公有领域数据，中文名为人工翻译，来源已逐条标注；' +
+      '④ 中国食物成分表（中国营养学会 / 中国疾控中心营养与健康所）：仅个人非商业自用，未经书面允许不得用于商业目的、不得再分发（详见 README §8）',
     precision:
       '全部为每 100g 数值；样例集取常识中位值，OFF/USDA 为原始测定/申报值（保留 1 位小数）。' +
       '数据用于日常记录参考，不构成营养诊断',
@@ -203,6 +242,11 @@ const merged = {
         license: 'Public Domain（USDA FoodData Central SR Legacy）',
         url: 'https://fdc.nal.usda.gov',
       },
+      cfcd: {
+        count: sourceCount.get('cfcd') ?? 0,
+        license: '个人非商业自用（中国食物成分表，未经书面允许不得用于商业目的；不得再分发）',
+        url: 'https://nlc.chinanutri.cn/fq/',
+      },
     },
     todo: (existing._meta?.todo as string) ?? '扩量至 500 条以上需客户提供授权数据集，严禁编造营养数值',
     itemCount: items.length,
@@ -213,11 +257,13 @@ const merged = {
 writeFileSync(SEED_PATH, JSON.stringify(merged, null, 2));
 console.log(
   `合并完成：本地 ${localItems.length} + OFF ${offItems.length} + USDA ${usdaItems.length}` +
+    ` + CFCD ${cfcdItems.length}（跳过同名 ${cfcdSkipped}）` +
     ` = ${items.length} 条`,
 );
 console.log(
   `_meta.sources 按真实来源统计：local ${sourceCount.get('local') ?? 0} / ` +
-    `openfoodfacts ${sourceCount.get('openfoodfacts') ?? 0} / usda ${sourceCount.get('usda') ?? 0}`,
+    `openfoodfacts ${sourceCount.get('openfoodfacts') ?? 0} / usda ${sourceCount.get('usda') ?? 0} / ` +
+    `cfcd ${sourceCount.get('cfcd') ?? 0}`,
 );
 if (skippedNoMap.length > 0) {
   console.log(`（${skippedNoMap.length} 个 ndb 在候选中未找到，已跳过：${skippedNoMap.join(',')}）`);

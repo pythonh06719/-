@@ -9,7 +9,8 @@
  *
  * 字段映射：
  * - 种子 `source: "local"` 是**数据来源标记**（本地合规样例集），落库统一映射为
- *   `food_items.source = 'builtin'`（DB 枚举仅允许 builtin / openfoodfacts / user_custom）。
+ *   `food_items.source = 'builtin'`；`openfoodfacts` / `usda` / `cfcd` 原样保留
+ *   （DB 枚举允许 builtin / openfoodfacts / usda / cfcd / user_custom）。
  * - `servingUnits` / `aliases` 序列化为 JSON 文本（SQLite TEXT；PG 为 jsonb）。
  * - `defaultServingGrams` 取 `servingUnits` 中 `isDefault=true`（缺省取第一个）的克数。
  *
@@ -54,6 +55,11 @@ interface SeedFoodItem {
   sodium?: number | null;
   sugar?: number | null;
   saturatedFat?: number | null;
+  /** 矿物质（mg/100g，可空；CFCD 扩量数据提供） */
+  calcium?: number | null;
+  iron?: number | null;
+  potassium?: number | null;
+  magnesium?: number | null;
   servingUnits: SeedServingUnit[];
   /** 数据来源标记（'local' = 本地合规样例集；'openfoodfacts' = OFF 采集，ODbL） */
   source: string;
@@ -197,10 +203,14 @@ async function seedFoods(prisma: PrismaClient): Promise<void> {
         sodiumMgPer100g: item.sodium ?? null,
         sugarGPer100g: item.sugar ?? null,
         saturatedFatGPer100g: item.saturatedFat ?? null,
+        calciumMgPer100g: item.calcium ?? null,
+        ironMgPer100g: item.iron ?? null,
+        potassiumMgPer100g: item.potassium ?? null,
+        magnesiumMgPer100g: item.magnesium ?? null,
         servingUnits: JSON.stringify(servingUnits),
         defaultServingGrams: defaultUnit ? defaultUnit.grams : null,
-        // 种子 'local' → DB 'builtin'（本地合规样例集）；'openfoodfacts'/'usda' 原样保留（署名见 README）
-        source: item.source === 'openfoodfacts' || item.source === 'usda' ? item.source : 'builtin',
+        // 种子 'local' → DB 'builtin'（本地合规样例集）；其余来源原样保留（署名见 README）
+        source: ['openfoodfacts', 'usda', 'cfcd'].includes(item.source) ? item.source : 'builtin',
         createdByUserId: null,
         isVerified: false,
       };

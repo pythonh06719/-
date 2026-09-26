@@ -49,6 +49,11 @@ const SOURCE_LICENSE: Record<string, Citation> = {
     license: 'Public Domain',
     attribution: 'USDA FoodData Central — SR Legacy (fdc.nal.usda.gov)',
   },
+  cfcd: {
+    source: 'cfcd',
+    license: '个人非商业自用（中国食物成分表，未经书面允许不得商用）',
+    attribution: '中国食物成分表（中国营养学会 / 中国疾控中心营养与健康所）nlc.chinanutri.cn',
+  },
   manual: {
     source: 'manual',
     license: '用户自建',
@@ -238,7 +243,7 @@ export class VectorSearchService implements OnModuleInit {
                  e.embedding <=> ${vecLiteral}::vector AS distance
           FROM food_items f
           JOIN food_embeddings e ON e.food_item_id = f.id
-          WHERE (f.source IN ('builtin','openfoodfacts','usda') OR f.created_by_user_id = ${userId})
+          WHERE (f.source IN ('builtin','openfoodfacts','usda','cfcd') OR f.created_by_user_id = ${userId})
             AND f.name NOT LIKE ${'%【隐藏】%'}
           ORDER BY e.embedding <=> ${vecLiteral}::vector
           LIMIT ${topK}
@@ -265,7 +270,7 @@ export class VectorSearchService implements OnModuleInit {
       where: {
         name: { in: names },
         OR: [
-          { source: { in: ['builtin', 'openfoodfacts', 'usda'] } },
+          { source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } },
           { createdByUserId: userId },
         ],
       },

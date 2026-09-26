@@ -11,12 +11,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CFCD_CATEGORY_BY_PATH,
   DEFAULT_FOOD_CATEGORY,
   FOOD_CATEGORIES,
   FOOD_CATEGORY_BY_NAME,
   classifyCategoryByKeywords,
   isFoodCategory,
   mapFoodCategory,
+  resolveCfcdCategory,
 } from '../src/index';
 
 /** 权威 9 类（与 apps/api/prisma/schema.prisma 的注释/枚举一致）。 */
@@ -180,6 +182,38 @@ describe('classifyCategoryByKeywords：顺序去歧义', () => {
       if (result !== null) {
         expect(EXPECTED).toContain(result);
       }
+    }
+  });
+});
+
+describe('resolveCfcdCategory：CFCD 二级分类映射（T2）', () => {
+  it('按「一级/二级」路径精确命中', () => {
+    expect(resolveCfcdCategory('谷类及制品', '稻米', '稻米(均值)')).toBe('主食');
+    expect(resolveCfcdCategory('蛋类及制品', '鸡蛋', '鸡蛋(白皮)')).toBe('蛋白');
+    expect(resolveCfcdCategory('蔬菜类及制品', '嫩茎、叶、花菜类', '菠菜')).toBe('蔬菜');
+    expect(resolveCfcdCategory('水果类及制品', '仁果类', '苹果')).toBe('水果');
+    expect(resolveCfcdCategory('饮料类', '碳酸饮料', '可乐')).toBe('奶茶');
+    expect(resolveCfcdCategory('饮料类', '棒冰、冰淇凌', '雪糕')).toBe('零食');
+    expect(resolveCfcdCategory('速食食品', '快餐食品', '汉堡')).toBe('外卖');
+    expect(resolveCfcdCategory('调味品类', '酱油', '生抽')).toBe('other');
+  });
+
+  it('多个「其它」按路径消歧（仅凭二级名无法区分）', () => {
+    expect(resolveCfcdCategory('谷类及制品', '其它', 'X')).toBe('主食');
+    expect(resolveCfcdCategory('干豆类及制品', '其它', 'X')).toBe('蛋白');
+    expect(resolveCfcdCategory('畜肉类及制品', '其它', 'X')).toBe('蛋白');
+    expect(resolveCfcdCategory('饮料类', '其它', 'X')).toBe('奶茶');
+  });
+
+  it('未覆盖路径退回关键词（按食物名）', () => {
+    expect(resolveCfcdCategory('未知一级', '未知二级', '雞胸肉')).toBe('蛋白');
+    expect(resolveCfcdCategory('未知一级', '未知二级', 'zzz')).toBe('other');
+  });
+
+  it('映射表值恒为 9 类之一，且键均为「一级/二级」', () => {
+    for (const [key, value] of Object.entries(CFCD_CATEGORY_BY_PATH)) {
+      expect(EXPECTED).toContain(value);
+      expect(key.split('/')).toHaveLength(2);
     }
   });
 });

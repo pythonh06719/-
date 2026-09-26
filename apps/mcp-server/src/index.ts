@@ -233,7 +233,7 @@ function shiftDateKey(dateKey: string, deltaDays: number): string {
 // ---------------------------------------------------------------------------
 
 function visibleFoodWhere() {
-  return { OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda'] } }] };
+  return { OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } }] };
 }
 
 function keywordWhere(keyword: string) {
@@ -718,11 +718,11 @@ const tools: Record<string, ToolDef> = {
       const mealType = requireMealType(args);
       const date = optionalDateKey(args, 'date');
 
-      // 食物必须存在且可见（builtin/offf/usda 或本人自定义），否则拒绝写入
+      // 食物必须存在且可见（builtin/off/usda/cfcd 或本人自定义），否则拒绝写入
       const food = await prisma.foodItem.findFirst({
         where: {
           id: foodId,
-          OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda'] } }, { createdByUserId: userId }],
+          OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } }, { createdByUserId: userId }],
         },
       });
       if (food === null) {
