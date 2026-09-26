@@ -136,8 +136,13 @@ npm run db:seed -w @qsh/api
   映射实现收敛到 `@qsh/core` 的 `mapFoodCategory`（唯一真源），
   OFF 在线兜底（`off.client.ts`）、合并脚本、入库校验均引用它，杜绝「多处各写一份导致漂移」。
   一次性分类修复脚本：`fix-data-quality.ts`（`npx tsx ... [--write]`）。
+  - **专名精确覆盖**：对「无品类词、或会被更高优先规则误抢」的专名（如「出前一丁」、
+    「銀耳露」、「香草烤雞腿時蔬餐」），由 `@qsh/core` 的 `FOOD_CATEGORY_BY_NAME`
+    定点纠偏（优先级最高，先于「已是合法类」短路）。**再发现同类，往该表加一行即可**
+    （不必改 `seed.json`，也不会被 merge 覆盖）。
 - **拼音**：`namePinyin` 用于拼音搜索，覆盖率目标 ≥ 95%；缺失条目由
   `fill-pinyin.mjs`（依赖 `pinyin-pro`，纯 JS）补齐；日文/纯英文名**留空**（宁缺勿错）。
+  若主体为英文但括号内有中文译名（如 `Yak Milk Coffee (氂牛奶咖啡)`），取括号内中文生成拼音。
 - **入库校验**（fail-fast）：`merge-seeds.ts` 与 `apps/api/prisma/seed.ts` 均校验
   `name` 非空 / `category` ∈ 9 类 / `0 ≤ kcalPer100g ≤ 900` / 每个 `servingUnits[].grams > 0`，
   失败即报错并指出「第几条 / 哪个字段」。

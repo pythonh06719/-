@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FOOD_CATEGORY,
   FOOD_CATEGORIES,
+  FOOD_CATEGORY_BY_NAME,
   classifyCategoryByKeywords,
   isFoodCategory,
   mapFoodCategory,
@@ -74,6 +75,8 @@ describe('mapFoodCategory：四级判定', () => {
     expect(mapFoodCategory('Gum', '丸川彩球')).toBe('零食');
     expect(mapFoodCategory('meats', '泡翅')).toBe('蛋白');
     expect(mapFoodCategory('condiments', '精选老抽')).toBe('other');
+    // 「銀耳露」是饮品（P3-③ 修正原误映射：蔬菜 → 奶茶）
+    expect(mapFoodCategory('銀耳露', '某冷饮')).toBe('奶茶');
   });
 
   it('③ 关键词兜底（按食物名，覆盖「包装食品」等粗值）', () => {
@@ -93,7 +96,7 @@ describe('mapFoodCategory：四级判定', () => {
   });
 
   it('④ 判不出 → other（绝不硬塞）', () => {
-    expect(mapFoodCategory('包装食品', '完达山')).toBe('other');
+    expect(mapFoodCategory('包装食品', '生粉')).toBe('other');
     expect(mapFoodCategory('包装食品', '十三香')).toBe('other');
     expect(mapFoodCategory('', '')).toBe('other');
     expect(mapFoodCategory(null, null)).toBe('other');
@@ -102,10 +105,39 @@ describe('mapFoodCategory：四级判定', () => {
   });
 });
 
+describe('FOOD_CATEGORY_BY_NAME：精确名定点覆盖（P3-③）', () => {
+  it('覆盖优先于「已是合法类」的短路（锁定条目也能纠偏）', () => {
+    // 出前一丁：原为 other，名无品类词；即便传入合法值也应被覆盖为「主食」
+    expect(mapFoodCategory('other', '出前一丁')).toBe('主食');
+    expect(mapFoodCategory('other', '香草烤雞腿時蔬餐')).toBe('外卖');
+    // 含「蝦/魚/豬」的薄脆零食，曾被蛋白规则抢走
+    expect(mapFoodCategory('蛋白', '櫻花蝦味薄脆豬')).toBe('零食');
+    expect(mapFoodCategory('蛋白', '海苔味薄脆魚')).toBe('零食');
+    expect(mapFoodCategory('蛋白', '香辣小龍蝦味')).toBe('零食');
+    // 「銀耳露」是饮品（直映射 + 名覆盖双重保障）
+    expect(mapFoodCategory('蔬菜', '有機紅棗枸杞銀耳露')).toBe('奶茶');
+    expect(mapFoodCategory('蔬菜', '菊花枸杞銀耳露')).toBe('奶茶');
+    // 同型补漏：饭团（零食 → 主食）、品牌名乳品（other → 奶茶）
+    expect(mapFoodCategory('零食', '炭燒雞肉藜麥飯團')).toBe('主食');
+    expect(mapFoodCategory('other', '完达山')).toBe('奶茶');
+  });
+
+  it('覆盖表值恒为 9 类之一', () => {
+    for (const value of Object.values(FOOD_CATEGORY_BY_NAME)) {
+      expect(EXPECTED).toContain(value);
+    }
+  });
+});
+
 describe('classifyCategoryByKeywords：顺序去歧义', () => {
   it('零食高区分度词先于奶茶（牛奶巧克力 → 零食）', () => {
     expect(classifyCategoryByKeywords('牛奶巧克力')).toBe('零食');
     expect(classifyCategoryByKeywords('Premium特濃抹茶巧克力雪糕')).toBe('零食');
+  });
+
+  it('零食形态词（薄脆/脆片）先于蛋白（P3-③）', () => {
+    expect(classifyCategoryByKeywords('櫻花蝦味薄脆豬')).toBe('零食');
+    expect(classifyCategoryByKeywords('海苔味薄脆魚')).toBe('零食');
   });
 
   it('奶茶词（黑糖奶茶 → 奶茶）', () => {

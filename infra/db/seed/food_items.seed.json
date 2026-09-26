@@ -2093,7 +2093,7 @@
       "aliases": [
         "完达山"
       ],
-      "category": "other",
+      "category": "奶茶",
       "kcalPer100g": 65.7,
       "protein": 3.2,
       "fat": 3.8,
@@ -2118,7 +2118,7 @@
       "aliases": [
         "三元"
       ],
-      "category": "other",
+      "category": "奶茶",
       "kcalPer100g": 73.8,
       "protein": 3.6,
       "fat": 4.4,
@@ -2143,7 +2143,7 @@
       "aliases": [
         "君乐宝"
       ],
-      "category": "other",
+      "category": "奶茶",
       "kcalPer100g": 67.4,
       "protein": 3.3,
       "fat": 3.9,
@@ -3706,7 +3706,7 @@
         "Nissin",
         "Nissin Demae"
       ],
-      "category": "other",
+      "category": "主食",
       "kcalPer100g": 480,
       "protein": 11,
       "fat": 23,
@@ -3911,7 +3911,7 @@
       "aliases": [
         "統一生機"
       ],
-      "category": "蔬菜",
+      "category": "奶茶",
       "kcalPer100g": 16,
       "protein": 0,
       "fat": 0,
@@ -5800,7 +5800,7 @@
       "aliases": [
         "Lay's"
       ],
-      "category": "蛋白",
+      "category": "零食",
       "kcalPer100g": 551,
       "protein": 4,
       "fat": 34.3,
@@ -5885,7 +5885,7 @@
       "aliases": [
         "7-Eleven"
       ],
-      "category": "零食",
+      "category": "主食",
       "kcalPer100g": 160,
       "protein": 5.6,
       "fat": 2.3,
@@ -5910,7 +5910,7 @@
       "aliases": [
         "Circle K"
       ],
-      "category": "零食",
+      "category": "主食",
       "kcalPer100g": 143,
       "protein": 3.8,
       "fat": 2,
@@ -5940,7 +5940,7 @@
       "aliases": [
         "Circle K"
       ],
-      "category": "零食",
+      "category": "主食",
       "kcalPer100g": 132,
       "protein": 3.6,
       "fat": 0.8,
@@ -5970,7 +5970,7 @@
       "aliases": [
         "Knot's Taste"
       ],
-      "category": "蛋白",
+      "category": "零食",
       "kcalPer100g": 302.8,
       "protein": 20.8,
       "fat": 12.3,
@@ -6000,7 +6000,7 @@
       "aliases": [
         "Knot's Taste"
       ],
-      "category": "蛋白",
+      "category": "零食",
       "kcalPer100g": 433,
       "protein": 41.7,
       "fat": 15.3,
@@ -6516,7 +6516,7 @@
       "aliases": [
         "統一生機"
       ],
-      "category": "蔬菜",
+      "category": "奶茶",
       "kcalPer100g": 16.8,
       "protein": 0,
       "fat": 0,
@@ -10390,7 +10390,7 @@
     },
     {
       "name": "Gaozi Sweet Chilli Sauce (高仔辣椒醬)",
-      "namePinyin": null,
+      "namePinyin": "gaozailajiaojiang",
       "aliases": [
         "Gao Ta (高塔)"
       ],
@@ -10985,7 +10985,7 @@
     },
     {
       "name": "Yak Milk Coffee (氂牛奶咖啡)",
-      "namePinyin": null,
+      "namePinyin": "maoniunaikafei",
       "aliases": [
         "Jinglan (景蘭)"
       ],
@@ -11439,7 +11439,7 @@
       "aliases": [
         "7-11"
       ],
-      "category": "蔬菜",
+      "category": "外卖",
       "kcalPer100g": 148.1,
       "protein": 8.8,
       "fat": 5,

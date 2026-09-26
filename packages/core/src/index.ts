@@ -174,6 +174,7 @@ export {
 export {
   DEFAULT_FOOD_CATEGORY,
   FOOD_CATEGORIES,
+  FOOD_CATEGORY_BY_NAME,
   FOOD_CATEGORY_BY_RAW,
   classifyCategoryByKeywords,
   isFoodCategory,

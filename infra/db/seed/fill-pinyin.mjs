@@ -9,7 +9,9 @@
  * - 取「食物名去掉括号限定词」后的主体（如「米饭（白，蒸）」→「米饭」→ `mifan`）；
  * - 全小写、无音调、无分隔符；
  * - `ü` 写作 `v`（如「圣女果」→ `shengnvguo`）；
- * - 主体不含中文（纯日文/英文名，如「たけのこの里」）→ **留空（宁缺勿错）**。
+ * - 主体不含中文（纯日文/英文名）→ **留空（宁缺勿错）**；
+ *   例外（P3-②）：若主体为英文但**括号内有中文译名**（如 `Yak Milk Coffee (氂牛奶咖啡)`），
+ *   则取括号内中文生成拼音（→ `maoniunakafei`）。
  *
  * 多音字准确性依赖 `pinyin-pro` 的词语词典（实测「重庆」→ chongqing、
  * 「干贝」→ ganbei、「猕猴桃」→ mihoutao 均正确）。
@@ -39,8 +41,18 @@ function baseName(name) {
   return name.split(/[（(]/)[0].trim();
 }
 
+/** 取第一个括号组内的内容（中/英文括号皆可）。 */
+function parenContent(name) {
+  const match = name.match(/[（(]([^）)]*)[）)]/);
+  return match ? match[1].trim() : '';
+}
+
 /**
- * 生成拼音（无音调、小写、`ü`→`v`）；无法判定（名称含日文假名、或主体无中文）返回 `null`。
+ * 生成拼音（无音调、小写、`ü`→`v`）；无法判定（名称含日文假名、或中英文主体均无中文）返回 `null`。
+ *
+ * 约定（与既有 57 条一致）：**优先取括号前主体**的中文（如「米饭（白，蒸）」→ `mifan`）；
+ * 若主体无中文（如英文商品名 `Gaozi Sweet Chilli Sauce (高仔辣椒醬)`），则**退回括号内的
+ * 中文译名**生成拼音（→ `gaozailajiaojiang`）——这是 P3-② 补的形态。
  * @param {string} name 食物名
  * @returns {string|null}
  */
@@ -49,10 +61,16 @@ function toPinyin(name) {
     return null; // 日文商品名（如「茎わかめ」「さばみそ煮」）→ 宁缺勿错
   }
   const base = baseName(name) || name.trim();
-  if (!HAN.test(base)) {
-    return null; // 纯英文/数字名 → 宁缺勿错
+  let source = base;
+  if (!HAN.test(source)) {
+    // 主体无中文 → 退回括号内中文译名；仍无中文则放弃（宁缺勿错）
+    const inside = parenContent(name);
+    if (!inside || !HAN.test(inside)) {
+      return null; // 纯英文/数字名 → 宁缺勿错
+    }
+    source = inside;
   }
-  const parts = pinyin(base, { toneType: 'none', type: 'array', nonZh: 'removed' });
+  const parts = pinyin(source, { toneType: 'none', type: 'array', nonZh: 'removed' });
   const joined = parts
     .join('')
     .toLowerCase()

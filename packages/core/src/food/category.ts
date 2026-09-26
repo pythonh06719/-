@@ -15,6 +15,7 @@
  * `merge-seeds` / 数据修复脚本、`prisma/seed.ts` 的校验一律引用这里。
  *
  * 判定顺序（`mapFoodCategory`）：
+ *   0. **精确名覆盖表** `FOOD_CATEGORY_BY_NAME`（专名定点纠偏，优先级最高）；
  *   1. 值本身已是合法类 → 原样返回；
  *   2. **直接值映射表** `FOOD_CATEGORY_BY_RAW`（USDA 人工归类 / OFF 明确的英文 tag）；
  *   3. **关键词兜底** `classifyCategoryByKeywords`（按食物名，覆盖 `包装食品` 等粗值）；
@@ -47,6 +48,37 @@ const FOOD_CATEGORY_SET: ReadonlySet<string> = new Set<string>(FOOD_CATEGORIES);
 export function isFoodCategory(value: unknown): value is FoodCategory {
   return typeof value === 'string' && FOOD_CATEGORY_SET.has(value);
 }
+
+/**
+ * **精确名覆盖表**：对「无品类词、或品类词会被更高优先规则误抢」的**专名**做定点纠偏。
+ *
+ * 为什么需要它：`mapFoodCategory` 第 1 步「值已是合法类 → 原样返回」会让**已被归一
+ * 锁定**的历史条目不再走关键词规则（这正是防回灌的幂等设计），因此对这类「规则判不出
+ * / 判错」的专名，只能靠本表定点覆盖。将来 QA 再发现同类，**往这里加一行即可**
+ * （无需改动 seed.json，也不会被 merge 覆盖）。
+ *
+ * 使用约定：
+ * - key 为**完整食物名**（与 seed `name` 逐字一致）；
+ * - 仅收录「有明确依据」的漂移项，每条都在注释写明依据；
+ * - 本表在 `mapFoodCategory` **最前**判定，优先级高于一切规则。
+ */
+export const FOOD_CATEGORY_BY_NAME: Readonly<Record<string, FoodCategory>> = {
+  // —— QA P3-③ 抽查项 ——
+  出前一丁: '主食', // 日清出前一丁（泡面/即食面）；名无品类词，靠品牌特判
+  香辣小龍蝦味: '零食', // 乐事薯片口味；含「蝦」曾被蛋白规则抢走
+  櫻花蝦味薄脆豬: '零食', // Knot's Taste 薄脆薯片；含「蝦/豬」曾被蛋白抢走
+  海苔味薄脆魚: '零食', // Knot's Taste 薄脆薯片；含「魚」曾被蛋白抢走
+  有機紅棗枸杞銀耳露: '奶茶', // 統一「銀耳露」为饮品
+  菊花枸杞銀耳露: '奶茶', // 統一「銀耳露」为饮品
+  香草烤雞腿時蔬餐: '外卖', // 7-11 便利餐（便当/餐食）；含「時蔬」曾被蔬菜抢走
+  // —— 同族扫描补漏（QA 取样同型）——
+  炭燒雞肉藜麥飯團: '主食', // 7-Eleven 饭团；名含「飯糰」却在归一后被锁为零食
+  照燒鰻魚飯團: '主食', // Circle K 饭团
+  明太子飯團: '主食', // Circle K 饭团
+  完达山: '奶茶', // 完达山牛奶（65.7kcal/3.2g 蛋白）；品牌名无「奶」字
+  极致: '奶茶', // 三元「极致」牛奶（73.8kcal/3.6g）
+  白小纯: '奶茶', // 君乐宝「白小纯」牛奶（67.4kcal/3.3g）
+};
 
 /**
  * 直接值映射表：原始分类文本（小写化后）→ 9 类。
@@ -109,7 +141,7 @@ export const FOOD_CATEGORY_BY_RAW: Readonly<Record<string, FoodCategory>> = {
   meals: '主食',
   meal: '主食',
   'tremella fuciformis': '蔬菜',
-  銀耳露: '蔬菜',
+  銀耳露: '奶茶', // 「银耳露」是**饮品**（含「露」），非蔬菜；修正原误映射（P3-③）
 };
 
 /**
@@ -136,9 +168,12 @@ const CATEGORY_KEYWORD_RULES: ReadonlyArray<{ keywords: readonly string[]; categ
     category: 'other',
   },
   // 2) 高区分度零食（先于奶茶，防止「牛奶巧克力」「酸奶沙琪玛」被奶茶规则抢走）
+  //    也先于蛋白：「薄脆/脆片/脆条」是零食形态词，须压过「蝦/魚/豬」等蛋白词
+  //    （如「櫻花蝦味薄脆豬」「海苔味薄脆魚」应判零食，P3-③）。
   {
     keywords: [
       '薯片', '薯條', '薯条', '薯卷', '虾条', '蝦條', '爆米花',
+      '薄脆', '脆片', '脆條', '脆条',
       '巧克力', '雪糕', '冰淇淋', '布丁', '大福', '銅鑼燒', '铜锣烧',
       '沙琪玛', '沙琪瑪', '口香糖', '泡泡糖', '軟糖', '软糖', '奶糖',
       'potato chips', 'baumkuchen',
@@ -258,6 +293,13 @@ export function mapFoodCategory(
   rawCategory: string | null | undefined,
   name?: string | null,
 ): FoodCategory {
+  // 0. 精确名定点覆盖（优先于一切；用于专名无品类词 / 规则会误抢的锁定条目）
+  if (typeof name === 'string') {
+    const override = FOOD_CATEGORY_BY_NAME[name.trim()];
+    if (override !== undefined) {
+      return override;
+    }
+  }
   // 1. 已是合法类
   if (isFoodCategory(rawCategory)) {
     return rawCategory;
