@@ -327,7 +327,8 @@ export default function WhyNumbersPage(): ReactElement {
           ③ 数据来源与许可
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          食物库共 443 条，逐条标注来源与许可；代码为 MIT，数据是混合来源（详见仓库 DATA-LICENSE.md）。
+          食物库共 1688 条，逐条标注来源与许可；代码为 MIT，数据是混合来源（详见仓库 DATA-LICENSE.md）。
+          其中《中国食物成分表》扩量条目仅限个人非商业自用，不参与对外分发。
         </p>
         <table className="mt-3 w-full border-collapse text-sm">
           <caption className="sr-only">食物营养数据来源与许可</caption>
@@ -354,10 +355,16 @@ export default function WhyNumbersPage(): ReactElement {
               <td className="qsh-tnum py-1.5 text-right">128</td>
               <td className="py-1.5">公有领域</td>
             </tr>
+            <tr className="border-t border-slate-100 dark:border-slate-700">
+              <td className="py-1.5">《中国食物成分表》（个人非商业自用，不参与对外分发）</td>
+              <td className="qsh-tnum py-1.5 text-right">1245</td>
+              <td className="py-1.5">个人非商业自用</td>
+            </tr>
           </tbody>
         </table>
         <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
           署名：© Open Food Facts contributors（ODbL 1.0）；USDA FoodData Central — SR Legacy（公有领域）。
+          《中国食物成分表》数据未经中国营养学会/中国疾控中心营养与健康所书面允许不得用于商业目的，本项目仅个人非商业自用、不再分发。
         </p>
 
         <h3 className="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-100">单位说明</h3>
@@ -876,6 +883,52 @@ export default function WhyNumbersPage(): ReactElement {
         </dl>
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
           这句话只用来回看 —— 不计分、不评级、不设目标，也不是每天必须完成的任务。
+        </p>
+      </section>
+
+      {/* ⑯ 周报里的「饱和脂肪」是怎么来的（CFCD 扩量推算值，NFR-11） */}
+      <section aria-labelledby="why-sfa-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-sfa-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑯ 周报里的「饱和脂肪」是怎么来的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          周报的「微量营养素（日均）」里有一条「饱和脂肪」。它和热量、蛋白那些不太一样 ——
+          有一部分不是数据源直接给的克数，而是按比例**推算**出来的，所以在这里把口径摊开讲清楚。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="推算公式"
+            value="饱和脂肪(g) ÷ 100g = 总脂肪(g) × SFA% ÷ 100"
+            hint="SFA% 是「饱和脂肪酸占总脂肪酸的百分比」"
+          />
+          <DerivationRow
+            term="数据来源"
+            value="《中国食物成分表》（个人非商业自用）"
+            hint="平台给的是 SFA 占比，不是克数"
+          />
+          <DerivationRow term="什么时候留空" value="脂肪或 SFA% 缺任一项 → 留空" hint="不猜、也不用单/多不饱和反推" />
+          <DerivationRow term="合理性校验" value="推算值必须 ≤ 总脂肪" hint="否则判为数据异常，留空不显示" />
+          <DerivationRow term="USDA 条目" value="直接用其原始饱和脂肪克数" hint="不属于推算值" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么是「推算」而不是直接抄一个克数</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              《中国食物成分表》给的是「饱和脂肪酸占总脂肪酸的比例」，不是每 100 克的克数。
+              若把这个比例直接当克数用，会高估好几倍（比如 60% 会被误读成 60 克）。
+              我们用「总脂肪 × 这个比例」换算，得到的才是有意义的克数。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">缺了为什么不补</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              没有脂肪、或没有占比时，宁可留空，也不拿单不饱和 / 多不饱和去反推 ——
+              凑出来的数字看着完整，其实并不可信。缺就缺，我们不编。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          饱和脂肪为参考值，不构成营养诊断；参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。
         </p>
       </section>
 
