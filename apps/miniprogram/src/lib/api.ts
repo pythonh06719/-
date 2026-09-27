@@ -57,7 +57,10 @@ export async function apiRequest<T>(
     if (token) header.Authorization = `Bearer ${token}`
   }
 
-  let res: Taro.request.SuccessCallbackResult<unknown>
+  // ⚠️ 这里刻意用**最小结构化类型**而不是 `Taro.request.SuccessCallbackResult<unknown>`：
+  // 后者会触发 TS2344（`Taro.request` 的泛型约束只接受 `string | IAnyObject | ArrayBuffer`，
+  // 而我们要把响应体当 `unknown` 再逐步收窄）。我们只用得到 `statusCode` / `data` 两个字段。
+  let res: { statusCode: number; data: unknown }
   try {
     res = await Taro.request({ url, method, data: body as any, header })
   } catch {
