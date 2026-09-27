@@ -9,8 +9,8 @@
 
 ```
 qingshenghuo
-├── packages/core        # 热量/运动计算引擎（纯函数，小程序直接复用，零改动）
-├── packages/shared-types# 前后端契约类型（小程序直接复用，零改动）
+├── packages/core        # 热量/运动计算引擎（纯函数，可复用；当前源码尚未引用，见下方说明）
+├── packages/shared-types# 前后端契约类型（小程序已在用，零改动）
 ├── apps/api            # 后端 NestJS（保持不变，小程序直接调它的 HTTPS 接口）
 ├── apps/web            # 原有 Web 端（保持不变）
 └── apps/miniprogram    # ← 本次新增的小程序工程（Taro）
@@ -19,6 +19,11 @@ qingshenghuo
     ├── src/pages/*           # 5 个页面
     └── config/index.ts       # 已配置让 Taro 一并转译 packages/core、packages/shared-types
 ```
+
+> **复用现状（据代码核实）**：`@qsh/shared-types` 是**真的在用** —— `src/lib/api.ts` 用 `ApiResponse`/`ApiError`，
+> 各页面用 `DashboardResponse`/`ListMealsResponse`/`WeightTrendResponse` 等契约类型。
+> `@qsh/core` 虽然写在 `package.json` 依赖里、`config/index.ts` 也已配置转译它，但 `src/` 里**目前零引用**
+> （快加是由后端算 kcal）。等小程序要做「本地热量预览 / 份量换算」时可以直接 `import` core 的纯函数，零改动可用。
 
 后端**完全不用动**：它本来就是 JWT 鉴权的无状态 REST，小程序用 `wx.request`
 （Taro 封装为 `Taro.request`）直接打 `https://qinglife.app.workbuddy.host/api` 即可，
@@ -29,15 +34,25 @@ CORS 不约束小程序。
 ## 2. 本地用微信开发者工具预览
 
 1. 安装 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)。
-2. 进入 `qingshenghuo/apps/miniprogram` 目录，构建小程序产物：
+2. **先在仓库根目录装一次依赖**（**重要**：不是 `apps/miniprogram`）：
+   ```bash
+   cd qingshenghuo
+   npm install          # 会一并装上 Taro 3.6.23 / webpack5 等小程序依赖
+   ```
+   小程序依赖挂在 npm workspaces 上，会 hoist 到根 `node_modules`；
+   只在小程序目录里装会漏掉这些包，`npm run build:weapp` 会因找不到 `@tarojs/cli` 直接失败。
+3. 进入 `qingshenghuo/apps/miniprogram` 目录，构建小程序产物：
    ```bash
    npm run build:weapp        # 会生成 dist/ 目录（微信小程序源码）
    # 或边改边看：npm run dev:weapp
    ```
-3. 开发者工具 → 导入项目 → 目录选 `qingshenghuo/apps/miniprogram/dist`。
-4. AppID 选「测试号」（或填你自己的）。
-5. 勾选 **详情 → 本地设置 → 不校验合法域名**（开发阶段必须，否则请求发不出去）。
-6. 编译即可在模拟器看到界面；点「预览」用手机扫码也能在真机上看（仍需不校验域名）。
+4. 开发者工具 → 导入项目 → 目录选 `qingshenghuo/apps/miniprogram/dist`。
+5. AppID 选「测试号」（或填你自己的）。
+6. 勾选 **详情 → 本地设置 → 不校验合法域名**（开发阶段必须，否则请求发不出去）。
+7. 编译即可在模拟器看到界面；点「预览」用手机扫码也能在真机上看（仍需不校验域名）。
+
+> ⚠️ 顺带核一下 `project.config.json` 的 `libVersion`：当前值是 `3.6.23`（与 Taro 版本号相同），
+> 但该字段应当是**微信基础库版本**（形如 `3.x.y`）。若开发者工具提示基础库异常，改成实际基础库版本即可。
 
 > 注意：`dist/` 是小程序的**构建产物**，真正的源码在 `src/`。改代码后重新 `build:weapp` 再刷新。
 
