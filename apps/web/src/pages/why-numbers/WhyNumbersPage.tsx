@@ -18,6 +18,7 @@ import {
   SAFETY_FLOOR,
   SLOPE_WINDOW_DAYS,
   TAPER_REMAINING_KG,
+  TOOL_MEMORY_LIMITS,
   ageFromBirthDate,
   buildSafetyMessages,
   deriveWeeklyLossKg,
@@ -1045,6 +1046,76 @@ export default function WhyNumbersPage(): ReactElement {
       </section>
 
       {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
+      {/* ⑳「我的常点」是怎么记住的（C2，同批交付） */}
+      <section aria-labelledby="why-tool-memory-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-tool-memory-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑳ 生活化工具里的「我的常点」是怎么记住的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          外卖和饮品工具会记住你常用的品类与档位，下次打开先帮你选好。
+          它<strong className="font-semibold">只做这一件事</strong>：替你省一次点选 —— 不推荐、不排序、也不评价你点了什么。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="存在哪儿"
+            value="你自己的浏览器（本机 localStorage）"
+            hint="不上传、不进账号、不参与导出"
+          />
+          <DerivationRow
+            term="记什么"
+            value="外卖的品类；饮品的品类 + 杯型 + 糖度"
+            hint="只记选项本身"
+          />
+          <DerivationRow
+            term="频次口径"
+            value="用过的**天数**，不是次数"
+            hint="同一天换着点几次也只算 1 天 —— 与常吃榜同源"
+          />
+          <DerivationRow
+            term="回读规则"
+            value="天数最多 → 最近用过 → 选项名"
+            hint="完全确定，不会因为刷新而变"
+          />
+          <DerivationRow term="保留窗口" value={`近 ${TOOL_MEMORY_LIMITS.windowDays} 天`} hint="更早的日期会自然淡出" />
+          <DerivationRow
+            term="上限"
+            value={`每个工具最多 ${TOOL_MEMORY_LIMITS.choicesPerTool} 组`}
+            hint="超出按最近用过的裁剪"
+          />
+          <DerivationRow
+            term="会不会改估算结果"
+            value="不会"
+            hint="热量区间仍由 @qsh/core 的估算函数决定"
+          />
+          <DerivationRow
+            term="库里没有的旧档位"
+            value="自动忽略，回落到默认"
+            hint="绝不拿已不存在的选项去预选"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么只记忆，不给你推荐</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              「推荐」意味着我们替你判断了哪样更好，而判断「更好」就免不了带上评分 ——
+              那正是我们不做的事（见 ⑪）。常点只复述你自己做过的选择：你点得多的，下次先帮你选好，
+              换掉它随时都可以，也不会有人因此说你一句。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么只存在本机，不跟着账号走</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              它只是个省事的小偏好，够不上「你的数据」，所以没必要送到服务器上。
+              代价是换设备 / 清缓存会丢 —— 我们觉得这个代价比「多一份你的饮食偏好在云端」更划算；
+              退出登录或清空缓存时它会一并清掉。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          记忆只影响「默认选中哪一项」，不影响任何热量区间、预算与目标数字 —— 也不参与任何评价。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

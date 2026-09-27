@@ -16,6 +16,13 @@ export const CACHE_KEYS = {
   weightPoints: `${CACHE_PREFIX}weights:points`,
   foodsRecent: `${CACHE_PREFIX}foods:recent`,
   localBudget: `${CACHE_PREFIX}budget:local`,
+  /**
+   * 「我的常点」（C2）：外卖 / 饮品工具记住的品类与档位。
+   *
+   * ⚠️ 只存**选择本身**（品类 + 档位 + 用过的日期），不存任何热量与评价；
+   * 存在本机，不上传、不参与账号数据，退出登录时随 `cacheClearAll()` 一并清掉。
+   */
+  toolChoices: `${CACHE_PREFIX}tools:choices`,
 } as const;
 
 /** 写入缓存（静默处理：隐私模式 / 容量超限不应影响主流程）。 */

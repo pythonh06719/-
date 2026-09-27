@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DRINK_LIBRARY,
+  SUGAR_LEVELS,
   TAKEOUT_LIBRARY,
   estimateDrink,
   estimateFeast,
@@ -10,9 +11,19 @@ import {
   findMetActivity,
   snackRedemption,
 } from '@qsh/core';
+import { readRememberedChoice, rememberToolChoice } from '@/lib/tool-memory';
 
 /** 工具标签（R5.1~R5.4）。 */
 type ToolTab = 'takeout' | 'snack' | 'feast' | 'drink';
+
+/**
+ * 「我的常点」（C2）可选的合法档位（记忆白名单）。
+ *
+ * 库里若下架了某个品类 / 改了档位名，记忆里那条会因为不在白名单里而被忽略，
+ * 页面回落到默认档位 —— 绝不拿一个已经不存在的选项去预选。
+ */
+const TAKEOUT_KINDS: readonly string[] = TAKEOUT_LIBRARY.map((item) => item.kind);
+const DRINK_KINDS: readonly string[] = DRINK_LIBRARY.map((item) => item.kind);
 
 const TABS: Array<{ key: ToolTab; label: string }> = [
   { key: 'takeout', label: '外卖换算' },
@@ -28,15 +39,29 @@ const TABS: Array<{ key: ToolTab; label: string }> = [
  * 给区间而非精确值，并始终附更轻松的替代建议（语气遵循 PRD §7）。
  */
 export default function ToolsPage(): ReactElement {
+  // 「我的常点」（C2）：只在**挂载时**读一次记忆，用来预选档位。
+  // 后面用户每次改动都会写回记忆，但本页展示的估算完全不受它影响（见下方 estimate* 调用）。
+  const rememberedTakeout = useMemo(
+    () => readRememberedChoice('takeout', { kind: TAKEOUT_KINDS }),
+    [],
+  );
+  const rememberedDrink = useMemo(
+    () => readRememberedChoice('drink', { kind: DRINK_KINDS, sugar: SUGAR_LEVELS }),
+    [],
+  );
+
   const [tab, setTab] = useState<ToolTab>('takeout');
-  const [takeoutKind, setTakeoutKind] = useState<string>('malatang');
+  const [takeoutKind, setTakeoutKind] = useState<string>(rememberedTakeout?.kind ?? 'malatang');
   const [snackName, setSnackName] = useState<string>('薯片（一包）');
   const [snackKcal, setSnackKcal] = useState<number>(550);
   const [weightKg, setWeightKg] = useState<number>(60);
   const [feastKind, setFeastKind] = useState<string>('hotpot');
-  const [drinkKind, setDrinkKind] = useState<string>('milk_tea');
-  const [drinkSize, setDrinkSize] = useState<number>(500);
-  const [sugarLevel, setSugarLevel] = useState<string>('regular');
+  const [drinkKind, setDrinkKind] = useState<string>(rememberedDrink?.kind ?? 'milk_tea');
+  const [drinkSize, setDrinkSize] = useState<number>(() => {
+    const size = Number(rememberedDrink?.size);
+    return Number.isFinite(size) && size >= 100 && size <= 2000 ? Math.round(size) : 500;
+  });
+  const [sugarLevel, setSugarLevel] = useState<string>(rememberedDrink?.sugar ?? 'regular');
 
   const takeout = estimateTakeout(takeoutKind);
   const feast = estimateFeast(feastKind);
@@ -78,7 +103,12 @@ export default function ToolsPage(): ReactElement {
             id="takeout-kind"
             className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={takeoutKind}
-            onChange={(event) => setTakeoutKind(event.target.value)}
+            onChange={(event) => {
+              const kind = event.target.value;
+              setTakeoutKind(kind);
+              // 「我的常点」（C2）：只记品类，不推荐、不评判
+              rememberToolChoice('takeout', { kind });
+            }}
           >
             {TAKEOUT_LIBRARY.map((item) => (
               <option key={item.kind} value={item.kind}>
@@ -86,6 +116,12 @@ export default function ToolsPage(): ReactElement {
               </option>
             ))}
           </select>
+          {/* 预选说明（中性）：被预选的档位与记忆一致时才提示，换掉了就不再说 */}
+          {rememberedTakeout !== null && takeoutKind === rememberedTakeout.kind && (
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              按你常点的先选好了，换一个也随时可以
+            </p>
+          )}
           {takeout ? (
             <div className="mt-4">
               <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -215,7 +251,12 @@ export default function ToolsPage(): ReactElement {
             id="drink-kind"
             className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={drinkKind}
-            onChange={(event) => setDrinkKind(event.target.value)}
+            onChange={(event) => {
+              const kind = event.target.value;
+              setDrinkKind(kind);
+              // 「我的常点」（C2）：品类与档位一起记（杯型 / 糖度沿用当前值）
+              rememberToolChoice('drink', { kind, size: String(drinkSize), sugar: sugarLevel });
+            }}
           >
             {DRINK_LIBRARY.map((item) => (
               <option key={item.kind} value={item.kind}>
@@ -235,7 +276,11 @@ export default function ToolsPage(): ReactElement {
                 max={2000}
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={drinkSize}
-                onChange={(event) => setDrinkSize(Math.max(100, Number(event.target.value) || 500))}
+                onChange={(event) => {
+                  const size = Math.max(100, Number(event.target.value) || 500);
+                  setDrinkSize(size);
+                  rememberToolChoice('drink', { kind: drinkKind, size: String(size), sugar: sugarLevel });
+                }}
               />
             </div>
             <div>
@@ -246,7 +291,11 @@ export default function ToolsPage(): ReactElement {
                 id="drink-sugar"
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={sugarLevel}
-                onChange={(event) => setSugarLevel(event.target.value)}
+                onChange={(event) => {
+                  const sugar = event.target.value;
+                  setSugarLevel(sugar);
+                  rememberToolChoice('drink', { kind: drinkKind, size: String(drinkSize), sugar });
+                }}
               >
                 <option value="full">全糖</option>
                 <option value="regular">正常糖</option>
@@ -256,6 +305,14 @@ export default function ToolsPage(): ReactElement {
               </select>
             </div>
           </div>
+          {/* 预选说明（中性）：与记忆一致时才提示，用户改掉了就不再说 */}
+          {rememberedDrink !== null &&
+            drinkKind === rememberedDrink.kind &&
+            sugarLevel === rememberedDrink.sugar && (
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                按你常点的先选好了，换一个也随时可以
+              </p>
+            )}
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
             这一杯大约{' '}
             <span className="text-xl font-bold text-amber-600 dark:text-amber-400">

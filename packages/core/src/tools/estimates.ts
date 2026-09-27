@@ -170,6 +170,14 @@ export function estimateFeast(kind: string): FeastEstimate | undefined {
 /** 奶茶糖度档位（对应含糖量系数）。 */
 export type SugarLevel = 'none' | 'light' | 'half' | 'regular' | 'full';
 
+/**
+ * 糖度档位清单（C2「我的常点」校验记忆是否仍然有效时用）。
+ *
+ * 与 `SUGAR_FACTOR` 放在同一处：档位增删只需改这里，
+ * 页面下拉、估算系数、记忆白名单三处不会各说各话。
+ */
+export const SUGAR_LEVELS: readonly SugarLevel[] = ['none', 'light', 'half', 'regular', 'full'];
+
 /** 糖度系数（相对全糖）。 */
 const SUGAR_FACTOR: Record<SugarLevel, number> = {
   none: 0.55,

@@ -94,6 +94,7 @@ export {
 export {
   DRINK_LIBRARY,
   FEAST_LIBRARY,
+  SUGAR_LEVELS,
   TAKEOUT_LIBRARY,
   estimateDrink,
   estimateFeast,
@@ -115,6 +116,22 @@ export {
   type AiUsageInput,
   type AiUsageSummary,
 } from './ai/quota';
+
+// 「我的常点」档位记忆（C2）：与常吃榜同一套「天数」频次口径，只记忆、不推荐、不评判
+export {
+  TOOL_MEMORY_LIMITS,
+  TOOL_MEMORY_MIN_DAYS,
+  TOOL_MEMORY_VERSION,
+  emptyToolChoiceMemory,
+  pickRememberedChoice,
+  recordToolChoice,
+  toolChoiceKey,
+  type PickRememberedChoiceInput,
+  type RecordToolChoiceInput,
+  type ToolChoiceEntry,
+  type ToolChoiceMemory,
+  type ToolMemoryId,
+} from './tools/memory';
 
 // 数据主权序列化（§9 / K11）
 export {
