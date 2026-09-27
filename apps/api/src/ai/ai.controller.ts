@@ -227,4 +227,16 @@ export class AiController {
   agentTraces(@CurrentUser() userId: number, @Query('limit') limit?: string) {
     return this.agentService.listTraces(userId, Number(limit ?? 20) || 20);
   }
+
+  /**
+   * 当日用量 / 剩余次数（B6）：`已用 = ai_usage 当日各功能行合计`，`剩余 = 50 − 已用`。
+   *
+   * **纯读、不计数、不调用模型**，故沿用模块默认限流（300 次 / 分钟 / 用户），
+   * 与 `GET /ai/agent/traces` 同口径。AI 未配置时同样返回 200（前端只做展示，
+   * 取不到则整行隐藏 —— 绝不因为拿不到用量就报错或白屏）。
+   */
+  @Get('usage')
+  usage(@CurrentUser() userId: number) {
+    return this.aiService.getUsage(userId);
+  }
 }

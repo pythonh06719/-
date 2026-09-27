@@ -108,6 +108,14 @@ export {
   type TakeoutItem,
 } from './tools/estimates';
 
+// AI 每日用量口径（B6：剩余次数 = 上限 − ai_usage 当日合计，唯一真源）
+export {
+  AI_DAILY_LIMIT,
+  deriveAiUsage,
+  type AiUsageInput,
+  type AiUsageSummary,
+} from './ai/quota';
+
 // 数据主权序列化（§9 / K11）
 export {
   CSV_BOM,

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ACTIVITY_FACTORS,
+  AI_DAILY_LIMIT,
   DEFICIT_CAP_RATIO,
   KCAL_PER_G_CARB,
   KCAL_PER_G_FAT,
@@ -991,6 +992,59 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑰ AI 剩余次数是怎么算的（B6，同批交付） */}
+      <section aria-labelledby="why-ai-usage-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-ai-usage-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑰ AI 页面那个「还能问 N 次」是怎么算的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          AI 页顶部那一行数字不是一个估算 —— 它是你今天实际问过的次数，直接从服务端的计数表里读出来的。
+          算式和来源都在下面。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="数据来源"
+            value="ai_usage 表当日各功能行的 request_count 合计"
+            hint="usage_date = 服务端本地今天"
+          />
+          <DerivationRow term="算法" value={`剩余 = ${AI_DAILY_LIMIT} − 已用`} hint="最小为 0，不会是负数" />
+          <DerivationRow
+            term="哪些算一次"
+            value="每日总结 / 今日方案 / 自由提问 / 食物识别，各计 1 次"
+            hint="四个入口共用同一个额度"
+          />
+          <DerivationRow
+            term="哪些不算"
+            value="今日方案命中缓存不重复计；医疗安全闸的回答不消耗"
+            hint="这两类不调用模型"
+          />
+          <DerivationRow term="什么时候重置" value="每天本地零点重新计" hint="不累计、不清零之外的惩罚" />
+          <DerivationRow term="查用量本身" value="不计数" hint="看多少次都不影响剩余" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用完时只说一句「明天再来也行」</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              次数是我们这一侧的成本安排，不是你该被考核的指标。说成「已达上限」「次数用尽」会把它变成一次小小的否定，
+              所以我们只把事实摆出来，剩下的留给你决定明天要不要再来。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">拿不到这个数字会怎样</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              那一行直接不出现，页面其他部分照常用 —— 用量只是展示，取不到不拦你、也不报错。
+              AI 未配置（没有模型密钥）时它也会照常显示，因为计的是次数，与模型是否可用无关。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          阈值 <span className="font-mono">AI_DAILY_LIMIT</span> 与换算函数{' '}
+          <span className="font-mono">deriveAiUsage</span> 都来自 @qsh/core：页面、接口与限额判定用的是同一份，
+          不会各说各话。
+        </p>
+      </section>
+
+      {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

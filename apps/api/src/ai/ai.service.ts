@@ -11,7 +11,10 @@ import type {
   AiRecognizeFoodCandidate,
   AiRecognizeFoodResponse,
   AiTodayPlanResponse,
+  AiUsageResponse,
 } from '@qsh/shared-types';
+
+import { deriveAiUsage } from '@qsh/core';
 
 import { addDays, todayLocalKey } from '../common/utils/date.util';
 import { ERROR_CODES } from '../common/constants/error-codes';
@@ -360,6 +363,29 @@ export class AiService {
     }
 
     return { description, candidates };
+  }
+
+  // ---------------------------------------------------------------------------
+  // B6 当日用量（GET /api/ai/usage）：纯读，不计数、不调用模型
+  // ---------------------------------------------------------------------------
+
+  /**
+   * 当日已用 / 剩余 / 上限（B6）。
+   *
+   * 以 `ai_usage` 表**当日各功能行 `request_count` 合计**为准（不另建计数器），
+   * 换算走 `@qsh/core` 的 `deriveAiUsage` —— 与前端展示同源。
+   *
+   * ⚠️ 本方法**不消耗限额**（不写 `ai_usage`），查多少次都不影响剩余次数；
+   * AI 未配置时同样返回 200（前端只把它当展示数据，取不到就整行隐藏）。
+   */
+  async getUsage(userId: number): Promise<AiUsageResponse> {
+    const usageDate = todayLocalKey();
+    const aggregated = await this.prisma.aiUsage.aggregate({
+      _sum: { requestCount: true },
+      where: { userId, usageDate },
+    });
+    const summary = deriveAiUsage({ used: aggregated._sum.requestCount ?? 0 });
+    return { date: usageDate, ...summary };
   }
 
   // ---------------------------------------------------------------------------

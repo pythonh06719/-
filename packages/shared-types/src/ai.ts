@@ -35,6 +35,27 @@ export interface AiAvailability {
 
 /** 注：`AiFeature`（`ai_usage.feature` 枚举）定义于 `entities.ts`，经 `index.ts` 统一导出。 */
 
+/**
+ * `GET /api/ai/usage` 响应（B6：AI 页面显示剩余次数）。
+ *
+ * 口径：以 `ai_usage` 表**当日**（`usage_date = 服务端本地今天`）各功能行 `request_count`
+ * 的**合计**为「已用」，`remaining = max(0, limit − used)`（算法在 `@qsh/core` 的
+ * `deriveAiUsage`，前后端同一份）。
+ *
+ * 本接口**纯读、不计数**，也不调用模型 —— AI 未配置时照常返回 200（前端据此只做展示，
+ * 取不到就整行隐藏，绝不报错 / 白屏）。
+ */
+export interface AiUsageResponse {
+  /** 统计日期 `YYYY-MM-DD`（服务端本地今天） */
+  date: string;
+  /** 当日已用次数 */
+  used: number;
+  /** 每日上限（当前 50） */
+  limit: number;
+  /** 剩余次数（下限 0） */
+  remaining: number;
+}
+
 /** 复盘 / 方案通用的「结论 + 依据 + 一条可执行建议」结构（R9.1 / R9.2）。 */
 export interface AiInsight {
   /** 直接结论（一句话） */

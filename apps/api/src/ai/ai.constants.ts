@@ -7,8 +7,15 @@
  * - 就医建议模板语气温和（PRD §7）：不做疾病诊断、不建议停药、不鼓励极端节食。
  */
 
-/** 每账号每日全部 AI 端点合计限额（R9.4 / TC-45）。 */
-export const AI_DAILY_LIMIT = 50;
+import { AI_DAILY_LIMIT as CORE_AI_DAILY_LIMIT } from '@qsh/core';
+
+/**
+ * 每账号每日全部 AI 端点合计限额（R9.4 / TC-45）。
+ *
+ * 唯一真源在 `@qsh/core`（前端展示「剩余次数」与后端判定用的是同一个数），
+ * 这里只是转发 —— 任何一侧改动另一侧自动同步，不会出现「页面说 50、服务端按 30 挡」的漂移。
+ */
+export const AI_DAILY_LIMIT = CORE_AI_DAILY_LIMIT;
 
 /** LLM 请求超时（毫秒）。 */
 export const AI_REQUEST_TIMEOUT_MS = 15_000;

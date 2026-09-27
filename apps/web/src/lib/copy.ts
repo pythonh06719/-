@@ -155,6 +155,14 @@ export const COPY = {
   aiAskPlaceholder: '比如：今天还能吃一个苹果吗',
   aiAskSend: '问一问',
   aiAskEmpty: '想问点什么都可以，先写一句吧',
+  /**
+   * AI 剩余次数（B6）—— **限额措辞中性**（硬红线）：
+   * 剩余时用「还能问 N 次」的陈述句；用完时用「今天问得挺多了，明天再来也行」，
+   * 绝不出现「已达上限 / 超限 / 次数用尽」这类评判式说法（PRD §7 无负罪感）。
+   */
+  aiUsageRemaining: (remaining: number) => `今天还能问 ${remaining} 次`,
+  aiUsageResetNote: '明天会重新计',
+  aiUsagePlenty: '今天问得挺多了，明天再来也行',
   /** 数据备份（C6）—— 把「留一份备份」说成一件随手的小事：不催促、不吓唬、不制造焦虑 */
   dataBackupTitle: '留一份备份',
   dataBackupDesc:

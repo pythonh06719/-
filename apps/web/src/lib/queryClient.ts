@@ -68,4 +68,6 @@ export const queryKeys = {
   aiTodayPlan: (date: string) => ['ai', 'today-plan', date] as const,
   aiFreeAsk: (date: string, question: string) => ['ai', 'free-ask', date, question] as const,
   aiRecognizeFood: (description: string) => ['ai', 'recognize-food', description] as const,
+  /** AI 当日用量 / 剩余次数（B6）：只按天缓存，每次提问后失效重取 */
+  aiUsage: ['ai', 'usage'] as const,
 } as const;

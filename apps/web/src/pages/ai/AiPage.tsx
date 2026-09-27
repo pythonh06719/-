@@ -7,6 +7,7 @@ import type {
   AiRecognizeFoodCandidate,
   AiRecognizeFoodResponse,
   AiTodayPlanResponse,
+  AiUsageResponse,
 } from '@qsh/shared-types';
 import { api, ApiClientError, postStream } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
@@ -73,6 +74,34 @@ function InsightCard({ insight }: { insight: { conclusion: string; basis: string
   );
 }
 
+/**
+ * 当日剩余次数（B6）。
+ *
+ * ⚠️ **取不到就整行不显示**：用量只是展示信息，拿不到（后端未就绪 / 未登录 / 网络错误）
+ * 时不报错、不占位、不白屏 —— 更不能因为拿不到用量就拦住 AI 入口。
+ * 措辞保持中性（COPY.aiUsageRemaining / COPY.aiUsagePlenty），不出现「已达上限 / 超限」式评判。
+ */
+function UsageLine({ usage }: { usage: AiUsageResponse | undefined }): ReactElement | null {
+  if (usage === undefined) {
+    return null;
+  }
+  return (
+    <p
+      className="px-1 text-xs text-slate-500 dark:text-slate-400"
+      aria-label={usage.remaining > 0 ? COPY.aiUsageRemaining(usage.remaining) : COPY.aiUsagePlenty}
+    >
+      {usage.remaining > 0 ? (
+        <>
+          {COPY.aiUsageRemaining(usage.remaining)}
+          <span className="ml-1">{COPY.aiUsageResetNote}</span>
+        </>
+      ) : (
+        COPY.aiUsagePlenty
+      )}
+    </p>
+  );
+}
+
 /** 食物识别（R3.7）：描述 → 候选（库内热量）→ 用户确认才调 POST /meals 入库。 */
 function FoodRecognizePanel(): ReactElement {
   const queryClient = useQueryClient();
@@ -86,6 +115,14 @@ function FoodRecognizePanel(): ReactElement {
     enabled: submitted.length > 0,
     retry: 0,
   });
+
+  // 识别会消耗一次限额 → 成功返回后刷新剩余次数（B6）
+  useEffect(() => {
+    if (recognizeQuery.data !== undefined) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.aiUsage });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recognizeQuery.data]);
 
   // 确认入库：复用既有 POST /meals（source: 'ai'），热量由服务端按食物库计算
   const confirmMutation = useMutation({
@@ -203,6 +240,23 @@ export default function AiPage(): ReactElement {
     },
   });
 
+  /**
+   * 当日剩余次数（B6）：**只用于展示**。
+   *
+   * 取不到（未登录 / 后端未就绪 / 网络错误）时 `data === undefined` → `UsageLine` 整行不渲染，
+   * 既不报错也不占位；AI 未配置（无 LLM key）时后端仍返回 200，入口照原样降级。
+   */
+  const usageQuery = useQuery({
+    queryKey: queryKeys.aiUsage,
+    queryFn: () => api.get<AiUsageResponse>('/ai/usage'),
+    retry: 0,
+  });
+
+  /** 任何一次真正消耗限额的调用之后，让剩余次数重新取一次（保持显示与实际一致）。 */
+  const refreshUsage = (): void => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.aiUsage });
+  };
+
   const dailyQuery = useQuery({
     queryKey: queryKeys.aiDailySummary(date),
     queryFn: () => api.post<AiDailySummaryResponse>('/ai/daily-summary', { date }),
@@ -277,19 +331,22 @@ export default function AiPage(): ReactElement {
         return;
       }
       setAskQueryLike({ data: undefined, isFetching: false, isError: true, error: cause });
+    } finally {
+      // 提问（无论成功 / 失败 / 命中限额）都刷新一次剩余次数
+      refreshUsage();
     }
   };
 
   // 点击「生成」才发起请求（POST 探测不自动发）
   useEffect(() => {
     if (dailyTrigger > 0) {
-      void dailyQuery.refetch();
+      void dailyQuery.refetch().finally(refreshUsage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dailyTrigger]);
   useEffect(() => {
     if (planTrigger > 0) {
-      void planQuery.refetch();
+      void planQuery.refetch().finally(refreshUsage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planTrigger]);
@@ -316,6 +373,9 @@ export default function AiPage(): ReactElement {
           </button>
         ))}
       </div>
+
+      {/* 当日剩余次数（B6）：中性陈述，取不到则整行不显示 */}
+      <UsageLine usage={usageQuery.data} />
 
       {/* 每日总结（R9.1） */}
       {tab === 'daily' && (
