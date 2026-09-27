@@ -147,4 +147,4 @@ GET /api/ai/agent/traces?limit=20    # 只看自己的轨迹
 - ✅ **向量检索已实现**（原记「检索仍是关键词 (P1)」）：见
   `apps/api/src/foods/rag/vector-search.service.ts` —— pgvector `<=>` 余弦距离为首选路径，
   扩展/表不可用时自动降级为内存向量路径。启动日志出现
-  `loaded 443 food embeddings …` + `pgvector not available; using in-memory path` 即后者。
+  `loaded 1773 food embeddings …` + `pgvector not available; using in-memory path` 即后者。

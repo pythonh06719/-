@@ -19,7 +19,7 @@
 | 部署 | `docker compose up -d --build` 一键起（nginx + NestJS + 可选 PostgreSQL），容器自动建表并幂等灌种子 |
 | 测试 | core 260 / api 172 / web 284 = **716 用例全绿**（根 `npm test` 串行跑三段），core 覆盖率 97.7% |
 
-食物库 **443 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
+食物库 **1773 条**（自建 57 + Open Food Facts 258 + USDA SR Legacy 128 + 中国食物成分表 1330），逐条标注来源与许可，详见 [DATA-LICENSE.md](./DATA-LICENSE.md)。
 运行时还可经服务端代理**在线兜底检索 Open Food Facts**（ODbL 1.0），查询与入库均不向浏览器泄露上游地址，聚合限流 20 次/分。
 
 ## 产品一览

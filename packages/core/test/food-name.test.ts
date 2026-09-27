@@ -5,8 +5,9 @@
  * - `isMeaninglessQualifier`：无区分意义的四类（统计标记 / 纯数值 / 品牌后缀 / 品牌产地）
  *   与**有区分意义**的形态、口味、部位规格（不得被误丢）；
  * - `foodQualifiers`：区分词提取（含中文/英文分隔符拆分、空括号、无括号）；
- * - `foodDisplayQualifiers` / `isDisplayNoiseQualifier`：**展示口径** —— 在去重口径之上再滤掉
- *   品牌 / 营养声称 / 产地补充（`力多精1` / `无糖` / `高钙` / `日本种`），保留规格形态（`袋装`/`脱脂`/`干`）；
+ * - `foodDisplayQualifiers` / `isDisplayNoiseQualifier`：**展示口径** —— 只看圆括号（`[]` 里是
+ *   别名，不展示），并在去重口径之上再滤掉品牌 / 营养声称 / 产地补充
+ *   （`力多精1` / `无糖` / `高钙` / `日本种` / `带鱼[白带鱼，刀鱼]` 的别名），保留规格形态（`袋装`/`脱脂`/`干`）；
  * - `foodDedupKey`：跨源去重比对键 —— 「干 vs 鲜」**不归一**（P2-2 回归）、真同名**仍归一**、
  *   同物异写法归一、去空白/标点、转小写；**品牌保留**（品牌不同 → 不归一，避免误合并丢数据）。
  *
@@ -173,6 +174,26 @@ describe('isDisplayNoiseQualifier / foodDisplayQualifiers（展示口径）', ()
     expect(foodDisplayQualifiers('蘑菇（鲜蘑）')).toEqual(['鲜蘑']);
     expect(foodDisplayQualifiers('蘑菇（罐头）')).toEqual(['罐头']);
     expect(foodDisplayQualifiers('苹果')).toEqual([]);
+  });
+
+  it('方括号 [] 是别名（同义词）→ 展示噪声；圆括号仍展示', () => {
+    expect(foodDisplayQualifiers('带鱼[白带鱼，刀鱼]')).toEqual([]);
+    expect(foodDisplayQualifiers('鲅鱼[马鲛鱼，燕鲅鱼，巴鱼]')).toEqual([]);
+    expect(foodDisplayQualifiers('甜椒[灯笼椒，柿子椒]')).toEqual([]);
+    expect(foodDisplayQualifiers('奶柿子[西红柿]')).toEqual([]);
+    // 圆括号 + 方括号混排：只取圆括号
+    expect(foodDisplayQualifiers('豌豆(带荚,鲜)[回回豆]')).toEqual(['带荚', '鲜']);
+    expect(foodDisplayQualifiers('黑豆[黑大豆](干)')).toEqual(['干']);
+    expect(foodDisplayQualifiers('巧克力(维夫)[朱古力威化]')).toEqual(['维夫']);
+    expect(foodDisplayQualifiers('慈菇[乌芋，白地果](鲜)')).toEqual(['鲜']);
+  });
+
+  it('方括号别名**不影响** foodQualifiers / foodDedupKey（去重口径不变）', () => {
+    // 去重口径仍把方括号内当限定词（宁可多留，避免误合并）
+    expect(foodQualifiers('带鱼[白带鱼，刀鱼]')).toEqual(['白带鱼', '刀鱼']);
+    expect(foodDedupKey('带鱼[白带鱼，刀鱼]')).toBe('带鱼白带鱼刀鱼');
+    // 展示口径为空，但去重键带别名 → 两口径分离
+    expect(foodDisplayQualifiers('带鱼[白带鱼，刀鱼]')).toEqual([]);
   });
 });
 

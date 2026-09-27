@@ -283,7 +283,7 @@ function steps(entries: Array<Record<string, unknown>>): Array<Record<string, un
 
 const tools: Record<string, ToolDef> = {
   search_food: {
-    description: '按名称关键词搜索「轻生活」食物库（443 条中文食物，含每 100g 热量与三大营养素）',
+    description: '按名称关键词搜索「轻生活」食物库（1773 条中文食物，含每 100g 热量与三大营养素）',
     inputSchema: {
       type: 'object',
       properties: {

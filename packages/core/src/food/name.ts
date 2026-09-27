@@ -28,15 +28,24 @@
  * - **去重口径**（`foodQualifiers` / `foodDedupKey`）：尽量**保守**，品牌**必须保留** ——
  *   `婴儿配方奶粉(力多精1，雀巢)` 与 `婴儿配方奶粉(爱儿乐，惠氏)` 是**不同产品**，
  *   若把品牌也算作「无区分意义」，`merge-seeds` 会把它们归一成一条、**丢数据**。
- * - **展示口径**（`foodDisplayQualifiers`）：在去重结果之上再滤掉**对用户没有区分意义**的
- *   品牌 / 营养声称 / 产地补充 —— 把 `力多精1`、`无糖`、`高钙`、`日本种` 当作中性标签
+ * - **展示口径**（`foodDisplayQualifiers`）：在去重结果之上，**只看圆括号**（`[]` 里是别名，
+ *   不是区分词），并再滤掉**对用户没有区分意义**的品牌 / 营养声称 / 产地补充 ——
+ *   把 `力多精1`、`无糖`、`高钙`、`日本种`、`带鱼[白带鱼，刀鱼]` 里的别名当作中性标签
  *   展示给用户是误导（它们不是形态/口味/部位规格）。
  *
  * 因此本模块同时提供两个入口；`GET /api/foods/search` 的 `qualifier` 走**展示口径**。
  */
 
-/** 括号组（中/英/方括号，半/全角，开闭可混用）。 */
+/** 括号组（中/英/方括号，半/全角，开闭可混用）—— **去重口径** 用（`()` 与 `[]` 同等对待）。 */
 const BRACKET = /[（(［[]([^）)］\]]*)[）)］\]]/g;
+/**
+ * **仅圆括号**组（中/英，半/全角）—— **展示口径** 用。
+ *
+ * 本数据集里 `（）/( )` 装的是**区分词**（形态 / 口味 / 部位规格），而 `[]/［］` 装的是**别名**
+ * （`带鱼[白带鱼，刀鱼]` → 白带鱼 / 刀鱼 都是带鱼的别名）。展示时把别名当区分词会误导用户
+ * （看到一串同义词冒充「规格区分」），故展示口径**只看圆括号**。
+ */
+const ROUND_BRACKET = /[（(]([^）)］\]]*)[）)]/g;
 /** 「无区分意义」：统计标记。 */
 const MARKER_TOKEN = /^(代表值|均值|平均|平均值|mean|avg|约|大概|近似)$/i;
 /** 「无区分意义」：纯测量值（以数字开头：38％ / 150℃ / 10分 / 55度）。 */
@@ -83,10 +92,10 @@ export function isMeaninglessQualifier(token: string): boolean {
  * @param name 食物名
  * @returns 区分词数组（按出现顺序；无括号或无区分词时为 `[]`）
  */
-export function foodQualifiers(name: string): string[] {
+function extractQualifiers(name: string, bracket: RegExp): string[] {
   const raw = String(name);
   const qualifiers: string[] = [];
-  for (const match of raw.matchAll(BRACKET)) {
+  for (const match of raw.matchAll(bracket)) {
     // 括号内容按中文/英文分隔符拆成多个限定词（如「草莓味，卡夫牌」→「草莓味」「卡夫牌」）
     for (const part of (match[1] ?? '').split(/[，,、/]/)) {
       const token = part.trim();
@@ -96,6 +105,18 @@ export function foodQualifiers(name: string): string[] {
     }
   }
   return qualifiers;
+}
+
+/**
+ * 提取食物名里**有区分意义**的括号限定词（形态 / 口味 / 部位 / 规格）—— **去重口径**。
+ *
+ * 同时认 `()` 与 `[]`（`蘑菇[干]` → `['干']`）：去重时宁可多留，避免误合并。
+ *
+ * @param name 食物名
+ * @returns 区分词数组（按出现顺序；无括号或无区分词时为 `[]`）
+ */
+export function foodQualifiers(name: string): string[] {
+  return extractQualifiers(name, BRACKET);
 }
 
 /**
@@ -185,20 +206,26 @@ export function isDisplayNoiseQualifier(token: string): boolean {
 /**
  * 提取食物名里**值得展示**的区分词（展示口径）。
  *
- * 在 `foodQualifiers`（去重口径）结果之上，再滤掉品牌 / 营养声称 / 产地补充 ——
+ * 在去重口径之上做两件事：
+ * 1. **只取圆括号 `()`**：`[]/［］` 里装的是**别名**（`带鱼[白带鱼，刀鱼]`），不是区分词；
+ * 2. 再滤掉品牌 / 营养声称 / 产地补充（见 `isDisplayNoiseQualifier`）。
+ *
  * 保留形态 (`干`/`鲜`/`煮`)、口味 (`香辣味`)、部位规格 (`袋装`/`脱脂`/`全能装`)。
  *
  * 例：
  * - `婴儿配方奶粉(力多精1，雀巢)` → `[]`（品牌，无展示价值）
  * - `幼儿奶粉(美素高，袋装)` → `['袋装']`（品牌去掉，规格保留）
  * - `牛乳(脱脂，帕玛拉特)` → `['脱脂']`（规格保留，品牌去掉）
+ * - `带鱼[白带鱼，刀鱼]` → `[]`（方括号是别名，不展示；但去重键仍保留）
+ * - `豌豆(带荚,鲜)[回回豆]` → `['带荚', '鲜']`（只取圆括号）
  * - `蘑菇(干)` → `['干']`（形态保留）
  *
  * @param name 食物名
  * @returns 展示用区分词数组（按出现顺序；无则为 `[]`）
  */
 export function foodDisplayQualifiers(name: string): string[] {
-  return foodQualifiers(name).filter((token) => !isDisplayNoiseQualifier(token));
+  // 只用圆括号：`[]` 装的是别名（同义词），不是区分词，不展示（去重口径仍保留，见上）。
+  return extractQualifiers(name, ROUND_BRACKET).filter((token) => !isDisplayNoiseQualifier(token));
 }
 
 /**

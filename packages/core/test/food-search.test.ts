@@ -42,6 +42,13 @@ describe('foodQualifierLabel 区分词标注', () => {
     expect(foodQualifierLabel('米饭(均值)')).toBeNull();
     expect(foodQualifierLabel('牛奶(38％)')).toBeNull();
   });
+
+  it('方括号别名不标注（展示口径只看圆括号），圆括号仍标注', () => {
+    expect(foodQualifierLabel('带鱼[白带鱼，刀鱼]')).toBeNull();
+    expect(foodQualifierLabel('鲅鱼[马鲛鱼，燕鲅鱼，巴鱼]')).toBeNull();
+    expect(foodQualifierLabel('豌豆(带荚,鲜)[回回豆]')).toBe('带荚·鲜');
+    expect(foodQualifierLabel('黑豆[黑大豆](干)')).toBe('干');
+  });
 });
 
 describe('matchFoodRank 相关度档位', () => {

@@ -73,7 +73,7 @@ WEB_PORT=8080 docker compose up -d --build
 ```bash
 docker compose ps                                   # web / api 两个都应是 Up
 curl -s localhost:8080/api/health                   # 期望 {"data":{"status":"ok",...},"error":null}
-docker compose logs --tail=30 api                   # 看启动日志（含 443 条食物向量加载）
+docker compose logs --tail=30 api                   # 看启动日志（含 1773 条食物向量加载）
 ```
 
 浏览器打开：`http://<你的公网IP>:8080/`
