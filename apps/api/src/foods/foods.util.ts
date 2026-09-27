@@ -21,6 +21,16 @@ export function visibleFoodWhere(userId: number): Prisma.FoodItemWhereInput {
  */
 export const FOOD_IDENTITY_PROJECTION_LIMIT = 20_000;
 
+/**
+ * 相关度排序的候选扫描上限（纵深防御）。
+ *
+ * `GET /api/foods/search` 需要先取出关键词命中的候选，在内存里按相关度排序后再分页。
+ * 当前食物库 1773 条（远小于此上限），整体进内存没有压力；此上限只用于堵住
+ * 「未来库膨胀到十万级 + 极宽泛关键词（如单个『鸡』字）」时把整表读进内存的情况
+ * —— 真到那时只会截断最靠后的候选，不会崩溃。
+ */
+export const FOOD_SEARCH_RANK_SCAN_LIMIT = 5_000;
+
 /** 关键词模糊匹配条件（名称 / 拼音 / 别名）。 */
 export function keywordWhere(keyword: string): Prisma.FoodItemWhereInput {
   return {

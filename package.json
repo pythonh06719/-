@@ -10,8 +10,10 @@
   ],
   "scripts": {
     "postinstall": "prisma generate --schema apps/api/prisma/schema.prisma",
-    "test": "npm run test -w @qsh/core",
+    "test": "npm run test:core && npm run test:web",
     "test:core": "npm run test -w @qsh/core",
+    "test:web": "npm run test -w @qsh/web",
+    "test:api": "npm run test -w @qsh/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev": "npm run dev -w @qsh/web",
     "build": "npm run build -w @qsh/web",

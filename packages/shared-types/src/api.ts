@@ -203,6 +203,29 @@ export interface SearchFoodsQuery {
 /** `GET /api/foods` 响应。 */
 export type SearchFoodsResponse = Paginated<FoodItem>;
 
+/**
+ * `GET /api/foods/search` 命中档位（相关度）：`0` 前缀 > `1` 子串 > `2` 仅别名命中。
+ *
+ * 与 `@qsh/core` 的 `ORDER_RANK` 同义；此处写成数字联合，保持 shared-types 零依赖。
+ */
+export type FoodSearchMatchRank = 0 | 1 | 2;
+
+/**
+ * `GET /api/foods/search` 单条结果：食物 + **区分词标注**。
+ *
+ * 跨来源同物异名（如 `蘑菇(干)` / `蘑菇（鲜蘑）`）**不合并**（各来源口径不同），
+ * 而是把区分词（形态 / 口味 / 部位规格）标出来，让用户自己分辨 —— 排序绝不按热量。
+ */
+export interface FoodSearchHit extends FoodItem {
+  /** 区分词标注；无区分词时为 `null`（UI 不渲染标签） */
+  qualifier: string | null;
+  /** 命中档位（0 前缀 / 1 子串 / 2 仅别名），仅用于解释顺序，UI 默认不展示 */
+  matchRank: FoodSearchMatchRank;
+}
+
+/** `GET /api/foods/search` 响应（相关度优先排序 + 稳定分页）。 */
+export type FoodSearchResponse = Paginated<FoodSearchHit>;
+
 /** `POST /api/foods` 请求 —— 新建用户自定义食物（R3.6）。 */
 export interface CreateCustomFoodRequest {
   name: string;

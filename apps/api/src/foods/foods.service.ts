@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
-import { FREQUENT_FOOD_DEFAULTS, rankFrequentFoods } from '@qsh/core';
-import type { FrequentFoodRow } from '@qsh/core';
+import {
+  FOOD_SEARCH_DEFAULT_PAGE_SIZE,
+  FREQUENT_FOOD_DEFAULTS,
+  pageFoodSearch,
+  rankFrequentFoods,
+  rankFoodSearch,
+} from '@qsh/core';
+import type { FoodSearchCandidate, FrequentFoodRow } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
   FoodItem,
+  FoodSearchHit,
   LiveSearchResponse,
   TopFoodItem,
   TopFoodsResponse,
@@ -13,7 +20,7 @@ import type {
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
-import { toFoodItem } from '../common/mappers/entity.mapper';
+import { parseJsonStringArray, toFoodItem } from '../common/mappers/entity.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { addDays, todayLocalKey } from '../common/utils/date.util';
 import { LiveSearchDto } from './dto/live-search.dto';
@@ -26,7 +33,12 @@ import {
   searchOpenFoodFacts,
 } from './external/off.client';
 import type { ExternalFoodDraft } from './external/off.client';
-import { FOOD_IDENTITY_PROJECTION_LIMIT, keywordWhere, visibleFoodWhere } from './foods.util';
+import {
+  FOOD_IDENTITY_PROJECTION_LIMIT,
+  FOOD_SEARCH_RANK_SCAN_LIMIT,
+  keywordWhere,
+  visibleFoodWhere,
+} from './foods.util';
 import { VectorSearchService } from './rag/vector-search.service';
 import type { RagFoodHit } from './rag/vector-search.service';
 
@@ -37,6 +49,19 @@ import type { RagFoodHit } from './rag/vector-search.service';
  */
 export interface FoodSearchResult {
   items: FoodItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * 相关度优先搜索结果（`GET /api/foods/search`）。
+ *
+ * 形状与 `FoodSearchResult` 一致（`items/total/page/pageSize`），只是单条多了
+ * **区分词标注** `qualifier`（跨来源同物异名靠它区分，**不合并**）。
+ */
+export interface FoodSearchRankedResult {
+  items: FoodSearchHit[];
   total: number;
   page: number;
   pageSize: number;
@@ -117,6 +142,79 @@ export class FoodsService {
     ]);
 
     return { items: rows.map(toFoodItem), total, page, pageSize };
+  }
+
+  /**
+   * **相关度优先**搜索（`GET /api/foods/search`，阶段 2）。
+   *
+   * 与 `search()` 的区别（为什么另开端点而不是改旧端点）：
+   * - 旧 `GET /api/foods` 的排序是 `isVerified desc, id asc`（**退化排序**，实际 = 入库顺序），
+   *   改它会动到既有契约与用例，故保持不动；
+   * - 新端点明确按**相关度**排序（前缀 > 子串 > 仅别名，同档按 `id` 稳定分页），
+   *   并把跨来源同物异名的**区分词**标出来。
+   *
+   * 🔴 **红线：绝不按热量 / 任何营养字段排序** —— 排序函数 `rankFoodSearch` 只接收身份字段
+   * （id / name / namePinyin / aliases），从接口上就不存在按营养排序的可能（PRD §7 无负罪感）。
+   *
+   * ⚠️ **不使用向量兜底**：相关度排序必须是确定、可解释的顺序（同一关键词每次结果一致，
+   * 便于「加载更多」稳定分页）；向量检索的顺序不可解释，故本端点只走关键词候选 + 内存排序。
+   */
+  async searchRanked(userId: number, dto: SearchFoodsDto): Promise<FoodSearchRankedResult> {
+    const keyword = (dto.q ?? dto.keyword ?? '').trim();
+    const pageSize = dto.pageSize ?? dto.limit ?? FOOD_SEARCH_DEFAULT_PAGE_SIZE;
+    const page = dto.page ?? (dto.offset ? Math.floor(dto.offset / pageSize) + 1 : 1);
+
+    const filters: object[] = [visibleFoodWhere(userId)];
+    if (keyword.length > 0) {
+      filters.push(keywordWhere(keyword));
+    }
+    if (dto.category && dto.category.trim().length > 0) {
+      filters.push({ category: dto.category.trim() });
+    }
+    const where = { AND: filters };
+
+    // ① 最小投影取候选（排序只需要身份字段）+ 总数（分页用，`total` 不受扫描上限影响）。
+    const [rows, total] = await Promise.all([
+      this.prisma.foodItem.findMany({
+        where,
+        select: { id: true, name: true, namePinyin: true, aliases: true },
+        orderBy: { id: 'asc' },
+        take: FOOD_SEARCH_RANK_SCAN_LIMIT,
+      }),
+      this.prisma.foodItem.count({ where }),
+    ]);
+
+    // ② 纯函数排序（`packages/core`，前后端同一口径）。
+    const candidates: FoodSearchCandidate[] = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      namePinyin: row.namePinyin,
+      aliases: parseJsonStringArray(row.aliases),
+    }));
+    const ranked = rankFoodSearch(candidates, keyword);
+    const hitById = new Map(ranked.map((hit) => [hit.id, hit]));
+    const pageIds = pageFoodSearch(ranked, page, pageSize);
+
+    // ③ 只回表当前页（一次 `in` 查询，避免 N+1），再按排序顺序还原。
+    const fullRows =
+      pageIds.length === 0
+        ? []
+        : await this.prisma.foodItem.findMany({
+            where: { id: { in: pageIds }, ...visibleFoodWhere(userId) },
+          });
+    const rowById = new Map(fullRows.map((row) => [row.id, row]));
+
+    const items: FoodSearchHit[] = [];
+    for (const id of pageIds) {
+      const row = rowById.get(id);
+      const hit = hitById.get(id);
+      if (row === undefined || hit === undefined) {
+        continue; // 理论上不会发生（候选来自同一 `where`）
+      }
+      items.push({ ...toFoodItem(row), qualifier: hit.qualifier, matchRank: hit.rank });
+    }
+
+    return { items, total, page, pageSize };
   }
 
   /**

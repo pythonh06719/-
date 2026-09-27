@@ -29,7 +29,7 @@ import { ImportExternalDto } from './dto/import-external.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
 import { FoodsService } from './foods.service';
-import type { FoodSearchResult } from './foods.service';
+import type { FoodSearchRankedResult, FoodSearchResult } from './foods.service';
 
 /**
  * 食物库控制器（`/api/foods/**`，R3.1~R3.4 / R3.6）。
@@ -46,7 +46,22 @@ import type { FoodSearchResult } from './foods.service';
 export class FoodsController {
   constructor(private readonly foodsService: FoodsService) {}
 
-  /** 搜索 / 分类浏览。 */
+  /**
+   * **相关度优先**搜索（阶段 2）：`GET /api/foods/search`。
+   *
+   * 与 `GET /api/foods` 的区别：按**相关度**排序（前缀 > 子串 > 仅别名，同档按 id 稳定分页），
+   * 并给跨来源同物异名标出**区分词**（不合并、不按热量排序）。
+   * 旧端点保持原契约不变（既有调用方与用例不受影响）。
+   */
+  @Get('search')
+  searchRanked(
+    @CurrentUser() userId: number,
+    @Query() query: SearchFoodsDto,
+  ): Promise<FoodSearchRankedResult> {
+    return this.foodsService.searchRanked(userId, query);
+  }
+
+  /** 搜索 / 分类浏览（原契约，排序保持 `isVerified desc, id asc` 不变）。 */
   @Get()
   search(@CurrentUser() userId: number, @Query() query: SearchFoodsDto): Promise<FoodSearchResult> {
     return this.foodsService.search(userId, query);

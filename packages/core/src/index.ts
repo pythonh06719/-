@@ -184,6 +184,22 @@ export {
   type FoodCategory,
 } from './food/category';
 
+// 食物名归一化与「区分词」提取（跨源去重 + 搜索区分，单一真源）
+export { foodDedupKey, foodQualifiers, isMeaninglessQualifier } from './food/name';
+
+// 食物搜索排序（相关度优先：前缀 > 子串 > 仅别名；绝不按营养排序，单一真源）
+export {
+  FOOD_SEARCH_DEFAULT_PAGE_SIZE,
+  ORDER_RANK,
+  foodQualifierLabel,
+  matchFoodRank,
+  pageFoodSearch,
+  rankFoodSearch,
+  type FoodMatchRank,
+  type FoodSearchCandidate,
+  type FoodSearchRanked,
+} from './food/search';
+
 // 餐次排序 / 跨餐移动（R3.8）
 export {
   applyReorder,

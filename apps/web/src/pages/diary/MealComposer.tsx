@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { FOOD_SEARCH_DEFAULT_PAGE_SIZE, FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
   FoodItem,
+  FoodSearchHit,
+  FoodSearchResponse,
   LiveSearchResponse,
   MealComboWithItems,
   MealType,
-  SearchFoodsResponse,
   TopFoodItem,
   TopFoodsResponse,
 } from '@qsh/shared-types';
@@ -89,13 +90,51 @@ export default function MealComposer({
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
-  const searchQuery = useQuery({
+  /**
+   * 搜索：`GET /foods/search`（**相关度优先**：前缀 > 子串 > 仅别名，同档按 id 稳定分页）。
+   *
+   * 用 `useInfiniteQuery` 而不是一次取 20 条就结束：食物库 1773 条后，「先出来的是什么」
+   * 决定了记录成功率 —— 相关度高的在前，剩下的靠「加载更多」按 `total` 稳定翻页（不跳条、不重复）。
+   *
+   * ⚠️ `total` 由服务端返回，前端只做「还能不能继续翻」的判断，**不做任何二次排序**
+   * （尤其绝不按热量排序：排序口径在 `packages/core` 单一真源，前后端一致）。
+   */
+  const searchQuery = useInfiniteQuery({
     queryKey: queryKeys.foodSearch(keyword, ''),
-    queryFn: () => api.get<SearchFoodsResponse>('/foods', { q: keyword, limit: 20, offset: 0 }),
+    queryFn: ({ pageParam }) =>
+      api.get<FoodSearchResponse>('/foods/search', {
+        q: keyword,
+        page: pageParam,
+        pageSize: FOOD_SEARCH_DEFAULT_PAGE_SIZE,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = new Set(allPages.flatMap((page) => page.items.map((item) => item.id))).size;
+      return loaded < lastPage.total ? allPages.length + 1 : undefined;
+    },
     enabled: tab === 'search' && keyword.trim() !== '',
   });
 
-  const localItems = searchQuery.data?.items ?? [];
+  /** 已加载的搜索结果：按页拼接 + 按 id 去重（稳定分页下重复只可能是并发兜底）。 */
+  const localItems = useMemo((): FoodSearchHit[] => {
+    const merged: FoodSearchHit[] = [];
+    const seen = new Set<number>();
+    for (const page of searchQuery.data?.pages ?? []) {
+      for (const item of page.items) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          merged.push(item);
+        }
+      }
+    }
+    return merged;
+  }, [searchQuery.data]);
+
+  /** 命中的总条数（服务端 `total`，用于「加载更多」与「共 N 条」）。 */
+  const searchTotal = searchQuery.data?.pages[0]?.total ?? 0;
+  /** 还有更多可加载（去重后的已加载数 < 总数）。 */
+  const hasMoreSearch = localItems.length < searchTotal;
+
   const localEmpty = searchQuery.data !== undefined && localItems.length === 0;
   /** 本地为空（或用户主动点「搜索在线食物库」）时才请求在线兜底。 */
   const wantOnline = keyword.trim() !== '' && (localEmpty || onlineRequested);
@@ -246,27 +285,42 @@ export default function MealComposer({
     }
   };
 
+  /**
+   * 食物列表（搜索 / 最近 / 收藏共用）。
+   *
+   * 搜索结果里的 `qualifier`（区分词，如 `干` / `鲜蘑` / `香辣味`）以中性小标签展示：
+   * 跨来源同物异名**不合并**，靠它让用户自己分辨「哪一条是我要的」——
+   * 标签只是**事实陈述**（形态 / 口味 / 部位规格），不含任何好坏评价词。
+   */
   const renderFoodList = (items: readonly FoodItem[]): ReactElement => (
     <ul className="mt-3 space-y-2">
-      {items.map((food) => (
-        <li key={food.id}>
-          <button
-            type="button"
-            onClick={() => chooseFood(food)}
-            className="qsh-touch-target w-full rounded-xl px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
-              <span aria-hidden="true" className="text-base">
-                {emojiForCategory(food.category)}
+      {items.map((food) => {
+        const qualifier = 'qualifier' in food ? (food as FoodSearchHit).qualifier : null;
+        return (
+          <li key={food.id}>
+            <button
+              type="button"
+              onClick={() => chooseFood(food)}
+              className="qsh-touch-target w-full rounded-xl px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
+                <span aria-hidden="true" className="text-base">
+                  {emojiForCategory(food.category)}
+                </span>
+                <span className="min-w-0 truncate">{food.name}</span>
+                {qualifier !== null && (
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    {qualifier}
+                  </span>
+                )}
               </span>
-              {food.name}
-            </span>
-            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
-              {food.category} · 每 100g {food.kcalPer100g} kcal
-            </span>
-          </button>
-        </li>
-      ))}
+              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
+                {food.category} · 每 100g {food.kcalPer100g} kcal
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 
@@ -365,7 +419,27 @@ export default function MealComposer({
             </div>
 
             {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">搜索中…</p>}
-            {searchQuery.data !== undefined && renderFoodList(searchQuery.data.items)}
+            {searchQuery.data !== undefined && renderFoodList(localItems)}
+
+            {/* 结果完整性（阶段 2.4）：把服务端的 `total` 如实呈现，并给「加载更多」。
+                顺序完全由服务端相关度决定，前端不重排、不筛选、不做任何评价。 */}
+            {searchQuery.data !== undefined && localItems.length > 0 && (
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  共 {searchTotal} 条，已显示 {localItems.length} 条
+                </span>
+                {hasMoreSearch && (
+                  <button
+                    type="button"
+                    onClick={() => void searchQuery.fetchNextPage()}
+                    disabled={searchQuery.isFetchingNextPage}
+                    className="qsh-touch-target shrink-0 rounded-full bg-brand-50 px-4 text-sm text-brand-700 disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
+                  >
+                    {searchQuery.isFetchingNextPage ? '加载中…' : '加载更多'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* 搜索空态置顶「你常吃的」（R11.5 / AC-11.5.6）：
                 **只在搜索结果为空时**渲染；有结果时整块不出现，不干扰 ≤3 次点击。

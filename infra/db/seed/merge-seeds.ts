@@ -34,7 +34,7 @@ import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { FOOD_CATEGORIES, isFoodCategory, mapFoodCategory } from '@qsh/core';
+import { FOOD_CATEGORIES, foodDedupKey, isFoodCategory, mapFoodCategory } from '@qsh/core';
 
 import { fillPinyin } from './pinyin';
 
@@ -45,73 +45,14 @@ const USDA_PATH = resolve(here, 'food_items.usda.candidates.json');
 const USDA_MAP_PATH = resolve(here, 'usda_zh_map.json');
 const CFCD_PATH = resolve(here, 'food_items.cfcd.json');
 
-/** 括号组（中/英/方括号，半/全角，开闭可混用）。 */
-const BRACKET = /[（(［[]([^）)］\]]*)[）)］\]]/g;
-/** 统计标记类限定词（比对去重时忽略）：如「均值」「代表值」。 */
-const MARKER_TOKEN = /^(代表值|均值|平均|平均值|mean|avg|约|大概|近似)$/i;
-/** 纯测量值限定词（忽略）：以数字开头，如百分比 `38％`、温度 `150℃`、时长 `10分`、度数 `55度`。 */
-const MEASURE_TOKEN = /^\d/;
-/** 品牌后缀（忽略）：如「可淇牌」「三元牌」。 */
-const BRAND_SUFFIX = /牌$/;
-/** 常见品牌 / 产地补充说明（忽略）：平台把这些写在括号里、与主体无区分意义。 */
-const BRAND_OR_ORIGIN = new Set<string>([
-  '雀巢',
-  '美赞臣',
-  '肯德基',
-  '惠氏',
-  '亨氏',
-  '阿香婆',
-  '卡夫',
-  '中国',
-  '台湾',
-  '以色列',
-]);
-
 /**
- * 判断括号限定词是否「无区分意义」（去重比对时丢弃）。
+ * 归一化名称（用于跨源去重比对）—— 复用 `@qsh/core` 的 `foodDedupKey`（**单一真源**）。
  *
- * 区分两类限定词（P2-2 修复）：
- * - **无区分意义**（丢弃）：统计标记、纯数值/温度/时长/度数、品牌/产地补充说明；
- * - **有区分意义**（**保留**）：形态（干/鲜/罐头/油浸/煮/蒸/生）、口味（烧烤/香辣/原味）、
- *   部位/规格（北/南/内酯/白皮/红皮/土鸡/干切面/白/黄）等 —— 这些是**不同食物**，不能归一。
- *
- * @param tok 单个括号限定词
+ * 搜索侧（`GET /api/foods/search` 的「跨来源同名区分词标注」）用的是**同一个函数**，
+ * 避免各处各写一份导致规则漂移。规则：取「括号前主体 + **有区分意义**的括号限定词」
+ * （形态/口味/部位/规格），丢弃统计标记 / 纯数值 / 品牌产地；详见 `core/src/food/name.ts`。
  */
-function isMeaninglessToken(tok: string): boolean {
-  return (
-    MARKER_TOKEN.test(tok) || MEASURE_TOKEN.test(tok) || BRAND_SUFFIX.test(tok) || BRAND_OR_ORIGIN.has(tok)
-  );
-}
-
-/**
- * 归一化名称（用于跨源去重比对）。
- *
- * 取「括号前主体 + **有区分意义**的括号限定词」，去空白/常用标点、转小写。
- * 例：`紫菜(干)`→`紫菜干`（**≠** `紫菜（鲜）`→`紫菜鲜`，故「干紫菜」不再被「鲜紫菜」误杀）；
- * 而 `苹果`→`苹果` 与既有 `苹果` 真同名**仍会去重**。
- *
- * ⚠️ 与旧实现的关键差异：旧版把括号内容**全部删除**，导致 `紫菜(干)` 与 `紫菜（鲜）`
- * 归一为同名 → 误杀干制品/不同形态；本版仅丢弃「无区分意义」的限定词。
- *
- * @param name 原始食物名
- */
-function normalizeName(name: string): string {
-  const raw = String(name);
-  const base = raw.split(/[（(［[]/)[0].trim();
-  const kept: string[] = [];
-  for (const match of raw.matchAll(BRACKET)) {
-    for (const part of match[1].split(/[，,、/]/)) {
-      const tok = part.trim();
-      if (tok !== '' && !isMeaninglessToken(tok)) {
-        kept.push(tok);
-      }
-    }
-  }
-  return (base + kept.join(''))
-    .replace(/[\s\u3000]+/g, '')
-    .replace(/[，,、。.·・\-—_/％%]/g, '')
-    .toLowerCase();
-}
+const normalizeName = foodDedupKey;
 
 /** 自然份量单位。 */
 interface ServingUnit {
