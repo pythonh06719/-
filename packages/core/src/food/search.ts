@@ -23,7 +23,7 @@
  * 便于单测全覆盖，也保证前后端口径一致（NFR-11：同一套口径，不各写一份）。
  */
 
-import { foodQualifiers } from './name';
+import { foodDisplayQualifiers } from './name';
 
 /**
  * 相关度档位（**值越小越靠前**）。
@@ -62,7 +62,7 @@ export interface FoodSearchRanked {
   id: number;
   /** 相关度档位 */
   rank: FoodMatchRank;
-  /** 区分词标注（如 `干` / `鲜蘑` / `烧烤`）；无区分词时为 `null` */
+  /** 区分词标注（展示口径，已滤除品牌/营养声称；如 `干` / `鲜蘑` / `烧烤`）；无区分词时为 `null` */
   qualifier: string | null;
 }
 
@@ -76,11 +76,15 @@ function normalizeForMatch(value: string): string {
  *
  * 例：`蘑菇(干)`→`干`；`豆腐（南豆腐）`→`南豆腐`；`牛肉干（香辣味）`→`香辣味`；`苹果`→`null`。
  *
+ * 走的是**展示口径**（`foodDisplayQualifiers`）：在去重口径之上再滤掉品牌 / 营养声称 / 产地
+ * （如 `力多精1`、`无糖`、`日本种`），避免把厂商名或营销词当中性标签展示给用户。
+ * 保留形态 / 口味 / 部位规格（`干` / `香辣味` / `脱脂` / `袋装`…）。
+ *
  * @param name 食物名
- * @returns 区分词串；无区分词时返回 `null`（UI 整块不渲染标签，不留无意义空格）
+ * @returns 区分词串；无展示用区分词时返回 `null`（UI 整块不渲染标签，不留无意义空格）
  */
 export function foodQualifierLabel(name: string): string | null {
-  const qualifiers = foodQualifiers(name);
+  const qualifiers = foodDisplayQualifiers(name);
   return qualifiers.length === 0 ? null : qualifiers.join('·');
 }
 

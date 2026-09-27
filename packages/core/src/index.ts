@@ -185,7 +185,14 @@ export {
 } from './food/category';
 
 // 食物名归一化与「区分词」提取（跨源去重 + 搜索区分，单一真源）
-export { foodDedupKey, foodQualifiers, isMeaninglessQualifier } from './food/name';
+// `foodQualifiers`=去重口径（品牌保留）；`foodDisplayQualifiers`=展示口径（再滤品牌/营养声称/产地）
+export {
+  foodDedupKey,
+  foodDisplayQualifiers,
+  foodQualifiers,
+  isDisplayNoiseQualifier,
+  isMeaninglessQualifier,
+} from './food/name';
 
 // 食物搜索排序（相关度优先：前缀 > 子串 > 仅别名；绝不按营养排序，单一真源）
 export {
