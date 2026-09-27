@@ -215,6 +215,17 @@ export {
   type ReorderUpdate,
 } from './meal/reorder';
 
+// 份量换算与营养重算（B3：新建 / 改份量**同一口径**，NFR-11）
+export {
+  DEFAULT_MEAL_GRAMS,
+  resolveMealAmount,
+  scaleFoodNutrients,
+  type FoodNutrientSource,
+  type FoodPortionSource,
+  type ResolvedMealAmount,
+  type ScaledNutrients,
+} from './meal/portion';
+
 // ---------------------------------------------------------------------------
 // 四期全新项（R11.3 / R11.4 / R11.7）
 // ---------------------------------------------------------------------------

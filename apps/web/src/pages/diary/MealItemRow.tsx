@@ -1,6 +1,13 @@
 import type { ReactElement } from 'react';
 import type { MealLog, MealType } from '@qsh/shared-types';
-import { COPY, mealMoveDownAria, mealMoveSelectAria, mealMoveToAria, mealMoveUpAria } from '@/lib/copy';
+import {
+  COPY,
+  mealEditPortionAria,
+  mealMoveDownAria,
+  mealMoveSelectAria,
+  mealMoveToAria,
+  mealMoveUpAria,
+} from '@/lib/copy';
 import { emojiForFoodName } from '@/lib/food-emoji';
 import { MEAL_TYPE_LABELS } from './meal-utils';
 
@@ -52,6 +59,11 @@ export interface MealItemRowProps {
   /** 移动到目标餐（追加到目标餐末尾） */
   onMoveTo: (id: number, mealType: MealType) => void;
   /**
+   * 改份量 / 改热量（B3，可选）。
+   * 不传时不显示「改份量」入口（其余控件照常工作）。
+   */
+  onEdit?: (log: MealLog) => void;
+  /**
    * 拖拽手柄的 `onPointerDown`（**可选增强**）。
    * 不传时只隐藏手柄，降级控件照常工作。
    */
@@ -76,6 +88,7 @@ export default function MealItemRow({
   onMoveUp,
   onMoveDown,
   onMoveTo,
+  onEdit,
   onDragHandlePointerDown,
   dragging = false,
   itemRef,
@@ -131,6 +144,23 @@ export default function MealItemRow({
       {/* 降级控件组（AC-3.8.7）：上移 / 下移 / 移动到某餐。
           与拖拽**等价**、**独立** —— 拖拽 hook 不挂载时这一组照常可用。 */}
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        {/*
+          改份量（B3）：与排序控件**同层**、同为按钮 —— 拖动 / 上移 / 下移都是「摆放」，
+          改份量是「改这条本身」，两者互不干扰；本按钮**不注册任何指针事件**，
+          因此不会介入 `usePointerReorder` 的 pointerdown 命中判断。
+        */}
+        {onEdit !== undefined && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onEdit(log)}
+            className="qsh-touch-target rounded-control px-2 text-xs text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out enabled:hover:bg-brand-50 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700 dark:enabled:hover:bg-slate-700"
+            aria-label={mealEditPortionAria(name)}
+            data-testid={`meal-edit-${log.id}`}
+          >
+            改份量
+          </button>
+        )}
         <button
           type="button"
           disabled={!canMoveUp || busy}

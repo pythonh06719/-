@@ -20,12 +20,14 @@ import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, todayKey } from '@/lib/format';
 import { normalizeTrendResponse } from '@/lib/trend';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
-import { COPY, mealMovedLine } from '@/lib/copy';
+import { COPY, mealMovedLine, portionKcalUpdatedLine, portionUpdatedLine } from '@/lib/copy';
 import EmptyState from '@/components/common/EmptyState';
 import { MEAL_BUDGET_SHARE, type ThemeBudget } from '@/theme/tokens';
 import MealComposer from './MealComposer';
 import type { ComposerSubmit } from './MealComposer';
 import MealItemRow from './MealItemRow';
+import MealPortionEditor from './MealPortionEditor';
+import type { PortionEditSubmit } from './MealPortionEditor';
 import { usePointerReorder } from './usePointerReorder';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, computeKcalFromFood, sumKcal } from './meal-utils';
 import { enqueueRequest } from '@/pwa/offline-queue';
@@ -139,6 +141,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   const [notice, setNotice] = useState<string | null>(null);
   /** 拖拽引导条（首次进入、可关闭，仅一次）。 */
   const [guideDismissed, setGuideDismissed] = useState<boolean>(() => readGuideDismissed());
+  /** 正在改份量的记录（B3；`null` = 面板未打开）。 */
+  const [editingLog, setEditingLog] = useState<MealLog | null>(null);
 
   const mealsQuery = useQuery({
     queryKey: queryKeys.meals(date),
@@ -427,7 +431,68 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
     }
   };
 
-  const progressRatio = dailyBudget > 0 ? todayTotal / dailyBudget : 0;
+  /**
+   * 改份量 / 改热量的本地乐观更新（离线重放前先把这条改过来，界面立即生效）。
+   *
+   * ⚠️ 只改 `kcal` / `grams` 两个展示字段，**顺序与其它记录一律不动** ——
+   * 改份量不该牵动排列，否则用户会以为记录被重新排过。
+   */
+  const applyPortionOptimistic = (id: number, patch: { kcal: number; grams: number | null }): void => {
+    const cached =
+      cacheGet<ListMealsResponse>(CACHE_KEYS.meals(date)) ??
+      ({ date, groups: [], totalKcal: 0 } as ListMealsResponse);
+    const nextGroups = MEAL_TYPE_ORDER.map((type) => {
+      const existing = cached.groups.find((group) => group.mealType === type);
+      const logs = (existing?.logs ?? []).map((log) => (log.id === id ? { ...log, ...patch } : log));
+      return { mealType: type, logs, totalKcal: sumKcal(logs) };
+    });
+    const next: ListMealsResponse = {
+      date,
+      groups: nextGroups,
+      totalKcal: nextGroups.reduce((total, group) => total + group.totalKcal, 0),
+    };
+    cacheSet(CACHE_KEYS.meals(date), next);
+    queryClient.setQueryData(queryKeys.meals(date), next);
+  };
+
+  /**
+   * 提交一次改份量（B3）：`PATCH /api/meals/:id`。
+   *
+   * - **食物库条目只发份量**，热量由服务端按食物库重算（与「重新搜一次再记」同一个公式）；
+   * - **快速加卡条目发热量**（它没有食物库参照物）。
+   *
+   * 🔴 **无负罪感硬约束**：这里**不计算、不展示、不播报任何「超出预算 / 超标」内容** ——
+   * 改份量只是把记错的数字改对，用户不该因此收到一条评价（PRD §7）。
+   */
+  const handlePortionEdit = async (payload: PortionEditSubmit): Promise<void> => {
+    if (editingLog === null) {
+      return;
+    }
+    const id = editingLog.id;
+    const isLibrary = editingLog.foodItemId !== null;
+    const line = isLibrary ? portionUpdatedLine(payload.name) : portionKcalUpdatedLine(payload.name);
+    const path = `/meals/${id}`;
+
+    try {
+      await api.patch<{ entry: MealLog }>(path, payload.body);
+      setEditingLog(null);
+      setNotice(null);
+      setAnnouncement(line);
+      await invalidate();
+    } catch (error) {
+      if (isNetworkError(error)) {
+        await enqueueRequest({ path, method: 'PATCH', body: payload.body });
+        applyPortionOptimistic(id, { kcal: payload.kcalPreview, grams: payload.grams });
+        setEditingLog(null);
+        setNotice(COPY.offlineQueued);
+        setAnnouncement(line);
+        return;
+      }
+      setNotice(noticeFromError(error, '这条这次没能改，稍后再试一次就好'));
+    }
+  };
+
+  const progressRatio = dailyBudget !== null && dailyBudget > 0 ? todayTotal / dailyBudget : 0;
 
   /** 整日都没有记录时，给一个生活化的空状态（大 emoji + 一句话）。 */
   const isEmptyDay = groups.every((group) => group.logs.length === 0);
@@ -620,6 +685,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                     onMoveUp={handleMoveUp}
                     onMoveDown={handleMoveDown}
                     onMoveTo={handleMoveTo}
+                    onEdit={(log) => setEditingLog(log)}
                     onDragHandlePointerDown={reorder.startDrag}
                     dragging={reorder.draggingId === log.id}
                     itemRef={reorder.setItemRef(log.id)}
@@ -645,6 +711,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           mealType={composerMeal}
           onClose={() => setComposerMeal(null)}
           onSubmit={handleSubmit}
+        />
+      )}
+
+      {editingLog !== null && (
+        <MealPortionEditor
+          log={editingLog}
+          onCancel={() => setEditingLog(null)}
+          onSubmit={handlePortionEdit}
         />
       )}
     </section>

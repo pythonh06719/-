@@ -40,6 +40,8 @@ export const queryKeys = {
   foodSearch: (keyword: string, category: string) => ['foods', 'search', keyword, category] as const,
   foodLiveSearch: (keyword: string) => ['foods', 'live-search', keyword] as const,
   foodCategories: ['foods', 'categories'] as const,
+  /** 单条食物（B3「改份量」：读份量单位用） */
+  foodById: (id: number) => ['foods', 'by-id', id] as const,
   foodRecent: ['foods', 'recent'] as const,
   /** 常吃榜（R11.5）：按统计窗口与条数上限分键 */
   foodTop: (days: number, limit: number) => ['foods', 'top', days, limit] as const,

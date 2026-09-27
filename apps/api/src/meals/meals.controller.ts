@@ -19,6 +19,7 @@ import { CreateMealDto } from './dto/create-meal.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
 import { ReorderMealsDto } from './dto/reorder-meals.dto';
+import { UpdateMealDto } from './dto/update-meal.dto';
 import { MealsService } from './meals.service';
 import type { DayTotals, MealWriteResult } from './meals.service';
 import type { ListMealsResponse, ReorderMealsResponse } from '@qsh/shared-types';
@@ -66,6 +67,24 @@ export class MealsController {
   @HttpCode(HttpStatus.OK)
   reorder(@CurrentUser() userId: number, @Body() dto: ReorderMealsDto): Promise<ReorderMealsResponse> {
     return this.mealsService.reorder(userId, dto);
+  }
+
+  /**
+   * 改份量 / 改热量（B3）。
+   *
+   * - 食物库条目：改 `grams` 或 `servingUnit` + `servingQty`，热量**按食物库重算**；
+   * - 快速加卡条目（`foodItemId` 为空）：没有参照物，改的是 `kcal` 本身。
+   *
+   * ⚠️ 响应**只回新条目与当日合计**，不含任何「超标 / 超出预算」判断（PRD §7）。
+   */
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  update(
+    @CurrentUser() userId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMealDto,
+  ): Promise<MealWriteResult> {
+    return this.mealsService.update(userId, id, dto);
   }
 
   /** 删除一条记录。 */

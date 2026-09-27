@@ -932,6 +932,65 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
+      <section aria-labelledby="why-portion-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-portion-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑱ 改份量后，热量是怎么重算的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          记完发现份量填错了，直接改一下就好 —— 不用删掉重新搜。
+          改完这条会按食物库重新算一遍，口径和「新记一条」完全一样。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="数据来源"
+            value="食物库里那一条的「每 100g」值"
+            hint="不是你手填的数字，也不是上次记的快照"
+          />
+          <DerivationRow
+            term="重算公式"
+            value="每 100g 值 × 克数 ÷ 100"
+            hint="与新建记录用的是同一个函数（@qsh/core 的 scaleFoodNutrients）"
+          />
+          <DerivationRow term="取整" value="保留 1 位小数" hint="与服务端同一把取整（round1）" />
+          <DerivationRow
+            term="份量怎么折成克数"
+            value="填的克数 > 份量单位 × 份数 > 默认份量 > 100g"
+            hint="顺序与新建时一致"
+          />
+          <DerivationRow
+            term="快速加卡的条目改什么"
+            value="改的是热量本身"
+            hint="它没有食物库参照物，改克数不会重算任何数字"
+          />
+          <DerivationRow term="会不会动到别的记录" value="不会" hint="只改这一条，顺序与其它条目都不变" />
+          <DerivationRow
+            term="会不会提示「超出预算」"
+            value="不会"
+            hint="改份量只是把数字改对，不给任何评价"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么「改成 200g」和「重新记一条 200g」一定同一个数</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              两条路径调用的是同一个函数：新建走它，改份量也走它。
+              不复制一份公式，就不会出现「同一件事两个数字」—— 这是我们对可解释性的底线。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么改大了也不提醒</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              份量填错是最常见的事，改一下就好。我们不会在这一步弹「超出预算」「吃多了」之类的提醒 ——
+              那会把一次普通的修正变成一次被评价的经历。数字改对就够了，判断留给你。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          重算只服务「把数字改对」这一件事：不参与任何预算判断、不产生任何评价，也不改变其它记录。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

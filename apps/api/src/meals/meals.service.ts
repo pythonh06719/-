@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 import type { MealLog as MealLogRow } from '@prisma/client';
-import { applyReorder, round1 } from '@qsh/core';
+import { applyReorder, resolveMealAmount, round1, scaleFoodNutrients } from '@qsh/core';
 import type {
-  FoodItem,
   ListMealsResponse,
   MealCombo,
   MealComboItem,
@@ -25,6 +24,7 @@ import { CreateMealDto } from './dto/create-meal.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
 import { ReorderMealsDto } from './dto/reorder-meals.dto';
+import { UpdateMealDto } from './dto/update-meal.dto';
 
 /** 当日营养合计。 */
 export interface DayTotals {
@@ -47,13 +47,6 @@ export interface MealWriteResult {
 export interface ComboApplyResult {
   entries: MealLog[];
   dayTotals: DayTotals;
-}
-
-/** 份量解析结果。 */
-interface ResolvedAmount {
-  grams: number;
-  servingUnit: string | null;
-  servingQty: number | null;
 }
 
 /** 套餐明细写入载荷（Prisma 输入）。 */
@@ -158,12 +151,12 @@ export class MealsService {
     if (typeof dto.foodId === 'number') {
       const foodRow = await this.foodsService.requireVisibleFood(userId, dto.foodId);
       const food = toFoodItem(foodRow);
-      const amount = this.resolveAmount(food, {
+      const amount = resolveMealAmount(food, {
         grams: explicitGrams,
         servingUnit: dto.servingUnit,
         servingQty: dto.servingQty,
       });
-      const nutrients = this.computeNutrients(food, amount.grams);
+      const nutrients = scaleFoodNutrients(food, amount.grams);
       // AC-3.8.5：sortOrder 一律由服务端分配（本用户·本日·本餐下一个下标），排在最后；
       // 与 create 放进**同一事务**，避免并发写入读到同一个值（K14）。
       const row = await this.prisma.$transaction(async (tx) => {
@@ -276,6 +269,114 @@ export class MealsService {
     });
 
     return { entry: toMealLog(row), dayTotals: await this.dayTotals(userId, loggedDate) };
+  }
+
+  /**
+   * 改份量 / 改热量（B3）。
+   *
+   * 两类记录走的分支不同，**这是刻意的**：
+   * - **食物库条目**（`foodItemId` 非空）：热量必须**按食物库重算** ——
+   *   换算口径直接复用 `@qsh/core` 的 `resolveMealAmount` + `scaleFoodNutrients`，
+   *   与 `create()` **同一个函数**，因此「新建时选 200g」与「把 100g 改成 200g」
+   *   必然得到同一个数（NFR-11：同一件事只能有一个数字）。
+   *   请求体里的 `kcal` 对这类条目**一律不采信**（重算覆盖它）。
+   * - **快速加卡 / 自定义条目**（`foodItemId` 为空）：库里没有参照物可依，
+   *   改的是**热量本身**（也可改克数，只是不重算任何营养）。
+   *
+   * 越权（他人记录）与「根本不存在」统一 404 `E_NOTFOUND_MEAL`（K7：不暴露存在性）。
+   *
+   * 🔴 无负罪感（PRD §7）：本方法**只返回新条目与当日合计**，不做任何
+   * 「超标 / 超出预算 / 比目标多了多少」的判断，也不返回任何评价性字段。
+   */
+  async update(userId: number, id: number, dto: UpdateMealDto): Promise<MealWriteResult> {
+    const row = await this.prisma.mealLog.findUnique({ where: { id } });
+    if (!row || row.userId !== userId) {
+      throw new ApiException(404, ERROR_CODES.NOTFOUND_MEAL, '没有找到这条记录');
+    }
+
+    const hasGrams = typeof dto.grams === 'number';
+    const hasServing =
+      typeof dto.servingUnit === 'string' &&
+      dto.servingUnit.trim().length > 0 &&
+      typeof dto.servingQty === 'number';
+    const hasKcal = typeof dto.kcal === 'number';
+
+    if (hasGrams && (!Number.isFinite(dto.grams) || (dto.grams as number) <= 0)) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '份量填一个大于 0 的数字就好', {
+        grams: '份量填一个大于 0 的数字就好',
+      });
+    }
+    if (
+      hasServing &&
+      (!Number.isFinite(dto.servingQty) || (dto.servingQty as number) <= 0)
+    ) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '份量数量填一个大于 0 的数字就好', {
+        servingQty: '份量数量填一个大于 0 的数字就好',
+      });
+    }
+    if (hasKcal && (!Number.isFinite(dto.kcal) || (dto.kcal as number) < 0)) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '热量填一个不小于 0 的数字就好', {
+        kcal: '热量填一个不小于 0 的数字就好',
+      });
+    }
+    if (!hasGrams && !hasServing && !hasKcal) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '改一下份量或热量就好', {
+        grams: '改一下份量或热量就好',
+      });
+    }
+
+    const notePatch = typeof dto.note === 'string' ? { note: dto.note } : {};
+
+    if (row.foodItemId !== null) {
+      // 食物库条目：只认份量，热量一律重算（不采信请求体里的 kcal）。
+      if (!hasGrams && !hasServing) {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '这条是按食物库算的，改一下份量就好', {
+          grams: '这条是按食物库算的，改一下份量就好',
+        });
+      }
+
+      const foodRow = await this.foodsService.requireVisibleFood(userId, row.foodItemId);
+      const food = toFoodItem(foodRow);
+      const amount = resolveMealAmount(food, {
+        grams: dto.grams,
+        servingUnit: dto.servingUnit,
+        servingQty: dto.servingQty,
+      });
+      const nutrients = scaleFoodNutrients(food, amount.grams);
+
+      const updated = await this.prisma.mealLog.update({
+        where: { id },
+        data: {
+          grams: amount.grams,
+          servingUnit: amount.servingUnit,
+          servingQty: amount.servingQty,
+          kcal: nutrients.kcal,
+          proteinG: nutrients.proteinG,
+          fatG: nutrients.fatG,
+          carbG: nutrients.carbG,
+          fiberG: nutrients.fiberG,
+          sodiumMg: nutrients.sodiumMg,
+          ...notePatch,
+        },
+      });
+
+      return { entry: toMealLog(updated), dayTotals: await this.dayTotals(userId, row.loggedDate) };
+    }
+
+    // 快速加卡 / 自定义条目：没有食物库参照物 → 改什么存什么，不做任何重算。
+    const updated = await this.prisma.mealLog.update({
+      where: { id },
+      data: {
+        ...(hasGrams ? { grams: round1(dto.grams as number) } : {}),
+        ...(hasServing
+          ? { servingUnit: (dto.servingUnit as string).trim(), servingQty: dto.servingQty as number }
+          : {}),
+        ...(hasKcal ? { kcal: round1(dto.kcal as number) } : {}),
+        ...notePatch,
+      },
+    });
+
+    return { entry: toMealLog(updated), dayTotals: await this.dayTotals(userId, row.loggedDate) };
   }
 
   /**
@@ -537,60 +638,6 @@ export class MealsService {
     return Math.max(nextByMax, nextByCount);
   }
 
-  /** 解析份量：显式克数 > 份量单位换算 > 默认份量 > 100g。 */
-  private resolveAmount(
-    food: FoodItem,
-    input: { grams?: number; servingUnit?: string; servingQty?: number },
-  ): ResolvedAmount {
-    if (typeof input.grams === 'number' && input.grams > 0) {
-      return { grams: round1(input.grams), servingUnit: null, servingQty: null };
-    }
-
-    if (
-      input.servingUnit &&
-      typeof input.servingQty === 'number' &&
-      input.servingQty > 0
-    ) {
-      const unit = food.servingUnits.find((item) => item.unit === input.servingUnit);
-      if (unit) {
-        return {
-          grams: round1(unit.grams * input.servingQty),
-          servingUnit: unit.unit,
-          servingQty: input.servingQty,
-        };
-      }
-    }
-
-    if (typeof food.defaultServingGrams === 'number' && food.defaultServingGrams > 0) {
-      return { grams: round1(food.defaultServingGrams), servingUnit: null, servingQty: 1 };
-    }
-
-    return { grams: 100, servingUnit: null, servingQty: null };
-  }
-
-  /** 按选定克数换算营养（每 100g × 克数 ÷ 100）。 */
-  private computeNutrients(
-    food: FoodItem,
-    grams: number,
-  ): {
-    kcal: number;
-    proteinG: number;
-    fatG: number;
-    carbG: number;
-    fiberG: number | null;
-    sodiumMg: number | null;
-  } {
-    const factor = grams / 100;
-    return {
-      kcal: round1(food.kcalPer100g * factor),
-      proteinG: round1(food.proteinGPer100g * factor),
-      fatG: round1(food.fatGPer100g * factor),
-      carbG: round1(food.carbGPer100g * factor),
-      fiberG: food.fiberGPer100g === null ? null : round1(food.fiberGPer100g * factor),
-      sodiumMg: food.sodiumMgPer100g === null ? null : round1(food.sodiumMgPer100g * factor),
-    };
-  }
-
   /** 归一单条套餐明细（食物库条目自动换算热量；自定义条目需显式热量）。 */
   private async prepareComboItem(
     userId: number,
@@ -607,7 +654,7 @@ export class MealsService {
         typeof explicitGrams === 'number' && explicitGrams > 0
           ? round1(explicitGrams)
           : round1(food.defaultServingGrams ?? 100);
-      const nutrients = this.computeNutrients(food, grams);
+      const nutrients = scaleFoodNutrients(food, grams);
 
       return {
         foodItemId: food.id,

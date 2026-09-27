@@ -247,6 +247,16 @@ export class FoodsService {
     return rows.map((row) => row.category);
   }
 
+  /**
+   * 按 id 取单条食物（B3「改份量」：编辑面板要读这条食物的份量单位）。
+   *
+   * 不可见 / 不存在统一 404（复用 `requireVisibleFood`，与既有口径一致）。
+   */
+  async byId(userId: number, foodId: number): Promise<FoodItem> {
+    const row = await this.requireVisibleFood(userId, foodId);
+    return toFoodItem(row);
+  }
+
   /** 「最近吃过」：从 `meal_logs` 关联食物库，去重后按最近时间倒序。 */
   async recent(userId: number, limit = 20): Promise<FoodItem[]> {
     const logs = await this.prisma.mealLog.findMany({

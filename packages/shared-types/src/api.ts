@@ -386,11 +386,26 @@ export interface ListMealsResponse {
   totalKcal: number;
 }
 
-/** `PATCH /api/meals/:id` 请求。 */
+/**
+ * `PATCH /api/meals/:id` 请求（B3：改份量）。
+ *
+ * 两类记录改的东西不一样：
+ * - **食物库条目**（`foodItemId` 非空）：改**份量**（`grams` 或 `servingUnit` + `servingQty`），
+ *   热量一律由服务端按食物库**重算**（每 100g × 克数 ÷ 100），此处**传 `kcal` 也不会被采信**；
+ * - **快速加卡 / 自定义条目**（`foodItemId` 为空）：没有食物库参照物，改的是**热量本身**（`kcal`）。
+ */
 export interface UpdateMealLogRequest {
+  /** 选定克数（g） */
   grams?: number;
+  /** 份量单位（个/碗/杯/片/袋） */
   servingUnit?: string;
+  /** 份量数量 */
   servingQty?: number;
+  /**
+   * 热量 kcal —— **仅对快速加卡 / 自定义条目生效**。
+   * 食物库条目的热量由服务端按食物库重算，传了也会被忽略。
+   */
+  kcal?: number;
   mealType?: MealType;
   note?: string;
   sortOrder?: number;

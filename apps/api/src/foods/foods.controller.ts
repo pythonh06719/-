@@ -125,6 +125,19 @@ export class FoodsController {
     return this.foodsService.importExternal(userId, dto.externalId);
   }
 
+  /**
+   * 按 id 取单条食物（B3「改份量」用：编辑面板需要知道这条食物有哪些份量单位）。
+   *
+   * ⚠️ **必须声明在所有单段静态 GET 路由（`search`/`categories`/`recent`/`top`/`favorites`）之后**：
+   * 否则 `/foods/favorites` 会被 `:id` 抢先匹配，`ParseIntPipe` 再把它打成 400。
+   *
+   * 不存在 / 对当前用户不可见 → 统一 404 `E_NOTFOUND_FOOD`（K7：不暴露存在性）。
+   */
+  @Get(':id')
+  byId(@CurrentUser() userId: number, @Param('id', ParseIntPipe) id: number): Promise<FoodItem> {
+    return this.foodsService.byId(userId, id);
+  }
+
   /** 加入收藏。 */
   @Post(':id/favorite')
   @HttpCode(HttpStatus.OK)

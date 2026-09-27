@@ -114,6 +114,15 @@ export const COPY = {
     '本产品不提供医疗建议，也不能替代专业诊断与治疗。计算结果仅用于健康生活参考。',
   /** 快速加卡的提示 */
   quickAddHint: '搜不到也没关系，填名称和热量就能记下来',
+  /** 改份量面板（B3）—— 食物库条目 */
+  portionEditTitle: '改一下份量',
+  portionEditHint: '改完这条会按食物库重新算一遍，只动这一条',
+  /** 改份量面板（B3）—— 快速加卡 / 自定义条目：没有参照物，改的是热量本身 */
+  portionEditKcalTitle: '改一下热量',
+  portionEditKcalHint: '这条是你自己填的，改的就是热量本身',
+  /** 改份量面板的取消 / 保存 */
+  portionEditCancel: '先不改',
+  portionEditSave: '改好了',
   /** 运动 / 饮水（二期） */
   movementLogged: '记上啦，这一步都算数',
   waterGentle: '喝多少看身体的感觉，不用凑数',
@@ -487,6 +496,28 @@ export function mealMoveSelectAria(name: string): string {
 /** 移动成功播报：`已经放到午餐了`。 */
 export function mealMovedLine(mealLabel: string): string {
   return `${COPY.reorderMovedPrefix}${mealLabel}${COPY.reorderMovedSuffix}`;
+}
+
+// ---------------------------------------------------------------------------
+// 改份量（B3）
+//
+// 语气规范同 §7 + 硬约束「无负罪感」：**只说这条改成了多少**，
+// 不提预算、不提超出、不做任何评价 —— 改大改小都是用户的事，我们不置评。
+// ---------------------------------------------------------------------------
+
+/** 「改「番茄炒蛋」的份量」—— 编辑入口的完整无障碍标签。 */
+export function mealEditPortionAria(name: string): string {
+  return `改「${name}」的份量`;
+}
+
+/** 改份量成功播报（只陈述改动，不含任何预算 / 超出判断）。 */
+export function portionUpdatedLine(name: string): string {
+  return `「${name}」的份量已更新，这条的热量按食物库重新算过了`;
+}
+
+/** 改热量成功播报（快速加卡条目：没有食物库参照物，改的是热量本身）。 */
+export function portionKcalUpdatedLine(name: string): string {
+  return `「${name}」的热量已更新`;
 }
 
 // ---------------------------------------------------------------------------
