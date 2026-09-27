@@ -17,6 +17,8 @@ coverage-*/
 # 这个目录就是那个临时 `TEMP`，纯运行时产物
 .tmp-vitest/
 *.tsbuildinfo
+# Taro/SWC 编译缓存（`taro build` 时自动生成，纯缓存产物，勿提交）
+.swc/
 
 # env / secrets
 .env

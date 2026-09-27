@@ -5,7 +5,8 @@
   "description": "轻生活微信小程序（Taro + React，复用 @qsh/core 与 @qsh/shared-types）",
   "scripts": {
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "npm run build:weapp -- --watch"
+    "dev:weapp": "npm run build:weapp -- --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@qsh/core": "*",
