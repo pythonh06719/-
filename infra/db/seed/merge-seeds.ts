@@ -260,7 +260,15 @@ const merged = {
         url: 'https://nlc.chinanutri.cn/fq/',
       },
     },
-    todo: (existing._meta?.todo as string) ?? '扩量至 500 条以上需客户提供授权数据集，严禁编造营养数值',
+    // `todo` 由**当前真实条数/来源生成**，不再沿用旧种子里过时的「扩充至 ≥500 条」口径
+    // （旧实现读 `existing._meta?.todo`，一旦扩量就会永久残留旧的错误文案）。
+    todo:
+      `食物库现 ${items.length} 条：local ${sourceCount.get('local') ?? 0} / ` +
+      `Open Food Facts ${sourceCount.get('openfoodfacts') ?? 0}（ODbL 1.0） / ` +
+      `USDA ${sourceCount.get('usda') ?? 0}（公有领域） / ` +
+      `中国食物成分表 ${sourceCount.get('cfcd') ?? 0}` +
+      `（仅限个人非商业自用，对外分发前须移除 source='cfcd' 条目）。` +
+      `严禁为凑数编造营养数值。`,
     itemCount: items.length,
   },
   items,

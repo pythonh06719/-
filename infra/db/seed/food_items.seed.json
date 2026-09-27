@@ -19,7 +19,7 @@
         "url": "https://fdc.nal.usda.gov"
       }
     },
-    "todo": "扩充至 ≥500 条需由客户提供有授权的合规数据集（对应 ARCHITECTURE D6 / PRD Q8：数据源与版权待客户确认）。严禁为凑数编造营养数值。",
+    "todo": "食物库现 1773 条：local 57 / Open Food Facts 258（ODbL 1.0） / USDA 128（公有领域） / 中国食物成分表 1330（仅限个人非商业自用，对外分发前须移除 source='cfcd' 条目）。严禁为凑数编造营养数值。",
     "itemCount": 443
   },
   "items": [
