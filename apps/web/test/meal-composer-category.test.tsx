@@ -339,7 +339,9 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
 
     // 点列表项（列表项的可访问名 = emoji + 名称 + 分类/热量，故按名称正则定位，
     // 与既有测试 `getAllByRole('listitem')` 的做法一致：不依赖 data-testid）
-    await userEvent.setup().click(screen.getByRole('button', { name: /番茄炒蛋/ }));
+    // ⚠️ 行内现在**还有一颗收藏星号**（GAP-1），其 aria-label 是「收藏 番茄炒蛋」，
+    // 也含食物名 —— 故正则末尾带上 `kcal`，精确锚定「选食物」那颗行按钮，不误点星号。
+    await userEvent.setup().click(screen.getByRole('button', { name: /番茄炒蛋.*kcal/ }));
 
     // 份量确认区出现 —— 证明走的是同一条「份量确认 → 确认记录」路径
     await waitFor(() => {
@@ -448,8 +450,8 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
       expect(screen.getByText('苹果')).toBeInTheDocument();
     });
 
-    // 选中一条食物 → 份量确认区出现
-    await userEvent.setup().click(screen.getByRole('button', { name: /苹果/ }));
+    // 选中一条食物 → 份量确认区出现（正则带 `kcal` 以避开同名的收藏星号，见上方用例注释）
+    await userEvent.setup().click(screen.getByRole('button', { name: /苹果.*kcal/ }));
     await waitFor(() => {
       expect(screen.getByText(/预估/)).toBeInTheDocument();
     });
@@ -474,7 +476,8 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
       expect(screen.getByText('西兰花')).toBeInTheDocument();
     });
 
-    await userEvent.setup().click(screen.getByRole('button', { name: /西兰花/ }));
+    // 正则带 `kcal` 以避开同名的收藏星号（GAP-1 后行内新增的独立控件）
+    await userEvent.setup().click(screen.getByRole('button', { name: /西兰花.*kcal/ }));
     await waitFor(() => {
       expect(screen.getByText(/预估/)).toBeInTheDocument();
     });
@@ -579,7 +582,8 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
       expect(screen.getByText('大豆油')).toBeInTheDocument();
     });
 
-    const row = screen.getByRole('button', { name: /大豆油/ });
+    // 正则带 `kcal` 以避开同名的收藏星号（GAP-1 后行内新增的独立控件）
+    const row = screen.getByRole('button', { name: /大豆油.*kcal/ });
     expect(row.textContent).toContain(`${foodCategoryLabel('other')} · 每 100g`);
     expect(row.textContent).not.toContain('other ·');
   });

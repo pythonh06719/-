@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FOOD_CATEGORIES,
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
@@ -23,7 +23,7 @@ import type {
 import { ApiClientError, api } from '@/lib/api';
 import BarcodeScanner from '@/components/common/BarcodeScanner';
 import { queryKeys } from '@/lib/queryClient';
-import { COPY, foodCategoryAriaFor, topFoodDaysLabel, topFoodsAria } from '@/lib/copy';
+import { COPY, favoriteToggleAria, foodCategoryAriaFor, topFoodDaysLabel, topFoodsAria } from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
@@ -320,11 +320,97 @@ export default function MealComposer({
     enabled: tab === 'top' || tab === 'search',
   });
 
+  /**
+   * 收藏列表（R3.4）—— `GET /foods/favorites` 返回 `FoodItem[]`。
+   *
+   * **它同时充当两件事**（GAP-1 的取舍，见下方 `favoriteIds`）：
+   * ① 收藏 tab 的列表数据；② 全列表「某条是否已收藏」的**唯一真源**。
+   *
+   * `enabled` 从 `tab === 'favorite'` 放宽到**会渲染食物行的四个 tab**
+   * （`favorite` / `recent` / `category` / `search`）：
+   * 要在这些 tab 的每一行画星号，就必须知道该行的收藏状态，而 `FoodItem` 上
+   * **没有任何表达「已收藏」的字段**（见 `packages/shared-types` 的 `FoodItem`），
+   * 只能另取一次收藏 id 集合。**为什么不干脆全开**：`top` 走 `renderTopList`（无星号）、
+   * `quick` / `combo` 根本不渲染食物行 —— 对它们请求收藏纯属浪费。故只在这四个
+   * 「会显示星号」的 tab 上取，请求数**从 1 个 tab 增到 4 个 tab**，且同一会话内
+   * 由 react-query 缓存去重（`queryKeys.foodFavorites` 共用），实际网络次数远小于 tab 切换次数。
+   *
+   * `search` / `category` 额外要求「确实会有结果」才请求：空关键词的搜索、未选分类的分类页
+   * 都不渲染任何食物行，此时请求收藏同样无意义（与各自列表查询的 `enabled` 条件对齐）。
+   */
   const favoriteQuery = useQuery({
     queryKey: queryKeys.foodFavorites,
     queryFn: () => api.get<FoodItem[]>('/foods/favorites'),
-    enabled: tab === 'favorite',
+    enabled:
+      tab === 'favorite' ||
+      tab === 'recent' ||
+      (tab === 'category' && selectedCategory !== null) ||
+      (tab === 'search' && keyword.trim() !== ''),
   });
+
+  /**
+   * 「已收藏食物的 id 集合」——星号按钮判断每行状态用。
+   *
+   * `FoodItem` 上**没有** `favorited` 字段（已核对 `packages/shared-types`），
+   * 因此状态只能从收藏列表反推：集合 = `favoriteQuery.data` 的 id。
+   *
+   * ⚠️ 加载中 / 未取到时集合为**空**：此时所有星号都呈「未收藏」。
+   * 这是**刻意的保守取舍** —— 宁可暂时显示成「未收藏」（用户点一下会变成收藏，
+   * 幂等的 `upsert` 保证不会出问题），也**不**把整行列表挡住、不显示 loading 骨架。
+   * 一旦收藏查询返回，集合立即就位（star 状态刷新）。
+   */
+  const favoriteIds = useMemo((): ReadonlySet<number> => {
+    // 防御：接口降级 / 契约不符时 `data` 可能不是数组（历史测试里 `GET /foods/favorites`
+    // 会命中通用兜底返回 `{}`）。此处按「拿不到集合」处理（空集），绝不让整页挂掉。
+    const list = Array.isArray(favoriteQuery.data) ? favoriteQuery.data : [];
+    return new Set(list.map((food) => food.id));
+  }, [favoriteQuery.data]);
+
+  const queryClient = useQueryClient();
+
+  /**
+   * 收藏切换（R3.4 / GAP-1）—— `POST /foods/:id/favorite` / `DELETE /foods/:id/favorite`。
+   *
+   * 后端两个端点都**幂等**（`addFavorite` 用 `upsert`、`removeFavorite` 用 `deleteMany`），
+   * 故前端不必先判状态再决定调哪个 —— 但为语义清晰仍按 `next` 显式分支。
+   *
+   * 成功后**就地更新缓存**（`setQueryData`），不整页刷新：
+   * 收藏列表是「已收藏 id 集合」的同一份数据，改它就同时刷新了列表与所有星号。
+   * - 加藏：把该食物**插到最前**（与后端 `ORDER BY created_at DESC` 口径一致，
+   *   用户刚收藏的立刻在收藏 tab 顶部可见）；
+   * - 取消：按 id 过滤掉。
+   * 两处都做**去重**（加藏前先滤掉同 id），保证重复点不会在列表里留两条。
+   *
+   * 失败：`onError` 里 `invalidateQueries` 回滚到服务端真值，并给一句温和提示
+   * （`COPY.favoriteFailed`），不用红色、不提失败次数。
+   */
+  const favoriteMutation = useMutation({
+    mutationFn: async ({ food, next }: { food: FoodItem; next: boolean }): Promise<void> => {
+      if (next) {
+        await api.post<{ favorited: true }>(`/foods/${food.id}/favorite`);
+      } else {
+        await api.delete<{ favorited: false }>(`/foods/${food.id}/favorite`);
+      }
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData<FoodItem[]>(queryKeys.foodFavorites, (current) => {
+        // 防御：缓存里的旧值可能不是数组（契约不符 / 兜底响应），一律当空列表处理
+        const list = Array.isArray(current) ? current : [];
+        const without = list.filter((item) => item.id !== variables.food.id);
+        return variables.next ? [variables.food, ...without] : without;
+      });
+    },
+    onError: () => {
+      // 回滚到服务端真值，避免界面停在一个没真正存下的状态上
+      void queryClient.invalidateQueries({ queryKey: queryKeys.foodFavorites });
+      setNote(COPY.favoriteFailed);
+    },
+  });
+
+  /** 点星号：按当前状态决定加还是取消（`aria-pressed` 与这里同源，不会出现「显示的」和「做的」不一致）。 */
+  const toggleFavorite = (food: FoodItem): void => {
+    favoriteMutation.mutate({ food, next: !favoriteIds.has(food.id) });
+  };
 
   const comboQuery = useQuery({
     queryKey: queryKeys.combos,
@@ -333,10 +419,14 @@ export default function MealComposer({
   });
 
   useEffect(() => {
-    if (searchQuery.isError || recentQuery.isError || favoriteQuery.isError || comboQuery.isError) {
+    // ⚠️ `favoriteQuery` 现在在 recent / search / category 等 tab 上也会跑（见其 `enabled`），
+    // 但那些 tab 的**主内容**不是收藏列表 —— 若只因收藏那一次请求失败就弹「内容取不到」，
+    // 会和用户眼前**正常显示的**搜索结果自相矛盾。故收藏查询的失败**只在收藏 tab 上**计入。
+    const favoriteFailedOnItsTab = favoriteQuery.isError && tab === 'favorite';
+    if (searchQuery.isError || recentQuery.isError || favoriteFailedOnItsTab || comboQuery.isError) {
       setNote('这部分内容暂时取不到，先用「快加」也能记下这一餐');
     }
-  }, [searchQuery.isError, recentQuery.isError, favoriteQuery.isError, comboQuery.isError]);
+  }, [searchQuery.isError, recentQuery.isError, favoriteQuery.isError, comboQuery.isError, tab]);
 
   /**
    * 分类浏览的两条查询失败 → 同一句温和提示（文案与全站既有口径一致）。
@@ -469,22 +559,36 @@ export default function MealComposer({
   };
 
   /**
-   * 食物列表（搜索 / 最近 / 收藏共用）。
+   * 食物列表（搜索 / 最近 / 收藏 / 分类共用）。
    *
    * 搜索结果里的 `qualifier`（区分词，如 `干` / `鲜蘑` / `香辣味`）以中性小标签展示：
    * 跨来源同物异名**不合并**，靠它让用户自己分辨「哪一条是我要的」——
    * 标签只是**事实陈述**（形态 / 口味 / 部位规格），不含任何好坏评价词。
+   *
+   * **每行右侧的星号是收藏开关**（R3.4 / GAP-1）：它是**行内独立控件**，
+   * 与「选中该行食物」互不干扰 ——
+   * - 用 `type="button"` + `e.stopPropagation()`：点星号**不会**冒泡去触发外层的
+   *   选食物按钮（否则会误弹份量确认区，甚至误记一餐）；
+   * - 用**同级** `<div>` + 外层改为 `role="button"` 的写法：让星号与「选食物」
+   *   是 DOM 里的**兄弟**而非嵌套 —— 嵌套 `<button>` 是非法 HTML，读屏会读乱，
+   *   故这里外层用 `role="button"` + 内层两个真按钮（选食物区 / 星号）平级排布。
+   *   键盘可达性由外层 `role="button"`（Tab 焦点 + Enter/Space 触发）与星号自身保证。
+   * - 星号带 `aria-pressed`（状态）与 `aria-label`（`收藏 X` / `取消收藏 X`）。
    */
   const renderFoodList = (items: readonly FoodItem[]): ReactElement => (
     <ul className="mt-3 space-y-2">
       {items.map((food) => {
         const qualifier = 'qualifier' in food ? (food as FoodSearchHit).qualifier : null;
+        const favorited = favoriteIds.has(food.id);
         return (
-          <li key={food.id}>
+          <li
+            key={food.id}
+            className="flex items-stretch gap-1 rounded-xl ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+          >
             <button
               type="button"
               onClick={() => chooseFood(food)}
-              className="qsh-touch-target w-full rounded-xl px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+              className="qsh-touch-target min-w-0 flex-1 rounded-l-xl px-4 py-3 text-left"
             >
               <span className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
                 <span aria-hidden="true" className="text-base">
@@ -499,6 +603,25 @@ export default function MealComposer({
               </span>
               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
                 {foodCategoryLabel(food.category)} · 每 100g {food.kcalPer100g} kcal
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={favorited}
+              aria-label={favoriteToggleAria(food.name, favorited)}
+              disabled={favoriteMutation.isPending}
+              onClick={(event) => {
+                // 星号是独立控件：绝不让这次点击冒泡去选中 / 记录这一行食物
+                event.stopPropagation();
+                toggleFavorite(food);
+              }}
+              className="qsh-touch-target shrink-0 rounded-r-xl px-3 text-lg leading-none disabled:opacity-60"
+            >
+              <span
+                aria-hidden="true"
+                className={favorited ? 'text-amber-400' : 'text-slate-300 dark:text-slate-500'}
+              >
+                {favorited ? '★' : '☆'}
               </span>
             </button>
           </li>
@@ -807,12 +930,14 @@ export default function MealComposer({
               if (query.isLoading) {
                 return <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>;
               }
-              const items = query.data ?? [];
+              // 防御：接口降级 / 契约不符时 `data` 可能不是数组 —— 当作「暂时没有」的空态，
+              // 绝不把非数组喂给 `renderFoodList`（那会让整面板崩掉）。
+              const items = Array.isArray(query.data) ? query.data : [];
               if (items.length === 0) {
                 return (
                   <p className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                     <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
-                    {tab === 'recent' ? '还没有记录过食物' : '还没有收藏的食物'}
+                    {tab === 'recent' ? COPY.favoriteEmptyRecent : COPY.favoriteEmpty}
                   </p>
                 );
               }
