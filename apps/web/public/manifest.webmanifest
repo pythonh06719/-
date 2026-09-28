@@ -11,6 +11,20 @@
   "background_color": "#f0f7f4",
   "theme_color": "#2f9e78",
   "categories": ["health", "lifestyle", "food"],
+  "shortcuts": [
+    {
+      "name": "称体重",
+      "short_name": "称体重",
+      "url": "/weight",
+      "description": "记下今天的体重，之后就交给趋势"
+    },
+    {
+      "name": "喝一杯水",
+      "short_name": "喝水",
+      "url": "/exercise?focus=water",
+      "description": "打开就记下一杯水，想撤销随时可以"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon.svg",

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MET_ACTIVITY_LIBRARY, calcExerciseKcal } from '@qsh/core';
 import { api, isNetworkError } from '@/lib/api';
@@ -15,6 +16,8 @@ import BrandDecor from '@/components/common/BrandDecor';
  * - MET 表来自 `@qsh/core`（前后端同一真源），消耗 = MET × 体重 × 时长（服务端按档案体重计算）
  * - 饮水：一键 +250ml、可撤销上一条；在线走服务端，离线回退本地缓存（与看板共用同一缓存键）
  * - 后端未就绪时优雅降级，不白屏（T04 DoD）
+ * - **PWA 快捷方式直达（C-2）**：桌面快捷方式「喝一杯水」打开的 `?focus=water` → 落地即记一杯
+ *   （详见下方 `waterShortcut` 相关注释）
  */
 
 interface WaterDay {
@@ -48,6 +51,9 @@ export default function ExercisePage(): ReactElement {
   const [activityCode, setActivityCode] = useState<string>('walking_brisk');
   const [minutes, setMinutes] = useState<number>(30);
   const [feedback, setFeedback] = useState<string>('');
+  /** PWA 快捷方式直达提示（与运动反馈分开：运动反馈会被「记下这次运动」覆盖，这里不会被误清）。 */
+  const [shortcutNotice, setShortcutNotice] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const activity = MET_ACTIVITY_LIBRARY.find((item) => item.code === activityCode) ?? MET_ACTIVITY_LIBRARY[0]!;
   /** 本地即时预估（与服务端公式一致：MET × 体重 × 时长；体重取默认 60，服务端会按档案精确计算） */
@@ -111,6 +117,49 @@ export default function ExercisePage(): ReactElement {
     cacheSet(`qsh:cache:water:${today}`, next);
     undoWater.mutate();
   };
+
+  /**
+   * PWA 桌面快捷方式「喝一杯水」的直达处理（C-2）。
+   *
+   * ## 语义
+   *
+   * 用户从桌面点「喝一杯水」，本页以 `/exercise?focus=water` 打开 → **直接记下一杯水**。
+   * 刻意**不做**「聚焦高亮、还要再点一次」的折中：快捷方式的名字就是「喝一杯水」，
+   * 用户点它就是要喝 —— 再要求一次点击等于没直达。喝水是**追加型**操作，
+   * 误触发代价低且可撤销（本页已有「撤销上一条」→ `DELETE /water/last`）。
+   *
+   * ## 三道防重复闸门（缺一不可）
+   *
+   * 1. `useRef` 一次性闸门：React 18 StrictMode 会在开发环境**故意**把 effect
+   *    挂载 → 卸载 → 再挂载（`main.tsx` 确实启用了 `StrictMode`），
+   *    没有这道闸门就会一次直达记两杯；ref 跨「卸载再挂载」保持为真，故只放行第一次。
+   * 2. **先摘参数再看闸门**：`?focus=water` 在本次直达后立即从 URL 移除，
+   *    此后刷新页面 URL 是干净的 `/exercise`，不会再加一杯。
+   * 3. 参数被摘除后 `searchParams.get('focus')` 变 `null`，effect 即便重跑也进不了分支。
+   *
+   * ## 反馈
+   *
+   * 复用既有 `addWaterLocal`（离线同时更新本地缓存），并以 `COPY.waterShortcutLogged`
+   * 做**事实陈述**。⚠️ 不新增任何数字展示（如「今天第 N 杯」）—— 那需要 `/why-numbers`
+   * 条目且带催办意味，违反硬约束 2 / NFR-11。
+   */
+  const shortcutHandled = useRef(false);
+  useEffect(() => {
+    if (shortcutHandled.current) {
+      return;
+    }
+    if (searchParams.get('focus') !== 'water') {
+      return;
+    }
+    shortcutHandled.current = true;
+    // 先摘参数（replace 不污染浏览器历史），让本 effect 的重跑与后续刷新都读到干净 URL。
+    const next = new URLSearchParams(searchParams);
+    next.delete('focus');
+    setSearchParams(next, { replace: true });
+    addWaterLocal();
+    setShortcutNotice(COPY.waterShortcutLogged);
+    // `searchParams` 变化后该 effect 会重跑，但闸门已置真 / 参数已摘除，不会再记一杯。
+  }, [searchParams, setSearchParams]);
 
   const waterTotal = waterQuery.data?.totalMl ?? localWater.totalMl;
   const waterGoal = waterQuery.data?.goalMl ?? 2000;
@@ -193,6 +242,12 @@ export default function ExercisePage(): ReactElement {
 
       <section className="qsh-surface p-5">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
+        {/* 快捷方式直达反馈：事实陈述，不报杯数（硬约束 2 / NFR-11） */}
+        {shortcutNotice ? (
+          <p role="status" className="mt-1 text-sm text-sky-700 dark:text-sky-300">
+            {shortcutNotice}
+          </p>
+        ) : null}
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {waterTotal} / {waterGoal} ml（{waterPercent}%）
         </p>

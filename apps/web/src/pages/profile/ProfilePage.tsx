@@ -285,6 +285,22 @@ export default function ProfilePage(): ReactElement {
         数据导出 / 导入 / 删除
       </Link>
 
+      {/* 安装到桌面的一句静态说明（GAP-8 降级版）—— 零 JS：
+          不做 `beforeinstallprompt` 弹窗、不做 iOS 图示引导、不做横幅/浮层。
+          「我的」页是设置类信息的落点，比 `/settings/data`（数据管理）更贴近
+          「这台设备怎么用」这类问题。 */}
+      <section
+        aria-label={COPY.installHintTitle}
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.installHintTitle}
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          {COPY.installHintBody}
+        </p>
+      </section>
+
       {/* 登录 / 账号 */}
       {accessToken === null ? (
         <LoginCard />
