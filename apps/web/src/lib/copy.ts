@@ -202,6 +202,29 @@ export const COPY = {
   /** 常吃榜（R11.5）—— 只呈现频次，零营养评判（AC-11.5.3 / AC-11.5.4） */
   topFoodsTab: '常吃',
   topFoodsTitle: '你常吃的',
+  /**
+   * 分类浏览（A2 / R3.4「搜索 / 分类浏览」并列）—— 只是「换个入口看库里有什么」，
+   * **不暗示哪一类更该吃**（红线：不出现 推荐 / 更健康 / 低卡 / 评分 / 等级 一类词）。
+   *
+   * - `foodCategoryTab` 选「分类」而不是「按类看」：与「搜索 / 最近 / 常吃 / 收藏 / 快加 / 套餐」
+   *   同为 2 字词，tab 行宽度一致（这行已经有 7 个 tab，宽度预算紧张）；
+   * - `foodCategoryPrompt` 只说「挑一个看看」，不给动作指令（有 9 个分类，指哪个都不对）。
+   */
+  foodCategoryTab: '分类',
+  foodCategoryPrompt: '挑一个分类，看看里面有哪些食物',
+  /** 该分类在食物库里暂时没有条目（接口降级 / 数据变动时才会出现，正常数据下不会命中） */
+  foodCategoryEmpty: '这一类里暂时没有食物，换一类看看也行',
+  /**
+   * **分类列表本身**为空（`/foods/categories` 请求成功但返回 `[]`）。
+   *
+   * ⚠️ 与 `foodCategoryEmpty` 是**两件事**：那条说的是「选中的某个分类下没有食物」，
+   * 这条说的是「连一个分类都没有」。后者必须给一个**可行的下一步** ——
+   * 此时 chip 行整块不存在，只说「没有分类」会让人无从下手；
+   * 也**不可**再显示 `foodCategoryPrompt`（一边说「挑一个」一边说「没有」自相矛盾）。
+   */
+  foodCategoryListEmpty: '食物库这会儿还没有分类，先用搜索或「快加」记下这一餐',
+  /** 分类列表读取失败：沿用全站既有的温和口径，措辞已过红线审校（与 L215 同一句） */
+  foodCategoryLoadFailed: '这部分内容暂时取不到，先用「快加」也能记下这一餐',
   /** 记录概览（R11.6）—— 只陈述事实，不做任何「异常 / 离群」判定（AC-11.6.7） */
   dataOverviewTitle: '记录概览',
   dataOverviewDesc: '这里列出你已经记下了多少、跨度多久。只做陈述，不评判任何一条记录。',
@@ -592,6 +615,24 @@ export function topFoodsAria(name: string, dayCount: number, days: number): stri
   const window = Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 90;
   const count = Number.isFinite(dayCount) ? Math.max(0, Math.floor(dayCount)) : 0;
   return `近 ${window} 天里，${name}出现了 ${count} 天`;
+}
+
+// ---------------------------------------------------------------------------
+// 分类浏览（A2 / R3.4）
+// 语气规范同 §7：**平铺陈述**，不排序、不筛选、不评价 —— 分类顺序一律照搬接口返回，
+// 文案里也不出现「推荐 / 该吃哪类 / 更健康」。
+// ---------------------------------------------------------------------------
+
+/**
+ * 分类 chip 的读屏语句：「分类：主食」。
+ *
+ * 交互上 chip 是 `aria-pressed` 的**切换按钮**（不是 tab，所以不加 `tablist` 语义），
+ * 标签只说明「这是哪个分类」；选中与否由 `aria-pressed` 播报，不塞进这句话里。
+ *
+ * 不含数字、按入参生成，故放在函数区（文件约定：含数字的句子一律用函数生成）。
+ */
+export function foodCategoryAriaFor(category: string): string {
+  return `分类：${category}`;
 }
 
 // ---------------------------------------------------------------------------
