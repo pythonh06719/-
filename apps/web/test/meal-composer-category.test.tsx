@@ -21,10 +21,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { FOOD_CATEGORIES } from '@qsh/core';
+import { FOOD_CATEGORIES, foodCategoryLabel } from '@qsh/core';
 import type { FoodItem, FoodSearchHit, FoodSearchResponse } from '@qsh/shared-types';
 import MealComposer from '@/pages/diary/MealComposer';
 import { COPY } from '@/lib/copy';
+import { emojiForCategory } from '@/lib/food-emoji';
 
 /**
  * 接口当前**真实返回**的 9 个分类 —— 注意是**码点序**，不是展示序。
@@ -143,12 +144,17 @@ async function openCategoryTab(): Promise<void> {
   });
 }
 
-/** 点某个分类 chip（用读屏标签定位，与用户实际「听到的」一致）。 */
+/** 点某个分类 chip（用读屏标签定位，与用户实际「听到的」一致 —— 标签是**展示名**）。 */
 async function pickCategory(category: string): Promise<void> {
   const user = userEvent.setup();
-  const chip = screen.getByRole('button', { name: `分类：${category}` });
+  const chip = screen.getByRole('button', { name: `分类：${foodCategoryLabel(category)}` });
   chip.focus();
   await user.keyboard('{Enter}');
+}
+
+/** 取某个分类 chip 的可访问名（`other` → 「分类：其他」）。 */
+function chipAriaName(category: string): string {
+  return `分类：${foodCategoryLabel(category)}`;
 }
 
 /**
@@ -188,16 +194,16 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
     expect(categoriesCalls).toBeGreaterThan(0);
 
     // chip 的读屏标签就是「分类：X」；9 个分类一个不少
-    const chipNames = REAL_CODEPOINT_ORDER.map((category) => `分类：${category}`);
+    const chipNames = REAL_CODEPOINT_ORDER.map((category) => chipAriaName(category));
     const rendered = chipNames.map((name) => screen.getByRole('button', { name }));
     expect(rendered).toHaveLength(9);
     for (const chip of rendered) {
       expect(chip).toBeInTheDocument();
     }
 
-    // 真实分类名逐个可见（`other` 这类非中文值也照原样显示，不做本地化 / 映射）
+    // 展示名逐个可见：中文类原样，`other` 显示为「其他」（不再是英文裸露）
     for (const category of REAL_CODEPOINT_ORDER) {
-      expect(screen.getByText(category)).toBeInTheDocument();
+      expect(screen.getByText(foodCategoryLabel(category))).toBeInTheDocument();
     }
 
     // 未选中任何分类 → 只有引导语，不请求 /foods/search
@@ -212,20 +218,21 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
     const chips = screen.getAllByRole('button', { name: /^分类：/ });
     expect(chips).toHaveLength(FOOD_CATEGORIES.length);
 
-    // 绝对顺序 = `FOOD_CATEGORIES` 逐位对齐（chip 文本 = `emoji + 分类名`，故用后缀比对）
+    // 绝对顺序 = `FOOD_CATEGORIES` 逐位对齐（chip 文本 = `emoji + 展示名`，故按展示名比对）
     const texts = chips.map((chip) => chip.textContent ?? '');
     for (const [index, category] of FOOD_CATEGORIES.entries()) {
-      expect(texts[index]?.endsWith(category)).toBe(true);
+      expect(texts[index]).toBe(`${emojiForCategory(category)}${foodCategoryLabel(category)}`);
     }
 
     // 关键点位：`other` 是最后一位（服务端码点序里它是第一位）
-    expect(texts[texts.length - 1]).toBe('🍴other');
+    expect(texts[texts.length - 1]).toBe('🍴其他');
     expect(REAL_CODEPOINT_ORDER[0]).toBe('other'); // 前提：stub 喂的确实是码点序
     // 相对顺序抽查：`other` 必须排在全部中文分类之后
-    const otherIndex = texts.findIndex((text) => text.endsWith('other'));
+    const otherIndex = texts.findIndex((text) => text.endsWith(foodCategoryLabel('other')));
     for (const category of FOOD_CATEGORIES) {
       if (category === 'other') continue;
-      expect(otherIndex).toBeGreaterThan(texts.findIndex((text) => text.endsWith(category)));
+      const index = texts.findIndex((text) => text.endsWith(foodCategoryLabel(category)));
+      expect(otherIndex).toBeGreaterThan(index);
     }
   });
 
@@ -241,14 +248,14 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
     // 未知分类照常显示，不抛错、不丢其他分类
     expect(screen.getByRole('button', { name: '分类：未来新类' })).toBeInTheDocument();
     for (const category of REAL_CODEPOINT_ORDER) {
-      expect(screen.getByRole('button', { name: `分类：${category}` })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: chipAriaName(category) })).toBeInTheDocument();
     }
     // 未知分类排在最后（而不是因 -1 插到队首）
     const texts = chips.map((chip) => chip.textContent ?? '');
-    expect(texts[texts.length - 1]).toBe('🍴未来新类');
+    expect(texts[texts.length - 1]).toBe('🍴未来新类'); // 枚举外 → 原样展示
     // 已知分类之间仍按 FOOD_CATEGORIES 的相对顺序
     for (const [index, category] of FOOD_CATEGORIES.entries()) {
-      expect(texts[index]?.endsWith(category)).toBe(true);
+      expect(texts[index]?.endsWith(foodCategoryLabel(category))).toBe(true);
     }
   });
 
@@ -537,6 +544,43 @@ describe('分类浏览（A2）：chip 按展示序排列，选中才取数', () 
     for (const banned of ['推荐', '更健康', '低卡', '低热量', '评分', '等级', '过量']) {
       expect(screen.getByRole('dialog').textContent ?? '').not.toContain(banned);
     }
+  });
+
+  it('chip 不再出现英文 `other`，而是显示「其他」（读屏与视觉同一个词）', async () => {
+    renderComposer();
+    await openCategoryTab();
+
+    const chips = screen.getAllByRole('button', { name: /^分类：/ });
+    const texts = chips.map((chip) => chip.textContent ?? '');
+
+    // 可见文字里没有裸的英文 `other`
+    expect(texts.some((text) => text.includes('other'))).toBe(false);
+    // 取而代之的是展示名（从 core 的 label 表取值，不写死字面量）
+    expect(screen.getByRole('button', { name: chipAriaName('other') })).toBeInTheDocument();
+    expect(texts.some((text) => text.endsWith(foodCategoryLabel('other')))).toBe(true);
+    // 读屏标签同样用展示名（不出现 `分类：other`）
+    expect(screen.queryByRole('button', { name: '分类：other' })).not.toBeInTheDocument();
+    // 8 个中文类的展示名与枚举值相同，不受本次改动影响
+    for (const category of FOOD_CATEGORIES) {
+      if (category === 'other') continue;
+      expect(texts.some((text) => text.endsWith(category))).toBe(true);
+    }
+  });
+
+  it('选中「其他」后食物行显示「其他 · 每 100g」，不是「other · 每 100g」', async () => {
+    pagesByCategory['other'] = [{ items: [makeHit(101, '大豆油', 'other', 899)], total: 1, page: 1, pageSize: 20 }];
+
+    renderComposer();
+    await openCategoryTab();
+    await pickCategory('other');
+
+    await waitFor(() => {
+      expect(screen.getByText('大豆油')).toBeInTheDocument();
+    });
+
+    const row = screen.getByRole('button', { name: /大豆油/ });
+    expect(row.textContent).toContain(`${foodCategoryLabel('other')} · 每 100g`);
+    expect(row.textContent).not.toContain('other ·');
   });
 
   it('分类下没有条目 → 中性空态文案（不是空白，也不说「失败」）', async () => {

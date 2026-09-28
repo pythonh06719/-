@@ -15,7 +15,9 @@ import {
   DEFAULT_FOOD_CATEGORY,
   FOOD_CATEGORIES,
   FOOD_CATEGORY_BY_NAME,
+  FOOD_CATEGORY_LABELS,
   classifyCategoryByKeywords,
+  foodCategoryLabel,
   isFoodCategory,
   mapFoodCategory,
   resolveCfcdCategory,
@@ -32,6 +34,38 @@ describe('FOOD_CATEGORIES：权威 9 类', () => {
 
   it('默认兜底为 other', () => {
     expect(DEFAULT_FOOD_CATEGORY).toBe('other');
+  });
+});
+
+describe('FOOD_CATEGORY_LABELS / foodCategoryLabel：展示名', () => {
+  it('label 表覆盖 FOOD_CATEGORIES 全集且值均为非空字符串（防将来加类漏补 label）', () => {
+    for (const category of FOOD_CATEGORIES) {
+      const label = FOOD_CATEGORY_LABELS[category];
+      expect(typeof label).toBe('string');
+      expect(label.length).toBeGreaterThan(0);
+    }
+    // 不多不少：键集合与枚举集合完全一致
+    expect(Object.keys(FOOD_CATEGORY_LABELS).sort()).toEqual([...FOOD_CATEGORIES].sort());
+  });
+
+  it('只有 other 被翻译成「其他」，8 个中文类的 label 等于其自身', () => {
+    expect(FOOD_CATEGORY_LABELS.other).toBe('其他');
+    for (const category of FOOD_CATEGORIES) {
+      if (category === 'other') continue;
+      expect(FOOD_CATEGORY_LABELS[category]).toBe(category);
+    }
+  });
+
+  it('foodCategoryLabel 对枚举内取值正确', () => {
+    expect(foodCategoryLabel('主食')).toBe('主食');
+    expect(foodCategoryLabel('other')).toBe('其他');
+  });
+
+  it('枚举外的未知值原样返回（不丢信息、不归到「其他」、不抛错）', () => {
+    expect(foodCategoryLabel('未来新类')).toBe('未来新类');
+    expect(foodCategoryLabel('')).toBe('');
+    // 与 `DEFAULT_FOOD_CATEGORY` 的兜底语义不同：这里不做归类，只做展示
+    expect(foodCategoryLabel('other')).not.toBe(DEFAULT_FOOD_CATEGORY);
   });
 });
 

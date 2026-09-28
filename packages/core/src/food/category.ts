@@ -41,6 +41,51 @@ export type FoodCategory = (typeof FOOD_CATEGORIES)[number];
 /** 兜底分类。 */
 export const DEFAULT_FOOD_CATEGORY: FoodCategory = 'other';
 
+/**
+ * 分类的**展示名**（面向用户）。
+ *
+ * 为什么需要它：9 类里只有 `other` 是英文，会原样出现在分类 chip 与食物行
+ * （`other · 每 100g …`）。`other` 下有 110 条食物，用户会反复看到这个英文词。
+ *
+ * ⚠️ **`other` 的展示名只能是「其他」，不可「优化」成更具体的词**：
+ * `other` 不是杂物堆，实际成分是 食用油 28 种、糖与蜂蜜 13 种、酱料 25 种、
+ * 腌菜 12 种、香辛料与调味粉 15 种，另有淀粉（玉米淀粉 / 生粉 / 藕粉）、
+ * 粉丝粉条、酵母、黑芝麻粉等 —— 因为含淀粉与粉丝，叫「调味品」就是**误标**。
+ *
+ * 类型用 `Record<FoodCategory, string>`（而非宽 `Record<string, string>`）：
+ * 将来往 `FOOD_CATEGORIES` 加新类时，这里会**编译报错**提示补 label ——
+ * 靠类型系统兜住，不靠人记（本表与 `FOOD_CATEGORIES` 同源，是分类口径的唯一真源）。
+ */
+export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
+  主食: '主食',
+  家常菜: '家常菜',
+  外卖: '外卖',
+  奶茶: '奶茶',
+  零食: '零食',
+  水果: '水果',
+  蔬菜: '蔬菜',
+  蛋白: '蛋白',
+  other: '其他',
+};
+
+/**
+ * 取分类的展示名（唯一出口，前端不要在本地再判一次）。
+ *
+ * 兜底取舍：`FOOD_CATEGORY_LABELS` 保证**枚举内**全覆盖；对**枚举外**的未知值
+ * （后端将来新增分类）**原样返回该字符串** —— 而不是返回 `'其他'` 或 `undefined`。
+ * 原样返回能让新分类照常显示出来（属于「不丢数据」的正确降级），
+ * 归到「其他」会把新分类和 110 条真实 `other` 条目混在一起、看不出发生了什么。
+ *
+ * 入参放宽为 `string`：`shared-types` 里 `food.category` 不保证被收窄成 `FoodCategory`，
+ * 宽入参可直接用，无需在调用点做类型断言。
+ *
+ * @param category 分类名（可为枚举外的未知值 / 空串）
+ * @returns 展示名；未知值原样返回
+ */
+export function foodCategoryLabel(category: string): string {
+  return FOOD_CATEGORY_LABELS[category as FoodCategory] ?? category;
+}
+
 /** 枚举集合（用于 O(1) 判定）。 */
 const FOOD_CATEGORY_SET: ReadonlySet<string> = new Set<string>(FOOD_CATEGORIES);
 

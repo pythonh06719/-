@@ -6,6 +6,7 @@ import {
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   FREQUENT_FOOD_DEFAULTS,
   findSameNameFood,
+  foodCategoryLabel,
 } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
@@ -497,7 +498,7 @@ export default function MealComposer({
                 )}
               </span>
               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
-                {food.category} · 每 100g {food.kcalPer100g} kcal
+                {foodCategoryLabel(food.category)} · 每 100g {food.kcalPer100g} kcal
               </span>
             </button>
           </li>
@@ -724,7 +725,8 @@ export default function MealComposer({
                     type="button"
                     // 这是一组**筛选按钮**（同一时刻只选一个），不是 tablist —— 故用 aria-pressed
                     aria-pressed={selectedCategory === category}
-                    aria-label={foodCategoryAriaFor(category)}
+                    // 读屏标签用**展示名**（与下面可见文字同一个词），不是原始枚举值
+                    aria-label={foodCategoryAriaFor(foodCategoryLabel(category))}
                     onClick={() =>
                       setSelectedCategory((current) => (current === category ? null : category))
                     }
@@ -737,10 +739,12 @@ export default function MealComposer({
                   >
                     <span aria-hidden="true" className="mr-1">
                       {/* `other` 走兜底 🍴（规则表里没有 'other' 关键词）——
-                          它有兜底语义，正是我们要的表达，不需要额外补规则。 */}
+                          它有兜底语义，正是我们要的表达，不需要额外补规则。
+                          emoji 仍按**原始枚举值**取（`emojiForCategory('other')` → 🍴），
+                          只有可见文字换成展示名。 */}
                       {emojiForCategory(category)}
                     </span>
-                    {category}
+                    {foodCategoryLabel(category)}
                   </button>
                 ))}
               </div>
