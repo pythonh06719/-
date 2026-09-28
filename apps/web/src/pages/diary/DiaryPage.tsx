@@ -5,6 +5,8 @@ import type {
   CreateMealLogRequest,
   DashboardResponse,
   ListMealsResponse,
+  MealComboRequest,
+  MealComboWithItems,
   MealGroup,
   MealLog,
   MealType,
@@ -18,10 +20,17 @@ import { applyReorder } from '@qsh/core';
 import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
-import { addDays, formatDateLabel, todayKey } from '@/lib/format';
+import { addDays, formatDateLabel, formatMonthDay, todayKey } from '@/lib/format';
 import { normalizeTrendResponse } from '@/lib/trend';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
-import { COPY, mealMovedLine, portionKcalUpdatedLine, portionUpdatedLine } from '@/lib/copy';
+import {
+  COPY,
+  comboDefaultName,
+  comboSaveDoneLine,
+  mealMovedLine,
+  portionKcalUpdatedLine,
+  portionUpdatedLine,
+} from '@/lib/copy';
 import EmptyState from '@/components/common/EmptyState';
 import { MEAL_BUDGET_SHARE, type ThemeBudget } from '@/theme/tokens';
 import MealComposer from './MealComposer';
@@ -29,7 +38,9 @@ import type { ComposerSubmit } from './MealComposer';
 import MealItemRow from './MealItemRow';
 import MealPortionEditor from './MealPortionEditor';
 import type { PortionEditSubmit } from './MealPortionEditor';
+import SaveComboDialog from './SaveComboDialog';
 import { usePointerReorder } from './usePointerReorder';
+import { mealLogsToComboItems } from '@/lib/combo-map';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, computeKcalFromFood, sumKcal } from './meal-utils';
 import { enqueueRequest } from '@/pwa/offline-queue';
 
@@ -174,6 +185,10 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   const [guideDismissed, setGuideDismissed] = useState<boolean>(() => readGuideDismissed());
   /** 正在改份量的记录（B3；`null` = 面板未打开）。 */
   const [editingLog, setEditingLog] = useState<MealLog | null>(null);
+  /** 正在「存成套餐」的餐次（GAP-2；`null` = 命名弹窗未打开）。 */
+  const [savingComboMeal, setSavingComboMeal] = useState<MealGroup['mealType'] | null>(null);
+  /** 存套餐失败 / 离线时就地提示（`null` = 不展示；409 同名走服务端文案）。 */
+  const [comboError, setComboError] = useState<string | null>(null);
 
   const mealsQuery = useQuery({
     queryKey: queryKeys.meals(date),
@@ -257,6 +272,37 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       await invalidate();
     },
     onError: () => setNotice('暂时没能删除这条记录，稍后再试一次就好'),
+  });
+
+  /**
+   * 把「这一餐」存成套餐（R3.9 / GAP-2）—— `POST /meal-combos`。
+   *
+   * 关键点（架构设计 §2.3）：
+   * - **不做乐观更新**：新建的 `id` 由服务端生成，乐观插入只能造个假 id，且这是低频动作；
+   * - **成功后 `invalidateQueries(queryKeys.combos)`**：`MealComposer` 的套餐 tab 用的是同一个 key，
+   *   不刷新的话用户切过去看不到刚存的套餐；
+   * - **不入离线队列**（Q-3）：同名 409 会永久堵死离线队列（P0-5 同类陷阱）——
+   *   离线时给**诚实告知**（`COPY.comboSaveOffline`），明确没保存、联网再来，**不假装成功**；
+   * - 409 同名 / 400 走服务端温和文案（`noticeFromError` 透出 message），**弹窗不关**，用户改名重试。
+   */
+  const saveCombo = useMutation({
+    mutationFn: (body: MealComboRequest) => api.post<MealComboWithItems>('/meal-combos', body),
+    onSuccess: async (combo) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.combos });
+      setSavingComboMeal(null);
+      setComboError(null);
+      setNotice(null);
+      setAnnouncement(comboSaveDoneLine(combo.name));
+    },
+    onError: (error) => {
+      // 网络层错误：诚实告知「没保存」，**不入队**
+      if (isNetworkError(error)) {
+        setComboError(COPY.comboSaveOffline);
+        return;
+      }
+      // 业务错误（409 同名 / 400 校验）：透出服务端文案，弹窗保留让用户改名重试
+      setComboError(noticeFromError(error, COPY.comboSaveFailed));
+    },
   });
 
   /**
@@ -755,6 +801,22 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               </ul>
             )}
 
+            {/* 存成套餐（GAP-2）：**仅本餐有条目时出现** —— 空餐存出去是一个
+                「一键添加后什么都没记」的僵尸套餐，所以入口干脆不出现。 */}
+            {group.logs.length > 0 && (
+              <button
+                type="button"
+                data-testid={`save-combo-${group.mealType}`}
+                onClick={() => {
+                  setComboError(null);
+                  setSavingComboMeal(group.mealType);
+                }}
+                className="qsh-touch-target mt-3 w-full rounded-xl py-2.5 text-sm font-medium text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+              >
+                {COPY.comboSaveEntry}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setComposerMeal(group.mealType)}
@@ -780,6 +842,31 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           log={editingLog}
           onCancel={() => setEditingLog(null)}
           onSubmit={handlePortionEdit}
+        />
+      )}
+
+      {savingComboMeal !== null && (
+        <SaveComboDialog
+          mealType={savingComboMeal}
+          itemNames={(groups.find((group) => group.mealType === savingComboMeal)?.logs ?? []).map(
+            (log) => log.customName ?? `食物 #${log.foodItemId ?? '—'}`,
+          )}
+          defaultName={comboDefaultName(MEAL_TYPE_LABELS[savingComboMeal], formatMonthDay(date))}
+          busy={saveCombo.isPending}
+          errorText={comboError}
+          onCancel={() => {
+            setSavingComboMeal(null);
+            setComboError(null);
+          }}
+          onSubmit={(name) => {
+            const logsOfMeal = groups.find((group) => group.mealType === savingComboMeal)?.logs ?? [];
+            const body: MealComboRequest = {
+              name,
+              mealType: savingComboMeal,
+              items: mealLogsToComboItems(logsOfMeal),
+            };
+            saveCombo.mutate(body);
+          }}
         />
       )}
     </section>
