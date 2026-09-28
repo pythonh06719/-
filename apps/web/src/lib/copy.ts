@@ -1119,3 +1119,21 @@ export function winDeleteAria(text: string): string {
   const head = text.length > 8 ? `${Array.from(text).slice(0, 8).join('')}…` : text;
   return `删掉这条：${head}`;
 }
+
+// ---------------------------------------------------------------------------
+// 报表区间不可用（防御降级文案，eng-report-fix）
+// 语气：软着陆 —— 只说明「这一段时间暂时取不到」，不出现「异常 / 错误 / 失败」。
+// ---------------------------------------------------------------------------
+
+/** 周报：后端缺 `from` / `to` 时的中性区间表述（退化为档位本身）。 */
+export function weeklyRangeLine(from: string, to: string): string {
+  return from !== '' && to !== '' ? `${from} ~ ${to}` : '近 7 天';
+}
+
+/** 阶段回顾：后端缺 `from` / `to` 时的中性区间表述（退化为档位本身）。 */
+export function periodRangeFallbackLine(dayOptionLabel: string): string {
+  return `${dayOptionLabel}（这段时间暂时取不到具体日期）`;
+}
+
+/** 区间不可用时段落的读屏说明（软着陆，不指责数据）。 */
+export const rangeUnavailableNote = '这段时间暂时取不到精确日期，先看看下面的记录～';

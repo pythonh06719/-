@@ -14,6 +14,7 @@ import {
   periodHabitsLine,
   periodLoggedDaysLine,
   periodMealEntryLine,
+  periodRangeFallbackLine,
   periodRangeLine,
   periodTopDaysText,
   periodWeightDownLine,
@@ -24,6 +25,16 @@ import {
 
 /** 回顾页常吃 Top 条数（D-4：复用 `GET /foods/top`，不进 `PeriodReport` 白名单）。 */
 const PERIOD_TOP_FOODS_LIMIT = 5;
+
+/** 安全取字符串：非字符串（字段缺失 / 形态异常）一律收成空串，杜绝 `undefined.split` 抛错。 */
+function safeStr(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+/** 安全取有限数字：非有限数（字段缺失 / 形态异常）一律收成 0。 */
+function safeNum(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
 
 /**
  * 阶段回顾视图（pages/report/PeriodReportView.tsx，R11.3）。
@@ -72,6 +83,24 @@ export default function PeriodReportView(): ReactElement {
   const exerciseSessions = hasExercise && Number.isFinite(exercise.sessions) ? exercise.sessions : 0;
   const exerciseMinutes = hasExercise && Number.isFinite(exercise.totalMinutes) ? exercise.totalMinutes : 0;
   const weight = report?.weight ?? null;
+  /** `weight` 字段在「取值处」收口：非 null 但非对象（数组 / 字符串等形态异常）也视为无数据，
+   *  否则 `.deltaKg` 取到 `undefined` 会走到 `periodWeightUpLine(undefined)`（虽函数内有兜底，口径仍应干净）。 */
+  const hasWeightDelta =
+    typeof weight === 'object' &&
+    weight !== null &&
+    typeof (weight as { deltaKg?: unknown }).deltaKg === 'number' &&
+    Number.isFinite((weight as { deltaKg: number }).deltaKg) &&
+    (weight as { deltaKg: number }).deltaKg !== 0;
+  const weightDeltaKg = hasWeightDelta ? (weight as { deltaKg: number }).deltaKg : 0;
+  /** 区间起止：非字符串（字段缺失）收成空串。 */
+  const rangeFrom = safeStr(report?.from);
+  const rangeTo = safeStr(report?.to);
+  /** 两端都有真实日期才走 `periodRangeLine`；否则退化为「档位（这段时间暂时取不到具体日期）」——
+   *  **不**把空串喂给 `formatMonthDay`（那会得到 `NaN月NaN日`，既难看又像数据异常）。 */
+  const hasRange = rangeFrom !== '' && rangeTo !== '';
+  const rangeLine = hasRange
+    ? periodRangeLine(safeNum(report?.days), rangeFrom, rangeTo, formatMonthDay)
+    : periodRangeFallbackLine(periodDayOptionLabel(safeNum(report?.days)));
 
   return (
     <div className="flex flex-col gap-4" aria-label={COPY.reportTabPeriod}>
@@ -111,30 +140,30 @@ export default function PeriodReportView(): ReactElement {
             {COPY.reportTabPeriod}
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400" data-testid="period-range">
-            {periodRangeLine(report.days, report.from, report.to, formatMonthDay)}
+            {rangeLine}
           </p>
 
           {/* 六项白名单指标：全部独立陈述句（句子来自 copy.ts，组件不拼数字） */}
           <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-200" data-testid="period-metrics">
-            <li>{periodLoggedDaysLine(report.loggedDays)}</li>
-            <li>{periodDistinctLine(report.distinctFoodCount)}</li>
-            <li>{periodMealEntryLine(report.mealEntryCount)}</li>
+            <li>{periodLoggedDaysLine(safeNum(report.loggedDays))}</li>
+            <li>{periodDistinctLine(safeNum(report.distinctFoodCount))}</li>
+            <li>{periodMealEntryLine(safeNum(report.mealEntryCount))}</li>
             {topHabits.length > 0 && <li>{periodHabitsLine(topHabits)}</li>}
             {exerciseSessions > 0 && (
               <li>{periodExerciseLine(exerciseSessions, exerciseMinutes)}</li>
             )}
-            {report.winCount > 0 && <li data-testid="period-win-count">{periodWinCountLine(report.winCount)}</li>}
+            {safeNum(report.winCount) > 0 && <li data-testid="period-win-count">{periodWinCountLine(safeNum(report.winCount))}</li>}
           </ul>
 
           {/* 体重变化：只有首末两条**不同**记录才渲染；只说方向与差值，不接判断句（QR-4） */}
-          {weight !== null && weight.deltaKg !== 0 && (
+          {hasWeightDelta && (
             <p
               className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
               data-testid="period-weight"
             >
-              {weight.deltaKg < 0
-                ? periodWeightDownLine(weight.deltaKg)
-                : periodWeightUpLine(weight.deltaKg)}
+              {weightDeltaKg < 0
+                ? periodWeightDownLine(weightDeltaKg)
+                : periodWeightUpLine(weightDeltaKg)}
             </p>
           )}
         </section>

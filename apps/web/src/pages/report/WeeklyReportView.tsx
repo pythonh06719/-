@@ -23,6 +23,16 @@ import ShareCard from '@/components/feedback/ShareCard';
 import IntakeExerciseChart from './IntakeExerciseChart';
 import WeeklyDiversityRow from './WeeklyDiversityRow';
 
+/** 安全取字符串：非字符串（字段缺失 / 形态异常）一律收成空串，杜绝 `undefined.slice` 抛错。 */
+function safeStr(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+/** 安全取数字：非有限数（字段缺失 / 形态异常）一律收成 0，杜绝 `NaN` 渗入展示。 */
+function safeNum(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
 /**
  * 周报视图（pages/report/WeeklyReportView.tsx）。
  *
@@ -74,6 +84,16 @@ export default function WeeklyReportView(): ReactElement {
   const reportDays = report !== undefined && Array.isArray(report.days) ? report.days : [];
   const micronutrients = report !== undefined && Array.isArray(report.micronutrients) ? report.micronutrients : [];
 
+  // 日期/文本字段在「取值处」收口成安全字符串：后端字段缺失时 `undefined.slice` / `undefined-拼接`
+  // 会直接抛错（整页白屏）；收口后 `.slice` / 模板拼接只作用于字符串，缺字段退化到空串。
+  const reportFrom = safeStr(report?.from);
+  const reportTo = safeStr(report?.to);
+  const referenceNote = safeStr(report?.referenceNote);
+
+  /** 日期区间「起 ~ 止」；两端都取不到时退化为「近 7 天」（中性表述，不显示空 / undefined）。 */
+  const rangeText =
+    reportFrom !== '' && reportTo !== '' ? `${reportFrom} ~ ${reportTo}` : '近 7 天';
+
   /** 这一周是否留下过任何记录（空周判定也是口径，交给 core，不在组件里另写一套）。 */
   const hasRecords = report === undefined || hasAnyWeeklyRecord(report);
 
@@ -81,8 +101,8 @@ export default function WeeklyReportView(): ReactElement {
    * 习惯达成率（C2）：一周累计打卡次数 ÷ 一周应打卡槽位（7 天 × 每日习惯数）。
    * 无任何习惯（槽位为 0）时为 `null` —— 此时不显示 0%，而是给一句中性引导。
    */
-  const habitsDoneTotal = reportDays.reduce((sum, day) => sum + day.habitsDone, 0);
-  const habitsSlotsTotal = reportDays.reduce((sum, day) => sum + day.habitsTotal, 0);
+  const habitsDoneTotal = reportDays.reduce((sum, day) => sum + safeNum(day.habitsDone), 0);
+  const habitsSlotsTotal = reportDays.reduce((sum, day) => sum + safeNum(day.habitsTotal), 0);
   const habitRate = habitsSlotsTotal > 0 ? Math.round((habitsDoneTotal / habitsSlotsTotal) * 100) : null;
 
   /** 上一周：窗口末日 −7 天（往前翻不设上限）。 */
@@ -173,7 +193,7 @@ export default function WeeklyReportView(): ReactElement {
       {/* 分享卡片（三期）：周报关键数据 → 720×960 PNG，仅含变化量等非敏感信息 */}
       {report !== undefined && hasRecords && (
         <ShareCard
-          weekLabel={`${report.from.slice(5)} ~ ${report.to.slice(5)}`}
+          weekLabel={reportFrom !== '' && reportTo !== '' ? `${reportFrom.slice(5)} ~ ${reportTo.slice(5)}` : '近 7 天'}
           avgIntakeKcal={report.avgIntakeKcal}
           totalExerciseKcal={report.totalExerciseKcal}
           weightChangeKg={report.weightChangeKg}
@@ -189,7 +209,7 @@ export default function WeeklyReportView(): ReactElement {
            标题沿用 `report.from ~ report.to`：空态也要让用户看清自己在看哪一周（NFR-11）。 */
         <section className="qsh-surface p-5" data-testid="weekly-empty">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-            近 7 天（{report.from} ~ {report.to}）
+            近 7 天（{rangeText}）
           </h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{COPY.weeklyEmptyTitle}</p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
@@ -198,7 +218,7 @@ export default function WeeklyReportView(): ReactElement {
         <>
           <section className="qsh-surface p-5">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              近 7 天（{report.from} ~ {report.to}）
+              近 7 天（{rangeText}）
             </h2>
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
@@ -231,14 +251,14 @@ export default function WeeklyReportView(): ReactElement {
 
             {/* 逐日精确数值（图表给对比、列表给数字），沿用既有列表形式 */}
             <ul className="mt-4 space-y-1.5" aria-label="每日摄入与运动">
-              {reportDays.map((day) => (
+              {reportDays.map((day, index) => (
                 <li
-                  key={day.date}
+                  key={`${index}-${safeStr(day.date)}`}
                   className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
                 >
-                  <span className="w-12 shrink-0">{day.date.slice(5)}</span>
+                  <span className="w-12 shrink-0">{safeStr(day.date).length >= 5 ? safeStr(day.date).slice(5) : '—'}</span>
                   <span className="flex-1 text-right text-slate-600 dark:text-slate-300">
-                    摄入 {Math.round(day.intakeKcal)} · 运动 {Math.round(day.exerciseKcal)} kcal
+                    摄入 {Math.round(safeNum(day.intakeKcal))} · 运动 {Math.round(safeNum(day.exerciseKcal))} kcal
                   </span>
                 </li>
               ))}
@@ -313,7 +333,7 @@ export default function WeeklyReportView(): ReactElement {
                 );
               })}
             </ul>
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{report.referenceNote}</p>
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
           </section>
         </>
       )}

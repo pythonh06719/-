@@ -82,7 +82,7 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
           const intakeH = heightOf(day.intakeKcal);
           const exerciseH = heightOf(day.exerciseKcal);
           return (
-            <g key={day.date}>
+            <g key={`${index}-${typeof day.date === 'string' ? day.date : ''}`}>
               <rect
                 x={startX}
                 y={baseline - intakeH}
@@ -108,9 +108,9 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
         style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
         aria-hidden="true"
       >
-        {days.map((day) => (
-          <span key={day.date} className="text-center">
-            {day.date.slice(5)}
+        {days.map((day, index) => (
+          <span key={`${index}-${typeof day.date === 'string' ? day.date : ''}`} className="text-center">
+            {typeof day.date === 'string' && day.date.length >= 5 ? day.date.slice(5) : '—'}
           </span>
         ))}
       </div>
