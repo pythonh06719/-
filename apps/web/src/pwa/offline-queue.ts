@@ -32,6 +32,66 @@ const STORE_NAME = 'requests';
 let memoryQueue: QueuedRequest[] = [];
 let memoryIdSeed = 1;
 
+/* ---------------------------------------------------------------------------
+ * 待同步条数的订阅出口（GAP-9）
+ *
+ * 本模块是**有状态模块级变量**（内存队列 + IndexedDB），没有天然的 React 可订阅源。
+ * 为了让 UI 能实时显示「N 条待同步」，这里加一个**轻量订阅**：
+ *
+ * - 为什么**不**引入 zustand：队列是「纯副作用模块」，它的写入路径全部是
+ *   `async function`（IndexedDB 是异步的），而且要覆盖 **IndexedDB 与内存两条降级路径**。
+ *   用 zustand 就得把 `memoryQueue` / IndexedDB 的读写改成 store action，
+ *   等于重写整个模块并破坏现有 5 个调用方 —— 收益（几乎没有）远小于风险。
+ *   `registerSW.ts` 里的 `onServiceWorkerUpdate` 已经证明「模块级 Set + 退订闭包」
+ *   在本项目里够用、可测、零依赖，这里沿用同一套做法。
+ * - 通知**不发原始条数**：统一为「去抖后重读一次队列长度」，
+ *   这样 IndexedDB / 内存两条路径共用同一条通知路径，调用方拿到的永远是真实值。
+ * ------------------------------------------------------------------------- */
+
+/** 待同步条数订阅者（无参：条数为零也算一次变化，UI 需要据此收起横幅）。 */
+const queueListeners = new Set<() => void>();
+
+/** 待同步条数订阅者数量（测试用：确认组件卸载后不留订阅）。 */
+export function queueSubscriberCount(): number {
+  return queueListeners.size;
+}
+
+/**
+ * 订阅「待同步队列发生任何变化」。
+ *
+ * 变化来源：入队（{@link enqueueRequest}）、冲队（{@link flushQueue}）、
+ * 单条移除（{@link removeQueuedRequest}）、清空（{@link clearQueuedRequests}）。
+ *
+ * 回调拿到的是「有变化」这一信号，**不是**条数本身 —— 新条数用
+ * {@link queueLength} 重读（异步，但两条降级路径都能给出真实值）。
+ * 这样调用方只需 `void queueLength().then(setPendingCount)`，不必区分实现路径。
+ *
+ * @param listener 变化回调（无参）
+ * @returns 退订函数（可直接作为 `useEffect` 的返回值）
+ */
+export function subscribeQueue(listener: () => void): () => void {
+  queueListeners.add(listener);
+  return () => {
+    queueListeners.delete(listener);
+  };
+}
+
+/**
+ * 广播「队列已变化」。
+ *
+ * 先拷贝再遍历：回调里可能顺手退订（同 `registerSW.notifyUpdate` 的理由）。
+ * **永不抛错** —— 一个订阅者出错不能连累其余订阅者，更不能反过来把入队 / 冲队搞崩。
+ */
+function notifyQueueChanged(): void {
+  for (const listener of [...queueListeners]) {
+    try {
+      listener();
+    } catch {
+      // 订阅者自身的异常与本模块无关：吞掉，保证队列写入路径永远不被 UI 拖垮
+    }
+  }
+}
+
 function hasIndexedDb(): boolean {
   return typeof indexedDB !== 'undefined' && indexedDB !== null;
 }
@@ -78,17 +138,20 @@ export async function enqueueRequest(
     const stored: QueuedRequest = { ...record, id: memoryIdSeed };
     memoryIdSeed += 1;
     memoryQueue.push(stored);
+    notifyQueueChanged();
     return stored;
   }
   try {
     const id = await runTransaction<number>('readwrite', (store) =>
       store.add(record) as IDBRequest<number>,
     );
+    notifyQueueChanged();
     return { ...record, id };
   } catch {
     const stored: QueuedRequest = { ...record, id: memoryIdSeed };
     memoryIdSeed += 1;
     memoryQueue.push(stored);
+    notifyQueueChanged();
     return stored;
   }
 }
@@ -112,18 +175,22 @@ export async function listQueuedRequests(): Promise<QueuedRequest[]> {
 export async function removeQueuedRequest(id: number): Promise<void> {
   if (!hasIndexedDb()) {
     memoryQueue = memoryQueue.filter((entry) => entry.id !== id);
+    notifyQueueChanged();
     return;
   }
   try {
     await runTransaction<undefined>('readwrite', (store) => store.delete(id) as IDBRequest<undefined>);
+    notifyQueueChanged();
   } catch {
     memoryQueue = memoryQueue.filter((entry) => entry.id !== id);
+    notifyQueueChanged();
   }
 }
 
 /** 清空队列（退出登录 / 账号删除）。 */
 export async function clearQueuedRequests(): Promise<void> {
   memoryQueue = [];
+  notifyQueueChanged();
   if (!hasIndexedDb()) {
     return;
   }
@@ -202,6 +269,11 @@ export async function flushQueue(): Promise<FlushResult> {
     }
   }
   const remaining = (await listQueuedRequests()).length;
+  /**
+   * 冲队结束后**只播一次**：过程中每条 `removeQueuedRequest` 都会播报，
+   * 一轮 500 条会触发 500 次重读 —— 这里在末尾统一兜一次，UI 侧再做合并即可。
+   */
+  notifyQueueChanged();
   return { synced, remaining, skipped, dropped };
 }
 

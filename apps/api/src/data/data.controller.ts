@@ -4,7 +4,8 @@ import type { DataOverviewResponse, RestorePreviewResponse, RestoreResult } from
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { DataService, type ImportResult, type WeightImportRow } from './data.service';
+import { DataService, type ImportResult } from './data.service';
+import { ImportWeightsDto } from './dto/import-weights.dto';
 
 /**
  * 数据主权控制器（`/api/data/**`，R10.1~R10.4）。
@@ -54,10 +55,23 @@ export class DataController {
     return this.dataService.restore(userId, payload);
   }
 
-  /** 导入历史体重（`{ csvText }` 或 `{ rows }`）。 */
+  /**
+   * 导入历史体重（`{ csvText }` 或 `{ rows }`，二选一）。
+   *
+   * **GAP-6**：前端 CSV 导入原来逐行 POST `/weights`（N 行 = N 个请求），
+   * 现已改为「在线走这条批量接口（单事务），离线逐行入队列（保留部分成功的可恢复性）」。
+   * 入参从**裸类型**收成 {@link ImportWeightsDto} —— 批量后一次能带任意多行，
+   * 必须给 `rows` 一个数组长度上限，否则单个事务会被打爆（详见 DTO 注释）。
+   *
+   * ⚠️ `rows` 与 `csvText` **二选一**：两者都不给由 `DataService.importWeights`
+   * 抛 `VALID_IMPORT_EMPTY`（400），该语义未变。
+   */
   @Post('import/weights')
   @HttpCode(HttpStatus.OK)
-  importWeights(@CurrentUser() userId: number, @Body() payload: { rows?: WeightImportRow[]; csvText?: string }): Promise<ImportResult> {
+  importWeights(
+    @CurrentUser() userId: number,
+    @Body() payload: ImportWeightsDto,
+  ): Promise<ImportResult> {
     return this.dataService.importWeights(userId, payload);
   }
 

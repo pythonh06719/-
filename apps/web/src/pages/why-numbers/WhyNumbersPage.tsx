@@ -1173,6 +1173,77 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ㉑ 待同步条数（GAP-9，NFR-11：新展示的数字必须可解释） */}
+      <section aria-labelledby="why-pending-sync-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-pending-sync-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉑ 顶部那个「还有 N 笔在排队」是怎么来的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          断网时你照样能记，记录会先存在本机，联网后自动送出去。顶部那条横幅主行讲网络，
+          副行的数字就是「还留在本机、还没送出去」的笔数。它的口径在下面。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="这个数字是什么"
+            value="本机待同步队列里的条目数"
+            hint="不是「今天记了几笔」，也不是「失败了几次」"
+          />
+          <DerivationRow
+            term="存在哪儿"
+            value="浏览器 IndexedDB（离线队列 qsh-offline）"
+            hint="不支持 IndexedDB 的环境自动降级为内存队列"
+          />
+          <DerivationRow
+            term="怎么加一"
+            value="断网时记一笔（体重 / 饮食 / 运动 / 饮水 / 习惯 / 这句话）即入队 +1"
+          />
+          <DerivationRow
+            term="怎么减一"
+            value="联网后每条成功送出就 -1"
+            hint="成功 = 服务端真的接收了，不是「试着发了」"
+          />
+          <DerivationRow
+            term="什么时候归零"
+            value="队列空了就归零，横幅随之收起"
+            hint="不写「账已结清」这类常驻文案"
+          />
+          <DerivationRow
+            term="顺序"
+            value="按本地写入时间先来先送"
+            hint="同一份数据以本地最新时间为准（服务端覆盖）"
+          />
+          <DerivationRow
+            term="为什么显示「笔」而不是「条数据量」"
+            value="一笔 = 一次记录动作"
+            hint="与你在页面上做的动作一一对应，不用换算"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么联网了还一直显示</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              联网那一刻数字不会马上变 0 —— 队列还要一条条真的送出去。这段等待里，横幅继续留着，
+              你才能看见「还差几笔」以及它最终归零。等队列空了，横幅自己就收起来了。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">
+              为什么我们**不**告诉你「有几笔没能送出去」
+            </dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              某条记录可能连着几次都送不出去（比如它引用的那条记录已经被删了），
+              这时我们会把它从队列里放下，不再反复打扰你。但**那个数字我们不说** ——
+              把「丢了 N 条」摆到眼前，只会让你回头一条条去对，而这几笔多半本来就是写不进来的内容。
+              我们只留一句「回头在页面上补一笔就好」：想补就补，不补也没关系。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          这个数字只说明「本机还有几笔在路上」，不评价你、也不影响任何记录内容 ——
+          它归零只代表它们都送到了，不代表你今天做得够不够好。
+        </p>
+      </section>
+
       {/* 页面间导航 */}
       <nav aria-label="相关页面" className="flex flex-wrap gap-3 text-sm">
         <Link

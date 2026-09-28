@@ -32,7 +32,28 @@ export interface WeightImportRow {
   note?: string;
 }
 
-/** 导入结果（R10.2：同日覆盖，非法行汇总）。 */
+/**
+ * 导入结果（R10.2：同日覆盖，非法行汇总）。
+ *
+ * ### 与 `@qsh/shared-types` 里 `CsvImportResult` 的关系（GAP-6 的判断）
+ *
+ * `CsvImportResult`（`packages/shared-types/src/export.ts`）定义了
+ * `{ imported, overwritten, skipped, errors }` —— 和这里只差一个 `overwritten`。
+ * **刻意不合并**：
+ *
+ * - `overwritten` 不是「多一个字段」这么简单。要在**单事务批量 upsert** 里数出
+ *   「本次覆盖了几条」，只能先 `findMany` 一次已知日期再 upsert —— 500 行导入要
+ *   多一次往返，而这整条路径的存在理由就是**砍掉往返**（注释见 `importWeights`）。
+ * - 更重要的是：`overwritten` 是**用户读不懂也提不出需求**的数字。
+ *   「同日期以导入值覆盖」已经在页面上写清楚了，再报一句「覆盖了 3 条」只会让人
+ *   回头去比对到底是哪 3 条 —— 与 NFR-11「每个数字都要可解释」的方向相反。
+ * - 契约也并未被违反：`ImportResult` 只是 `CsvImportResult` 的**结构子集**，
+ *   前端按 `CsvImportResult` 收窄读取是安全的；反过来前端若真要用 `overwritten`，
+ *   现有 UI 也没有任何位置展示它（零引用），所以**不动契约**是正确取舍。
+ *
+ * ⚠️ 若将来真要做「覆盖数」，正确做法是让前端在导入前用
+ * `listQueuedRequests` 同源的本地记录算差集，而不是让服务端为这个数字多跑一轮查询。
+ */
 export interface ImportResult {
   imported: number;
   skipped: number;
@@ -518,8 +539,14 @@ export class DataService {
   /**
    * 导入历史体重（§9.3）：同日覆盖；支持客户端已解析的 `rows` 或原始 `csvText`。
    * 非法行跳过并汇总，不影响合法行。
+   *
+   * **GAP-6**：本方法就是「批量接口」的服务端实现 —— 单事务批量 upsert，
+   * 专为替代前端「逐行 POST `/weights`」而写（此前 500 行导入 = 500 次串行往返）。
    */
-  async importWeights(userId: number, payload: { rows?: WeightImportRow[]; csvText?: string }): Promise<ImportResult> {
+  async importWeights(
+    userId: number,
+    payload: { rows?: WeightImportRow[]; csvText?: string },
+  ): Promise<ImportResult> {
     let rows: WeightImportRow[] = [];
     let errors: Array<{ row: number; reason: string }> = [];
 
@@ -528,29 +555,54 @@ export class DataService {
       rows = parsed.rows;
       errors = parsed.errors;
     } else if (Array.isArray(payload.rows)) {
-      rows = payload.rows.filter((row) => this.isValidRow(row));
-      const invalid = payload.rows.filter((row) => !this.isValidRow(row));
-      errors = invalid.map((row, index) => ({ row: index + 2, reason: `行数据无效（${JSON.stringify(row)}）` }));
+      /**
+       * `rows` 分支：**保留合法行、把非法行计入 `skipped`**（不整批 400）——
+       * 这是与 `csvText` 分支对齐的既有语义，也是「导入是尽力而为」的产品决定。
+       *
+       * ⚠️ 行号口径修正（GAP-6）：`csvText` 分支来自 `parseWeightCsv`，其行号是
+       * **原文件真实行号**（含表头，数据首行 = 2）；`rows` 分支此前用
+       * `invalid.map((row, index) => index + 2)`，这里的 `index` 是**过滤后数组**的序号，
+       * 一行非法就会让后面所有行号整体前移（结果错误）。改为**一次遍历**同时收集
+       * 合法行与带真实序号的错误，两个分支的行号口径才对得上。
+       */
+      const invalid: Array<{ row: number; reason: string }> = [];
+      rows = [];
+      payload.rows.forEach((row, index) => {
+        if (this.isValidRow(row)) {
+          rows.push(row);
+        } else {
+          // +2：`rows` 对应的是 CSV 数据行，首行数据在原文件里是第 2 行（第 1 行是表头）
+          invalid.push({ row: index + 2, reason: `行数据无效（${JSON.stringify(row)}）` });
+        }
+      });
+      errors = invalid;
     } else {
       throw new ApiException(400, ERROR_CODES.VALID_IMPORT_EMPTY, '请提供要导入的体重数据');
     }
 
-    // 单事务批量写入（此前逐行往返，500 行导入要 500 次串行查询）
-    await this.prisma.$transaction(
-      rows.map((row) =>
-        this.prisma.weightLog.upsert({
-          where: { userId_loggedAt: { userId, loggedAt: row.date } },
-          create: {
-            userId,
-            loggedAt: row.date,
-            weightKg: row.weightKg,
-            note: row.note ?? null,
-            source: 'import',
-          },
-          update: { weightKg: row.weightKg, note: row.note ?? null, source: 'import' },
-        }),
-      ),
-    );
+    /**
+     * 单事务批量写入（此前逐行往返，500 行导入要 500 次串行查询）。
+     *
+     * ⚠️ `$transaction` 收 `[]` 时**没有实际事务被开启**，是空操作 —— 所以这里显式判空，
+     * 避免「0 行也要开一次事务」的误导性写法；返回值照旧是 `imported: 0`。
+     */
+    if (rows.length > 0) {
+      await this.prisma.$transaction(
+        rows.map((row) =>
+          this.prisma.weightLog.upsert({
+            where: { userId_loggedAt: { userId, loggedAt: row.date } },
+            create: {
+              userId,
+              loggedAt: row.date,
+              weightKg: row.weightKg,
+              note: row.note ?? null,
+              source: 'import',
+            },
+            update: { weightKg: row.weightKg, note: row.note ?? null, source: 'import' },
+          }),
+        ),
+      );
+    }
 
     return { imported: rows.length, skipped: errors.length, errors };
   }

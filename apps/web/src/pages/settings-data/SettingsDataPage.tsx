@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
+  CsvImportResult,
   ExportFileDescriptor,
   ExportJsonPayload,
   OnboardingResponse,
@@ -46,7 +47,19 @@ import DataOverviewCard from './DataOverviewCard';
  * 该值恒为默认；补入需后端配合，留待后续立项（本页文案据实标注，不做虚承诺）。
  */
 
-type ImportState = { imported: number; skipped: number; errors: { row: number; reason: string }[] } | null;
+/**
+ * 导入结果提示的两行状态。
+ *
+ * `errors` 的形状直接取共享契约 `CsvImportResult['errors']`（`{ row, reason }[]`）——
+ * **两端一致**（服务端 `data.service.ts` 的 `ImportResult.errors` 同一形状），
+ * 本地不再手写一份，避免「服务端改了字段名、前端还在按老形状渲染」这类静默漂移。
+ *
+ * 离线逐行入队那条路里，`errors` 来自 `parseWeightCsv`（core 解析层），
+ * 形状也是 `{ row, reason }`，行号为原文件真实行号 —— 与在线分支口径相同。
+ */
+type ImportState =
+  | { imported: number; skipped: number; errors: CsvImportResult['errors'] }
+  | null;
 
 export default function SettingsDataPage(): ReactElement {
   const navigate = useNavigate();
@@ -191,25 +204,60 @@ export default function SettingsDataPage(): ReactElement {
     }
   };
 
+  /**
+   * CSV 历史体重导入（§9.3 / **GAP-6**）。
+   *
+   * ### 两条路径，各有各的理由（不是「先试再兜底」）
+   *
+   * - **在线 → 走批量接口** `POST /data/import/weights`（`{ rows }`）：
+   *   服务端在**单事务**里批量 upsert，一个请求搞定 N 行。
+   *   此前这里是 `for` 循环逐行 POST `/weights` —— 500 行就是 500 次串行往返，
+   *   正是这条批量接口（早写好了、注释里写着「为替代逐行往返」）要解决的问题。
+   *
+   * - **离线 → 逐行入队**（保留原能力）：`navigator.onLine === false` 时逐行走
+   *   `enqueueRequest`。**为什么不把整批也塞进队列**：一个「带 500 行」的队列项
+   *   在重放时要么全成、要么全败 —— 中间任何一行触发业务错误，整批都没落库；
+   *   逐行入队保留了**部分成功的可恢复性**（好的那几笔先送出去，坏的单独重试/丢弃，
+   *   与 `flushQueue` 的既有语义一致）。**在线求快、离线求稳**，两条路都是刻意的。
+   *
+   * ### 字段名对齐
+   * 传的是 `parsed.rows`（`{ date, weightKg, note? }`，`@qsh/core` 的解析产物），
+   * **不是** `/weights` 单条写入用的 `loggedAt` —— 后端 `WeightImportRow` 要的就是
+   * `date` / `weightKg` / `note`。命名差异就在这里一次性抹平，不在中间层做转换。
+   */
   const handleImport = async (file: File): Promise<void> => {
     setImportState(null);
     const text = await readTextFile(file);
     const parsed = parseWeightCsv(text);
-    let imported = 0;
-    for (const row of parsed.rows) {
-      try {
-        await api.post<WeightLog>('/weights', { loggedAt: row.date, weightKg: row.weightKg, ...(row.note === undefined ? {} : { note: row.note }) });
-        imported += 1;
-      } catch {
+
+    // 离线：逐行入队（保留部分成功的可恢复性），不发批量请求。
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      let queued = 0;
+      for (const row of parsed.rows) {
         await enqueueRequest({
           path: '/weights',
           method: 'POST',
           body: { loggedAt: row.date, weightKg: row.weightKg, ...(row.note === undefined ? {} : { note: row.note }) },
         });
-        imported += 1;
+        queued += 1;
       }
+      setImportState({ imported: queued, skipped: parsed.errors.length, errors: parsed.errors });
+      return;
     }
-    setImportState({ imported, skipped: parsed.errors.length, errors: parsed.errors });
+
+    // 在线：一个请求批量导入（单事务由服务端保证）。
+    //
+    // 类型用共享契约 `CsvImportResult` 而不是本地再造一个（GAP-6 的收口）：
+    // 服务端返回的结构是它的**子集**（少一个 `overwritten`），收窄读取是安全的；
+    // 用契约类型能让「前后端对同一个响应各写一份类型」的漂移无从发生。
+    // `overwritten` 本项目暂不展示（理由见 `data.service.ts` 的 `ImportResult` 注释）。
+    const result = await api.post<CsvImportResult>('/data/import/weights', { rows: parsed.rows });
+    setImportState({
+      imported: result.imported,
+      skipped: result.skipped,
+      // `errors` 形状两端一致，都是 `{ row, reason }[]`；防御性兜一层，响应异常时按空明细处理。
+      errors: Array.isArray(result.errors) ? result.errors : [],
+    });
   };
 
   const handleDelete = async (): Promise<void> => {
