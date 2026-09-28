@@ -15,7 +15,7 @@ import { COPY } from '@/lib/copy';
 import { todayKey } from '@/lib/format';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 
-type AiTab = 'daily' | 'plan' | 'ask';
+type AiTab = 'daily' | 'plan' | 'ask' | 'trace';
 
 /** Agent 工具名 → 用户可读的标签（可观测性：告诉用户"我查了什么"）。 */
 const TOOL_LABELS: Record<string, string> = {
@@ -25,6 +25,36 @@ const TOOL_LABELS: Record<string, string> = {
   get_weekly_report: '周报',
   log_meal: '记录饮食',
 };
+
+/**
+ * `GET /ai/agent/traces` 返回的**单条轨迹**（裸数组元素，无包装类型）。
+ *
+ * 字段与后端 `AgentService.listTraces` 对齐；`steps` 元素形状同 `AgentStep`。
+ * ⚠️ 响应里**含 `tokens`**，但本页**刻意不渲染它**（开发者指标，对用户无意义且易焦虑）。
+ */
+interface AgentTrace {
+  id: number;
+  question: string;
+  status: 'answered' | 'need_confirm' | 'max_steps' | 'failed' | 'disabled' | string;
+  answer: string;
+  toolCalls: number;
+  tokens: number;
+  durationMs: number;
+  createdAt: string;
+  steps: Array<{
+    index: number;
+    type: 'tool' | 'pending' | 'final' | 'note' | string;
+    tool?: string;
+    args?: Record<string, unknown>;
+    result?: string;
+    note?: string;
+    ms?: number;
+  }>;
+  pending: unknown | null;
+}
+
+/** 轨迹列表一次取多少条（后端把 limit 夹在 1~50；无游标分页，不做伪「加载更多」）。 */
+const TRACE_LIMIT = 20;
 
 /** `POST /ai/agent/confirm` 的响应（确认执行待办写操作）。 */
 interface AgentConfirmResult {
@@ -38,7 +68,132 @@ const TABS: ReadonlyArray<{ key: AiTab; label: string }> = [
   { key: 'daily', label: COPY.aiDailyTab },
   { key: 'plan', label: COPY.aiPlanTab },
   { key: 'ask', label: COPY.aiAskTab },
+  { key: 'trace', label: COPY.aiTraceTab },
 ];
+
+/** 轨迹状态 → 中性中文（`failed` **不译成「失败」**，序号只覆盖已知值，其余走兜底）。 */
+function traceStatusLabel(status: string): string {
+  switch (status) {
+    case 'answered':
+      return COPY.aiTraceStatusAnswered;
+    case 'need_confirm':
+      return COPY.aiTraceStatusNeedConfirm;
+    case 'max_steps':
+      return COPY.aiTraceStatusMaxSteps;
+    case 'failed':
+      return COPY.aiTraceStatusFailed;
+    case 'disabled':
+      return COPY.aiTraceStatusDisabled;
+    default:
+      return COPY.aiTraceStatusUnknown;
+  }
+}
+
+/** 时间戳 → 简短中文时刻（`9月23日 14:05`）；无效日期不出错，回退到原串。 */
+function traceTimeLabel(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes(),
+  ).padStart(2, '0')}`;
+}
+
+/**
+ * 单条轨迹卡片（GAP-7 可解释性）。
+ *
+ * ## 展示口径（**刻意克制**）
+ * - 展示：提问内容、状态、用到的工具名、每个工具耗时（`step.ms`）、整轮耗时（`durationMs`）；
+ * - **不展示 `tokens`** —— 那是开发者指标，对用户既无意义又易引发焦虑（硬约束 2 / 无感文案）。
+ *   耗时只是「过程透明度」（让用户理解"为什么慢"），不是饮食 / 热量类**业务数字**，
+ *   故**不需要** `/why-numbers` 新增条目（AI 用量口径已由既有 ⑭ 条解释）。
+ */
+function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
+  const toolSteps = Array.isArray(trace.steps) ? trace.steps.filter((step) => step.type === 'tool') : [];
+  return (
+    <li
+      data-testid={`ai-trace-${trace.id}`}
+      className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700"
+    >
+      <p className="text-sm text-slate-800 dark:text-slate-100">{trace.question}</p>
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+        <span>{traceTimeLabel(trace.createdAt)}</span>
+        <span aria-hidden="true">·</span>
+        <span>{traceStatusLabel(trace.status)}</span>
+        <span aria-hidden="true">·</span>
+        <span className="qsh-tnum">{COPY.aiTraceDurationLine(trace.durationMs)}</span>
+      </p>
+
+      {toolSteps.length === 0 ? (
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceNoTools}</p>
+      ) : (
+        <div className="mt-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {COPY.aiTraceToolsPrefix}
+            {toolSteps.map((step) => (step.tool !== undefined ? (TOOL_LABELS[step.tool] ?? step.tool) : '这一步')).join(
+              ' · ',
+            )}
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {toolSteps.map((step, index) => (
+              <li key={`${step.index}-${index}`} className="flex items-center justify-between gap-3">
+                <span>{step.tool !== undefined ? (TOOL_LABELS[step.tool] ?? step.tool) : '这一步'}</span>
+                {typeof step.ms === 'number' ? (
+                  <span className="qsh-tnum shrink-0">{COPY.aiTraceStepMs(step.ms)}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/**
+ * 执行轨迹面板（GAP-7）：`GET /ai/agent/traces?limit=N` 只回自己的最近若干条。
+ *
+ * 空态指一条去路（去「自由提问」），读取不顺软着陆且**不复用空态文案**（读不到 ≠ 没问过）。
+ */
+function TracePanel(): ReactElement {
+  const tracesQuery = useQuery({
+    queryKey: queryKeys.aiTraces(TRACE_LIMIT),
+    queryFn: () => api.get<AgentTrace[]>('/ai/agent/traces', { limit: TRACE_LIMIT }),
+    retry: 0,
+  });
+
+  // 防御：响应形态异常（旧缓存 / 测试桩通用返回）时按空列表处理，不让整页崩
+  const traces = Array.isArray(tracesQuery.data) ? tracesQuery.data : [];
+
+  return (
+    <section className="qsh-surface p-5" aria-live="polite">
+      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiTraceTitle}</h2>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceDesc}</p>
+
+      {tracesQuery.isLoading ? (
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{COPY.aiTraceLoading}</p>
+      ) : tracesQuery.isError && traces.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-error">
+          {COPY.aiTraceError}
+        </p>
+      ) : traces.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-empty">
+          {COPY.aiTraceEmpty}
+        </p>
+      ) : (
+        <>
+          <ul className="mt-3 space-y-2" aria-label={COPY.aiTraceTitle}>
+            {traces.map((trace) => (
+              <TraceCard key={trace.id} trace={trace} />
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceLimitNote}</p>
+        </>
+      )}
+    </section>
+  );
+}
 
 /** 温和的业务错误提示（PRD §7）。 */
 function errorMessage(error: unknown): string {
@@ -257,6 +412,11 @@ export default function AiPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: queryKeys.aiUsage });
   };
 
+  /** 一次提问结束后刷新轨迹缓存：让「回答记录」tab 马上能看到刚这次（GAP-7）。 */
+  const refreshTraces = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['ai', 'traces'] });
+  };
+
   const dailyQuery = useQuery({
     queryKey: queryKeys.aiDailySummary(date),
     queryFn: () => api.post<AiDailySummaryResponse>('/ai/daily-summary', { date }),
@@ -334,6 +494,8 @@ export default function AiPage(): ReactElement {
     } finally {
       // 提问（无论成功 / 失败 / 命中限额）都刷新一次剩余次数
       refreshUsage();
+      // 新轨迹可能已落库 → 让「回答记录」tab 保持最新
+      refreshTraces();
     }
   };
 
@@ -355,7 +517,7 @@ export default function AiPage(): ReactElement {
     // 宽度与留白交给 AppShell（max-w-3xl / px-5 / py-6），此处不再自搞一层宽度与内距
     <div className="flex flex-col gap-4">
       {/* Tab 切换 */}
-      <div role="tablist" aria-label="AI 助手" className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
+      <div role="tablist" aria-label="AI 助手" className="grid grid-cols-4 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
         {TABS.map((item) => (
           <button
             key={item.key}
@@ -539,6 +701,9 @@ export default function AiPage(): ReactElement {
           )}
         </div>
       )}
+
+      {/* 执行轨迹（GAP-7）：最近几次提问是「怎么答的」，可解释性回看 */}
+      {tab === 'trace' && <TracePanel />}
 
       {/* 食物识别入口（R3.7） */}
       <FoodRecognizePanel />

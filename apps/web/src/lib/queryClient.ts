@@ -70,4 +70,6 @@ export const queryKeys = {
   aiRecognizeFood: (description: string) => ['ai', 'recognize-food', description] as const,
   /** AI 当日用量 / 剩余次数（B6）：只按天缓存，每次提问后失效重取 */
   aiUsage: ['ai', 'usage'] as const,
+  /** AI 执行轨迹（GAP-7）：最近 N 条，只读回看 */
+  aiTraces: (limit: number) => ['ai', 'traces', limit] as const,
 } as const;

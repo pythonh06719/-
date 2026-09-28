@@ -7,7 +7,8 @@ import { api, isNetworkError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
-import { COPY } from '@/lib/copy';
+import { COPY, exerciseDeleteAria } from '@/lib/copy';
+import { enqueueRequest } from '@/pwa/offline-queue';
 import BrandDecor from '@/components/common/BrandDecor';
 
 /**
@@ -43,6 +44,19 @@ const EMPTY_WATER: WaterState = { totalMl: 0, history: [] };
 /** 与看板共用同一本地缓存键（离线兜底的一致性来源）。 */
 function readLocalWater(date: string): WaterState {
   return cacheGet<WaterState>(`qsh:cache:water:${date}`) ?? EMPTY_WATER;
+}
+
+/**
+ * 运动记录的删除会改变**两个汇总**，必须一并失效，否则用户删完切到报表会看到旧数字：
+ * - `GET /report/weekly`（周报每日 `exerciseKcal` + `totalExerciseKcal`）；
+ * - `GET /report/period`（阶段回顾的 `exercise: { sessions, totalMinutes }`）。
+ *
+ * 两者的查询键都带 `endDate`（period 还带 `days`），调用点无从得知用户此前看的是哪一天 ——
+ * 故用 **`['report']` 前缀匹配**一次性覆盖所有档位 / 所有 endDate 的缓存
+ * （React Query 的 `invalidateQueries` 默认按查询键前缀做部分匹配）。
+ */
+function reportQueryFilter(): { queryKey: readonly string[] } {
+  return { queryKey: ['report'] };
 }
 
 export default function ExercisePage(): ReactElement {
@@ -81,6 +95,49 @@ export default function ExercisePage(): ReactElement {
     },
     onError: (error: unknown) => {
       setFeedback(isNetworkError(error) ? '暂时连不上服务，运动先自己记着，恢复后会同步' : '刚才没记上，再试一次就好');
+    },
+  });
+
+  /**
+   * 从当日缓存里移掉一条运动记录，并**同步重算 `totalKcal`**。
+   *
+   * ⚠️ 这是本页最容易出错的地方：`GET /exercises` 的响应是
+   * `{ date, logs, totalKcal }` —— 列表与合计是**同一份响应里的两个字段**。
+   * 若只 `filter` 掉 `logs` 而保留旧 `totalKcal`，UI 会出现
+   * 「下面只剩 1 条、上面的合计还按 2 条算」的**自相矛盾**。
+   * 因此这里用**剩余的 logs 重新求和**（与后端 `listByDate` 同一口径：
+   * 逐条 `kcalBurned` 求和后保留 1 位小数），而不是拿旧合计去减 —— 减法的浮点
+   * 误差会让数字对不上后端下次返回的值。
+   */
+  const removeLogFromCache = (id: number): void => {
+    queryClient.setQueryData<ExerciseDay>(queryKeys.exerciseDay(today), (previous) => {
+      if (previous === undefined) {
+        return previous;
+      }
+      const logs = previous.logs.filter((log) => log.id !== id);
+      const totalKcal = Math.round(logs.reduce((sum, log) => sum + log.kcalBurned, 0) * 10) / 10;
+      return { ...previous, logs, totalKcal };
+    });
+  };
+
+  const deleteExercise = useMutation({
+    mutationFn: (id: number) => api.delete<{ deleted: true }>(`/exercises/${id}`),
+    onSuccess: (_data, id) => {
+      // 先改本地缓存（列表 + 合计一起改），再失效涉及该日的两个汇总（周报 / 阶段回顾）
+      removeLogFromCache(id);
+      setFeedback(COPY.exerciseDeleted);
+      void queryClient.invalidateQueries(reportQueryFilter());
+    },
+    onError: (error: unknown, id: number) => {
+      if (isNetworkError(error)) {
+        // 离线删除：入队 + 本地先移除（无二次确认，与 WinLogCard 的 DELETE 惯例一致）
+        void enqueueRequest({ path: `/exercises/${id}`, method: 'DELETE' });
+        removeLogFromCache(id);
+        setFeedback(COPY.exerciseDeleted);
+        return;
+      }
+      // 业务错误（如记录已被删 / 不存在）：中性陈述，不用「失败 / 错误」（PRD §7）
+      setFeedback(COPY.exerciseDeleteMissed);
     },
   });
 
@@ -231,8 +288,20 @@ export default function ExercisePage(): ReactElement {
               </li>
             ) : (
               dayLogs.map((log) => (
-                <li key={log.id}>
-                  {log.activityName} · {log.minutes} 分钟 · 约 {log.kcalBurned} kcal
+                <li key={log.id} className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate">
+                    {log.activityName} · {log.minutes} 分钟 · 约 {log.kcalBurned} kcal
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteExercise.mutate(log.id)}
+                    disabled={deleteExercise.isPending}
+                    aria-label={exerciseDeleteAria(log.activityName, log.minutes)}
+                    data-testid={`exercise-delete-${log.id}`}
+                    className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-slate-600 hover:text-coral-600 disabled:opacity-40 dark:text-slate-300"
+                  >
+                    {COPY.exerciseDelete}
+                  </button>
                 </li>
               ))
             )}
