@@ -146,6 +146,73 @@ export class HabitsService {
     return { checked: false, date: day };
   }
 
+  /**
+   * 停用自定义习惯（GAP-11）—— **不是删除**。
+   *
+   * ## 为什么停用而不是删除（务必保留此注释，避免后人"顺手改成 delete"）
+   *
+   * `prisma/schema.prisma` 中 `HabitCheckin.habitId` 的外键是 `onDelete: Cascade`。
+   * 一旦真删除 `HabitDefinition`，该习惯的**全部历史打卡记录会被级联删除且不可恢复**：
+   * 1. 用户过去数十天的打卡数据凭空消失；
+   * 2. 周报的 `habitsDone` / `habitsTotal` 基数随之变化 → **历史周报的数字会被改写**；
+   * 3. 违背本项目「无负罪感」原则 —— 用户说「我不想继续做这个了」，并不意味着
+   *    「把过去一笔勾销」。
+   *
+   * 因此本方法只把 `isActive` 置为 `false`：
+   * - `HabitCheckin` 完全不动，历史数据与历史周报口径保持稳定；
+   * - `report.service.ts` 的 `where: { ..., isActive: true }` 过滤会自动让该习惯退出统计；
+   * - 用户仍可在将来「重新启用」（同一 `PATCH /habits/:id` 路由，本轮不实现）。
+   *
+   * ## 归属与内置保护
+   *
+   * 查询条件 `where: { id: habitId, userId }` 中 `userId` 是 `number`，而内置模板的
+   * `userId` 是 `null`，因此**天然只命中当前用户自己的记录**：他人的习惯、以及
+   * `userId=null` 的全局内置模板都会查不到 → 统一返回 404（不泄露资源是否存在）。
+   * 这里用 `findFirst` 做归属校验是**显式**的，测试也显式锁定了这两条边界，
+   * 不依赖隐式行为。
+   *
+   * ## 幂等
+   *
+   * 对已停用的习惯重复调用，仍返回成功（`isActive` 已是 `false`，无副作用）。
+   *
+   * @param userId 当前登录用户（取自 JWT）
+   * @param habitId 目标习惯 id
+   * @returns 更新后的习惯（与 `list()` 元素同形，`isActive` 为 `false`）
+   * @throws ApiException 404 `E_NOTFOUND_HABIT` 当习惯不存在 / 属于他人 / 为内置模板
+   */
+  async deactivate(userId: number, habitId: number): Promise<HabitWithStats> {
+    // 显式归属校验：userId 为 number → 不会命中 userId 为 null 的内置模板，也不会命中他人的行
+    const habit = await this.prisma.habitDefinition.findFirst({
+      where: { id: habitId, userId },
+    });
+    if (!habit) {
+      throw new ApiException(404, ERROR_CODES.NOTFOUND_HABIT, '没有找到这个习惯');
+    }
+
+    // 幂等：已停用则不再写库，直接返回当前状态
+    const updated = habit.isActive
+      ? await this.prisma.habitDefinition.update({
+          where: { id: habit.id },
+          data: { isActive: false, updatedAt: new Date().toISOString() },
+        })
+      : habit;
+
+    const dates = new Set<string>();
+    const streak = this.calcStreak(dates, todayLocalKey());
+    return {
+      id: updated.id,
+      code: updated.code,
+      name: updated.name,
+      icon: updated.icon,
+      targetPerDay: updated.targetPerDay,
+      isActive: updated.isActive,
+      doneToday: false,
+      currentStreak: streak.current,
+      bestStreak: streak.best,
+      recentDates: [],
+    };
+  }
+
   /** 计算连续天数：从今天（或最近一次打卡日）往前数连续日。 */
   private calcStreak(dates: Set<string>, today: string): { current: number; best: number } {
     const sorted = [...dates].sort();

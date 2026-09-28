@@ -50,14 +50,26 @@ export class UsersController {
     return this.usersService.updateGoal(userId, dto);
   }
 
-  /** 读取设置。 */
-  @Get('settings')
+  /**
+   * 读取设置。
+   *
+   * GAP-3：前端 `apps/web/src/lib/settings-sync.ts` 一贯请求 `GET /api/users/settings`
+   * （见其 `fetchServerSettings`），但本控制器从未挂 `users` 前缀 —— 该路径此前恒 404。
+   * 这里**同时**挂载 `settings` 与 `users/settings`：前者保持既有契约不回归，
+   * 后者让前端实际使用的路径真正可用。两个路径指向同一处理方法，逻辑零分叉。
+   */
+  @Get(['settings', 'users/settings'])
   getSettings(@CurrentUser() userId: number): Promise<UserSettings> {
     return this.usersService.getSettings(userId);
   }
 
-  /** 修改设置（单位 / 深色 / 饮水目标 / 断食开关）。 */
-  @Patch('settings')
+  /**
+   * 修改设置（单位 / 深色 / 饮水目标 / 断食开关）。
+   *
+   * GAP-3：与 {@link getSettings} 同理，同时挂载 `settings` 与 `users/settings`，
+   * 使前端 `PATCH /api/users/settings`（单位/深色/饮水目标同步通道）真正生效。
+   */
+  @Patch(['settings', 'users/settings'])
   updateSettings(
     @CurrentUser() userId: number,
     @Body() dto: UpdateSettingsDto,
