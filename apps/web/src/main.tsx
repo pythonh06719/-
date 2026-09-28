@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { COPY } from '@/lib/copy';
 import { queryClient } from '@/lib/queryClient';
 import { initTheme } from '@/theme/useTheme';
 import { initPwa } from '@/pwa/registerSW';
@@ -24,9 +26,19 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    {/*
+     * GAP-10 最外层兜底：`App` 内部还有一层路由级错误边界，但有两种情况会绕开它 ——
+     * ① `App` **自身**（或 `BrowserRouter` / provider 层）抛错，此时路由还没建立；
+     * ② 路由懒加载的 `import()` 失败（离线 / 部署换了 chunk 哈希），
+     *    React 在**渲染期**把这个 Promise 拒绝重新抛出，而它常发生在边界之上。
+     * 这一层用最保守口径：不提「别的页面还能用」（路由可能已不可用），
+     * 「回到首页」也只做整页跳转（内置兜底界面已如此实现）。
+     */}
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
 
