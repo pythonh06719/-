@@ -1031,12 +1031,17 @@ export default function MealComposer({
           </div>
         )}
 
-        {/* 套餐模板（R3.9 / TC-26） */}
+        {/* 套餐模板（R3.9 / TC-26）。
+
+            ⚠️ **空态文案（GAP-2 收口）**：本 tab 只能**应用**套餐，新建入口在 `/diary`
+            各餐次的「存成套餐」（`SaveComboDialog`）。所以空态不能只说「还没有」——
+            套餐现在已经建得出来了，只是**不在这块面板里建**；`COPY.comboEmpty` 明确
+            指向 `/diary` 的那条去路，避免用户在本 tab 找不到入口而以为功能不存在。 */}
         {tab === 'combo' && (
           <div className="mt-4">
             {comboQuery.isLoading && <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>}
             {(comboQuery.data ?? []).length === 0 && !comboQuery.isLoading && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">还没有保存的套餐模板</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{COPY.comboEmpty}</p>
             )}
             <ul className="space-y-2">
               {(comboQuery.data ?? []).map((combo) => (
