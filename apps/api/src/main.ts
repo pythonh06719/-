@@ -32,6 +32,9 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
 
+  // JSON 备份上限由 core 固定为 8 MiB；HTTP 层留出包装字段余量，避免合法备份先被默认 100 KiB 拦下。
+  app.use(express.json({ limit: '10mb' }));
+
   app.setGlobalPrefix('api');
   /**
    * `helmet()` 的默认 CSP 是 `script-src 'self'` —— 会**连带拦掉** `apps/web/index.html` 里那段

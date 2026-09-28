@@ -275,9 +275,17 @@ export {
   type WinTextCheck,
 } from './win/text';
 
-// 导出 payload 兼容读法（R11.4 / QR-6）：v1 数据读 `wins` 不报错（K25）
+// 导出 payload 兼容读取与恢复校验（R11.4 / R10.2）：v1 数据读 `wins` 不报错，恢复先纯函数解析
 export {
   EXPORT_SCHEMA_VERSION_MIN_WINS,
+  MAX_EXPORT_PAYLOAD_BYTES,
+  MAX_EXPORT_ROWS_PER_ENTITY,
+  parseExportPayload,
   readExportWins,
+  summarizeExportPayload,
+  type ExportPayloadParseErrorCode,
+  type ExportPayloadSummary,
   type ExportWinRowLike,
+  type ParsedExportPayload,
+  type ParseExportPayloadResult,
 } from './export/payload';

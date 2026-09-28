@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 
-import type { DataOverviewResponse } from '@qsh/shared-types';
+import type { DataOverviewResponse, RestorePreviewResponse, RestoreResult } from '@qsh/shared-types';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -32,6 +32,26 @@ export class DataController {
   @Get('overview')
   overview(@CurrentUser() userId: number): Promise<DataOverviewResponse> {
     return this.dataService.overview(userId);
+  }
+
+  /** 第一步：只解析 JSON 备份并返回内容统计，不写入任何数据。 */
+  @Post('restore/preview')
+  @HttpCode(HttpStatus.OK)
+  previewRestore(
+    @CurrentUser() userId: number,
+    @Body() payload: { content?: unknown },
+  ): RestorePreviewResponse {
+    return this.dataService.previewRestore(userId, payload);
+  }
+
+  /** 第二步：用户确认预览后，在单事务内按“同日覆盖、不同日追加”恢复。 */
+  @Post('restore')
+  @HttpCode(HttpStatus.OK)
+  restore(
+    @CurrentUser() userId: number,
+    @Body() payload: { previewToken?: unknown },
+  ): Promise<RestoreResult> {
+    return this.dataService.restore(userId, payload);
   }
 
   /** 导入历史体重（`{ csvText }` 或 `{ rows }`）。 */

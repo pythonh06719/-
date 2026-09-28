@@ -140,6 +140,37 @@ export const EXPORT_SCHEMA_VERSION = 2;
 export const EXPORT_APP_ID = 'qingshenghuo' as const;
 
 // ---------------------------------------------------------------------------
+// R10.2 JSON 备份恢复
+// ---------------------------------------------------------------------------
+
+/** 恢复预览中的各类记录条数；meals 按餐次里的条目数计数。 */
+export interface RestoreRecordCounts {
+  weights: number;
+  meals: number;
+  exercises: number;
+  habits: number;
+  water: number;
+  wins: number;
+}
+
+/** JSON 备份恢复的预览响应。 */
+export interface RestorePreviewResponse {
+  /** 一次性预览凭据，只能由创建预览的账号确认使用。 */
+  previewToken: string;
+  schemaVersion: 1 | 2;
+  counts: RestoreRecordCounts;
+  dateRange: { from: string; to: string } | null;
+  mergeStrategy: 'same-day-replace';
+}
+
+/** JSON 备份恢复完成后的事实汇总。 */
+export interface RestoreResult {
+  restored: RestoreRecordCounts;
+  dateRange: { from: string; to: string } | null;
+  mergeStrategy: 'same-day-replace';
+}
+
+// ---------------------------------------------------------------------------
 // §9.3 CSV 导入模板（历史体重）
 // ---------------------------------------------------------------------------
 
@@ -179,6 +210,8 @@ export const CSV_FILE_NAMES = {
   exercises: 'exercises.csv',
   habits: 'habits.csv',
   water: 'water.csv',
+  /** B4：与 JSON 的 `wins` 顶层键对齐（QR-6 / schemaVersion 2 起） */
+  wins: 'wins.csv',
 } as const;
 
 /** 导出 CSV 文件键类型。 */
@@ -191,6 +224,8 @@ export const EXPORT_CSV_COLUMNS = {
   exercises: ['date', 'type', 'met', 'minutes', 'kcalBurned'] as const,
   habits: ['date', 'habitId', 'done'] as const,
   water: ['date', 'ml'] as const,
+  /** B4：记录日期 + 内容；正文是自由文本，导出时按 RFC 4180 转义。 */
+  wins: ['date', 'text'] as const,
 };
 
 /** CSV 字符集约定：UTF-8 with BOM（K11）。 */

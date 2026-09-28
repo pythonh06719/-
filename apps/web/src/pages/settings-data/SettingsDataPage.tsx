@@ -23,13 +23,15 @@ import { useUnitStore } from '@/lib/units';
 import { useAuthStore } from '@/lib/auth.store';
 import { clearQueuedRequests, enqueueRequest } from '@/pwa/offline-queue';
 import { toTrendPoints } from '@/lib/trend';
+import BackupRestoreCard from './BackupRestoreCard';
 import DataOverviewCard from './DataOverviewCard';
 
 /**
  * 数据管理（`/settings/data`，PRD §9 / R10 / US-18 / US-19 / TC-39 / TC-40 / TC-41）。
  *
  * - **导出**：一键导出 JSON（完整可恢复）+ CSV（UTF-8 **with BOM**、首行表头、日期 `YYYY-MM-DD`）
- * - **导入**：CSV 历史体重批量导入，结果提示「导入条数 / 非法行数」
+ * - **恢复**：JSON 备份先展示内容统计，再由用户确认按“同日覆盖、不同日保留”合并
+ * - **导入**：CSV 历史体重批量导入，结果提示「导入条数 / 未读取行数」
  * - **删除我的全部数据**：二次确认 + 明确后果说明；调用硬删除接口并清空本地缓存
  *
  * 导出全程在本地生成 Blob，不经任何第三方服务（隐私承诺，TC-46）。
@@ -271,7 +273,10 @@ export default function SettingsDataPage(): ReactElement {
       {/* 记录概览（R11.6 缺口 ②）：只读聚合，`count = 0` 的行由卡内部整行隐藏 */}
       <DataOverviewCard />
 
-      {/* 导入 */}
+      {/* JSON 备份恢复：独立于 CSV 体重导入，先预览、再确认 */}
+      <BackupRestoreCard />
+
+      {/* 导入历史体重（CSV） */}
       <section
         aria-label="导入历史体重"
         className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
@@ -279,7 +284,7 @@ export default function SettingsDataPage(): ReactElement {
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           模板列：<code>date</code>（YYYY-MM-DD）、<code>weightKg</code>、<code>note</code>（可选）。
-          同日期以导入值覆盖，非法行会跳过并汇总。
+          同日期以导入值覆盖，未能识别的行会跳过并汇总。
         </p>
         <label className="qsh-touch-target mt-3 block">
           <span className="sr-only">选择 CSV 文件</span>

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -7,8 +9,16 @@ import {
   type ExportJsonPayload,
   type RecordOverviewKey,
   type RecordOverviewRow,
+  type RestorePreviewResponse,
+  type RestoreResult,
 } from '@qsh/shared-types';
-import { parseWeightCsv } from '@qsh/core';
+import {
+  deriveWeeklyLossKg,
+  parseExportPayload,
+  parseWeightCsv,
+  type ExportPayloadSummary,
+  type ParsedExportPayload,
+} from '@qsh/core';
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
@@ -29,6 +39,18 @@ export interface ImportResult {
   errors: Array<{ row: number; reason: string }>;
 }
 
+/** 恢复预览在服务端的短期状态；只保留已通过 core 校验的结构。 */
+interface PendingRestore {
+  userId: number;
+  payload: ParsedExportPayload;
+  summary: ExportPayloadSummary;
+  expiresAt: number;
+  inUse: boolean;
+}
+
+/** 预览凭据有效期：给用户留足确认时间，同时限制内存驻留。 */
+const RESTORE_PREVIEW_TTL_MS = 15 * 60 * 1000;
+
 /**
  * 数据主权服务（R10.1~R10.4，二期）：
  * 一键导出 / 导入 / **账号硬删除**。
@@ -36,6 +58,7 @@ export interface ImportResult {
 @Injectable()
 export class DataService {
   private readonly logger = new Logger(DataService.name);
+  private readonly pendingRestores = new Map<string, PendingRestore>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -215,6 +238,281 @@ export class DataService {
       firstDate: firstDate === null ? null : toDateKey(firstDate),
       lastDate: lastDate === null ? null : toDateKey(lastDate),
     };
+  }
+
+  /**
+   * 读取并预览 JSON 备份。这里只建立短期的一次性凭据，不写数据库。
+   * 解析、版本兼容、字段校验与统计全部由 `@qsh/core` 的纯函数完成。
+   */
+  previewRestore(userId: number, request: { content?: unknown }): RestorePreviewResponse {
+    const parsed = parseExportPayload(request?.content);
+    if (!parsed.ok) {
+      throw new ApiException(400, ERROR_CODES.VALID_RESTORE_PAYLOAD, parsed.error.message);
+    }
+
+    this.removeExpiredRestorePreviews();
+    for (const [token, pending] of this.pendingRestores.entries()) {
+      if (pending.userId === userId) {
+        this.pendingRestores.delete(token);
+      }
+    }
+
+    const previewToken = randomUUID();
+    this.pendingRestores.set(previewToken, {
+      userId,
+      payload: parsed.payload,
+      summary: parsed.summary,
+      expiresAt: Date.now() + RESTORE_PREVIEW_TTL_MS,
+      inUse: false,
+    });
+
+    return {
+      previewToken,
+      schemaVersion: parsed.payload.meta.schemaVersion,
+      counts: parsed.summary.counts,
+      dateRange: parsed.summary.dateRange,
+      mergeStrategy: 'same-day-replace',
+    };
+  }
+
+  /**
+   * 确认恢复：备份里出现的实体日期整日替换，未出现的日期保留；档案、目标与设置采用备份值。
+   * 所有删除和写入都在一个 Prisma 交互式事务里完成，任一步未完成都会整体回滚。
+   */
+  async restore(userId: number, request: { previewToken?: unknown }): Promise<RestoreResult> {
+    this.removeExpiredRestorePreviews();
+    const previewToken = typeof request?.previewToken === 'string' ? request.previewToken : '';
+    const pending = this.pendingRestores.get(previewToken);
+    if (pending === undefined || pending.userId !== userId || pending.inUse) {
+      throw new ApiException(
+        404,
+        ERROR_CODES.NOTFOUND_RESTORE_PREVIEW,
+        '没有找到这份恢复预览，请重新选择备份文件',
+      );
+    }
+
+    pending.inUse = true;
+    const { payload, summary } = pending;
+    const nowIso = new Date().toISOString();
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userProfile.upsert({
+          where: { userId },
+          create: {
+            userId,
+            gender: payload.profile.gender,
+            birthDate: payload.profile.birthDate,
+            heightCm: payload.profile.heightCm,
+            activityLevel: payload.profile.activityLevel,
+            dietaryPreference: JSON.stringify(payload.profile.dietaryPreference),
+            conditions: JSON.stringify(payload.profile.conditions),
+          },
+          update: {
+            gender: payload.profile.gender,
+            birthDate: payload.profile.birthDate,
+            heightCm: payload.profile.heightCm,
+            activityLevel: payload.profile.activityLevel,
+            dietaryPreference: JSON.stringify(payload.profile.dietaryPreference),
+            conditions: JSON.stringify(payload.profile.conditions),
+            updatedAt: nowIso,
+          },
+        });
+
+        const existingGoal = await tx.userGoal.findUnique({ where: { userId } });
+        const latestBackupWeight = [...payload.weights].sort((a, b) => b.date.localeCompare(a.date))[0]?.weightKg;
+        const startWeightKg = existingGoal?.startWeightKg ?? latestBackupWeight ?? payload.goals.targetWeightKg;
+        const weeklyLossKg = deriveWeeklyLossKg(
+          startWeightKg,
+          payload.goals.targetWeightKg,
+          payload.goals.targetWeeks,
+        );
+        await tx.userGoal.upsert({
+          where: { userId },
+          create: {
+            userId,
+            startWeightKg,
+            targetWeightKg: payload.goals.targetWeightKg,
+            targetWeeks: payload.goals.targetWeeks,
+            weeklyLossKg,
+            macroRatio: JSON.stringify(payload.goals.macroRatio),
+          },
+          update: {
+            targetWeightKg: payload.goals.targetWeightKg,
+            targetWeeks: payload.goals.targetWeeks,
+            weeklyLossKg,
+            macroRatio: JSON.stringify(payload.goals.macroRatio),
+            updatedAt: nowIso,
+          },
+        });
+
+        await tx.userSettings.upsert({
+          where: { userId },
+          create: {
+            userId,
+            unit: payload.settings.unit,
+            darkMode: payload.settings.darkMode,
+            fastingEnabled: payload.settings.fastingEnabled,
+          },
+          update: {
+            unit: payload.settings.unit,
+            darkMode: payload.settings.darkMode,
+            fastingEnabled: payload.settings.fastingEnabled,
+            updatedAt: nowIso,
+          },
+        });
+
+        const weightDates = this.uniqueDates(payload.weights);
+        if (weightDates.length > 0) {
+          await tx.weightLog.deleteMany({ where: { userId, loggedAt: { in: weightDates } } });
+          await tx.weightLog.createMany({
+            data: payload.weights.map((row) => ({
+              userId,
+              loggedAt: row.date,
+              weightKg: row.weightKg,
+              note: row.note === '' ? null : row.note,
+              source: 'import',
+            })),
+          });
+        }
+
+        const mealDates = this.uniqueDates(payload.meals);
+        if (mealDates.length > 0) {
+          await tx.mealLog.deleteMany({ where: { userId, loggedDate: { in: mealDates } } });
+          const nextSortOrder = new Map<string, number>();
+          const mealRows = payload.meals.flatMap((meal) =>
+            meal.items.map((item) => {
+              const bucketKey = `${meal.date}|${meal.mealType}`;
+              const sortOrder = nextSortOrder.get(bucketKey) ?? 0;
+              nextSortOrder.set(bucketKey, sortOrder + 1);
+              return {
+                userId,
+                loggedDate: meal.date,
+                mealType: meal.mealType,
+                customName: item.name,
+                grams: item.grams,
+                kcal: item.kcal,
+                proteinG: item.proteinG,
+                fatG: item.fatG,
+                carbG: item.carbG,
+                source: 'quick_add',
+                sortOrder,
+              };
+            }),
+          );
+          if (mealRows.length > 0) {
+            await tx.mealLog.createMany({ data: mealRows });
+          }
+        }
+
+        const exerciseDates = this.uniqueDates(payload.exercises);
+        if (exerciseDates.length > 0) {
+          await tx.exerciseLog.deleteMany({ where: { userId, loggedDate: { in: exerciseDates } } });
+          const exerciseRows = [];
+          for (const row of payload.exercises) {
+            const activity = await tx.metActivity.findUnique({ where: { code: row.type } });
+            if (activity === null) {
+              throw new ApiException(
+                400,
+                ERROR_CODES.VALID_RESTORE_PAYLOAD,
+                '备份里有一项运动在当前版本中没有对应条目',
+              );
+            }
+            const calculatedWeight = row.kcalBurned / (row.met * (row.minutes / 60));
+            const weightKgAtLog =
+              Number.isFinite(calculatedWeight) && calculatedWeight > 0 && calculatedWeight < 500
+                ? calculatedWeight
+                : (latestBackupWeight ?? startWeightKg);
+            exerciseRows.push({
+              userId,
+              loggedDate: row.date,
+              activityCode: activity.code,
+              activityName: activity.name,
+              met: row.met,
+              minutes: row.minutes,
+              weightKgAtLog,
+              kcalBurned: row.kcalBurned,
+            });
+          }
+          if (exerciseRows.length > 0) {
+            await tx.exerciseLog.createMany({ data: exerciseRows });
+          }
+        }
+
+        const habitDates = this.uniqueDates(payload.habits);
+        if (habitDates.length > 0) {
+          await tx.habitCheckin.deleteMany({ where: { userId, loggedDate: { in: habitDates } } });
+          const habitIds = new Map<string, number>();
+          for (const code of new Set(payload.habits.map((row) => row.habitId))) {
+            const definition = await tx.habitDefinition.findFirst({
+              where: { code, OR: [{ userId }, { userId: null }] },
+              orderBy: [{ userId: 'desc' }, { id: 'asc' }],
+            });
+            const habitId =
+              definition?.id ??
+              (
+                await tx.habitDefinition.create({
+                  data: { userId, code, name: code },
+                  select: { id: true },
+                })
+              ).id;
+            habitIds.set(code, habitId);
+          }
+          await tx.habitCheckin.createMany({
+            data: payload.habits.map((row) => ({
+              userId,
+              habitId: habitIds.get(row.habitId) as number,
+              loggedDate: row.date,
+              done: row.done,
+            })),
+          });
+        }
+
+        const waterDates = this.uniqueDates(payload.water);
+        if (waterDates.length > 0) {
+          await tx.waterLog.deleteMany({ where: { userId, loggedDate: { in: waterDates } } });
+          await tx.waterLog.createMany({
+            data: payload.water.map((row, index) => ({
+              userId,
+              loggedDate: row.date,
+              loggedAt: `${row.date}T12:00:${String(index % 60).padStart(2, '0')}.000Z`,
+              amountMl: row.ml,
+            })),
+          });
+        }
+
+        const winDates = this.uniqueDates(payload.wins);
+        if (winDates.length > 0) {
+          await tx.winLog.deleteMany({ where: { userId, loggedDate: { in: winDates } } });
+          await tx.winLog.createMany({
+            data: payload.wins.map((row) => ({ userId, loggedDate: row.date, text: row.text })),
+          });
+        }
+      });
+    } finally {
+      this.pendingRestores.delete(previewToken);
+    }
+
+    return {
+      restored: summary.counts,
+      dateRange: summary.dateRange,
+      mergeStrategy: 'same-day-replace',
+    };
+  }
+
+  /** 返回记录中的去重日期，作为“有该日期才覆盖”的事务删除条件。 */
+  private uniqueDates(rows: ReadonlyArray<{ date: string }>): string[] {
+    return [...new Set(rows.map((row) => row.date))];
+  }
+
+  /** 惰性清理过期预览，避免用户选择文件后离开页面造成长期内存驻留。 */
+  private removeExpiredRestorePreviews(): void {
+    const now = Date.now();
+    for (const [token, pending] of this.pendingRestores.entries()) {
+      if (pending.expiresAt <= now) {
+        this.pendingRestores.delete(token);
+      }
+    }
   }
 
   /**
