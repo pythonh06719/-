@@ -23,7 +23,13 @@ import type {
 import { ApiClientError, api } from '@/lib/api';
 import BarcodeScanner from '@/components/common/BarcodeScanner';
 import { queryKeys } from '@/lib/queryClient';
-import { COPY, favoriteToggleAria, foodCategoryAriaFor, topFoodDaysLabel, topFoodsAria } from '@/lib/copy';
+import {
+  COPY,
+  favoriteToggleAria,
+  foodCategoryAriaFor,
+  topFoodDaysLabel,
+  topFoodsAria,
+} from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
@@ -119,6 +125,15 @@ export default function MealComposer({
    * 这个提示存在的意义只是「问一句」，不是拦路。
    */
   const [quickSkippedSameName, setQuickSkippedSameName] = useState(false);
+  /**
+   * C-4 第一步：快加时**是否顺手存进食物库**（默认不勾）。
+   *
+   * 为什么默认不勾：食物库的价值来自**重复吃的东西**。一次性条目（某家店的某道菜、
+   * 出门随手记的一顿）存进去只会让「最近 / 搜索」变噪音；而真正常吃的（每天早餐、
+   * 常点的那杯拿铁）用户自己清楚，勾一次终身受益。默认不打勾，把选择权留给用户，
+   * 不替用户决定什么值得存。
+   */
+  const [quickSaveToLibrary, setQuickSaveToLibrary] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -559,6 +574,88 @@ export default function MealComposer({
   };
 
   /**
+   * C-4 第一步：把快加内容存进个人食物库（`POST /foods`）。
+   *
+   * ## 时序决策：**先记录，再存库**（方案甲），且**存库失败不视为记录失败**
+   *
+   * 两个请求的顺序与失败语义是本功能最关键的设计点，理由：
+   * 1. **主操作优先**：用户点「确认记录」的第一目的是**把这一餐记下来**。记录先落库，
+   *    存库是**增强**（让下次能搜到），增强不该阻塞主流程；
+   * 2. **不产生孤儿数据**：若反序（先 `POST /foods` 再记录），一旦记录失败（校验 / 断网），
+   *    食物库里就留下一条没人用过的条目 —— 孤儿。用户既没记成这一餐，库还脏了；
+   * 3. **失败口径明确**：`onSubmit` 成功即表示记录已落库（父组件内部有自己的离线入队与
+   *    乐观更新），此时若 `POST /foods` 失败，**只影响「下次能不能搜到」**，不影响这次
+   *    记录的正确性 —— 故给一句软着陆提示，**绝不**回滚记录、绝不报「失败」。
+   *
+   * ## 为什么 `onSubmit` 抛错时**不**调 `POST /foods`
+   *
+   * `run()` 里 `onSubmit` 抛错会向上冒泡（父组件已给过提示）。此时记录**没**成功，
+   * 若还去存库就正好制造了上面说的孤儿条目。故本函数在 `run` 成功返回后才执行。
+   *
+   * ## 请求体（严格对齐 `CreateCustomFoodRequest`）
+   *
+   * **不发送 `source` / `createdByUserId`** —— 契约里根本没有这两个字段，服务端也
+   * 一律强制 `'user_custom'` + JWT 用户 id（安全边界在服务端，前端不参与、也参与不了）。
+   *
+   * `category` 显式发 `'other'`：用户手填的食物无从判断品类（「楼下麻辣烫」是什么分类
+   * 只有用户知道），而 `/foods/categories` 返回的是**码点序**、会原样展示任何脏值 ——
+   * 发一个猜出来的分类既不准、又可能引入脏值。归到 `other`（展示名「其他」）是诚实的降级。
+   *
+   * 宏量（蛋白 / 脂肪 / 碳水）**不发**：快加表单只有名称 + 热量，用户没填的字段
+   * 不替用户编造（服务端默认落 0）。
+   *
+   * @returns 是否**成功**存进食物库（`false` = 记录成功但没存上，调用方按软着陆提示）
+   */
+  const saveQuickToLibrary = async (name: string, kcal: number): Promise<boolean> => {
+    try {
+      await api.post<FoodItem>('/foods', {
+        name,
+        category: 'other',
+        kcalPer100g: kcal,
+      });
+      // 食物库新增了一条：让「最近 / 收藏 / 搜索 / 常吃榜」的缓存失效，下次进入即可见。
+      await queryClient.invalidateQueries({ queryKey: ['foods'] });
+      return true;
+    } catch {
+      // 存库是增强：失败只影响「下次能不能搜到」，绝不回滚记录、绝不指责用户。
+      return false;
+    }
+  };
+
+  /**
+   * 提交快加（含「存进食物库」分支）。
+   *
+   * 顺序：① 记录（`onSubmit`）→ ② 若勾选则存库。②失败只给软着陆提示。
+   * 成功提示**合并成一句**（避免连续两条 note 互相覆盖、用户看不到存库结果）。
+   *
+   * ⚠️ `onSubmit` 抛错时**只记录不存库**，且**不再向上抛** —— 调用点是
+   * `void submitQuick(...)`（事件处理器不能 async 冒泡），若这里不 catch 就会变成
+   * **未处理的 Promise 拒绝**（生产环境里是控制台噪音，测试里会被 vitest 捕获为
+   * unhandled error）。记录失败的用户提示由父组件（`DiaryPage.handleSubmit`）
+   * 负责 —— 它内部有完整的业务错误 / 断网分流，这里不重复提示、也不抢它的活。
+   */
+  const submitQuick = async (name: string, kcal: number): Promise<void> => {
+    setBusy(true);
+    setNote(null);
+    let recorded = false;
+    try {
+      await onSubmit({ kind: 'quick', name, kcal });
+      recorded = true;
+    } catch {
+      // 记录没成功：父组件已给出对应提示（业务错误 / 离线入队），此处静默即可。
+      recorded = false;
+    } finally {
+      setBusy(false);
+    }
+    // 记录没成功 → 不存库（否则会留下一条没人用过的孤儿食物条目）。
+    if (!recorded || !quickSaveToLibrary) {
+      return;
+    }
+    const saved = await saveQuickToLibrary(name, kcal);
+    setNote(saved ? COPY.quickSavedToLibrary : COPY.quickSaveToLibraryMissed);
+  };
+
+  /**
    * 食物列表（搜索 / 最近 / 收藏 / 分类共用）。
    *
    * 搜索结果里的 `qualifier`（区分词，如 `干` / `鲜蘑` / `香辣味`）以中性小标签展示：
@@ -995,6 +1092,38 @@ export default function MealComposer({
             <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
 
             {/*
+              C-4 第一步 · 「存进我的食物库」（勾选框，**默认不勾**）。
+
+              存在的意义：快加的食物此前**下次搜不到、每次都要重填**。勾上后服务端会
+              落一条 `source=user_custom` 的自定义食物，下次搜索直接命中、可复用。
+
+              默认不勾的理由见 `quickSaveToLibrary` 的状态注释（食物的复利在重复吃的东西，
+              一次性条目存了是噪音）。
+
+              无障碍：`<label>` 包住 input 与文字（点文字也能勾），label 文字本身就是读屏
+              标签，故不再加冗余 aria-label；额外用 `quickSaveToLibraryAria` 解释**后果**
+              （会存成「其他」分类），让读屏用户得到与视觉用户等价的上下文。
+            */}
+            <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={quickSaveToLibrary}
+                onChange={(event) => setQuickSaveToLibrary(event.target.checked)}
+                aria-describedby="quick-save-to-library-hint"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-brand-200 text-brand-600 dark:border-slate-600"
+              />
+              <span>
+                <span className="block">{COPY.quickSaveToLibraryLabel}</span>
+                <span
+                  id="quick-save-to-library-hint"
+                  className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400"
+                >
+                  {COPY.quickSaveToLibraryHint}
+                </span>
+              </span>
+            </label>
+
+            {/*
               C1 · 同名温和提示：**提供选择，不是纠正错误**。
               只问一句、一键可跳过、不阻断提交（G1「3 次点击记一餐」优先）。
             */}
@@ -1117,7 +1246,8 @@ export default function MealComposer({
                     setNote('填一下名称和热量就能记下啦');
                     return;
                   }
-                  void run({ kind: 'quick', name: quickName.trim(), kcal: kcalValue });
+                  // C-4 第一步：走 `submitQuick` —— 记录成功后，若勾了「存进食物库」再落一条自定义食物。
+                  void submitQuick(quickName.trim(), kcalValue);
                   return;
                 }
                 if (selected === null) {

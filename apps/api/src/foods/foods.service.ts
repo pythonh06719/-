@@ -20,9 +20,14 @@ import type {
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
-import { parseJsonStringArray, toFoodItem } from '../common/mappers/entity.mapper';
+import {
+  parseJsonStringArray,
+  parseServingUnits,
+  toFoodItem,
+} from '../common/mappers/entity.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { addDays, todayLocalKey } from '../common/utils/date.util';
+import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
 import {
@@ -573,6 +578,101 @@ export class FoodsService {
     return toFoodItem(row);
   }
 
+  // -------------------------------------------------------------------------
+  // 用户自定义食物（C-4 第一步 / R3.6）：把「快加卡」记下的食物存进个人食物库
+  // -------------------------------------------------------------------------
+
+  /**
+   * 新建**用户自定义食物**（`POST /api/foods`）—— 把用户手填的食物变成可复用条目。
+   *
+   * ## 为什么需要它
+   *
+   * 快速加卡（`POST /api/meals/quick-add`）此前只写 `meal_logs`（`foodItemId: null`），
+   * 这条食物**下次搜不到、无法复用**，用户只能重填一遍。本方法补上「让它可复用」。
+   *
+   * ## 归属与来源：一律服务端决定（硬约束，不可协商）
+   *
+   * - `source` **硬编码 `'user_custom'`**，绝不取自请求体 —— `food_items.source` 在
+   *   Prisma 里是普通 `String`（非 enum）、生成的 SQLite 表**没有 CHECK 约束**，
+   *   若接受客户端传入，客户端可提交 `'builtin'` 把自己造的食物伪装成内置食物
+   *   （污染全站可见口径）。DTO 里根本没有这个字段，这里再显式写死；
+   * - `createdByUserId` **取 JWT 里的 `userId`**，绝不取自请求体 —— 否则可把食物
+   *   挂到他人名下（越权写入他人私有库）；
+   * - `isVerified: false`：用户自建条目**永不**标为已核验（那是内置/权威来源的标志）。
+   *
+   * ## 可见性（复用既有分支，不改 `visibleFoodWhere`）
+   *
+   * `visibleFoodWhere` 的第二个分支是 `createdByUserId: userId` 而**不是**
+   * `source: 'user_custom'` —— 这是**有意的解耦**（「本人创建的任何条目可见」）。
+   * 故无需为本功能改动任何可见性逻辑：写入 `createdByUserId` 后，本条目自然只对
+   * 创建者可见，跨用户搜不到。
+   *
+   * ## 去重策略：**允许同名重复，不报错、不覆盖**
+   *
+   * 用户自用场景下，同名条目往往是**不同做法 / 不同店家的同一道菜**（「楼下麻辣烫」
+   * 换一家店热量就不一样），强行去重会惹人烦；静默覆盖更是会**改掉用户已经记过的
+   * 那条的口径**（历史记录与食物库参照物突然变了，属于数据一致性事故）。
+   * 前端另有 C1「同名温和提示」在提交前**问一句** —— 提示属于提示，不在这里拦。
+   *
+   * @param userId 当前登录用户 id（来自 JWT，控制器传入）
+   * @param dto 已通过 `CreateCustomFoodDto` 校验的请求体
+   * @returns 落库后的 `FoodItem`（可供前端立即选中记录，或刷新搜索命中）
+   */
+  async createCustom(userId: number, dto: CreateCustomFoodDto): Promise<FoodItem> {
+    const name = dto.name.trim();
+    // 防御：`@MinLength(1)` 允许纯空白字符串（长度 ≥ 1），这里再判一次「trim 后非空」。
+    if (name.length === 0) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '请填写名称', {
+        name: '请填写名称',
+      });
+    }
+
+    // 份量单位归一：复用读路径的同一套解析（`parseServingUnits`）—— 保证「写进去的
+    // 一定能读出来」（写读对称），并顺带滤掉非法元素（空 unit / 非正 grams）。
+    const servingUnits = parseServingUnits(JSON.stringify(dto.servingUnits ?? []));
+    // 默认份量克数取**标记为默认的那一条**，否则取第一条 —— 与既有 `resolveDefaultServing`
+    // 的前端口径一致（有 defaultServingGrams 就用它，否则回落到基准份量）。
+    const defaultServingGrams =
+      servingUnits.find((item) => item.isDefault === true)?.grams ?? servingUnits[0]?.grams ?? null;
+
+    // 别名：去空白 + 去空串 + 去重（不做小写归一：中文别名无大小写，英文别名保留原样更利于用户识别）。
+    const aliases = [...new Set((dto.aliases ?? []).map((alias) => alias.trim()).filter((alias) => alias.length > 0))];
+
+    const barcode = dto.barcode?.trim();
+
+    try {
+      const row = await this.prisma.foodItem.create({
+        data: {
+          name,
+          namePinyin: null, // 用户自建条目不生成拼音（拼音检索面向内置库；别名已可命中）
+          aliases: JSON.stringify(aliases),
+          category: dto.category ?? 'other',
+          kcalPer100g: dto.kcalPer100g,
+          proteinGPer100g: dto.proteinGPer100g ?? 0,
+          fatGPer100g: dto.fatGPer100g ?? 0,
+          carbGPer100g: dto.carbGPer100g ?? 0,
+          servingUnits: JSON.stringify(servingUnits),
+          defaultServingGrams,
+          barcode: barcode !== undefined && barcode.length > 0 ? barcode : null,
+          // ⚠️ 以下三行是本方法的**安全核心**：来源 / 归属 / 核验状态一律服务端决定。
+          source: 'user_custom',
+          createdByUserId: userId,
+          isVerified: false,
+        },
+      });
+      return toFoodItem(row);
+    } catch (error) {
+      // `barcode` 有唯一约束（`ux_food_barcode`）：客户端传了已存在的条码 → 可读的 400
+      // （不 500、不吞错）。判据用 Prisma 的 P2002 唯一约束冲突码。
+      if (isUniqueConstraintError(error)) {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '这个条码已经有一条食物了，可以不填条码', {
+          barcode: '这个条码已经有一条食物了，可以不填条码',
+        });
+      }
+      throw error;
+    }
+  }
+
   /**
    * 校验食物存在且对该用户可见，返回 Prisma 行。
    * 不可见 / 不存在统一抛 404（不泄露存在性）。
@@ -586,4 +686,20 @@ export class FoodsService {
     }
     return food;
   }
+}
+
+/**
+ * 是否为 Prisma 唯一约束冲突（`P2002`）。
+ *
+ * 不 import `@prisma/client` 的 `PrismaClientKnownRequestError` 做 `instanceof` 判断：
+ * 该错误类在 Prisma 版本间**可能被复制成多份实例**（生成的 client 与运行时各持一份），
+ * `instanceof` 会漏判。用**结构化判据**（`code === 'P2002'`）更稳，且不引入额外依赖。
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
 }

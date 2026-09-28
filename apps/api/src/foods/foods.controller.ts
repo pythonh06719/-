@@ -25,6 +25,7 @@ import type {
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UserThrottlerGuard } from '../common/guards/user-throttler.guard';
+import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
 import { ImportExternalDto } from './dto/import-external.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
@@ -123,6 +124,28 @@ export class FoodsController {
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   importExternal(@CurrentUser() userId: number, @Body() dto: ImportExternalDto): Promise<FoodItem> {
     return this.foodsService.importExternal(userId, dto.externalId);
+  }
+
+  /**
+   * **新建用户自定义食物**（C-4 第一步 / R3.6）：`POST /api/foods`。
+   *
+   * 把「快加卡」手填的食物存进个人食物库，使其**下次可直接搜到、可复用**
+   * （此前只写 `meal_logs` 且 `foodItemId: null`，下一条记录还得重填一遍）。
+   *
+   * ⚠️ **声明位置**：必须放在 `@Get(':id')` / `@Post(':id/favorite')` 这些
+   * 动态参数路由**之前**（本文件顶部注释已约定「静态路由先于动态参数路由」）。
+   * 虽然 `POST /foods` 与 `GET /foods/:id` 方法不同、理论上不冲突，但保持
+   * 「静态在前」的一致顺序，避免将来新增 `POST /foods/:something` 时踩坑。
+   *
+   * ⚠️ **归属与来源**：`source` 由服务端硬编码 `'user_custom'`、`createdByUserId`
+   * 由服务端从 JWT（`@CurrentUser`）取 —— 请求体里的同名字段即便提交也会被
+   * `whitelist` 剥离，无法伪装成内置食物、也无法挂到他人名下。
+   *
+   * 返回 `201 Created` + `FoodItem`（REST 语义：确实新建了一个资源）。
+   */
+  @Post()
+  createCustom(@CurrentUser() userId: number, @Body() dto: CreateCustomFoodDto): Promise<FoodItem> {
+    return this.foodsService.createCustom(userId, dto);
   }
 
   /**
