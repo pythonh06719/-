@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateMealLogRequest,
+  DashboardResponse,
   ListMealsResponse,
   MealGroup,
   MealLog,
@@ -53,10 +54,40 @@ function mealBudget(dailyBudget: number, mealType: keyof typeof MEAL_BUDGET_SHAR
   return Math.round(dailyBudget * share);
 }
 
-/** 从缓存读取每日预算（引导结果 / 看板）作为每餐预算的分母。 */
+/**
+ * 从本地缓存读取每日预算（**仅作离线兜底**，不再是唯一来源 —— B5）。
+ *
+ * @returns 缓存里的建议摄入 kcal；无缓存 / 值非法时返回 `0`（调用方按「未就绪」处理）。
+ */
 function readDailyBudget(): number {
   const budget = cacheGet<ThemeBudget>(CACHE_KEYS.localBudget);
   return budget === null || !Number.isFinite(budget.intakeRecommended) ? 0 : budget.intakeRecommended;
+}
+
+/**
+ * 每餐参考预算的**取值来源**（B5 · R3.8）：服务端权威 `/dashboard` 的预算。
+ *
+ * 改动的起因：原先只从本地缓存取，清缓存 / 换设备 / 首次进入时缓存为空 →
+ * 分母为 0 → 整段「/ 参考 N kcal」**不渲染也不报错**，用户以为产品没这个功能。
+ *
+ * 现在的顺序：
+ *   ① `/dashboard` 的 `budget.intakeRecommended`（服务端按用户资料重算，唯一权威）；
+ *   ② 服务端还没回来时用本地缓存顶上（离线/弱网仍可用，且不会 0 ↔ 真实值闪烁）；
+ *   ③ 都没有 → `null` = **未就绪**，整段不渲染（绝不显示 0）。
+ *
+ * ⚠️ **0 一律表示「不知道」，不表示「预算是 0」**：加载中就把这一段留白，加载完再出现。
+ */
+function resolveDailyBudget(serverBudget: DashboardResponse['budget']): number | null {
+  if (
+    serverBudget !== null &&
+    serverBudget !== undefined &&
+    Number.isFinite(serverBudget.intakeRecommended) &&
+    serverBudget.intakeRecommended > 0
+  ) {
+    return serverBudget.intakeRecommended;
+  }
+  const cached = readDailyBudget();
+  return cached > 0 ? cached : null;
 }
 
 /**
@@ -180,7 +211,35 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
     [mealsQuery.data, date],
   );
 
-  const dailyBudget = useMemo(() => readDailyBudget(), []);
+  /**
+   * 每餐参考预算的分母（B5）：**服务端权威**。
+   *
+   * 预算来自用户资料 + 目标，与「正在看哪一天」无关，故固定查**今天**的看板
+   * （键稳定 → 翻日期不会重复发请求，且与 `DashboardPage` 共用同一份 react-query 缓存）。
+   */
+  const budgetQuery = useQuery({
+    queryKey: queryKeys.dashboard(todayKey()),
+    queryFn: () => api.get<DashboardResponse>('/dashboard', { date: todayKey() }),
+    retry: 0,
+  });
+
+  /** 拿到服务端预算后回写本地缓存：仅用于离线兜底，不再当作唯一来源。 */
+  useEffect(() => {
+    const budget = budgetQuery.data?.budget;
+    if (budget !== undefined && budget !== null && Number.isFinite(budget.intakeRecommended)) {
+      cacheSet<ThemeBudget>(CACHE_KEYS.localBudget, {
+        intakeRecommended: budget.intakeRecommended,
+        bmr: budget.bmr,
+        tdee: budget.tdee,
+      });
+    }
+  }, [budgetQuery.data]);
+
+  /** `null` = 尚未拿到预算（**不显示**这一段，绝不渲染 0）。 */
+  const dailyBudget = useMemo<number | null>(
+    () => resolveDailyBudget(budgetQuery.data?.budget ?? null),
+    [budgetQuery.data],
+  );
   const todayTotal = useMemo(
     () => groups.reduce((total, group) => total + group.totalKcal, 0),
     [groups],
@@ -561,8 +620,9 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             {energyLabel(unit)}
           </span>
         </p>
-        {dailyBudget > 0 && (
-          <div className="mt-3">
+        {/* B5：预算**未就绪时不渲染这一段**（加载中不留 0，也不 0 ↔ 真实值闪烁） */}
+        {dailyBudget !== null && (
+          <div className="mt-3" data-testid="daily-budget">
             <div className="h-2 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-slate-700">
               <div
                 className="h-full rounded-full bg-brand-500 transition-all"
@@ -632,7 +692,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       )}
 
       {groups.map((group) => {
-        const budget = dailyBudget > 0 ? mealBudget(dailyBudget, group.mealType) : 0;
+        // B5：预算未就绪（`null`）→ 整段不出现；拿到值才显示「/ 参考 N kcal」
+        const budget = dailyBudget === null ? null : mealBudget(dailyBudget, group.mealType);
         return (
           <section
             key={group.mealType}
@@ -651,7 +712,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               </h2>
               <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
                 {toDisplayEnergy(group.totalKcal, unit)}
-                {budget > 0 ? ` / 参考 ${toDisplayEnergy(budget, unit)}` : ''} {energyLabel(unit)}
+                {budget !== null ? ` / 参考 ${toDisplayEnergy(budget, unit)}` : ''} {energyLabel(unit)}
               </p>
             </div>
 
