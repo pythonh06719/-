@@ -27,7 +27,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { UNIT_STORAGE_KEY, useUnitStore } from '@/lib/units';
 import { hydrateThemeFromServer } from '@/theme/useTheme';
 import { THEME_STORAGE_KEY } from '@/theme/tokens';
-import { pushSettings } from '@/lib/settings-sync';
+import { __resetDirtyForTest, hasPendingSettings, pushSettings } from '@/lib/settings-sync';
+import { clearPreferenceKeys } from '@/lib/settings-storage';
+import { useAuthStore } from '@/lib/auth.store';
 import SettingsDataPage from '@/pages/settings-data/SettingsDataPage';
 import { createEmptyExportPayload } from '@/lib/csv';
 
@@ -78,6 +80,8 @@ beforeEach(() => {
   // 复位 store 到默认：避免用例间相互污染
   useUnitStore.setState({ unit: 'kcal' });
   document.documentElement.classList.remove('dark');
+  // 复位 dirty 标记（内存 + localStorage）
+  __resetDirtyForTest();
 });
 
 describe('GAP-4：单位切换落库（setUnit / toggle）', () => {
@@ -303,5 +307,210 @@ describe('GAP-4：导出时 payload.settings 反映服务端真值（不被本�
     const bundle = (downloadExportBundle as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0]?.[0] as { json: { settings: { unit: string } } };
     expect(bundle.json.settings.unit).toBe('kj');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P0-1（QA 证伪）：跨账号设置残留 —— 登出必须清掉 qsh:unit / qsh:theme
+// ---------------------------------------------------------------------------
+
+describe('P0-1：登出清偏好，杜绝跨账号残留', () => {
+  it('clear() 之后 qsh:unit 与 qsh:theme 均被清除', () => {
+    window.localStorage.setItem(UNIT_STORAGE_KEY, 'kj');
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+
+    useAuthStore.getState().clear();
+
+    expect(window.localStorage.getItem(UNIT_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it('clear() 同步复位内存态：unit 回默认，dark class 移除', async () => {
+    useUnitStore.getState().setUnit('kj');
+    document.documentElement.classList.add('dark');
+
+    useAuthStore.getState().clear();
+
+    // 内存态复位是 fire-and-forget 的动态 import，等待微任务落地
+    await waitFor(() => {
+      expect(useUnitStore.getState().unit).toBe('kcal');
+    });
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('登出 → 换账号登录：新账号拿到的是服务端值，而非上个账号的残留', async () => {
+    // 账号 A：本地切到 kj / dark（落库失败，留下 dirty —— 模拟离线改动）
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    useUnitStore.getState().setUnit('kj');
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    await waitFor(() => {
+      expect(hasPendingSettings()).toBe(true);
+    });
+
+    // 登出（清偏好 + 复位内存态 + 清 dirty）
+    useAuthStore.getState().clear();
+    await waitFor(() => {
+      expect(useUnitStore.getState().unit).toBe('kcal');
+    });
+    expect(window.localStorage.getItem(UNIT_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    // 账号 A 的 dirty 绝不可带到账号 B
+    expect(hasPendingSettings()).toBe(false);
+
+    // 账号 B 登录：服务端偏好为 unit=kj、darkMode=false
+    stubFetchOk({ unit: 'kj', darkMode: false, fastingEnabled: false, waterGoalMl: 2000 });
+    const { hydrateUnitFromServer } = await import('@/lib/units');
+    await hydrateUnitFromServer();
+
+    // 校准后为新账号 B 的服务端值（无 dirty → 允许校准）
+    expect(useUnitStore.getState().unit).toBe('kj');
+  });
+
+  it('clearPreferenceKeys 不触碰 qsh:cache:* 键（职责分离）', () => {
+    window.localStorage.setItem('qsh:cache:meals:2026-09-24', '{}');
+    window.localStorage.setItem(UNIT_STORAGE_KEY, 'kj');
+
+    clearPreferenceKeys();
+
+    expect(window.localStorage.getItem(UNIT_STORAGE_KEY)).toBeNull();
+    // cache 前缀的键由 cacheClearAll 负责，clearPreferenceKeys 不应越界
+    expect(window.localStorage.getItem('qsh:cache:meals:2026-09-24')).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P0-2（QA 证伪）：离线改动被服务端静默吞掉 —— dirty 标记 + 联网重推
+// ---------------------------------------------------------------------------
+
+describe('P0-2：离线改动不被服务端吞掉', () => {
+  it('离线切单位（pushSettings 失败）→ 本地保持用户选择，且标记 dirty', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+
+    useUnitStore.getState().setUnit('kj');
+    // 等落库失败路径走完（首次 + 重试）
+    await waitFor(() => {
+      expect(hasPendingSettings()).toBe(true);
+    });
+
+    expect(useUnitStore.getState().unit).toBe('kj');
+    expect(window.localStorage.getItem(UNIT_STORAGE_KEY)).toBe('kj');
+  });
+
+  it('补推失败但 GET 可达时 hydrate：**不**用服务端旧值覆盖本地改动', async () => {
+    // 关键场景：PATCH 失败（dirty 留存）但 GET 仍可达 —— 这正是守卫要拦截的窗口。
+    // 若只 mock 全离线，GET 也失败会返回 null，校准自然不发生，测不出守卫本身。
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      if (method === 'PATCH') {
+        throw new Error('patch-failed');
+      }
+      // GET 返回服务端**旧值** kcal
+      return wrappedResponse({
+        unit: 'kcal',
+        darkMode: false,
+        fastingEnabled: false,
+        waterGoalMl: 2000,
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    // 本地切 kj（PATCH 失败 → dirty）
+    const { pushSettings: push } = await import('@/lib/settings-sync');
+    await push({ unit: 'kj' });
+    useUnitStore.setState({ unit: 'kj' });
+    expect(hasPendingSettings()).toBe(true);
+
+    const { hydrateUnitFromServer } = await import('@/lib/units');
+    await hydrateUnitFromServer();
+
+    // 本地改动必须胜出：仍是 kj，不被服务端 kcal 覆盖
+    expect(useUnitStore.getState().unit).toBe('kj');
+    expect(hasPendingSettings()).toBe(true);
+  });
+
+  it('恢复联网 → 补推本地最新值，且推送成功后 dirty 清除', async () => {
+    // 制造 dirty
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    useUnitStore.getState().setUnit('kj');
+    await waitFor(() => {
+      expect(hasPendingSettings()).toBe(true);
+    });
+
+    // 联网：后续请求成功
+    const fetchMock = stubFetchOk({ unit: 'kj', darkMode: false, fastingEnabled: false, waterGoalMl: 2000 });
+    const { flushPendingSettings } = await import('@/lib/settings-sync');
+    const pushed = await flushPendingSettings({ unit: useUnitStore.getState().unit });
+
+    expect(pushed).toBe(true);
+    const calls = settingsCalls(fetchMock);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls[0]?.body).toEqual({ unit: 'kj' }); // 推的是**本地最新值**
+    expect(hasPendingSettings()).toBe(false); // dirty 已清
+  });
+
+  it('联网后 hydrate：先补推本地值，再校准（最终本地 = 用户所选）', async () => {
+    // 制造 dirty（离线切 kj）
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    useUnitStore.getState().setUnit('kj');
+    await waitFor(() => {
+      expect(hasPendingSettings()).toBe(true);
+    });
+
+    // 联网：PATCH 成功，随后 GET 返回「已被本地上推后的」服务端值 kj
+    stubFetchOk({ unit: 'kj', darkMode: false, fastingEnabled: false, waterGoalMl: 2000 });
+    const { hydrateUnitFromServer } = await import('@/lib/units');
+    await hydrateUnitFromServer();
+
+    expect(useUnitStore.getState().unit).toBe('kj');
+    expect(hasPendingSettings()).toBe(false);
+  });
+
+  it('深色同理：补推失败但 GET 可达时 hydrate 不被服务端旧值覆盖', async () => {
+    // PATCH 失败（dirty 留存）但 GET 可达返回旧值 darkMode=false —— 隔离守卫本身
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if ((init?.method ?? 'GET') === 'PATCH') {
+          throw new Error('patch-failed');
+        }
+        return wrappedResponse({
+          unit: 'kcal',
+          darkMode: false,
+          fastingEnabled: false,
+          waterGoalMl: 2000,
+        });
+      }),
+    );
+    document.documentElement.classList.add('dark');
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    await pushSettings({ darkMode: true });
+    expect(hasPendingSettings()).toBe(true);
+
+    await hydrateThemeFromServer();
+
+    // 本地仍是深色（用户选择胜出）
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+    expect(hasPendingSettings()).toBe(true);
   });
 });

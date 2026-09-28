@@ -4,8 +4,9 @@ import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { routes } from '@/router/routes';
 import { UNAUTHORIZED_EVENT } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth.store';
-import { hydrateUnitFromServer } from '@/lib/units';
-import { hydrateThemeFromServer } from '@/theme/useTheme';
+import { hydrateUnitFromServer, useUnitStore } from '@/lib/units';
+import { currentStoredMode, hydrateThemeFromServer } from '@/theme/useTheme';
+import { registerSettingsOnlineFlush } from '@/lib/settings-sync';
 import UpdatePrompt from '@/pwa/UpdatePrompt';
 
 /**
@@ -26,7 +27,8 @@ function UnauthorizedListener(): null {
 }
 
 /**
- * 设置校准器（GAP-4）：登录态建立后，用服务端权威设置校准本地的单位与深色模式。
+ * 设置校准器（GAP-4）：登录态建立后，用服务端权威设置校准本地的单位与深色模式；
+ * 并注册「联网补推」监听，确保离线改动不被服务端旧值吞掉。
  *
  * ## 为什么需要它
  *
@@ -40,6 +42,11 @@ function UnauthorizedListener(): null {
  * 避免闪烁）；本组件在其后异步拉取服务端值并覆盖。刚好处于「已登录」时校准一次，
  * 每次会话内改账号（登出再登录）会因 `accessToken` 变化重新校准一次。
  *
+ * ## P0-2：离线改动不被吞
+ *
+ * 校准函数内部**先补推 dirty**（见 `lib/settings-sync.ts`），本地改动未推成功时拒绝校准；
+ * 同时本组件注册 `online` 事件监听，恢复联网时补推待同步设置。
+ *
  * ⚠️ 全程 fire-and-forget：服务端不可达时静默跳过，不阻塞渲染、不弹任何错误。
  */
 function SettingsCalibrator(): null {
@@ -47,6 +54,17 @@ function SettingsCalibrator(): null {
   const status = useAuthStore((state) => state.status);
   /** 已校准的 token：同一 token 只校准一次，避免重复请求与「校准覆盖用户刚改的值」抖动。 */
   const calibratedFor = useRef<string | null>(null);
+
+  // P0-2：联网时补推待同步设置（读取当前本地值，最后值语义）。
+  useEffect(() => {
+    return registerSettingsOnlineFlush(() => {
+      const localMode = currentStoredMode();
+      return {
+        unit: useUnitStore.getState().unit,
+        ...(localMode === 'system' ? {} : { darkMode: localMode === 'dark' }),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (accessToken === null || status !== 'authenticated') {

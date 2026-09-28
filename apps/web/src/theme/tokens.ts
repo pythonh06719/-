@@ -5,14 +5,21 @@
  * 硬性语气约束（PRD §7）：**不提供红色恐吓语义** —— 正向用 `brand`，中性提醒用 `coral`。
  */
 
+import { THEME_PREFERENCE_KEY } from '@/lib/settings-storage';
+
 /** 主题模式：跟随系统 / 显式浅色 / 显式深色。 */
 export type ThemeMode = 'system' | 'light' | 'dark';
 
 /** 解析后的实际主题（用于 `<html class>`）。 */
 export type ResolvedTheme = 'light' | 'dark';
 
-/** 本地存储键（手动切换持久化，R2 / NFR-8）。 */
-export const THEME_STORAGE_KEY = 'qsh:theme';
+/**
+ * 本地存储键（手动切换持久化，R2 / NFR-8）。
+ *
+ * 键名真源在 `lib/settings-storage.ts`（零依赖），此处 re-export ——
+ * 便于 `auth.store.clear()` 在**不引入 theme 层**的前提下清除它（避免循环依赖）。
+ */
+export const THEME_STORAGE_KEY = THEME_PREFERENCE_KEY;
 
 /** 令牌字面量（与 tailwind.config.ts 的调色板保持一致）。 */
 export const TOKENS = {

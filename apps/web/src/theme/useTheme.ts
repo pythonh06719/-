@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ResolvedTheme, ThemeMode } from './tokens';
 import { THEME_STORAGE_KEY } from './tokens';
-import { fetchServerSettings, pushSettings } from '@/lib/settings-sync';
+import { pushSettings } from '@/lib/settings-sync';
 
 /**
  * 深色模式 Hook（R2 / NFR-8 / TC-48）。
@@ -85,8 +85,20 @@ function persistModeLocally(mode: ThemeMode): void {
  * - 服务端 `darkMode` 为布尔，映射到手动模式 `dark` / `light`；
  * - 只覆盖 localStorage 与 `<html class>`，**不回写服务端**；
  * - 服务端不可达时静默返回，本地保持原值（不阻塞首屏、不白屏）。
+ *
+ * ⚠️ **P0-2 不变量**：先补推 dirty。有未推送成功的本地改动时**不校准**，
+ * 避免服务端旧值覆盖用户改动（见 `lib/settings-sync.ts`）。
  */
 export async function hydrateThemeFromServer(): Promise<void> {
+  const { fetchServerSettings, flushPendingSettings } = await import('@/lib/settings-sync');
+  const localMode = readStoredMode();
+  const pushed = await flushPendingSettings({
+    // 仅手动 light / dark 才参与 dirty 同步（`system` 视为未表态，见文件头注释）
+    ...(localMode === 'system' ? {} : { darkMode: localMode === 'dark' }),
+  });
+  if (!pushed) {
+    return;
+  }
   const settings = await fetchServerSettings();
   if (settings === null) {
     return;
@@ -99,6 +111,25 @@ export async function hydrateThemeFromServer(): Promise<void> {
 /** 供非 React 环境读取当前手动模式（用于服务端校准后判断是否需要刷新 React 状态）。 */
 export function currentStoredMode(): ThemeMode {
   return readStoredMode();
+}
+
+/** 主题变更订阅者（用于登出复位时通知已挂载的 `useTheme` 同步刷新）。 */
+const themeListeners = new Set<() => void>();
+
+/** 登出时复位主题：清除内存态偏好、应用默认主题，并通知已挂载的 hook 重新读取。 */
+export function resetThemePreference(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
+    }
+  } catch {
+    // 忽略：清不掉也不阻断登出
+  }
+  // 回到「跟随系统」默认并立即生效（不落库）
+  applyTheme(prefersDark() ? 'dark' : 'light');
+  for (const listener of themeListeners) {
+    listener();
+  }
 }
 
 export interface UseThemeResult {
@@ -118,6 +149,16 @@ export function useTheme(): UseThemeResult {
   const [resolved, setResolved] = useState<ResolvedTheme>(() =>
     readStoredMode() === 'system' ? (prefersDark() ? 'dark' : 'light') : (readStoredMode() as ResolvedTheme),
   );
+
+  // 登出复位（`resetThemePreference`）后，已挂载的本 hook 需重新读取内存态，
+  // 否则同一会话内界面仍显示上个账号的模式。
+  useEffect(() => {
+    const sync = (): void => setModeState(readStoredMode());
+    themeListeners.add(sync);
+    return () => {
+      themeListeners.delete(sync);
+    };
+  }, []);
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { AuthResponse, User } from '@qsh/shared-types';
 import { cacheClearAll } from './local-cache';
+import { clearPreferenceKeys } from './settings-storage';
 
 /**
  * 登录态 Store（zustand）—— ARCHITECTURE §1.7「Access Token 内存保存」。
@@ -100,6 +101,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     // **不含用户身份** —— 留着它们，同浏览器换账号后离线兜底会把上一个账号的数据展示出来。
     // 这个 `clear()` 是登出与 401 两条路径的共同入口，放在这里才能一次覆盖。
     cacheClearAll();
+    // GAP-4 复核修复 · P0-1：单位（`qsh:unit`）与深色（`qsh:theme`）是**跟账号走的偏好**，
+    // 不属 `qsh:cache:*` 语义，故不在 `cacheClearAll()` 内清除。若不清，登出换账号后
+    // 若 `fetchServerSettings()` 失败（离线），校准静默跳过 → **新账号看到上个账号的偏好**。
+    // 清掉后本地回到默认值（kcal / system），下个账号登录后由 SettingsCalibrator 从服务端校准。
+    // 从零依赖的 `settings-storage` 引入（而非 units/tokens），避免 store 层的循环依赖。
+    clearPreferenceKeys();
+    // 同步复位**内存态**：`clearPreferenceKeys()` 只清 localStorage，若不复位 zustand / React 态，
+    // 已挂载组件在本会话内仍显示上个账号的单位与深色，直到刷新页面。
+    // 动态 import：units / useTheme 会（间接）依赖本模块，静态引入会形成循环。
+    void import('@/lib/units').then(({ resetUnitPreference }) => resetUnitPreference());
+    void import('@/theme/useTheme').then(({ resetThemePreference }) => resetThemePreference());
+    // 待同步标记（dirty）属**账号 A 的未推改动**，不得带到账号 B：
+    // 否则 B 登录后会把 A 的残留值当成「待同步本地值」补推给 B 的账号 —— 更难发现的跨账号污染。
+    void import('@/lib/settings-sync').then(({ clearPendingSettings }) => clearPendingSettings());
     set({ accessToken: null, user: null, onboardingCompleted: false, status: 'anonymous' });
   },
 }));
