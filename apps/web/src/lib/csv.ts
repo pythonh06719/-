@@ -98,6 +98,9 @@ export function serializeExportBundle(payload: ExportJsonPayload): ExportBundle 
       buildCsvFile(CSV_FILE_NAMES.exercises, EXPORT_CSV_COLUMNS.exercises, payload.exercises),
       buildCsvFile(CSV_FILE_NAMES.habits, EXPORT_CSV_COLUMNS.habits, payload.habits),
       buildCsvFile(CSV_FILE_NAMES.water, EXPORT_CSV_COLUMNS.water, payload.water),
+      // B4：`wins` 与 JSON 顶层键对齐；正文是自由文本，经 buildCsvFile → serializeCsv
+      // 走 escapeCsvField 做 RFC 4180 转义（逗号 / 引号 / 换行）。
+      buildCsvFile(CSV_FILE_NAMES.wins, EXPORT_CSV_COLUMNS.wins, payload.wins),
     ],
   };
 }

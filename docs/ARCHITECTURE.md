@@ -374,7 +374,7 @@ qingshenghuo/
 | `habits[]` | `habit_checkins`（join `habit_definitions`） | `habitId ← code` |
 | `water[]` | `water_logs`（按日聚合 `SUM(amount_ml)`） | `ml` 为当日合计 |
 | `settings` | `user_settings` | `unit/darkMode/fastingEnabled` |
-| CSV 文件（§9.2） | `weights/meals/exercises/habits/water` | UTF-8 with BOM，日期 `YYYY-MM-DD` |
+| CSV 文件（§9.2） | `weights/meals/exercises/habits/water/wins` | UTF-8 with BOM，日期 `YYYY-MM-DD` |
 | CSV 导入（§9.3） | → `weight_logs` | 同 `logged_at` **UPSERT 覆盖**；非法行跳过并汇总报错 |
 
 ---

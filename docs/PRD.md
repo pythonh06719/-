@@ -527,7 +527,7 @@
 ### 9.2 导出 CSV
 
 - 每个实体一个文件，统一使用 UTF-8 with BOM，首行为表头，日期为 `YYYY-MM-DD`。
-- 文件清单：`weights.csv`、`meals.csv`、`exercises.csv`、`habits.csv`、`water.csv`。
+- 文件清单：`weights.csv`、`meals.csv`、`exercises.csv`、`habits.csv`、`water.csv`、`wins.csv`（`wins.csv` 列：`date`、`text`，正文按 RFC 4180 转义逗号/引号/换行）。
 
 ### 9.3 CSV 导入模板（历史体重）
 

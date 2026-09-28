@@ -64,7 +64,7 @@ describe('serializeCsv / withBom / buildCsvFile', () => {
 });
 
 describe('serializeExportBundle', () => {
-  it('打包 6 个文件：data.json + 5 个 CSV', () => {
+  it('打包 7 个文件：data.json + 6 个 CSV（含 wins.csv，B4）', () => {
     const payload = createEmptyExportPayload('2026-09-12T00:00:00.000Z');
     payload.weights = [{ date: '2026-09-01', weightKg: 60, note: '' }];
     payload.meals = [
@@ -74,9 +74,14 @@ describe('serializeExportBundle', () => {
         items: [{ name: '番茄炒蛋', grams: 300, kcal: 180, proteinG: 8, fatG: 12, carbG: 8 }],
       },
     ];
+    payload.wins = [
+      { date: '2026-09-01', text: '爬楼不喘了' },
+      { date: '2026-09-02', text: '今天走了 8000 步, 还喝了水' },
+      { date: '2026-09-03', text: '他说"可以"' },
+    ];
 
     const bundle = serializeExportBundle(payload);
-    expect(bundle.files).toHaveLength(6);
+    expect(bundle.files).toHaveLength(7);
     expect(bundle.files[0]?.fileName).toBe('data.json');
     expect(bundle.files[0]?.withBom).toBe(false);
 
@@ -87,6 +92,29 @@ describe('serializeExportBundle', () => {
     const mealsCsv = bundle.files.find((file) => file.fileName === 'meals.csv');
     expect(mealsCsv?.content).toContain('date,mealType,name,grams,kcal,proteinG,fatG,carbG');
     expect(mealsCsv?.content).toContain('番茄炒蛋');
+
+    const winsCsv = bundle.files.find((file) => file.fileName === CSV_FILE_NAMES.wins);
+    expect(winsCsv?.withBom).toBe(true);
+    expect(winsCsv?.content.startsWith(CSV_BOM)).toBe(true);
+    // 首行是表头（去掉 BOM 后比较）
+    expect(winsCsv?.content.slice(CSV_BOM.length).split('\r\n')[0]).toBe('date,text');
+    expect(winsCsv?.content).toContain('2026-09-01,爬楼不喘了');
+    // RFC 4180：逗号 → 双引号包裹
+    expect(winsCsv?.content).toContain('"今天走了 8000 步, 还喝了水"');
+    // RFC 4180：双引号 → 翻倍并包裹
+    expect(winsCsv?.content).toContain('"他说""可以"""');
+  });
+
+  it('wins.csv 内容逐字照录，不做截断或改写', () => {
+    const payload = createEmptyExportPayload('2026-09-12T00:00:00.000Z');
+    payload.wins = [
+      { date: '2026-09-05', text: '第一行\n第二行' },
+      { date: '2026-09-06', text: '' },
+    ];
+    const bundle = serializeExportBundle(payload);
+    const winsCsv = bundle.files.find((file) => file.fileName === CSV_FILE_NAMES.wins);
+    expect(winsCsv?.content).toContain('"第一行\n第二行"');
+    expect(winsCsv?.content).toContain('2026-09-06,');
   });
 
   it('JSON 结构字段名与 PRD §9.1 一致', () => {
