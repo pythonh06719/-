@@ -20,6 +20,7 @@ import { clearPlateauVisibility } from '@/lib/plateau-visibility';
 import { todayKey } from '@/lib/format';
 import { COPY, backupHintCopy, lastBackupLabel } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
+import { fetchServerSettings } from '@/lib/settings-sync';
 import { useAuthStore } from '@/lib/auth.store';
 import { clearQueuedRequests, enqueueRequest } from '@/pwa/offline-queue';
 import { toTrendPoints } from '@/lib/trend';
@@ -37,6 +38,12 @@ import DataOverviewCard from './DataOverviewCard';
  * 导出全程在本地生成 Blob，不经任何第三方服务（隐私承诺，TC-46）。
  * ⚠️ 「导出 / 删除」接口未在 T03 固定契约清单内，此处按 PRD R10 设计并做**优雅降级**：
  * 接口不可用时仍导出本地缓存数据、仍清空本地数据（详见任务回传说明）。
+ *
+ * ⚠️ **GAP-4（「可完整恢复」的真实范围）**：本页 JSON 覆盖
+ * 资料 / 目标 / 体重 / 饮食 / 运动 / 习惯 / 饮水 / 小确幸 / **设置（单位、深色、断食开关）**。
+ * 此前设置段被本地状态覆盖，导致「可完整恢复」名不副实；现已改为取服务端权威值（见 `gatherPayload`）。
+ * **范围说明**：`waterGoalMl`（每日饮水目标）**不在**导出内 —— 当前 App 无设置入口，
+ * 该值恒为默认；补入需后端配合，留待后续立项（本页文案据实标注，不做虚承诺）。
  */
 
 type ImportState = { imported: number; skipped: number; errors: { row: number; reason: string }[] } | null;
@@ -64,15 +71,39 @@ export default function SettingsDataPage(): ReactElement {
    */
   const backupHint = useMemo(() => backupHintCopy(daysSinceLastBackup(lastBackupAt)), [lastBackupAt]);
 
-  /** 汇总导出数据：优先服务端，未成功时回退本地缓存（保证导出按钮在离线时也可用）。 */
+  /**
+   * 汇总导出数据：优先服务端，未成功时回退本地缓存（保证导出按钮在离线时也可用）。
+   *
+   * ⚠️ **GAP-4 修复**：`settings` 段必须反映**服务端真实值**。
+   *
+   * 原实现先用本地状态（`useUnitStore.unit` + `<html class="dark">`）重写了 `settings`，
+   * 导致「导出 JSON 可完整恢复」的承诺与行为相反 —— 用户切到 kJ / 开了深色后，
+   * 若服务端尚未被写回（旧版本）或本地与服务端不一致，导出的仍是 `kcal / false`。
+   *
+   * **判断（删还是改）**：选择「**改**」而非删 —— 本地回退是有价值的：
+   * 离线 / 后端未就绪时仍要能导出（本页头注释的「优雅降级」承诺）。
+   * 因此改为：**先拉服务端权威 `settings`，成功则以它为准；失败才回退本地状态**。
+   * 这样在线时导出的是服务端真值（可完整恢复），离线时仍可导出（体面降级）。
+   */
   const gatherPayload = async (): Promise<ExportJsonPayload> => {
     const payload = createEmptyExportPayload(new Date().toISOString());
+    // 本地回退值（仅服务端不可达时使用）：单位取当前 store，深色取 `<html class>`
     payload.settings = {
       unit,
       darkMode:
         typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
       fastingEnabled: false,
     };
+
+    // 设置：优先服务端权威值（GAP-4：导出的 settings 必须反映服务端真值）
+    const serverSettings = await fetchServerSettings();
+    if (serverSettings !== null) {
+      payload.settings = {
+        unit: serverSettings.unit,
+        darkMode: serverSettings.darkMode,
+        fastingEnabled: serverSettings.fastingEnabled,
+      };
+    }
 
     // 体重：优先服务端
     const cachedPoints = cacheGet<WeightTrendPoint[]>(CACHE_KEYS.weightPoints) ?? [];
@@ -135,6 +166,9 @@ export default function SettingsDataPage(): ReactElement {
    *
    * 与上方「一键导出 JSON + CSV」的区别：这里下载的是**服务端权威快照**（一个文件、可完整恢复），
    * 不做离线兜底 —— 拿不到服务端数据时如实告知「这次没成功」，而不是用本地缓存伪装成备份。
+   *
+   * ⚠️ 该快照里的 `settings`（单位 / 深色 / 断食开关）之所以「可完整恢复」，前提是
+   * 这些设置**确实被写回服务端** —— 这正是 GAP-4 的修复点（见 `lib/units.ts` / `theme/useTheme.ts`）。
    */
   const handleBackup = async (): Promise<void> => {
     setBackupState(COPY.dataBackupRunning);
@@ -212,7 +246,8 @@ export default function SettingsDataPage(): ReactElement {
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          JSON 可完整恢复；CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
+          JSON 可完整恢复你的资料、目标、记录与设置（单位、深色、断食开关）；
+          CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
         </p>
         <button
           type="button"

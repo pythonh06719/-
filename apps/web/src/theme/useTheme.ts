@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ResolvedTheme, ThemeMode } from './tokens';
 import { THEME_STORAGE_KEY } from './tokens';
+import { fetchServerSettings, pushSettings } from '@/lib/settings-sync';
 
 /**
  * 深色模式 Hook（R2 / NFR-8 / TC-48）。
@@ -10,6 +11,16 @@ import { THEME_STORAGE_KEY } from './tokens';
  * - 通过 `<html class="dark">` 生效（Tailwind `darkMode: 'class'`）
  *
  * 所有 `window` / `matchMedia` 访问都做了存在性判断，保证在 jsdom / SSR 下不抛错。
+ *
+ * ## 双层持久化（GAP-4 修复）
+ *
+ * - **localStorage（快路径）**：手动模式跨会话保留、首屏前可读，避免主题闪烁；
+ * - **服务端（权威值）**：手动切换时 `PATCH /users/settings` 写 `darkMode`，
+ *   使导出的 JSON 备份「设置可完整恢复」成立（登录后由 `hydrateThemeFromServer` 校准）。
+ *
+ * 映射规则：服务端只有一个布尔 `darkMode`，无 `system` 概念 ——
+ * 只在**手动**切换（`light` / `dark`）时落库；`system` 视为「未表态」，不覆盖服务端旧值。
+ * 落库失败**不打断操作**、不弹红（见 `lib/settings-sync.ts`）。
  */
 
 const MEDIA_QUERY = '(prefers-color-scheme: dark)';
@@ -57,6 +68,39 @@ export function initTheme(): ResolvedTheme {
   return resolved;
 }
 
+/** 手动模式写入 localStorage（快路径）。`system` 也一并写入，保持与旧行为一致。 */
+function persistModeLocally(mode: ThemeMode): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+    }
+  } catch {
+    // 存储不可用时仅本次会话生效
+  }
+}
+
+/**
+ * 登录后 / 启动时用服务端权威值校准深色模式。
+ *
+ * - 服务端 `darkMode` 为布尔，映射到手动模式 `dark` / `light`；
+ * - 只覆盖 localStorage 与 `<html class>`，**不回写服务端**；
+ * - 服务端不可达时静默返回，本地保持原值（不阻塞首屏、不白屏）。
+ */
+export async function hydrateThemeFromServer(): Promise<void> {
+  const settings = await fetchServerSettings();
+  if (settings === null) {
+    return;
+  }
+  const next: ThemeMode = settings.darkMode ? 'dark' : 'light';
+  persistModeLocally(next);
+  applyTheme(next);
+}
+
+/** 供非 React 环境读取当前手动模式（用于服务端校准后判断是否需要刷新 React 状态）。 */
+export function currentStoredMode(): ThemeMode {
+  return readStoredMode();
+}
+
 export interface UseThemeResult {
   /** 用户选择的模式（system / light / dark） */
   mode: ThemeMode;
@@ -77,12 +121,11 @@ export function useTheme(): UseThemeResult {
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
-    try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(THEME_STORAGE_KEY, next);
-      }
-    } catch {
-      // 存储不可用时仅本次会话生效
+    // 1) localStorage 快路径（立即生效，避免闪烁）
+    persistModeLocally(next);
+    // 2) 服务端权威值：仅手动 light / dark 映射为布尔 `darkMode` 落库（fire-and-forget，失败静默）
+    if (next !== 'system') {
+      void pushSettings({ darkMode: next === 'dark' });
     }
   }, []);
 
