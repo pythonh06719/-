@@ -1,10 +1,24 @@
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { WeeklyReport } from '@qsh/shared-types';
+import {
+  canShiftWeekForward,
+  hasAnyWeeklyRecord,
+  resolveWeekWindow,
+  shiftWeekEndDate,
+  weeksBeforeToday,
+} from '@qsh/core';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
-import { todayKey } from '@/lib/format';
-import { COPY, reportHabitRateLabel, weeklyWeightReading } from '@/lib/copy';
+import { formatMonthDay, todayKey } from '@/lib/format';
+import {
+  COPY,
+  reportHabitRateLabel,
+  weekRelativeLabel,
+  weeklyLoadingLine,
+  weeklyWeightReading,
+} from '@/lib/copy';
 import ShareCard from '@/components/feedback/ShareCard';
 import IntakeExerciseChart from './IntakeExerciseChart';
 import WeeklyDiversityRow from './WeeklyDiversityRow';
@@ -18,12 +32,38 @@ import WeeklyDiversityRow from './WeeklyDiversityRow';
  * 默认 tab 就是「本周」，weekly 查询挂载时照常发出（K27）。
  *
  * R11.7：趋势图 section 之后追加一行「这周吃到了 N 种不同的食物」（可展开）。
+ *
+ * **B2 · 可回看历史周**：`endDate` 不再硬编码今天 ——
+ * - 「‹ 上一周 / 下一周 ›」按 7 天平移，`<input type="date">` 直接跳到某一周
+ *   （复用 `DiaryPage` 的既有模式，不引第三方日期库）；
+ * - **未来禁用**：`endDate` 一律不晚于今天，未来周按钮 `disabled`（不是隐藏后突然失效）；
+ * - **往前翻不设硬上限**（后端 `GET /report/weekly?endDate=` 支持任意日期）；
+ * - 周边界、翻周、「几周前」、空周判定**全部走 `@qsh/core` 的 `report/week.ts`**
+ *   —— 与后端 `from = to − 6` 同一口径，前端不另算一套（口径唯一真源）。
+ *
+ * **换周不闪旧数据**：切周时查询键随之改变，未命中缓存即 `undefined` →
+ * 渲染「正在整理 <目标周>…」占位，**刻意不用 `placeholderData: keepPreviousData`**
+ * （那会让上一周的数字短暂出现在新一周的标题下）。
+ *
+ * **空态中性（无负罪感）**：历史周一条记录都没有时只给一句中性文案，
+ * **不渲染**一整面 0 值（0 千卡 / 0 次打卡会被读成评判）。
  */
 export default function WeeklyReportView(): ReactElement {
-  const endDate = todayKey();
+  const today = todayKey();
+  /** 正在回看的这一周的「最后一天」（窗口末日 = endDate）。 */
+  const [endDate, setEndDate] = useState<string>(today);
+
+  // 窗口口径下沉 core（与后端同一算式）；`null` 仅在今天非法时出现，兜底用今天。
+  const weekWindow = resolveWeekWindow(endDate, today);
+  const queryEndDate = weekWindow?.to ?? today;
+  /** 这一周是几周前（0 = 本周）—— 供 UI 说清「自己在看哪一周」。 */
+  const weeksBefore = weeksBeforeToday(endDate, today);
+  /** 未来禁用：再往后一周就会越过今天时，按钮置灰（始终渲染，不隐藏）。 */
+  const canGoForward = canShiftWeekForward(endDate, today);
+
   const reportQuery = useQuery({
-    queryKey: queryKeys.weeklyReport(endDate),
-    queryFn: () => api.get<WeeklyReport>('/report/weekly', { endDate }),
+    queryKey: queryKeys.weeklyReport(queryEndDate),
+    queryFn: () => api.get<WeeklyReport>('/report/weekly', { endDate: queryEndDate }),
     retry: 0,
   });
 
@@ -34,6 +74,9 @@ export default function WeeklyReportView(): ReactElement {
   const reportDays = report !== undefined && Array.isArray(report.days) ? report.days : [];
   const micronutrients = report !== undefined && Array.isArray(report.micronutrients) ? report.micronutrients : [];
 
+  /** 这一周是否留下过任何记录（空周判定也是口径，交给 core，不在组件里另写一套）。 */
+  const hasRecords = report === undefined || hasAnyWeeklyRecord(report);
+
   /**
    * 习惯达成率（C2）：一周累计打卡次数 ÷ 一周应打卡槽位（7 天 × 每日习惯数）。
    * 无任何习惯（槽位为 0）时为 `null` —— 此时不显示 0%，而是给一句中性引导。
@@ -42,10 +85,93 @@ export default function WeeklyReportView(): ReactElement {
   const habitsSlotsTotal = reportDays.reduce((sum, day) => sum + day.habitsTotal, 0);
   const habitRate = habitsSlotsTotal > 0 ? Math.round((habitsDoneTotal / habitsSlotsTotal) * 100) : null;
 
+  /** 上一周：窗口末日 −7 天（往前翻不设上限）。 */
+  const goPrevWeek = (): void => {
+    setEndDate((current) => shiftWeekEndDate(current, -1, today));
+  };
+
+  /** 下一周：仅在不会越过今天时可点（按钮本身也已 disabled，这里是双保险）。 */
+  const goNextWeek = (): void => {
+    if (!canGoForward) {
+      return;
+    }
+    setEndDate((current) => shiftWeekEndDate(current, 1, today));
+  };
+
+  /** 跳到某一周：直接选该周的末日，窗口边界交给 core 归一（未来日期被裁到今天）。 */
+  const jumpToDate = (value: string): void => {
+    const next = resolveWeekWindow(value, today);
+    if (next !== null) {
+      setEndDate(next.to);
+    }
+  };
+
+  const windowLabel =
+    weekWindow === null
+      ? ''
+      : `${formatMonthDay(weekWindow.from)} ~ ${formatMonthDay(weekWindow.to)} · ${weekRelativeLabel(weeksBefore)}`;
+
   return (
     <>
+      {/* B2：周选择器（常驻渲染 —— 切周时控件不消失，避免闪烁） */}
+      <section className="qsh-surface p-4" aria-label={COPY.weekSwitchTitle}>
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={goPrevWeek}
+            aria-label={COPY.weekPrevAria}
+            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+          >
+            {COPY.weekPrev}
+          </button>
+          <button
+            type="button"
+            onClick={goNextWeek}
+            disabled={!canGoForward}
+            aria-label={COPY.weekNextAria}
+            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700"
+          >
+            {COPY.weekNext}
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="text-sm text-slate-600 dark:text-slate-300" htmlFor="week-end-date">
+            {COPY.weekJumpLabel}
+            <input
+              id="week-end-date"
+              type="date"
+              value={endDate}
+              max={today}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (next !== '') {
+                  jumpToDate(next);
+                }
+              }}
+              className="ml-1.5 rounded-lg border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            />
+          </label>
+          {endDate !== today && (
+            <button
+              type="button"
+              onClick={() => setEndDate(today)}
+              className="qsh-touch-target rounded-lg px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 dark:text-brand-300 dark:ring-slate-700"
+            >
+              {COPY.weekBackToCurrent}
+            </button>
+          )}
+        </div>
+
+        {/* 窗口口径摊开讲：用户一看就知道自己在看哪一周（NFR-11 可解释性） */}
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400" data-testid="week-window-label">
+          {windowLabel}
+        </p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weekWindowNote}</p>
+      </section>
+
       {/* 分享卡片（三期）：周报关键数据 → 720×960 PNG，仅含变化量等非敏感信息 */}
-      {report && (
+      {report !== undefined && hasRecords && (
         <ShareCard
           weekLabel={`${report.from.slice(5)} ~ ${report.to.slice(5)}`}
           avgIntakeKcal={report.avgIntakeKcal}
@@ -54,10 +180,20 @@ export default function WeeklyReportView(): ReactElement {
           encouragement="这一周都好好吃饭了，值得记下来"
         />
       )}
-      {!report ? (
+      {report === undefined ? (
         <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
-          {reportQuery.isLoading ? '正在整理这一周…' : '暂时拿不到周报，稍后再看看'}
+          {reportQuery.isLoading ? weeklyLoadingLine(windowLabel) : '暂时拿不到周报，稍后再看看'}
         </p>
+      ) : !hasRecords ? (
+        /* B2 空态：这一周一条记录都没有 —— 只说「哪一周 + 一句中性话」，不渲染任何 0 值指标。
+           标题沿用 `report.from ~ report.to`：空态也要让用户看清自己在看哪一周（NFR-11）。 */
+        <section className="qsh-surface p-5" data-testid="weekly-empty">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+            近 7 天（{report.from} ~ {report.to}）
+          </h2>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{COPY.weeklyEmptyTitle}</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
+        </section>
       ) : (
         <>
           <section className="qsh-surface p-5">

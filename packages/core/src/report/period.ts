@@ -15,6 +15,8 @@
 import type { FoodRefRow } from '../food/identity';
 import { distinctFoodKeys } from '../food/identity';
 import { round2 } from '../calorie/rounding';
+// 日期键工具下沉到 `date/daykey.ts`：与周报窗口（report/week.ts）共用同一套实现，不各写一份。
+import { normalizeLocalDateKey, shiftLocalDateKey } from '../date/daykey';
 
 /** 阶段回顾允许的档位（QR-3：只 30 / 365 两档，不做 90 天档）。 */
 export const PERIOD_DAY_OPTIONS = [30, 365] as const;
@@ -155,44 +157,16 @@ export function summarizePeriod(
 }
 
 /**
- * 归一 `YYYY-MM-DD`；非法输入返回 `null`（宽松到 1 位月/日，归一成两位）。
+ * 归一 `YYYY-MM-DD`（宽松到 1 位月/日，归一成两位）；非法输入返回 `null`。
  *
- * **严格回环校验**：拒绝 `2026-02-31` / `2026-13-01` 这类「引擎会静默进位」的不存在日期
- * —— `new Date(2026, 1, 31)` 会滚成 3 月 3 日，若不校验就会把非法输入当成合法日期处理
- * （缺陷根因）。合法日期照旧归一（`2026-2-3` → `2026-02-03`）。
+ * 实现下沉到 `date/daykey.ts`（`normalizeLocalDateKey`），此处仅做同义包装，
+ * 保证本文件原有调用点（含「不存在日期」的回环校验口径）一字不改。
  */
 function normalizeDateKey(value: string | null | undefined): string | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const matched = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(value);
-  if (matched === null) {
-    return null;
-  }
-  const year = Number(matched[1]);
-  const month = Number(matched[2]);
-  const day = Number(matched[3]);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return null;
-  }
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  // 回环：引擎进位 / 截断（如 2 月 31 日、13 月）都会让分量对不上 → 判非法。
-  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
-    return null;
-  }
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return normalizeLocalDateKey(value);
 }
 
 /** 本地日历天加减（不引入 Date.now，输入已归一）。 */
 function shiftDaysKey(dateKey: string, delta: number): string {
-  const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
-  if (matched === null) {
-    return dateKey;
-  }
-  const date = new Date(Number(matched[1]), Number(matched[2]) - 1, Number(matched[3]));
-  date.setDate(date.getDate() + delta);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return shiftLocalDateKey(dateKey, delta);
 }

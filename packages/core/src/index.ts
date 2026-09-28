@@ -75,7 +75,14 @@ export { buildSafetyMessages } from './calorie/messages';
 export { gToKg, kcalToKj, kgToG, KJ_PER_KCAL, kjToKcal, lToMl, mlToL } from './units/convert';
 
 // 本地日期工具
-export { ageFromBirthDate, isLocalDateKey, toLocalDateKey } from './date/daykey';
+export {
+  ageFromBirthDate,
+  diffLocalDateKeys,
+  isLocalDateKey,
+  normalizeLocalDateKey,
+  shiftLocalDateKey,
+  toLocalDateKey,
+} from './date/daykey';
 
 // ---------------------------------------------------------------------------
 // 二期模块（T05）
@@ -265,6 +272,18 @@ export {
   type PeriodFacts,
   type PeriodSummary,
 } from './report/period';
+
+// 周报窗口（B2 可回看历史周）：边界 / 翻周 / 「几周前」/ 空周判定（口径唯一实现）
+export {
+  WEEK_WINDOW_DAYS,
+  canShiftWeekForward,
+  hasAnyWeeklyRecord,
+  resolveWeekWindow,
+  shiftWeekEndDate,
+  weeksBeforeToday,
+  type WeekWindow,
+  type WeeklyRecordFacts,
+} from './report/week';
 
 // 「体重之外的变化」文本清洗（R11.4）：前端拦截与服务端校验同源（AC-11.4.2 / 11.4.9）
 export {

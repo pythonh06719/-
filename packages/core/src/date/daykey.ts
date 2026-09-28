@@ -57,6 +57,65 @@ export function ageFromBirthDate(birthDate: string | Date, now: Date): number {
 }
 
 /**
+ * 归一日期键（宽松到 1 位月/日）→ 严格两位 `YYYY-MM-DD`；非法输入返回 `null`。
+ *
+ * **严格回环校验**：拒绝 `2026-02-31` / `2026-13-01` 这类「引擎会静默进位」的不存在日期
+ * —— `new Date(2026, 1, 31)` 会滚成 3 月 3 日，若不校验就会把非法输入当成合法日期处理。
+ * 合法日期照旧归一（`2026-2-3` → `2026-02-03`）。
+ */
+export function normalizeLocalDateKey(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const matched = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(value);
+  if (matched === null) {
+    return null;
+  }
+  const year = Number(matched[1]);
+  const month = Number(matched[2]);
+  const day = Number(matched[3]);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return null;
+  }
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  // 回环：引擎进位 / 截断（如 2 月 31 日、13 月）都会让分量对不上 → 判非法
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+    return null;
+  }
+  return toLocalDateKey(date);
+}
+
+/** 本地日历天加减（输入须为已归一的 `YYYY-MM-DD`；形态不符时原样返回）。 */
+export function shiftLocalDateKey(dateKey: string, delta: number): string {
+  const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (matched === null) {
+    return dateKey;
+  }
+  const date = new Date(Number(matched[1]), Number(matched[2]) - 1, Number(matched[3]));
+  date.setDate(date.getDate() + delta);
+  return toLocalDateKey(date);
+}
+
+/**
+ * 两个日期键相差天数（`toKey − fromKey`，本地日历天）。
+ *
+ * 任一端非法 → 返回 `0`（调用方按「同一天」处理，不产生 NaN / 负周数）。
+ */
+export function diffLocalDateKeys(fromKey: string, toKey: string): number {
+  const from = normalizeLocalDateKey(fromKey);
+  const to = normalizeLocalDateKey(toKey);
+  if (from === null || to === null) {
+    return 0;
+  }
+  const start = parseDateOnly(from).getTime();
+  const end = parseDateOnly(to).getTime();
+  return Math.round((end - start) / (24 * 3600 * 1000));
+}
+
+/**
  * 校验 `YYYY-MM-DD` 是否为**真实存在的日历日期**（含位数与闰年检查）。
  *
  * 供 CSV 导入等外部输入边界使用（PRD §9.3）：`2026-02-30` 之类不存在的日期必须拒绝。

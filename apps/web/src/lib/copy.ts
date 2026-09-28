@@ -68,6 +68,22 @@ export const COPY = {
   reportWeightFlat: '这周体重基本持平，稳住节奏就好。',
   reportWeightDown: '这周体重略有下降，按自己的节奏来就好。',
   reportWeightUp: '这周体重略有上浮，波动很正常，看趋势就好。',
+  /**
+   * 周报可回看历史周（B2）—— 换周只换窗口，算法与数字口径一律不变（NFR-11）。
+   * 措辞中性：不催、不评判、不统计「空了几周」。
+   */
+  weekSwitchTitle: '想看哪一周',
+  weekPrev: '‹ 上一周',
+  weekNext: '下一周 ›',
+  weekPrevAria: '上一周',
+  weekNextAria: '下一周',
+  weekJumpLabel: '跳到',
+  weekBackToCurrent: '回到本周',
+  /** 窗口口径说明：把「一周 = 最后一天往前 7 天」摊开讲，用户才看得出自己在看哪一段 */
+  weekWindowNote: '每周都是「最后一天往前 7 天」，换周只换窗口，算法和一个数字都没变。',
+  /** 历史周一条记录都没有时的中性空态（不渲染一整面 0 值） */
+  weeklyEmptyTitle: '这周没有记录，也没关系',
+  weeklyEmptyNote: '留白也是生活的一部分。想看别的周，换个日期就好。',
   /** 目标进度卡（R2.7）——标题 / 维持模式 / 注脚；措辞中性，不做打分与催促 */
   goalProgressTitle: '距离目标',
   goalProgressRingLabel: '目标进度',
@@ -394,6 +410,32 @@ export function reportHabitRateLabel(doneTimes: number, ratePercent: number): st
   const times = Number.isFinite(doneTimes) ? Math.max(0, Math.floor(doneTimes)) : 0;
   const percent = Number.isFinite(ratePercent) ? Math.min(100, Math.max(0, Math.round(ratePercent))) : 0;
   return `本周共打卡 ${times} 次，达成率 ${percent}%`;
+}
+
+/**
+ * 「第几周」的相对说法（`0` = 本周，`1` = 上一周，`2` = 两周前…）。
+ *
+ * 只做**中性指位**（告诉用户自己在看哪一周），不做任何计数式评价 ——
+ * 不出现「你已经 N 周没记录了」这类把留白变成成绩的写法。
+ */
+export function weekRelativeLabel(weeksBefore: number): string {
+  const weeks = Number.isFinite(weeksBefore) ? Math.max(0, Math.floor(weeksBefore)) : 0;
+  if (weeks === 0) {
+    return '本周';
+  }
+  if (weeks === 1) {
+    return '上一周';
+  }
+  return `${weeks} 周前`;
+}
+
+/**
+ * 切周时的占位文案（带上目标周，避免「正在整理」期间看起来像还没切换）。
+ *
+ * @param rangeLabel 目标周的可见区间（如 `9月17日 ~ 9月23日 · 本周`）；空串时回退通用说法。
+ */
+export function weeklyLoadingLine(rangeLabel: string): string {
+  return rangeLabel.trim() === '' ? '正在整理这一周…' : `正在整理 ${rangeLabel}…`;
 }
 
 /**
