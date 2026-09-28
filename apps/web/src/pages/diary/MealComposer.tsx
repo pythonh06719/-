@@ -707,8 +707,10 @@ export default function MealComposer({
 
         {/* 分类浏览（A2 / R3.4）：两步 —— ① 点分类 chip ② 点食物（第 3 次点击是「确认记录」）。
             chip 顺序按 `FOOD_CATEGORIES` 重排（见 `orderedCategories`）：服务端返回的是码点序，
-            `other` 会排首位，这里改为展示序（`other` 落末尾）。`other` 显示成 `🍴 other`
-            是**有意保留**的（其中文展示名是另一件事，本轮不做）。
+            `other` 会排首位，这里改为展示序（`other` 落末尾）。
+            文字走 `foodCategoryLabel`（`other` → 「其他」）；emoji 仍按**原始枚举值**取
+            （`emojiForCategory('other')` → 🍴），两者分工不要混 —— 排序/取 emoji 用枚举值，
+            只有展示给人看的那一处用展示名。
 
             为什么用独立 tab 而不是搜索面板里的筛选：`searchQuery` 的 enabled 要求关键词非空，
             纯分类浏览放进搜索面板会被直接拦死；且现有 tab 都是「一种记录方式」，
