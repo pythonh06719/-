@@ -28,6 +28,8 @@ import type { ActivityLevel, CalorieResult, Gender } from '@qsh/core';
 import { api } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth.store';
 import { queryKeys } from '@/lib/queryClient';
+import { MEAL_BUDGET_SHARE } from '@/theme/tokens';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '@/pages/diary/meal-utils';
 
 /**
  * 数字是怎么来的（`/why-numbers`，可解释性 / 透明度页）。
@@ -251,6 +253,39 @@ export default function WhyNumbersPage(): ReactElement {
             ))}
           </ul>
         )}
+
+        {/* 每餐参考预算（R3.8 / B5）—— 取值来源改为服务端权威后，解释同步补齐（NFR-11） */}
+        <h3 className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+          每餐参考预算怎么分
+        </h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          饮食页每一餐后面那句「参考 N kcal」=
+          <strong className="font-semibold">每日建议摄入 × 这一餐的占比</strong>
+          ，没有第二套算法。每日建议摄入取自服务端按你的资料重算的结果（本机缓存只在断网时兜底），
+          所以清掉缓存、换了手机、第一次打开也都还在。
+        </p>
+        <table className="mt-2 w-full border-collapse text-sm">
+          <caption className="sr-only">各餐次占每日预算的比例</caption>
+          <thead>
+            <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
+              <th scope="col" className="py-1 font-medium">餐次</th>
+              <th scope="col" className="py-1 text-right font-medium">占每日预算</th>
+            </tr>
+          </thead>
+          <tbody className="text-slate-700 dark:text-slate-200">
+            {MEAL_TYPE_ORDER.map((mealType) => (
+              <tr key={mealType} className="border-t border-slate-100 dark:border-slate-700">
+                <td className="py-1.5">{MEAL_TYPE_LABELS[mealType]}</td>
+                <td className="qsh-tnum py-1.5 text-right font-medium">
+                  {Math.round(MEAL_BUDGET_SHARE[mealType] * 100)}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          这只是帮你把一天分一分的参考，不是给每一顿打的分数 —— 一顿多吃一点、下一顿少一点，都正常。
+        </p>
 
         <h3 className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-100">
           安全网：两道防线
@@ -934,6 +969,58 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
+      {/* ⑰ AI 剩余次数是怎么算的（B6，同批交付） */}
+      <section aria-labelledby="why-ai-usage-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-ai-usage-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑰ AI 页面那个「还能问 N 次」是怎么算的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          AI 页顶部那一行数字不是一个估算 —— 它是你今天实际问过的次数，直接从服务端的计数表里读出来的。
+          算式和来源都在下面。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="数据来源"
+            value="ai_usage 表当日各功能行的 request_count 合计"
+            hint="usage_date = 服务端本地今天"
+          />
+          <DerivationRow term="算法" value={`剩余 = ${AI_DAILY_LIMIT} − 已用`} hint="最小为 0，不会是负数" />
+          <DerivationRow
+            term="哪些算一次"
+            value="每日总结 / 今日方案 / 自由提问 / 食物识别，各计 1 次"
+            hint="四个入口共用同一个额度"
+          />
+          <DerivationRow
+            term="哪些不算"
+            value="今日方案命中缓存不重复计；医疗安全闸的回答不消耗"
+            hint="这两类不调用模型"
+          />
+          <DerivationRow term="什么时候重置" value="每天本地零点重新计" hint="不累计、不清零之外的惩罚" />
+          <DerivationRow term="查用量本身" value="不计数" hint="看多少次都不影响剩余" />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用完时只说一句「明天再来也行」</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              次数是我们这一侧的成本安排，不是你该被考核的指标。说成「已达上限」「次数用尽」会把它变成一次小小的否定，
+              所以我们只把事实摆出来，剩下的留给你决定明天要不要再来。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">拿不到这个数字会怎样</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              那一行直接不出现，页面其他部分照常用 —— 用量只是展示，取不到不拦你、也不报错。
+              AI 未配置（没有模型密钥）时它也会照常显示，因为计的是次数，与模型是否可用无关。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          阈值 <span className="font-mono">AI_DAILY_LIMIT</span> 与换算函数{' '}
+          <span className="font-mono">deriveAiUsage</span> 都来自 @qsh/core：页面、接口与限额判定用的是同一份，
+          不会各说各话。
+        </p>
+      </section>
+
       {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
       <section aria-labelledby="why-portion-title" className="qsh-surface rounded-2xl p-5">
         <h2 id="why-portion-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
@@ -993,59 +1080,29 @@ export default function WhyNumbersPage(): ReactElement {
         </p>
       </section>
 
-      {/* ⑰ AI 剩余次数是怎么算的（B6，同批交付） */}
-      <section aria-labelledby="why-ai-usage-title" className="qsh-surface rounded-2xl p-5">
-        <h2 id="why-ai-usage-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
-          ⑰ AI 页面那个「还能问 N 次」是怎么算的
+      {/* ⑲ JSON 备份恢复预览与合并口径（R10.2 / NFR-11） */}
+      <section aria-labelledby="why-restore-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-restore-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ⑲ 备份恢复里的数字怎么来
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          AI 页顶部那一行数字不是一个估算 —— 它是你今天实际问过的次数，直接从服务端的计数表里读出来的。
-          算式和来源都在下面。
+          选择 JSON 备份后看到的条数与日期跨度，只来自这份文件；预览阶段不写入任何记录。
+          确认页也会把合并规则原样列出，不做静默覆盖。
         </p>
         <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
-          <DerivationRow
-            term="数据来源"
-            value="ai_usage 表当日各功能行的 request_count 合计"
-            hint="usage_date = 服务端本地今天"
-          />
-          <DerivationRow term="算法" value={`剩余 = ${AI_DAILY_LIMIT} − 已用`} hint="最小为 0，不会是负数" />
-          <DerivationRow
-            term="哪些算一次"
-            value="每日总结 / 今日方案 / 自由提问 / 食物识别，各计 1 次"
-            hint="四个入口共用同一个额度"
-          />
-          <DerivationRow
-            term="哪些不算"
-            value="今日方案命中缓存不重复计；医疗安全闸的回答不消耗"
-            hint="这两类不调用模型"
-          />
-          <DerivationRow term="什么时候重置" value="每天本地零点重新计" hint="不累计、不清零之外的惩罚" />
-          <DerivationRow term="查用量本身" value="不计数" hint="看多少次都不影响剩余" />
-        </dl>
-        <dl className="mt-3 space-y-3 text-sm">
-          <div>
-            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用完时只说一句「明天再来也行」</dt>
-            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
-              次数是我们这一侧的成本安排，不是你该被考核的指标。说成「已达上限」「次数用尽」会把它变成一次小小的否定，
-              所以我们只把事实摆出来，剩下的留给你决定明天要不要再来。
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold text-slate-800 dark:text-slate-100">拿不到这个数字会怎样</dt>
-            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
-              那一行直接不出现，页面其他部分照常用 —— 用量只是展示，取不到不拦你、也不报错。
-              AI 未配置（没有模型密钥）时它也会照常显示，因为计的是次数，与模型是否可用无关。
-            </dd>
-          </div>
+          <DerivationRow term="统计来源" value="已通过结构校验的 JSON 备份" hint="支持结构版本 1 和 2" />
+          <DerivationRow term="体重 / 运动 / 习惯 / 饮水 / 这句话" value="各自数组的记录条数" />
+          <DerivationRow term="餐次条目" value="meals 每个餐次里的 items 数量之和" hint="不是餐次分组数量" />
+          <DerivationRow term="整体日期跨度" value="6 类记录全部日期中的最早日 ～ 最晚日" hint="没有日期记录时不编造区间" />
+          <DerivationRow term="同日覆盖" value="备份出现某日时，该实体当天改用备份记录" />
+          <DerivationRow term="不同日追加" value="备份没有出现的日期保留现有记录" hint="不会清空整段历史" />
+          <DerivationRow term="档案 / 目标 / 设置" value="采用备份中的内容" hint="确认前会明确说明" />
         </dl>
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-          阈值 <span className="font-mono">AI_DAILY_LIMIT</span> 与换算函数{' '}
-          <span className="font-mono">deriveAiUsage</span> 都来自 @qsh/core：页面、接口与限额判定用的是同一份，
-          不会各说各话。
+          预览条数用于让你确认文件内容，合并口径用于说明会发生什么；两者都不参与评分或健康判断。
         </p>
       </section>
 
-      {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
       {/* ⑳「我的常点」是怎么记住的（C2，同批交付） */}
       <section aria-labelledby="why-tool-memory-title" className="qsh-surface rounded-2xl p-5">
         <h2 id="why-tool-memory-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">

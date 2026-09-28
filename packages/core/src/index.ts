@@ -227,14 +227,18 @@ export {
 } from './food/name';
 
 // 食物搜索排序（相关度优先：前缀 > 子串 > 仅别名；绝不按营养排序，单一真源）
+// `findSameNameFood` = 快速加卡「同名温和提示」的判定（C1），只做同名/去空白后同名
 export {
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   ORDER_RANK,
+  findSameNameFood,
+  foodNameMatchKey,
   foodQualifierLabel,
   matchFoodRank,
   pageFoodSearch,
   rankFoodSearch,
   type FoodMatchRank,
+  type FoodNameCandidate,
   type FoodSearchCandidate,
   type FoodSearchRanked,
 } from './food/search';

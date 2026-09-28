@@ -189,3 +189,65 @@ export function pageFoodSearch(
   const offset = (safePage - 1) * safeSize;
   return ranked.slice(offset, offset + safeSize).map((hit) => hit.id);
 }
+
+// ---------------------------------------------------------------------------
+// 同名命中（C1「快速加卡重名温和提示」）
+//
+// 场景：用户手填「番茄炒蛋」，库里本来就有一条 `番茄炒蛋` ——
+// 我们**只问一句**（提供选择，不是纠正错误），因此判定必须**极窄**：
+// **同名**，或**去掉空白后同名**。不做拼音、不做模糊、不做编辑距离 ——
+// 那会在 1773 条的库里对用户随手填的每一个名字都弹提示，等同轰炸。
+//
+// ⚠️ 刻意**不复用** `food/name.ts` 的 `foodDedupKey`：那是**跨源去重**口径，
+// 会丢掉「无区分意义」的括号内容（`番茄炒蛋（均值）` 会与 `番茄炒蛋` 同键），
+// 对「同名提示」来说太宽 —— 用户填的名字和那条并不一样。
+// 本判定与搜索匹配**共用同一把归一化**（`normalizeForMatch`），不另起一套规则。
+// ---------------------------------------------------------------------------
+
+/** 同名判定的最小候选形状：只需要名字（不看营养、不看分类、也不看来源）。 */
+export interface FoodNameCandidate {
+  /** 食物名 */
+  name: string;
+}
+
+/**
+ * 「同名」比对键：**去掉所有空白（含全角空格）+ 转小写** —— 与搜索匹配同一把归一化。
+ *
+ * @example
+ * foodNameMatchKey(' 番茄 炒蛋 ') === '番茄炒蛋'
+ * foodNameMatchKey('Milk Tea') === 'milktea'
+ */
+export function foodNameMatchKey(name: string): string {
+  return normalizeForMatch(name);
+}
+
+/**
+ * 在候选里找**同名**（或去空白后同名）的那一条。
+ *
+ * 命中多条时返回**第一条**（调用方传入的顺序即服务端相关度顺序）；
+ * 未命中 / 输入为空 / 输入非字符串 → `null`（调用方据此不提示）。
+ *
+ * 只做**相等**比较：不打分、不排序、不做模糊匹配，因此不存在「提示轰炸」。
+ *
+ * @param items 候选（通常是 `GET /api/foods/search?q=<手填名>` 的返回）
+ * @param typedName 用户手填的食物名
+ * @returns 同名条目；没有则 `null`
+ */
+export function findSameNameFood<T extends FoodNameCandidate>(
+  items: readonly T[],
+  typedName: string,
+): T | null {
+  if (typeof typedName !== 'string') {
+    return null;
+  }
+  const key = foodNameMatchKey(typedName);
+  if (key === '') {
+    return null;
+  }
+  for (const item of items) {
+    if (item !== null && typeof item.name === 'string' && foodNameMatchKey(item.name) === key) {
+      return item;
+    }
+  }
+  return null;
+}

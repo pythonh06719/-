@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { FOOD_SEARCH_DEFAULT_PAGE_SIZE, FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
+import {
+  FOOD_SEARCH_DEFAULT_PAGE_SIZE,
+  FREQUENT_FOOD_DEFAULTS,
+  findSameNameFood,
+} from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
@@ -87,6 +91,13 @@ export default function MealComposer({
   const [servingUnit, setServingUnit] = useState('克');
   const [quickName, setQuickName] = useState('');
   const [quickKcal, setQuickKcal] = useState('');
+  /**
+   * C1：用户已就重名提示做过选择（「继续用我填的」）。
+   *
+   * `true` = 已表态，不再探测也不再提示；换名字后重置。**默认放行**：
+   * 这个提示存在的意义只是「问一句」，不是拦路。
+   */
+  const [quickSkippedSameName, setQuickSkippedSameName] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -138,7 +149,6 @@ export default function MealComposer({
   const localEmpty = searchQuery.data !== undefined && localItems.length === 0;
   /** 本地为空（或用户主动点「搜索在线食物库」）时才请求在线兜底。 */
   const wantOnline = keyword.trim() !== '' && (localEmpty || onlineRequested);
-
   const liveQuery = useQuery({
     queryKey: queryKeys.foodLiveSearch(keyword),
     queryFn: () => api.get<LiveSearchResponse>('/foods/live-search', { q: keyword, limit: 10 }),
@@ -148,6 +158,28 @@ export default function MealComposer({
 
   /** 在线兜底是否不可用（上游降级或本地请求不可用）。 */
   const onlineDegraded = liveQuery.data?.degraded === true || liveQuery.isError;
+
+  /**
+   * 快速加卡的**同名探测**（C1）：手填名在库里已有同名时，**问一句**。
+   *
+   * 食物库 443 → 1773 条后，用户手填「番茄炒蛋」库里大概率已经有了；静默创建会
+   * 污染个人库、让常吃榜/多样性出现「同物两名」。
+   *
+   * 这是**提供选择、不是纠正错误**：只做**同名**（或去空白后同名）判定，
+   * 判定口径在 `@qsh/core` 单一真源，且**绝不阻断**提交 —— 用户随手可跳过。
+   */
+  const quickNameTrimmed = quickName.trim();
+  const sameNameQuery = useQuery({
+    queryKey: queryKeys.foodSearch(quickNameTrimmed, 'quick-add-same-name'),
+    queryFn: () => api.get<FoodSearchResponse>('/foods/search', { q: quickNameTrimmed, pageSize: 10 }),
+    enabled: tab === 'quick' && quickNameTrimmed !== '' && quickSkippedSameName === false,
+    retry: 0,
+  });
+  /** 命中的库内同名条目（无则不提示，一切照旧）。 */
+  const sameNameFood = useMemo(
+    () => findSameNameFood(sameNameQuery.data?.items ?? [], quickNameTrimmed),
+    [sameNameQuery.data, quickNameTrimmed],
+  );
 
   const recentQuery = useQuery({
     queryKey: queryKeys.foodRecent,
@@ -571,7 +603,11 @@ export default function MealComposer({
               名称
               <input
                 value={quickName}
-                onChange={(event) => setQuickName(event.target.value)}
+                onChange={(event) => {
+                  setQuickName(event.target.value);
+                  // 换了名字，之前的「已跳过」表态作废，重新问一次
+                  setQuickSkippedSameName(false);
+                }}
                 placeholder="如：楼下麻辣烫"
                 className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
@@ -587,6 +623,41 @@ export default function MealComposer({
               />
             </label>
             <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
+
+            {/*
+              C1 · 同名温和提示：**提供选择，不是纠正错误**。
+              只问一句、一键可跳过、不阻断提交（G1「3 次点击记一餐」优先）。
+            */}
+            {sameNameFood !== null && !quickSkippedSameName && (
+              <div
+                data-testid="quick-same-name-notice"
+                className="rounded-xl bg-brand-50 px-3 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+              >
+                <p>
+                  库里已经有「{sameNameFood.name}」了，用它吗？也可以继续用你填的。
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="qsh-touch-target rounded-lg bg-brand-100 px-3 py-1 font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200"
+                    onClick={() => {
+                      setQuickName(sameNameFood.name);
+                      setQuickKcal(String(Math.round(sameNameFood.kcalPer100g)));
+                      setQuickSkippedSameName(true);
+                    }}
+                  >
+                    用库里的（{toDisplayEnergy(sameNameFood.kcalPer100g, unit)} {energyLabel(unit)}/100g）
+                  </button>
+                  <button
+                    type="button"
+                    className="qsh-touch-target rounded-lg px-3 py-1 text-brand-600 underline dark:text-brand-300"
+                    onClick={() => setQuickSkippedSameName(true)}
+                  >
+                    继续用我填的
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
