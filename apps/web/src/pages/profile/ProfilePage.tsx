@@ -20,6 +20,7 @@ import type { ThemeBudget } from '@/theme/tokens';
 import LoginCard from '@/components/common/LoginCard';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 import ReminderSettings from '@/pages/profile/ReminderSettings';
+import GoalSettingsCard from '@/pages/profile/GoalSettingsCard';
 
 /**
  * 我的（`/profile`，PRD §6 第 12 行 / R1.4 / R2.9 / US-05 / TC-12 / TC-14）。
@@ -163,6 +164,13 @@ export default function ProfilePage(): ReactElement {
           isDeficitCapped={'isDeficitCapped' in budget ? Boolean(budget.isDeficitCapped) : false}
         />
       )}
+
+      {/* 我的目标编辑卡（AC-11.2.7）：引导问卷之后，用户仍可在这里改目标体重 / 期限。
+          位置紧挨「当前热量预算」卡 —— 目标直接决定预算（缺口 = 每周目标减重），
+          改完能立刻在相邻的预算卡上看到变化，因果最直观。
+          「基础数据」（性别 / 身高 / 活动量，后端 PATCH /profile）与「目标」
+          （体重 / 期限，后端 PATCH /goals）是两条独立路由、两套校验范围，故独立成卡、独立提交。 */}
+      <GoalSettingsCard />
 
       {/* 基础数据修改 */}
       <form
