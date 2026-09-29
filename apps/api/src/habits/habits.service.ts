@@ -14,6 +14,16 @@ export interface HabitWithStats {
   icon: string | null;
   targetPerDay: number;
   isActive: boolean;
+  /**
+   * 是否**内置全局模板**（= 数据库 `HabitDefinition.userId === null`，GAP-11）。
+   *
+   * 前端据此决定「能不能停用」：内置模板的 `userId` 为 `null`，停用会命中别的用户
+   * （全局模板不可停用，`setActive` 天然返回 404），所以前端不该给它显示停用按钮。
+   *
+   * ⚠️ 刻意**不把裸 `userId` 暴露给前端**：前端不需要 DB 字段，派生的布尔语义更清晰，
+   * 也能避免前端误用 `userId` 自行做归属判断。
+   */
+  isBuiltin: boolean;
   doneToday: boolean;
   /** 当前连续（含今天若已打卡；断签不清零、不惩罚 —— R7.4 无负罪感设计） */
   currentStreak: number;
@@ -78,6 +88,7 @@ export class HabitsService {
           icon: habit.icon,
           targetPerDay: habit.targetPerDay,
           isActive: habit.isActive,
+          isBuiltin: habit.userId === null,
           doneToday: dates.has(today),
           currentStreak: streak.current,
           bestStreak: streak.best,
@@ -106,6 +117,7 @@ export class HabitsService {
       icon: habit.icon,
       targetPerDay: habit.targetPerDay,
       isActive: habit.isActive,
+      isBuiltin: false, // create() 挂到当前用户名下 → userId 为 number，必然是自建
       doneToday: false,
       currentStreak: 0,
       bestStreak: 0,
@@ -147,7 +159,7 @@ export class HabitsService {
   }
 
   /**
-   * 停用自定义习惯（GAP-11）—— **不是删除**。
+   * 停用 / 恢复自定义习惯（GAP-11）—— **不是删除**，且**可以恢复**。
    *
    * ## 为什么停用而不是删除（务必保留此注释，避免后人"顺手改成 delete"）
    *
@@ -158,10 +170,18 @@ export class HabitsService {
    * 3. 违背本项目「无负罪感」原则 —— 用户说「我不想继续做这个了」，并不意味着
    *    「把过去一笔勾销」。
    *
-   * 因此本方法只把 `isActive` 置为 `false`：
+   * 因此本方法只切换 `isActive`：
    * - `HabitCheckin` 完全不动，历史数据与历史周报口径保持稳定；
-   * - `report.service.ts` 的 `where: { ..., isActive: true }` 过滤会自动让该习惯退出统计；
-   * - 用户仍可在将来「重新启用」（同一 `PATCH /habits/:id` 路由，本轮不实现）。
+   * - `report.service.ts` 的 `where: { ..., isActive: true }` 过滤会在停用后自动让该习惯退出统计，
+   *   恢复后又自动重新计入（**恢复是真的**，不是前端假象）；
+   * - 用户随时可以在同一 `PATCH /habits/:id` 路由上「重新开始」。
+   *
+   * ## 为什么 PATCH 要接受 body（既能停用也能恢复）
+   *
+   * 停用只是「这个阶段先不做」，而不是「永远不要了」——「这个月先不做，下个月再做」
+   * 是习惯类功能的真实场景。若只允许单向停用，用户一次误点就会**永久失去**这个习惯，
+   * 与「无负罪感、随时可以回来」的产品调性相悖。故由 `isActive` 参数决定方向：
+   * `false` = 停用、`true` = 恢复，两者共用同一路由，无需新增端点。
    *
    * ## 归属与内置保护
    *
@@ -169,18 +189,19 @@ export class HabitsService {
    * `userId` 是 `null`，因此**天然只命中当前用户自己的记录**：他人的习惯、以及
    * `userId=null` 的全局内置模板都会查不到 → 统一返回 404（不泄露资源是否存在）。
    * 这里用 `findFirst` 做归属校验是**显式**的，测试也显式锁定了这两条边界，
-   * 不依赖隐式行为。
+   * 不依赖隐式行为。内置模板**绝不能**停用（会影响所有用户），这层保护不可移除。
    *
    * ## 幂等
    *
-   * 对已停用的习惯重复调用，仍返回成功（`isActive` 已是 `false`，无副作用）。
+   * 目标状态与当前一致时不再写库，直接返回当前状态（停用后再停用、恢复后再恢复均安全）。
    *
    * @param userId 当前登录用户（取自 JWT）
    * @param habitId 目标习惯 id
-   * @returns 更新后的习惯（与 `list()` 元素同形，`isActive` 为 `false`）
+   * @param isActive 目标状态：`false` 停用 / `true` 恢复
+   * @returns 更新后的习惯（与 `list()` 元素同形；自建习惯 `isBuiltin` 恒为 `false`）
    * @throws ApiException 404 `E_NOTFOUND_HABIT` 当习惯不存在 / 属于他人 / 为内置模板
    */
-  async deactivate(userId: number, habitId: number): Promise<HabitWithStats> {
+  async setActive(userId: number, habitId: number, isActive: boolean): Promise<HabitWithStats> {
     // 显式归属校验：userId 为 number → 不会命中 userId 为 null 的内置模板，也不会命中他人的行
     const habit = await this.prisma.habitDefinition.findFirst({
       where: { id: habitId, userId },
@@ -189,13 +210,14 @@ export class HabitsService {
       throw new ApiException(404, ERROR_CODES.NOTFOUND_HABIT, '没有找到这个习惯');
     }
 
-    // 幂等：已停用则不再写库，直接返回当前状态
-    const updated = habit.isActive
-      ? await this.prisma.habitDefinition.update({
-          where: { id: habit.id },
-          data: { isActive: false, updatedAt: new Date().toISOString() },
-        })
-      : habit;
+    // 幂等：目标状态与当前一致则不再写库，直接返回当前状态
+    const updated =
+      habit.isActive === isActive
+        ? habit
+        : await this.prisma.habitDefinition.update({
+            where: { id: habit.id },
+            data: { isActive, updatedAt: new Date().toISOString() },
+          });
 
     const dates = new Set<string>();
     const streak = this.calcStreak(dates, todayLocalKey());
@@ -206,6 +228,7 @@ export class HabitsService {
       icon: updated.icon,
       targetPerDay: updated.targetPerDay,
       isActive: updated.isActive,
+      isBuiltin: updated.userId === null, // 只可能命中本人自建 → 这里恒为 false，但仍按口径派生
       doneToday: false,
       currentStreak: streak.current,
       bestStreak: streak.best,

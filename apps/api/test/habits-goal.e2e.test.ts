@@ -1,14 +1,21 @@
 /**
- * GAP-11（习惯停用）+ GAP-3（饮水目标范围收口）端到端测试。
+ * GAP-11（习惯停用 / 恢复）+ GAP-3（饮水目标范围收口）端到端测试。
  *
- * ## 为什么不测「删除」而有「停用」
+ * ## 为什么不测「删除」而有「停用」，且停用**可逆**
  *
  * `HabitCheckin.habitId` 的外键是 `onDelete: Cascade`。真删除一个习惯会**级联清空它的
  * 全部历史打卡**，导致历史周报的 `habitsDone` / `habitsTotal` 数字被改写，并违背
  * 「无负罪感」原则。因此接口语义是**停用**（`isActive=false`），历史打卡原样保留。
- * 本文件用两条断言把这个设计**钉死**：
+ *
+ * 停用**不是单向的**：`PATCH /habits/:id` 接受 body `{ isActive: boolean }` ——
+ * `false` 停用、`true` 恢复（「重新开始」）。`isActive` **必填**：缺字段、或传无法当布尔的值
+ * （如 `null`）→ 400（详见 `GAP-11 · isActive 必填校验` 一节关于全局隐式转换的口径说明）。
+ * 本文件用以下断言把这个设计**钉死**：
  * 1. 停用后 `GET /report/weekly` 不再计入该习惯（`habitsTotal` 减少）；
- * 2. 停用后该习惯的历史 `HabitCheckin` 仍在库里（未被级联删除）。
+ * 2. **恢复后 `GET /report/weekly` 重新计入**（证明恢复是真的，不是前端假象）；
+ * 3. 停用后该习惯的历史 `HabitCheckin` 仍在库里（未被级联删除）；
+ * 4. 停用后 `GET /habits` **仍返回**该习惯（`list()` 不过滤 `isActive`，是前端分区的前提）；
+ * 5. `GET /habits` 每项带派生的 `isBuiltin`（内置 → true、自建 → false；不暴露裸 `userId`）。
  *
  * ## 机制
  *
@@ -81,12 +88,36 @@ async function createHabit(token: string, code: string, name: string): Promise<n
   return (res.body.data as { id: number }).id;
 }
 
-/** 停用调用（不 assert，便于断言各种状态码）。 */
+/**
+ * 设置习惯启停状态（`PATCH /habits/:id` 带 body `{ isActive }`）。
+ *
+ * 不 assert，便于断言各种状态码（404 / 400 / 401）。
+ */
+function update(token: string, id: number, isActive: boolean): Promise<{ status: number; body: any }> {
+  return request(server as never)
+    .patch(`${API}/habits/${id}`)
+    .set(auth(token))
+    .send({ isActive })
+    .then((res) => ({ status: res.status, body: res.body }));
+}
+
+/** 停用（`isActive:false`）—— 语义化别名，等价 `update(token, id, false)`。 */
 function deactivate(token: string, id: number): Promise<{ status: number; body: any }> {
+  return update(token, id, false);
+}
+
+/** 不带 body 的 PATCH（用于校验「`isActive` 必填」）。 */
+function patchNoBody(token: string, id: number): Promise<{ status: number; body: any }> {
   return request(server as never)
     .patch(`${API}/habits/${id}`)
     .set(auth(token))
     .then((res) => ({ status: res.status, body: res.body }));
+}
+
+/** 读取 `GET /habits` 的习惯数组（含停用项 —— `list()` 刻意不过滤 `isActive`）。 */
+async function listHabits(token: string): Promise<Array<Record<string, any>>> {
+  const res = await request(server as never).get(`${API}/habits`).set(auth(token)).expect(200);
+  return (res.body.data as { habits: Array<Record<string, any>> }).habits;
 }
 
 /** 读取周报，返回 `{ habitTotalByDay, ... }`。 */
@@ -197,6 +228,22 @@ describe('GAP-11 · 越权与内置保护（最重要）', () => {
     expect(after?.userId).toBeNull();
   });
 
+  it('恢复**内置模板**（userId=null）→ 同样 404（两个方向都不许动全局模板）', async () => {
+    const builtin = await prisma.habitDefinition.findFirst({ where: { userId: null } });
+    expect(builtin, '种子应包含 userId=null 的内置习惯模板').not.toBeNull();
+
+    // 隔离：先复位再断言「本次调用未改动它」
+    await prisma.habitDefinition.update({ where: { id: builtin!.id }, data: { isActive: true } });
+
+    const res = await update(tokenA, builtin!.id, true);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('E_NOTFOUND_HABIT');
+
+    const after = await prisma.habitDefinition.findUnique({ where: { id: builtin!.id } });
+    expect(after?.isActive).toBe(true);
+    expect(after?.userId).toBeNull();
+  });
+
   it('停用不存在的 id → 404', async () => {
     const res = await deactivate(tokenA, 987654321);
     expect(res.status).toBe(404);
@@ -255,6 +302,144 @@ describe('GAP-11 · 停用 ≠ 删除（设计核心保证）', () => {
     expect(afterCount).toBe(2); // 历史打卡一条不少
     const habitStillExists = await prisma.habitDefinition.findUnique({ where: { id: habitId } });
     expect(habitStillExists).not.toBeNull(); // 习惯本体也还在（只是停用）
+  });
+
+  it('★ 停用后 GET /habits 仍返回该习惯且 isActive=false（list 不过滤，前端分区的前提）', async () => {
+    const habitId = await createHabit(tokenA, `stilllisted_${Date.now()}`, '停用仍在列表');
+    await deactivate(tokenA, habitId);
+
+    const habits = await listHabits(tokenA);
+    const found = habits.find((habit) => habit.id === habitId);
+    expect(found, '停用后 list 必须仍返回该习惯（前端才能显示「先停下来的」区域）').toBeDefined();
+    expect(found?.isActive).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP-11 · 恢复（重新开始）—— 核心：停用不是单向的
+// ---------------------------------------------------------------------------
+
+describe('GAP-11 · 恢复（重新开始）', () => {
+  it('★ PATCH /habits/:id 带 {isActive:true} → 200 且 isActive 恢复为 true（落库）', async () => {
+    const habitId = await createHabit(tokenA, `restore_${Date.now()}`, '恢复习惯');
+
+    const stopped = await deactivate(tokenA, habitId);
+    expect(stopped.status).toBe(200);
+    expect((stopped.body.data as { isActive: boolean }).isActive).toBe(false);
+
+    const restored = await update(tokenA, habitId, true);
+    expect(restored.status).toBe(200);
+    expect(restored.body.error).toBeNull();
+    expect((restored.body.data as { isActive: boolean }).isActive).toBe(true);
+
+    const row = await prisma.habitDefinition.findUnique({ where: { id: habitId } });
+    expect(row?.isActive).toBe(true);
+  });
+
+  it('★ 恢复后 GET /report/weekly 重新计入该习惯（恢复是真的，不是前端假象）', async () => {
+    const habitId = await createHabit(tokenA, `restore_week_${Date.now()}`, '恢复周报习惯');
+
+    const withHabit = await weekly(tokenA);
+    const base = withHabit.habitTotals[0]!;
+
+    await deactivate(tokenA, habitId);
+    const stopped = await weekly(tokenA);
+    expect(stopped.habitTotals[0]).toBe(base - 1);
+
+    await update(tokenA, habitId, true);
+    const restored = await weekly(tokenA);
+    expect(restored.habitTotals[0]).toBe(base);
+    expect(restored.habitTotals[0]).toBe(stopped.habitTotals[0]! + 1);
+  });
+
+  it('恢复后再恢复（幂等）→ 仍返回成功', async () => {
+    const habitId = await createHabit(tokenA, `restore_idem_${Date.now()}`, '恢复幂等习惯');
+    const first = await update(tokenA, habitId, true);
+    const second = await update(tokenA, habitId, true);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect((second.body.data as { isActive: boolean }).isActive).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP-11 · isActive 必填（PATCH 语义是「改成什么」，缺字段应 400）
+// ---------------------------------------------------------------------------
+
+describe('GAP-11 · isActive 必填校验', () => {
+  it('不带 body（缺 isActive）→ 400 E_VALID_INPUT', async () => {
+    const habitId = await createHabit(tokenA, `nobody_${Date.now()}`, '缺字段习惯');
+    const res = await patchNoBody(tokenA, habitId);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(res.body.error.fields.isActive).toBeDefined();
+
+    // 缺字段不得被当成「停用」的危险默认 —— isActive 必须原样保留
+    const row = await prisma.habitDefinition.findUnique({ where: { id: habitId } });
+    expect(row?.isActive).toBe(true);
+  });
+
+  /**
+   * ⚠️ 口径澄清（与需求书里「非布尔（如字符串 "true"）→ 400」的预期**不同**，
+   * 这里按**真实行为**落测，而不是改测试去凑一个假的 400）。
+   *
+   * 全局 `ValidationPipe` 带 `transformOptions: { enableImplicitConversion: true }`
+   * （见 `common/pipes/validation-pipe.factory.ts`），字符串会在进入 `@IsBoolean()` **之前**
+   * 被隐式转成布尔 —— `'true'` → `true`。这是**全站既有行为**（`CheckinDto.done` 同理），
+   * 并非本接口特有；要让它 400 必须改全局管道（影响所有 DTO），属于本次范围之外、且会破坏一致性。
+   *
+   * 真正的危险是「**缺字段被当成停用**」，那条已被上面的用例钉死；
+   * 前端始终发真布尔值（`{ isActive: false }` / `{ isActive: true }`），不受隐式转换影响。
+   * 因此这里用「无法被当作布尔」的 `null` 来验证 `@IsBoolean()` 确实生效。
+   */
+  it('isActive 传无法当作布尔的值（null）→ 400；不得被当作「停用」的默认', async () => {
+    const habitId = await createHabit(tokenA, `nullval_${Date.now()}`, 'null 习惯');
+    const res = await request(server as never)
+      .patch(`${API}/habits/${habitId}`)
+      .set(auth(tokenA))
+      .send({ isActive: null })
+      .then((r) => ({ status: r.status, body: r.body }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(res.body.error.fields.isActive).toBeDefined();
+
+    const row = await prisma.habitDefinition.findUnique({ where: { id: habitId } });
+    expect(row?.isActive).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP-11 · isBuiltin 暴露（前端据此决定「能不能停用」）
+// ---------------------------------------------------------------------------
+
+describe('GAP-11 · GET /habits 暴露 isBuiltin', () => {
+  it('★ 每项都带 isBuiltin：内置 → true、自建 → false', async () => {
+    const customId = await createHabit(tokenA, `builtin_flag_${Date.now()}`, '自建归属习惯');
+    const habits = await listHabits(tokenA);
+
+    expect(habits.length).toBeGreaterThan(0);
+    for (const habit of habits) {
+      expect(typeof habit.isBuiltin, `习惯 ${habit.id} 缺 isBuiltin 布尔字段`).toBe('boolean');
+    }
+
+    const custom = habits.find((habit) => habit.id === customId);
+    expect(custom?.isBuiltin).toBe(false);
+
+    const builtin = habits.find((habit) => habit.isBuiltin === true);
+    expect(builtin, '列表里应包含内置模板（isBuiltin=true）').toBeDefined();
+    // 用 DB 兜底确认派生口径正确：isBuiltin === userId === null
+    const builtinRow = await prisma.habitDefinition.findUnique({ where: { id: builtin!.id } });
+    expect(builtinRow?.userId).toBeNull();
+    // 自建项的 userId 就是当前用户（确认口径另一侧）
+    const customRow = await prisma.habitDefinition.findUnique({ where: { id: customId } });
+    expect(customRow?.userId).toBe(userIdA);
+  });
+
+  it('前端不需要裸 userId —— GET /habits 的项里不含 userId 字段', async () => {
+    const habits = await listHabits(tokenA);
+    for (const habit of habits) {
+      expect('userId' in habit, `习惯 ${habit.id} 不应把裸 userId 暴露给前端`).toBe(false);
+    }
   });
 });
 

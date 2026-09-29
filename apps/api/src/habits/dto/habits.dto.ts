@@ -30,6 +30,22 @@ export class CreateHabitDto {
   targetPerDay?: number;
 }
 
+/**
+ * `PATCH /api/habits/:id`（停用 / 恢复自定义习惯，GAP-11）。
+ *
+ * PATCH 的语义是「把这条资源改成什么」——因此 `isActive` **必填**：
+ * - `false` → 停用（只是「这个阶段先不做」，历史打卡原样保留，不是删除）；
+ * - `true`  → 恢复（「重新开始」）。
+ *
+ * ⚠️ 刻意**不设默认值**（不写成「不传就当 false」）：漏传时无法判断用户意图，
+ * 危险默认会让一次手误变成静默停用；缺字段应直接 400。
+ */
+export class UpdateHabitDto {
+  /** 目标状态：`false` 停用 / `true` 恢复 */
+  @IsBoolean({ message: 'isActive 需为布尔值' })
+  isActive!: boolean;
+}
+
 /** `POST /api/habits/:id/check`（打卡 / 取消，R7.3）。 */
 export class CheckinDto {
   /** 打卡日期 `YYYY-MM-DD`（缺省 = 今天） */
