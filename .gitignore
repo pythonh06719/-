@@ -10,11 +10,19 @@ build/
 # 加这条是因为它真的被误提交过两次：命令被并发重试时，第二次的 `git add -A` 抓到了第一次
 # 还在构建中的 dist_tmp（历史里因此留下 ~1.5MB 构建产物，共两处）。
 dist_tmp/
+# `nest build` 同理：本机 safe-delete 会拦 `rm -rf dist`（报 SAFE_DELETE_BULK_CONFIRM_REQUIRED），
+# 绕过办法是先把 dist 移出去再 build，于是仓库根会留下 `.dist-bak-*` / `.dist-bad-*` 之类的备份
+# （2026-09-29 有两位工程师各留了一个，共 3.6MB，污染 git status）。
+# 这类目录不入库；**移出时请用系统临时目录，不要放仓库内**。
+.dist-*/
 coverage/
 # 带后缀的覆盖率输出（如 `packages/core/coverage-r11x/`）：同样是 istanbul 生成物，不入库
 coverage-*/
-# vitest 临时目录：本机 `TEMP` 需指向仓库内路径才能绕开 EPERM 丢测试文件的问题，
-# 这个目录就是那个临时 `TEMP`，纯运行时产物
+# ⚠️ 已证伪的旧经验（2026-09-29 修正）：曾以为本机 `TEMP` 必须指向仓库内才能绕开 EPERM 丢测试文件。
+# 实测**相反** —— `TEMP` 设在仓库内会让测试临时目录向上回溯，命中真实的
+# `infra/db/seed/food_embeddings.json`，诱导 `rag.vector-path.test.ts` **假失败**。
+# 正确做法：用**系统默认 TEMP** + `--no-file-parallelism`。
+# 此条目保留仅为兼容旧环境，不要再用它。
 .tmp-vitest/
 *.tsbuildinfo
 # Taro/SWC 编译缓存（`taro build` 时自动生成，纯缓存产物，勿提交）
