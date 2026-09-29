@@ -325,6 +325,17 @@ export interface MealLog {
   foodItemId: number | null;
   /** db: custom_name —— 快速加卡 / AI 名称 */
   customName: string | null;
+  /**
+   * **非 DB 列 —— 服务端派生字段**：`food_items.name` 的快照，**仅当 `foodItemId` 非空时填充**。
+   *
+   * 由来：普通记录（选食物库条目）只写 `food_item_id`，`customName` 恒为 `null` ——
+   * 若前端仅凭契约无法拿到名字，列表只能退化成「食物 #45」。服务端在返回 `MealLog`
+   * 时通过 join 食物表把它补上，前端按 `customName ?? foodName ?? 食物 #id` 取展示名。
+   *
+   * **可选**（向后兼容）：旧客户端 / 旧响应 / 未 join 的返回路径可能不带此键；
+   * 缺失或 `null` 时前端回落到 `食物 #id`，不得崩溃。
+   */
+  foodName?: string | null;
   /** db: grams —— 选定克数（单位 g），可空=按份量估算 */
   grams: number | null;
   /** db: serving_unit —— 个/碗/杯/片/袋 */

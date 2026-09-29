@@ -91,10 +91,14 @@ export class MealsService {
         ...(dto.from && dto.to ? { loggedDate: { gte: dto.from, lte: dto.to } } : { loggedDate: date }),
         ...(dto.mealType ? { mealType: dto.mealType } : {}),
       },
+      // ★ 关键 join：普通记录只存 `food_item_id`、`custom_name` 恒为 null，
+      //   必须把食物名一并带出，否则前端列表只能显示「食物 #45」（本次修复的根因）。
+      //   只 select `name`（单列，成本极低），不整行带出。
+      include: { foodItem: { select: { name: true } } },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     });
 
-    const logs = rows.map(toMealLog);
+    const logs = rows.map((row) => toMealLog(row, row.foodItem?.name ?? null));
 
     const byType = new Map<MealType, MealLog[]>();
     for (const log of logs) {
@@ -184,7 +188,8 @@ export class MealsService {
         });
       });
 
-      return { entry: toMealLog(row), dayTotals: await this.dayTotals(userId, loggedDate) };
+      // 食物已在作用域内，直接带出派生名（前端若直接采用本响应也能显示人话名字）。
+      return { entry: toMealLog(row, food.name), dayTotals: await this.dayTotals(userId, loggedDate) };
     }
 
     const customName = dto.customName?.trim();
@@ -360,7 +365,8 @@ export class MealsService {
         },
       });
 
-      return { entry: toMealLog(updated), dayTotals: await this.dayTotals(userId, row.loggedDate) };
+      // 食物库条目：食物已在作用域内，带出派生名（PATCH 响应同样可显示人话名字）。
+      return { entry: toMealLog(updated, food.name), dayTotals: await this.dayTotals(userId, row.loggedDate) };
     }
 
     // 快速加卡 / 自定义条目：没有食物库参照物 → 改什么存什么，不做任何重算。
@@ -594,7 +600,11 @@ export class MealsService {
     });
 
     return {
-      entries: created.map(toMealLog),
+      // ⚠️ 必须用箭头函数：`Array.map` 会把 (value, index) 传给回调，而 `toMealLog`
+      //    的第二个入参是 `foodName`（string）—— 直接 `map(toMealLog)` 会把 index 当名字传。
+      //    套餐明细的 `customName` 由 `prepareComboItem` 保证非空（库内取食物名、自定义取手填名），
+      //    故这里不额外 join，`foodName` 保持 `null`（前端优先用 customName）。
+      entries: created.map((row) => toMealLog(row)),
       dayTotals: await this.dayTotals(userId, loggedDate),
     };
   }

@@ -41,6 +41,7 @@ import type { PortionEditSubmit } from './MealPortionEditor';
 import SaveComboDialog from './SaveComboDialog';
 import { usePointerReorder } from './usePointerReorder';
 import { mealLogsToComboItems } from '@/lib/combo-map';
+import { resolveMealLogName } from '@/lib/meal-name';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, computeKcalFromFood, sumKcal } from './meal-utils';
 import { enqueueRequest } from '@/pwa/offline-queue';
 
@@ -509,6 +510,9 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           mealType,
           foodItemId: payload.kind === 'food' ? payload.food.id : null,
           customName: payload.kind === 'quick' ? payload.name : null,
+          // 离线乐观条目也带上派生名：否则离线期间列表会短暂退化成「食物 #id」，
+          // 联网后（服务端 join 补名）又变回真名 —— 同一屏出现两种名字。
+          foodName: payload.kind === 'food' ? payload.food.name : null,
           grams: payload.kind === 'food' ? payload.grams : null,
           servingUnit: payload.kind === 'food' ? payload.servingUnit : null,
           servingQty: null,
@@ -775,7 +779,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                   <MealItemRow
                     key={log.id}
                     log={log}
-                    name={log.customName ?? `食物 #${log.foodItemId ?? '—'}`}
+                    name={resolveMealLogName(log)}
                     kcalLabel={`${toDisplayEnergy(log.kcal, unit)} ${energyLabel(unit)}`}
                     gramsLabel={log.grams !== null ? `${log.grams}g` : null}
                     canMoveUp={index > 0}
@@ -849,7 +853,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         <SaveComboDialog
           mealType={savingComboMeal}
           itemNames={(groups.find((group) => group.mealType === savingComboMeal)?.logs ?? []).map(
-            (log) => log.customName ?? `食物 #${log.foodItemId ?? '—'}`,
+            (log) => resolveMealLogName(log),
           )}
           defaultName={comboDefaultName(MEAL_TYPE_LABELS[savingComboMeal], formatMonthDay(date))}
           busy={saveCombo.isPending}

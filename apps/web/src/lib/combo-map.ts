@@ -1,5 +1,7 @@
 import type { MealComboItemInput, MealLog } from '@qsh/shared-types';
 
+import { resolveMealLogName } from './meal-name';
+
 /**
  * 套餐明细映射（lib/combo-map.ts，R3.9 / GAP-2）。
  *
@@ -11,7 +13,8 @@ import type { MealComboItemInput, MealLog } from '@qsh/shared-types';
  * ## 关键不变量
  * 1. `foodItemId === null` 的自定义条目（快加卡）**必须**带 `customName` 与 `kcal` ——
  *    后端 `prepareComboItem` 明确强校验：自定义条目缺名称 / 缺热量会被拒绝；
- * 2. 库内条目也一并带 `customName`（= 记录时的展示名），让套餐明细在任何时候都能显示人话名称，
+ * 2. **库内条目也要带 `customName`**（= 记录时的展示名，经 `resolveMealLogName` 解析：
+ *    `customName ?? foodName`），让套餐明细在任何时候都能显示人话名称，
  *    而不是退化成「食物 #42」；
  * 3. `sortOrder` 用**该餐内数组下标**，保证「照这个搭配再记一次」的顺序与用户看到的一致
  *    （AC-3.8.5：`applyCombo` 按 `sortOrder || id` 排）；
@@ -36,9 +39,12 @@ export function mealLogsToComboItems(logs: readonly MealLog[]): MealComboItemInp
       item.foodId = log.foodItemId;
     }
 
-    // ② 名称：库内与自定义条目都带 —— 没有它套餐明细只能显示「食物 #id」
-    if (log.customName !== null && log.customName.trim() !== '') {
-      item.customName = log.customName;
+    // ② 名称：库内与自定义条目都带 —— 没有它套餐明细只能显示「食物 #id」。
+    //    统一口径解析：`customName ?? foodName`（库内条目 customName 为 null，
+    //    名字来自服务端派生的 foodName）。传空兜底串 → 两个名字都没有时**不写键**。
+    const displayName = resolveMealLogName(log, '');
+    if (displayName.trim() !== '') {
+      item.customName = displayName;
     }
 
     // ③ 热量：**必传**。自定义条目靠它落库（后端强校验）；库内条目也一并带上，

@@ -120,8 +120,13 @@ export default function MealItemRow({
               ⋮⋮
             </span>
           )}
+          {/*
+            emoji 用**父组件解析好的展示名**（`name`）而非 `log.customName` ——
+            库内条目的 `customName` 为 null，若仍按它取 emoji 会一律兜底成 🍴，
+            与旁边真实的「米饭」等名字不匹配（与列表名同源，口径一致）。
+          */}
           <span aria-hidden="true" className="text-lg">
-            {emojiForFoodName(log.customName)}
+            {emojiForFoodName(name)}
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm text-slate-800 dark:text-slate-100">{name}</p>

@@ -204,8 +204,20 @@ export function toFoodItem(row: FoodItemRow): FoodItem {
   };
 }
 
-/** `meal_logs` 行 → `MealLog`。 */
-export function toMealLog(row: MealLogRow): MealLog {
+/**
+ * `meal_logs` 行 → `MealLog`。
+ *
+ * **`foodName` 是服务端派生字段**（非 DB 列）：列表/单条返回需要展示名字时，
+ * 调用方通过 `include: { foodItem: { select: { name: true } } }` 取到食物名后作为
+ * 第二个入参传入；不传时默认 `null`。为保持既有调用点不变，该参数**可选**。
+ *
+ * ⚠️ 仅当 `row.foodItemId` 非空时才写 `foodName` —— 快速加卡 / 自定义条目
+ * （`foodItemId === null`）即便被误传也归一为 `null`，语义与契约一致（K16 单一口径）。
+ *
+ * @param row      Prisma `meal_logs` 行（可携带 join 结果，多出的键被忽略）
+ * @param foodName `food_items.name` 派生值；缺省 `null`
+ */
+export function toMealLog(row: MealLogRow, foodName: string | null = null): MealLog {
   return {
     id: row.id,
     userId: row.userId,
@@ -213,6 +225,7 @@ export function toMealLog(row: MealLogRow): MealLog {
     mealType: row.mealType as MealType,
     foodItemId: row.foodItemId,
     customName: row.customName,
+    foodName: row.foodItemId === null ? null : foodName,
     grams: row.grams,
     servingUnit: row.servingUnit,
     servingQty: row.servingQty,

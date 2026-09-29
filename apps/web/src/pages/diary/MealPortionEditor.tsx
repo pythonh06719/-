@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
 import { energyLabel, fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { resolveMealLogName } from '@/lib/meal-name';
 import { DEFAULT_SERVING_GRAMS } from './meal-utils';
 
 /**
@@ -84,8 +85,16 @@ export default function MealPortionEditor({
     retry: 0,
   });
 
+  /**
+   * 展示名（与日记列表**同一口径**）：`customName ?? foodName ?? 食物库名 ?? 这条记录`。
+   *
+   * `foodName` 由服务端在返回记录时派生（食物库名快照），因此**即使下面的
+   * `GET /foods/:id` 还没回来 / 失败，名字也已可读**；`food?.name` 只是兜底
+   * （兼容未带 `foodName` 的旧响应）。那个请求**不能省** —— 它还要拿
+   * `servingUnits`（份量单位表）与每 100g 值做热量预览（见 `previewKcal`）。
+   */
   const food = foodQuery.data ?? null;
-  const displayName = log.customName ?? food?.name ?? '这条记录';
+  const displayName = resolveMealLogName(log, food?.name ?? '这条记录');
 
   const gramsNumber = Number(grams);
   /** 改后热量预览：食物库条目按 core 公式算；快加条目直接用填的值。 */
