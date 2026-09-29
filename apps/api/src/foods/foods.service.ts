@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
+
 import {
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   FREQUENT_FOOD_DEFAULTS,
@@ -30,6 +32,7 @@ import { addDays, todayLocalKey } from '../common/utils/date.util';
 import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
+import { UpdateCustomFoodDto } from './dto/update-custom-food.dto';
 import {
   BARCODE_PATTERN,
   OFF_LICENSE,
@@ -671,6 +674,183 @@ export class FoodsService {
       }
       throw error;
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // 我的食物库（C-4 第二步 / R3.6）：管理本人自建食物（列 / 改 / 删）
+  // -------------------------------------------------------------------------
+
+  /**
+   * **列出本人自建的食物**（`GET /api/foods/mine`）。
+   *
+   * 与 `search()` / `recent()` / `favorites()` 的**区别**：这里刻意**只取自己建的**
+   * （`createdByUserId = userId` 且 `source = 'user_custom'`），**不含** builtin /
+   * openfoodfacts / usda / cfcd 等公开来源 —— 用户要的是「管理我存的东西」，
+   * 不是「浏览全库」。
+   *
+   * `where` 里**两个条件都写**（虽然后端写入时二者总是同时成立）：语义明确 ——
+   * 明确表达「本人创建的**自定义**条目」，不依赖「createdByUserId 非空 ⇒ source=user_custom」这一隐含假设。
+   *
+   * 排序 `id desc`（最近建的在前）：`id` 单调递增且**索引友好**（主键），
+   * 比 `createdAt`（字符串时间，同样存在时可能并列）更稳定。
+   *
+   * `take: 200` 为纵深防御上限：个人自建库正常远小于此，防止异常账号把整表读进内存。
+   *
+   * @param userId 当前登录用户 id（来自 JWT）
+   * @returns 本人自建食物（最近的在前），最多 200 条
+   */
+  async listMine(userId: number, limit = 200): Promise<FoodItem[]> {
+    const rows = await this.prisma.foodItem.findMany({
+      where: { createdByUserId: userId, source: 'user_custom' },
+      orderBy: { id: 'desc' },
+      take: limit,
+    });
+    return rows.map(toFoodItem);
+  }
+
+  /**
+   * **修改本人自建的食物**（`PATCH /api/foods/:id`）—— 部分更新语义，只改传入的字段。
+   *
+   * ## 越权判定：**绝不能**复用 `requireVisibleFood`（安全核心）
+   *
+   * `visibleFoodWhere` 是 **OR** 语义 —— builtin / openfoodfacts / usda / cfcd **也「可见」**。
+   * 若用 `requireVisibleFood` 做改校验，用户就能**改掉内置食物**（全库共用的 1773 条种子数据）。
+   * 故这里用更严格的 `requireOwnedCustomFood`：`id` + `source='user_custom'` + `createdByUserId=userId`
+   * **三条件同时满足**，否则一律 404（项目惯例：越权返回 404 而非 403，不泄露存在性）。
+   *
+   * ## 可改字段与安全边界
+   *
+   * `name` / `category` / `kcalPer100g` / 三个宏量 / `servingUnits` / `aliases` / `barcode`
+   * 走 `UpdateCustomFoodDto`（`source` / `createdByUserId` / `isVerified` / `id` **不在 DTO 里**，
+   * 即使提交也被全局 `whitelist` 剥离）。默认份量克数与 Create 同款：取**标记默认**的那一条，否则第一条。
+   *
+   * @returns 更新后的 `FoodItem`
+   */
+  async updateCustom(userId: number, foodId: number, dto: UpdateCustomFoodDto): Promise<FoodItem> {
+    await this.requireOwnedCustomFood(userId, foodId);
+
+    const data: Prisma.FoodItemUpdateInput = {};
+
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      // 防御：`@MinLength(1)` 允许纯空白字符串（长度 ≥ 1），这里再判一次「trim 后非空」（同 createCustom）。
+      if (name.length === 0) {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '请填写名称', { name: '请填写名称' });
+      }
+      data.name = name;
+    }
+    if (dto.category !== undefined) {
+      data.category = dto.category;
+    }
+    if (dto.kcalPer100g !== undefined) {
+      data.kcalPer100g = dto.kcalPer100g;
+    }
+    if (dto.proteinGPer100g !== undefined) {
+      data.proteinGPer100g = dto.proteinGPer100g;
+    }
+    if (dto.fatGPer100g !== undefined) {
+      data.fatGPer100g = dto.fatGPer100g;
+    }
+    if (dto.carbGPer100g !== undefined) {
+      data.carbGPer100g = dto.carbGPer100g;
+    }
+    if (dto.servingUnits !== undefined) {
+      // 份量单位归一：复用读路径的同一套解析（写读对称，非法元素被静默滤除），
+      // 默认份量克数取「标记默认的那一条」，否则第一条（与 createCustom 一致）。
+      const servingUnits = parseServingUnits(JSON.stringify(dto.servingUnits ?? []));
+      data.servingUnits = JSON.stringify(servingUnits);
+      data.defaultServingGrams =
+        servingUnits.find((item) => item.isDefault === true)?.grams ?? servingUnits[0]?.grams ?? null;
+    }
+    if (dto.aliases !== undefined) {
+      const aliases = [...new Set(dto.aliases.map((alias) => alias.trim()).filter((alias) => alias.length > 0))];
+      data.aliases = JSON.stringify(aliases);
+    }
+    if (dto.barcode !== undefined) {
+      const barcode = dto.barcode.trim();
+      data.barcode = barcode.length > 0 ? barcode : null;
+    }
+
+    try {
+      const row = await this.prisma.foodItem.update({ where: { id: foodId }, data });
+      return toFoodItem(row);
+    } catch (error) {
+      // `barcode` 唯一约束（`ux_food_barcode`）冲突 → 可读的 400（不 500、不吞错），与 createCustom 同款。
+      if (isUniqueConstraintError(error)) {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '这个条码已经有一条食物了，可以不填条码', {
+          barcode: '这个条码已经有一条食物了，可以不填条码',
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * **删除本人自建的食物**（`DELETE /api/foods/:id`）。
+   *
+   * ## 越权判定：同 `updateCustom`，用 `requireOwnedCustomFood`（三条件），否则 404
+   *
+   * ## 数据完整性：删除前**必须先写名字快照**（本方法最关键的一步）
+   *
+   * 外键行为（见 `prisma/schema.prisma`）：
+   * - `MealLog.foodItem` 是 **`onDelete: SetNull`** → 删食物后，引用它的 `meal_logs` 行
+   *   `food_item_id` 变 **null**；
+   * - `MealComboItem.foodItem` 同样是 **`onDelete: SetNull`** → 同上。
+   *
+   * ⚠️ **问题**：普通记录（从食物库选中条目记录的）写入时 `custom_name` **本来就是 null**
+   * （见 `meals.service.ts`：`customName: dto.customName ?? null`），而 `MealLog` 契约**没有 name 字段**、
+   * `listByDate` 也**不 join 食物表**。于是 `foodItemId` 被 SetNull 后，那条历史记录会**退化成无名条目**。
+   *
+   * 因此本方法在**同一事务**里先补名字，再删：
+   * 1. `meal_logs` 中 `foodItemId = :id 且 custom_name IS NULL` 的行 → `custom_name = <食物名字>`；
+   * 2. `meal_combo_items` 同上；
+   * 3. 然后才 `delete` 该 `food_items` 行（此时 SetNull 生效，但名字已留存）。
+   *
+   * 🔴 **只补 `custom_name IS NULL` 的行**，**绝不覆盖**已有 `customName` —— 用户可能在记录时
+   * 把显示名改成了「我的减脂餐」之类，覆盖它等于篡改用户输入。
+   *
+   * ## 收藏：**无需处理**
+   *
+   * `FoodFavorite.foodItem` 是 **`onDelete: Cascade`** → 收藏关联随食物删除自动清理（合理）。
+   *
+   * @returns `{ deleted: true }`（对齐 `DELETE /api/exercises/:id`）
+   */
+  async removeCustom(userId: number, foodId: number): Promise<{ deleted: true }> {
+    const food = await this.requireOwnedCustomFood(userId, foodId);
+
+    await this.prisma.$transaction(async (tx) => {
+      // ① 删除前：把名字快照写进引用它的历史行（只补 customName 为空的行，绝不覆盖已有值）。
+      await tx.mealLog.updateMany({
+        where: { foodItemId: foodId, customName: null },
+        data: { customName: food.name },
+      });
+      await tx.mealComboItem.updateMany({
+        where: { foodItemId: foodId, customName: null },
+        data: { customName: food.name },
+      });
+      // ② 再删食物：此时 SetNull 会让 foodItemId 变 null，但名字已留存（①）。
+      await tx.foodItem.delete({ where: { id: foodId } });
+    });
+
+    return { deleted: true };
+  }
+
+  /**
+   * 校验食物**存在且为当前用户自建**，返回 Prisma 行；否则统一抛 404（不泄露存在性）。
+   *
+   * ⚠️ **不要用它替换 `requireVisibleFood` 做「可见性」判断** —— 二者语义不同：
+   * - `requireVisibleFood`：**OR** 语义（公开来源 **或** 本人创建），用于「读 / 记一餐」等**只读可见**场景；
+   * - 本方法：**AND** 语义（必须 `source='user_custom'` **且** `createdByUserId=userId`），
+   *   专用于「改 / 删自己的东西」这类**写**操作 —— 只有它才能挡住「用户删/改内置食物」的越权。
+   */
+  async requireOwnedCustomFood(userId: number, foodId: number) {
+    const food = await this.prisma.foodItem.findFirst({
+      where: { id: foodId, source: 'user_custom', createdByUserId: userId },
+    });
+    if (!food) {
+      throw new ApiException(404, ERROR_CODES.NOTFOUND_FOOD, '没有找到这个食物');
+    }
+    return food;
   }
 
   /**

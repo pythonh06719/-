@@ -26,6 +26,7 @@ const FastingPage = lazy(() => import('@/pages/fasting/FastingPage'));
 const ReportPage = lazy(() => import('@/pages/report/ReportPage'));
 const AiPage = lazy(() => import('@/pages/ai/AiPage'));
 const WhyNumbersPage = lazy(() => import('@/pages/why-numbers/WhyNumbersPage'));
+const MyFoodsPage = lazy(() => import('@/pages/foods/MyFoodsPage'));
 
 /** 单条路由定义。 */
 export interface AppRoute {
@@ -82,6 +83,9 @@ export const routes: AppRoute[] = [
 
   // 7. 数据管理（导出 / 导入 / 删除）
   { path: '/settings/data', element: withShell(<SettingsDataPage />, '数据管理') },
+
+  // 7b. 我的食物库（C-4 第二步）：管理自己存进库的食物（改 / 删）
+  { path: '/settings/foods', element: withShell(<MyFoodsPage />, '我的食物库') },
 
   // 8~13. 分期占位（文案友好，不出现「未实现」字眼）
   { path: '/exercise', element: withShell(<ExercisePage />, '运动与饮水') },

@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -29,6 +30,7 @@ import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
 import { ImportExternalDto } from './dto/import-external.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
+import { UpdateCustomFoodDto } from './dto/update-custom-food.dto';
 import { FoodsService } from './foods.service';
 import type { FoodSearchRankedResult, FoodSearchResult } from './foods.service';
 
@@ -109,6 +111,21 @@ export class FoodsController {
     return this.foodsService.favorites(userId);
   }
 
+  /**
+   * **我的食物库**（C-4 第二步 / R3.6）：`GET /api/foods/mine` —— 列出**本人自建**的食物。
+   *
+   * 与「搜索 / 最近 / 收藏」不同：这里**只列自己存进库的**（`source=user_custom` 且
+   * `createdByUserId=当前用户`），供用户在「我的食物库」页改 / 删。
+   *
+   * ⚠️ **声明位置**：必须放在 `@Get(':id')` **之前** —— 本文件顶部注释已约定
+   * 「静态子路径先于动态参数路由」；否则 `/foods/mine` 会被 `:id` 抢先匹配，
+   * `ParseIntPipe` 再把 `'mine'` 打成 400。
+   */
+  @Get('mine')
+  listMine(@CurrentUser() userId: number): Promise<FoodItem[]> {
+    return this.foodsService.listMine(userId);
+  }
+
   /** 条码查询（Phase C-2）：先本地后在线，命中即幂等入库返回。 */
   @Get('barcode/:code')
   @UseGuards(UserThrottlerGuard)
@@ -159,6 +176,39 @@ export class FoodsController {
   @Get(':id')
   byId(@CurrentUser() userId: number, @Param('id', ParseIntPipe) id: number): Promise<FoodItem> {
     return this.foodsService.byId(userId, id);
+  }
+
+  /**
+   * **修改本人自建食物**（C-4 第二步 / R3.6）：`PATCH /api/foods/:id`。
+   *
+   * 部分更新语义（`UpdateCustomFoodDto` 全字段可选，只改传入的）。越权判定用
+   * **严格三条件**（`id` + `source='user_custom'` + `createdByUserId=当前用户`），
+   * 否则 404 —— ⚠️ **绝不能**复用 `requireVisibleFood`（OR 语义），否则用户可改内置食物。
+   *
+   * `source` / `createdByUserId` / `isVerified` / `id` **不在 DTO 里**，提交也被 `whitelist` 剥离。
+   */
+  @Patch(':id')
+  updateCustom(
+    @CurrentUser() userId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCustomFoodDto,
+  ): Promise<FoodItem> {
+    return this.foodsService.updateCustom(userId, id, dto);
+  }
+
+  /**
+   * **删除本人自建食物**（C-4 第二步 / R3.6）：`DELETE /api/foods/:id`。
+   *
+   * 越权判定同 `PATCH`（严格三条件，否则 404）。删除前在同一事务里把食物名快照写进
+   * 引用它的 `meal_logs` / `meal_combo_items`（只补 `customName` 为空的行），避免历史记录
+   * 因 `onDelete: SetNull` 退化成无名条目（详见 `FoodsService.removeCustom` 注释）。
+   */
+  @Delete(':id')
+  removeCustom(
+    @CurrentUser() userId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ deleted: true }> {
+    return this.foodsService.removeCustom(userId, id);
   }
 
   /** 加入收藏。 */

@@ -1,0 +1,227 @@
+import { useEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
+import { FOOD_CATEGORIES, foodCategoryLabel } from '@qsh/core';
+import type { FoodItem } from '@qsh/shared-types';
+import { COPY } from '@/lib/copy';
+
+/**
+ * 「改一下这个食物」编辑弹窗（pages/foods/EditFoodDialog.tsx，C-4 第二步）。
+ *
+ * 用于「我的食物库」页面：编辑一条**本人自建**食物的名称 / 分类 / 每 100g 热量。
+ *
+ * ## 交互（照抄 `SaveComboDialog.tsx` 的模态骨架）
+ * - `role="dialog"` + `aria-modal` + `aria-labelledby` 关联标题；
+ * - Esc 关闭（提交中不响应，避免打断在途请求）；打开时自动聚焦名称输入框；
+ * - 提交中禁用按钮，防重复提交；名称未填时给中性提示且**不发请求**；
+ * - 服务端错误由父组件通过 `errorText` 就地展示，弹窗**不关闭**、保留已填内容。
+ *
+ * ## 红线（PRD §7 无负罪感）
+ * - **不展示任何新数字**（只回显/编辑已有的每 100g 热量）；
+ * - 错误提示只给一句中性话，**不用红色恐吓**；
+ * - `source` / `createdByUserId` / `isVerified` 由服务端强制，前端**绝不**提交（也不出现在本弹窗）。
+ *
+ * ## UI 规范自检（`docs/VISUAL-SYSTEM.md`，对齐 `SaveComboDialog` / `MealPortionEditor`）
+ * - 触控：按钮与输入框一律 `qsh-touch-target`（≥44×44）；
+ * - 圆角 / 动效：语义令牌 `rounded-control` / `duration-qsh-base` + `ease-qsh-out`；
+ * - 对比度：12px（`text-xs`）文字统一 `slate-600` / `dark:slate-300`；
+ * - 禁用用 `disabled:opacity-60` 保留控件。
+ */
+
+/** 编辑提交体（仅三个可编辑字段；不含 source / createdByUserId）。 */
+export interface EditFoodSubmit {
+  name: string;
+  category: string;
+  kcalPer100g: number;
+}
+
+export interface EditFoodDialogProps {
+  /** 待编辑的食物（父组件从列表项传入，作为表单初值） */
+  food: FoodItem;
+  /** 是否正在提交（为真时禁用按钮，防重复提交） */
+  busy: boolean;
+  /** 就地错误提示；`null` = 不展示 */
+  errorText: string | null;
+  /** 关闭弹窗（不保存） */
+  onCancel: () => void;
+  /** 提交编辑（父组件负责 PATCH / 缓存刷新 / 播报） */
+  onSubmit: (payload: EditFoodSubmit) => void;
+}
+
+export default function EditFoodDialog({
+  food,
+  busy,
+  errorText,
+  onCancel,
+  onSubmit,
+}: EditFoodDialogProps): ReactElement {
+  const [name, setName] = useState<string>(food.name);
+  const [category, setCategory] = useState<string>(food.category);
+  const [kcal, setKcal] = useState<string>(String(food.kcalPer100g));
+  const [hint, setHint] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const titleId = 'edit-food-title';
+
+  // 打开即聚焦名称输入框（与 SaveComboDialog 一致）。
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  // Esc 关闭（全站弹窗一致）。提交中不响应，避免打断在途请求。
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !busy) {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [busy, onCancel]);
+
+  const submit = (): void => {
+    if (busy) {
+      return;
+    }
+    if (name.trim() === '') {
+      setHint(COPY.myFoodsEditNameRequired);
+      return;
+    }
+    const parsedKcal = Number(kcal);
+    if (kcal.trim() === '' || !Number.isFinite(parsedKcal) || parsedKcal < 0) {
+      setHint(COPY.myFoodsEditKcalRequired);
+      return;
+    }
+    setHint(null);
+    onSubmit({ name: name.trim(), category, kcalPer100g: parsedKcal });
+  };
+
+  /** 就地提示（父级错误优先，其次本地提示）。 */
+  const notice = errorText ?? hint;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      data-testid="edit-food-dialog"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+    >
+      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
+        <div className="flex items-center justify-between">
+          <h2 id={titleId} className="text-base font-semibold text-slate-800 dark:text-slate-100">
+            {COPY.myFoodsEditTitle}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            data-testid="edit-food-close"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-500 transition duration-qsh-base ease-qsh-out disabled:opacity-60 dark:text-slate-400"
+            aria-label="关闭编辑面板"
+          >
+            关闭
+          </button>
+        </div>
+
+        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{COPY.myFoodsEditDesc}</p>
+
+        <label className="mt-4 block text-sm text-slate-600 dark:text-slate-300">
+          {COPY.myFoodsEditNameLabel}
+          <input
+            ref={inputRef}
+            type="text"
+            value={name}
+            data-testid="edit-food-name"
+            onChange={(event) => {
+              setName(event.target.value);
+              if (hint !== null) {
+                setHint(null);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                submit();
+              }
+            }}
+            aria-label={COPY.myFoodsEditNameLabel}
+            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </label>
+
+        <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+          {COPY.myFoodsEditCategoryLabel}
+          <select
+            value={category}
+            data-testid="edit-food-category"
+            onChange={(event) => setCategory(event.target.value)}
+            aria-label={COPY.myFoodsEditCategoryLabel}
+            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            {FOOD_CATEGORIES.map((item) => (
+              <option key={item} value={item}>
+                {foodCategoryLabel(item)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+          {COPY.myFoodsEditKcalLabel}
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            value={kcal}
+            data-testid="edit-food-kcal"
+            onChange={(event) => {
+              setKcal(event.target.value);
+              if (hint !== null) {
+                setHint(null);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                submit();
+              }
+            }}
+            aria-label={COPY.myFoodsEditKcalLabel}
+            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </label>
+
+        {notice !== null && (
+          <p
+            role="status"
+            data-testid="edit-food-notice"
+            className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+          >
+            {notice}
+          </p>
+        )}
+
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy}
+            data-testid="edit-food-save"
+            className="qsh-touch-target flex-1 rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
+          >
+            {busy ? COPY.myFoodsEditBusy : COPY.myFoodsEditSave}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            data-testid="edit-food-cancel"
+            className="qsh-touch-target rounded-control bg-brand-50 px-4 text-sm text-brand-700 transition duration-qsh-base ease-qsh-out disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
+          >
+            {COPY.myFoodsEditCancel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

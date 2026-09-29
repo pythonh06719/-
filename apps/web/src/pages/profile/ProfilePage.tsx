@@ -285,6 +285,16 @@ export default function ProfilePage(): ReactElement {
         数据导出 / 导入 / 删除
       </Link>
 
+      {/* 我的食物库（C-4 第二步）：管理自己存进库的食物（改 / 删）。
+          与「数据导出 / 导入 / 删除」同属「我的」范畴的设置类落点，故并排放在这里；
+          用次级样式（brand-50/brand-700）与上面的主行动作区分层级。 */}
+      <Link
+        to="/settings/foods"
+        className="qsh-touch-target block rounded-2xl bg-brand-50 px-5 py-3 text-center font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+      >
+        我的食物库
+      </Link>
+
       {/* 安装到桌面的一句静态说明（GAP-8 降级版）—— 零 JS：
           不做 `beforeinstallprompt` 弹窗、不做 iOS 图示引导、不做横幅/浮层。
           「我的」页是设置类信息的落点，比 `/settings/data`（数据管理）更贴近
