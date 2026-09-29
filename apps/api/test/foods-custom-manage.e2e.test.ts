@@ -45,6 +45,9 @@ const { AppModule } = require('../dist/apps/api/src/app.module.js') as {
 const { PrismaService } = require('../dist/apps/api/src/prisma/prisma.service.js') as {
   PrismaService: typeof PrismaServiceClass;
 };
+const { todayLocalKey } = require('../dist/apps/api/src/common/utils/date.util.js') as {
+  todayLocalKey: (now?: Date) => string;
+};
 
 const API = '/api';
 const USER_A = 'e2e-manage-a@qinglife.test';
@@ -439,7 +442,9 @@ describe('核实：普通记录的 customName 到底是 null 还是有值（Diar
 
     const list = await request(server as never)
       .get(`${API}/meals`)
-      .query({ date: new Date().toISOString().slice(0, 10) })
+      // 用**本地日期键**（`todayLocalKey`）—— 与 `POST /meals` 写入的 `loggedDate` 同一口径。
+      // 禁止 `toISOString().slice(0,10)`：那是 UTC 日，本地零点到 UTC 零点之间会查到**前一天** → 找不到刚建的记录。
+      .query({ date: todayLocalKey() })
       .set(auth(tokenA))
       .expect(200);
 
