@@ -16,12 +16,13 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { FoodItem } from '@qsh/shared-types';
 import MyFoodsPage from '@/pages/foods/MyFoodsPage';
 import { COPY } from '@/lib/copy';
+import { useUnitStore } from '@/lib/units';
 
 function makeFood(id: number, name: string, category = '外卖', kcalPer100g = 620): FoodItem {
   return {
@@ -143,6 +144,25 @@ describe('C-4 我的食物库 · 列表', () => {
     expect(empty.textContent).toContain('快加');
     expect(empty.textContent).toContain('常吃的话勾上');
   });
+
+  it('每 100g 热量跟随全局单位（切到 kJ 显示 kJ，不写死 kcal）', async () => {
+    act(() => {
+      useUnitStore.setState({ unit: 'kj' });
+    });
+    try {
+      stubFetch([makeFood(11, '红烧肉', '家常菜', 680)]);
+      renderPage();
+
+      const row = await screen.findByTestId('my-food-item-11');
+      // 680 kcal → ≈2845 kJ（换算走 lib/units，文案走 copy.ts 的 myFoodsKcalPer100g）
+      expect(row.textContent).toContain(COPY.myFoodsKcalPer100g(680, 'kj'));
+      expect(row.textContent).not.toContain('kcal');
+    } finally {
+      act(() => {
+        useUnitStore.setState({ unit: 'kcal' });
+      });
+    }
+  });
 });
 
 describe('C-4 我的食物库 · 编辑', () => {
@@ -234,7 +254,7 @@ describe('C-4 我的食物库 · 文案红线（PRD §7 无负罪感）', () => 
       COPY.myFoodsEditDesc,
       COPY.myFoodsEditNameLabel,
       COPY.myFoodsEditCategoryLabel,
-      COPY.myFoodsEditKcalLabel,
+      COPY.myFoodsEditKcalLabel('kcal'),
       COPY.myFoodsEditSave,
       COPY.myFoodsEditCancel,
       COPY.myFoodsEditBusy,

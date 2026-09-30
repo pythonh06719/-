@@ -9,9 +9,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import type { GoalProgress } from '@qsh/shared-types';
 import GoalProgressCard from '@/pages/weight/GoalProgressCard';
+import { maintenanceLine } from '@/lib/copy';
+import { useUnitStore } from '@/lib/units';
 
 /** 未达成（掉了 4kg / 要掉 8kg = 50%，ETA 8.4 周 → 展示 9 周）。 */
 const IN_PROGRESS: GoalProgress = {
@@ -78,5 +80,23 @@ describe('GoalProgressCard（R2.7 目标达成进度卡）', () => {
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', '目标进度 0%');
     expect(screen.queryByText(/距离目标还有/)).toBeNull();
     expect(screen.getByText('按当前节奏还需 9 周')).toBeDefined();
+  });
+
+  it('★ 维持热量行跟随全局单位：切到 kJ 后显示 kJ、不再写死 kcal（防回归）', () => {
+    act(() => {
+      useUnitStore.setState({ unit: 'kj' });
+    });
+    try {
+      render(<GoalProgressCard progress={MAINTAINING} />);
+
+      // 单位感知：kJ 下的维持热量（换算走 lib/units）
+      expect(screen.getByText(maintenanceLine(1932.6, 'kj'))).toBeDefined();
+      // 切到 kJ 后，这一行不得再出现写死的 kcal
+      expect(screen.queryByText(/维持热量约.*kcal/)).toBeNull();
+    } finally {
+      act(() => {
+        useUnitStore.setState({ unit: 'kcal' });
+      });
+    }
   });
 });

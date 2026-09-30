@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { FOOD_CATEGORIES, foodCategoryLabel } from '@qsh/core';
 import type { FoodItem } from '@qsh/shared-types';
 import { COPY } from '@/lib/copy';
-import { energyLabel, fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
 
 /**
  * 「改一下这个食物」编辑弹窗（pages/foods/EditFoodDialog.tsx，C-4 第二步）。
@@ -170,7 +170,7 @@ export default function EditFoodDialog({
         </label>
 
         <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
-          {`每 100g 热量（${energyLabel(unit)}）`}
+          {COPY.myFoodsEditKcalLabel(unit)}
           <input
             type="number"
             inputMode="decimal"
@@ -189,7 +189,7 @@ export default function EditFoodDialog({
                 submit();
               }
             }}
-            aria-label={`每 100g 热量（${energyLabel(unit)}）`}
+            aria-label={COPY.myFoodsEditKcalLabel(unit)}
             className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>

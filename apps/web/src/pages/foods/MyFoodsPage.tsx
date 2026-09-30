@@ -6,7 +6,7 @@ import type { FoodItem } from '@qsh/shared-types';
 import { api, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY, myFoodDeleteAria } from '@/lib/copy';
-import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { useUnitStore } from '@/lib/units';
 import EditFoodDialog from './EditFoodDialog';
 import type { EditFoodSubmit } from './EditFoodDialog';
 
@@ -134,7 +134,7 @@ export default function MyFoodsPage(): ReactElement {
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-800 dark:text-slate-100">{food.name}</p>
                   <p className="qsh-tnum truncate text-xs text-slate-600 dark:text-slate-300">
-                    {foodCategoryLabel(food.category)} · 每 100g {toDisplayEnergy(food.kcalPer100g, unit)} {energyLabel(unit)}
+                    {foodCategoryLabel(food.category)} · {COPY.myFoodsKcalPer100g(food.kcalPer100g, unit)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">

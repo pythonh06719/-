@@ -8,8 +8,9 @@
  */
 
 import { PLATEAU_THRESHOLD_KG } from '@qsh/core';
-import type { RecordOverviewKey } from '@qsh/shared-types';
+import type { RecordOverviewKey, UnitSystem } from '@qsh/shared-types';
 import { WATER_ML_PER_CUP } from '@/theme/tokens';
+import { energyLabel, toDisplayEnergy } from '@/lib/units';
 
 export const COPY = {
   /** 通用鼓励（看板无数据 / 默认兜底） */
@@ -415,6 +416,21 @@ export const COPY = {
   /** 删除未成功（业务错误）：中性陈述，绝不出现「失败 / 错误」（PRD §7） */
   exerciseDeleteMissed: '这条这次没有删掉，稍后再试试',
   /* ---------------------------------------------------------------------------
+   * 饮水快捷记录（+250ml / 撤销）的**业务错误**提示（缺陷收尾批次）。
+   *
+   * 背景：这两个 mutation 的 `onError` 此前**无条件静默**（本意是「离线时静默落到本地缓存」），
+   * 但不分流会把**业务错误**（4xx/5xx）也一并吞掉 —— 用户点「+250ml」后本地那 +250 不显示、
+   * 又没有任何提示，看起来像「点了没反应」，于是反复点。故按同页既有的 `isNetworkError`
+   * 分流：网络错误仍静默（走本地缓存），业务错误给一句**中性软着陆**。
+   *
+   * 语气规范同 §7：中性陈述，不用「失败 / 错误 / 警告」作标题，不用红色。
+   * ⚠️ 本小节**只追加新键**，不改动任何既有行。
+   * ------------------------------------------------------------------------- */
+  /** 记一杯水未成功（业务错误） */
+  waterAddMissed: '这次没记上，稍后再试试就好',
+  /** 撤销上一条水未成功（业务错误） */
+  waterUndoMissed: '这次没撤掉，稍后再试试就好',
+  /* ---------------------------------------------------------------------------
    * AI 执行轨迹（GAP-7）—— 把「AI 是怎么回答的」讲给用户听，是**可解释性**的一部分。
    *
    * ⚠️ **展示口径（可解释性 NFR-11）**：只展示提问、状态、用到的工具名与每步耗时、
@@ -476,8 +492,14 @@ export const COPY = {
   myFoodsLoadError: '暂时读不到，稍后再看看',
   /** 加载中 */
   myFoodsLoading: '正在整理你的食物…',
-  /** 每 100g 热量（与食物库其它位置的展示口径一致） */
-  myFoodsKcalPer100g: (kcal: number) => `每 100g ${kcal} kcal`,
+  /**
+   * 每 100g 热量（与食物库其它位置的展示口径一致）。
+   *
+   * ⚠️ **单位感知**（K6 / R2.11）：跟随全局 kcal↔kJ 单位，换算走 `lib/units`。
+   * 这样「我的食物库」把 `每 100g` 这句也收进 copy.ts，组件里不再内联拼这句话。
+   */
+  myFoodsKcalPer100g: (kcal: number, unit: UnitSystem) =>
+    `每 100g ${toDisplayEnergy(kcal, unit)} ${energyLabel(unit)}`,
   /** 行内动作：改一下 */
   myFoodsEdit: '改一下',
   /** 行内动作：删掉 */
@@ -493,7 +515,12 @@ export const COPY = {
   /** 编辑弹窗字段标签 */
   myFoodsEditNameLabel: '名称',
   myFoodsEditCategoryLabel: '分类',
-  myFoodsEditKcalLabel: '每 100g 热量（kcal）',
+  /**
+   * 每 100g 热量字段标签（单位感知：跟随全局 kcal↔kJ，K6 / R2.11）。
+   *
+   * ⚠️ 必须是函数：标签里嵌的是**当前单位**，写死「（kcal）」会在切到 kJ 后误导输入。
+   */
+  myFoodsEditKcalLabel: (unit: UnitSystem) => `每 100g 热量（${energyLabel(unit)}）`,
   /** 编辑弹窗按钮 */
   myFoodsEditSave: '改好了',
   myFoodsEditCancel: '先不改',
@@ -679,9 +706,13 @@ export function goalBaselineLine(baselineKg: number, targetWeightKg: number): st
  * 维持模式下的热量说明（= TDEE，不制造缺口）。
  *
  * ⚠️ 绝不可写成「继续减」「再压一点」—— 已达成目标时再制造缺口是错误引导。
+ *
+ * ⚠️ **单位感知**（K6 / R2.11）：`/weight` 在 `AppShell` 内，顶栏可切 kcal↔kJ。
+ * 这一行必须跟随全局单位，否则用户切到 kJ 后全页只剩这一处仍写死 `kcal`。
+ * 换算走 `lib/units`（唯一实现），本函数不重写公式。
  */
-export function maintenanceLine(maintenanceKcal: number): string {
-  return `维持热量约 ${Math.round(maintenanceKcal)} kcal/日，不用再往下压`;
+export function maintenanceLine(maintenanceKcal: number, unit: UnitSystem): string {
+  return `维持热量约 ${toDisplayEnergy(maintenanceKcal, unit)} ${energyLabel(unit)}/日，不用再往下压`;
 }
 
 // ---------------------------------------------------------------------------

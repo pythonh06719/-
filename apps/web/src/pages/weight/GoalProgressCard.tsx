@@ -9,6 +9,7 @@ import {
   goalTargetLine,
   maintenanceLine,
 } from '@/lib/copy';
+import { useUnitStore } from '@/lib/units';
 
 /**
  * 目标达成进度卡（pages/weight/GoalProgressCard.tsx，R2.7）。
@@ -27,6 +28,8 @@ export interface GoalProgressCardProps {
 }
 
 export default function GoalProgressCard({ progress }: GoalProgressCardProps): ReactElement {
+  /** 全局热量单位（K6 / R2.11）：维持热量行必须跟随顶栏的 kcal↔kJ 切换。 */
+  const unit = useUnitStore((state) => state.unit);
   const percent = Math.round(progress.progressRatio * 100);
   const title = progress.maintenance ? COPY.goalProgressReachedTitle : COPY.goalProgressTitle;
 
@@ -40,7 +43,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
   /** 副行：维持模式给维持热量；未达成优先给「还需几周」，算不出来才退回目标值。 */
   const secondaryLine = progress.maintenance
     ? progress.maintenanceKcal !== null
-      ? maintenanceLine(progress.maintenanceKcal)
+      ? maintenanceLine(progress.maintenanceKcal, unit)
       : null
     : progress.etaWeeks !== null && progress.etaWeeks > 0
       ? goalEtaLine(progress.etaWeeks)
