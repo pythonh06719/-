@@ -7,6 +7,7 @@ import {
   FREQUENT_FOOD_DEFAULTS,
   findSameNameFood,
   foodCategoryLabel,
+  resolveLastPortionServing,
 } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
@@ -14,6 +15,7 @@ import type {
   FoodItem,
   FoodSearchHit,
   FoodSearchResponse,
+  LastPortionsResponse,
   LiveSearchResponse,
   MealComboWithItems,
   MealType,
@@ -136,6 +138,14 @@ export default function MealComposer({
   const [quickSaveToLibrary, setQuickSaveToLibrary] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  /**
+   * D-1「上次份量记忆」：本次选中的食物用的是**上次记的克数**时，记下那个克数，用于
+   * 在份量确认区显示一句中性小字（「上次记的是 300g」）。
+   *
+   * `null` = 这次没用历史（回落食物库默认份量）→ 不显示提示。
+   * 只存「展示用的一句话所需的最小数据」；不参与任何热量的计算。
+   */
+  const [lastPortionGrams, setLastPortionGrams] = useState<number | null>(null);
 
   /**
    * 搜索：`GET /foods/search`（**相关度优先**：前缀 > 子串 > 仅别名，同档按 id 稳定分页）。
@@ -482,6 +492,55 @@ export default function MealComposer({
   const emptyStateTopItems = topItems.slice(0, TOP_IN_EMPTY_STATE);
 
   /**
+   * **上次份量记忆**（D-1）：当前列表里出现的食物 id 集合（去重、升序）。
+   *
+   * 只对**正在渲染的那一屏**食物预取「上次份量」—— 用户点下去时默认值已就绪，
+   * 既不多一次点击，也不会出现「先显示默认、再跳成上次值」的抖动。
+   */
+  const visibleFoodIds = useMemo((): number[] => {
+    const ids = new Set<number>();
+    if (tab === 'search') {
+      for (const food of localItems) ids.add(food.id);
+      for (const item of emptyStateTopItems) {
+        if (item.food !== null) ids.add(item.food.id);
+      }
+    } else if (tab === 'category') {
+      for (const food of categoryItems) ids.add(food.id);
+    } else if (tab === 'recent') {
+      for (const food of Array.isArray(recentQuery.data) ? recentQuery.data : []) ids.add(food.id);
+    } else if (tab === 'favorite') {
+      for (const food of Array.isArray(favoriteQuery.data) ? favoriteQuery.data : []) ids.add(food.id);
+    } else if (tab === 'top') {
+      for (const item of topItems) {
+        if (item.food !== null) ids.add(item.food.id);
+      }
+    }
+    return [...ids].sort((a, b) => a - b);
+  }, [
+    tab,
+    localItems,
+    emptyStateTopItems,
+    categoryItems,
+    recentQuery.data,
+    favoriteQuery.data,
+    topItems,
+  ]);
+
+  /**
+   * 批量取「上次份量」（D-1）：`GET /foods/last-portions?ids=...` —— 一次请求覆盖整屏食物。
+   *
+   * 失败 / 离线 → `data` 为 `undefined` → `chooseFood` **静默回落**到食物库默认份量，
+   * **不报错、不阻塞**（本查询的失败刻意不进任何 `note`，也不显示任何错误文案）。
+   * 查询键由 id 集合的函数（结构化哈希）决定，故即使每次传入新数组引用也不会重复请求。
+   */
+  const lastPortionsQuery = useQuery({
+    queryKey: queryKeys.foodLastPortions(visibleFoodIds),
+    queryFn: () =>
+      api.get<LastPortionsResponse>('/foods/last-portions', { ids: visibleFoodIds.join(',') }),
+    enabled: visibleFoodIds.length > 0,
+  });
+
+  /**
    * 常吃榜列表项：**只有名称 + 天数**，没有任何营养字段、没有 `role="meter"`（AC-11.5.3 / AC-11.5.4）。
    *
    * 点击行为与 `recent` / `favorite` **完全一致**：走既有 `chooseFood()` → 份量确认 → 确认记录
@@ -516,12 +575,25 @@ export default function MealComposer({
     </ul>
   );
 
+  /**
+   * 选中食物 → 进入份量确认。
+   *
+   * **D-1 上次份量记忆**：默认份量**优先用这个食物「上次记的份量」**（`meal_logs` 里最近一次
+   * 有有效份量的记录，由 `GET /foods/last-portions` 预取）；没有历史（或离线取不到）→
+   * **回落** `resolveDefaultServing(food)`，行为与从前**完全一致**。
+   *
+   * 取值口径（「哪条历史有效」+「怎么折成默认份量」）在 `@qsh/core` 单一真源。
+   * 用户仍可在份量确认区直接改（这里只是**默认填值**，不锁死、也不跳过确认）。
+   */
   const chooseFood = (food: FoodItem, source: 'search' | 'barcode' = 'search'): void => {
-    const serving = resolveDefaultServing(food);
+    const portion = lastPortionsQuery.data?.portions?.[String(food.id)] ?? null;
+    const remembered = resolveLastPortionServing(portion, food);
+    const serving = remembered ?? resolveDefaultServing(food);
     setSelected(food);
     setSelectedSource(source);
     setServingUnit(serving.unit);
     setGrams(String(serving.grams));
+    setLastPortionGrams(remembered === null ? null : serving.grams);
   };
 
   /** 加入在线食物（服务端按条码重新拉取 OFF 后幂等入库）→ 复用既有份量确认流程。 */
@@ -1197,6 +1269,16 @@ export default function MealComposer({
             className="mt-5 rounded-2xl bg-brand-50 p-4 dark:bg-slate-900"
           >
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{selected.name}</h3>
+            {/* D-1：这次默认份量用了「上次记的量」时，给一句中性小字说明 ——
+                不弹窗、不要求确认（不增加点击），也不做任何对比 / 评价。 */}
+            {lastPortionGrams !== null && (
+              <p
+                data-testid="last-portion-hint"
+                className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+              >
+                {COPY.lastPortionHint(lastPortionGrams)}
+              </p>
+            )}
             <div className="mt-2 flex flex-wrap gap-2">
               {(selected.servingUnits ?? []).map((item) => (
                 <button

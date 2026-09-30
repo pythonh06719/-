@@ -239,6 +239,39 @@ export interface CreateCustomFoodRequest {
   aliases?: string[];
 }
 
+/**
+ * 某食物**最近一次记录的份量**（D-1「上次份量记忆」）。
+ *
+ * 只承载「复现用户自己上次填的量」所需的三个字段，**不含任何营养值**：
+ * 界面上回显的是用户上次记下的数字，不是我们算出的新口径。
+ */
+export interface LastPortion {
+  /** 选定克数（g，1 位小数）；食物库条目记录必有，快加卡记录为 `null` */
+  grams: number | null;
+  /** 份量单位（个 / 碗 / 杯 / 片 / 袋…）；无则 `null` */
+  servingUnit: string | null;
+  /** 份量数量；无则 `null` */
+  servingQty: number | null;
+}
+
+/** `GET /api/foods/last-portions` 查询参数。 */
+export interface LastPortionsQuery {
+  /** 逗号分隔的食物 id 列表（1–50 个，去重；非法项被忽略） */
+  ids?: string;
+}
+
+/**
+ * `GET /api/foods/last-portions` 响应。
+ *
+ * `portions` 以**食物 id 的十进制字符串**为键（JSON 对象键必为字符串）：
+ * - 有历史 → `LastPortion`；
+ * - 该食物可见但**没有任何有效份量的历史** → `null`（**不是 0，也不是空对象**）；
+ * - 该食物对当前用户不可见 → 键**不出现**（K7：不泄露存在性）。
+ */
+export interface LastPortionsResponse {
+  portions: Record<string, LastPortion | null>;
+}
+
 // ---------------------------------------------------------------------------
 // 在线食物库兜底（Phase C-1）：Open Food Facts 只读代理 + 幂等导入
 // ---------------------------------------------------------------------------

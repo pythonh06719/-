@@ -45,6 +45,13 @@ export const queryKeys = {
   foodRecent: ['foods', 'recent'] as const,
   /** 常吃榜（R11.5）：按统计窗口与条数上限分键 */
   foodTop: (days: number, limit: number) => ['foods', 'top', days, limit] as const,
+  /**
+   * 上次份量记忆（D-1）：按**当前列表的食物 id 集合**分键。
+   *
+   * 传数组即可 —— react-query 对查询键做**结构化哈希**（同内容的数字数组恒得同一个键），
+   * 故即使调用方每次传入新数组引用，也不会触发无谓的重取。
+   */
+  foodLastPortions: (ids: readonly number[]) => ['foods', 'last-portions', [...ids]] as const,
   foodFavorites: ['foods', 'favorites'] as const,
   /** 我的食物库（C-4 第二步）：只列本人自建食物，供改 / 删 */
   foodMine: ['foods', 'mine'] as const,

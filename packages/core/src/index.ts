@@ -264,6 +264,16 @@ export {
   type ScaledNutrients,
 } from './meal/portion';
 
+// 「上次份量记忆」口径（D-1）：判「哪条历史有效」+ 折成默认份量，单一真源
+export {
+  DEFAULT_PORTION_UNIT,
+  hasUsablePortion,
+  resolveLastPortionServing,
+  type LastPortionFood,
+  type LastPortionLike,
+  type LastPortionServing,
+} from './meal/last-portion';
+
 // ---------------------------------------------------------------------------
 // 四期全新项（R11.3 / R11.4 / R11.7）
 // ---------------------------------------------------------------------------

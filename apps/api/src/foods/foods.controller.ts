@@ -19,6 +19,7 @@ import { FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   FoodItem,
+  LastPortionsResponse,
   LiveSearchResponse,
   TopFoodsResponse,
 } from '@qsh/shared-types';
@@ -31,6 +32,7 @@ import { ImportExternalDto } from './dto/import-external.dto';
 import { LiveSearchDto } from './dto/live-search.dto';
 import { SearchFoodsDto } from './dto/search-foods.dto';
 import { UpdateCustomFoodDto } from './dto/update-custom-food.dto';
+import { parseFoodIdCsv } from './foods.util';
 import { FoodsService } from './foods.service';
 import type { FoodSearchRankedResult, FoodSearchResult } from './foods.service';
 
@@ -88,6 +90,23 @@ export class FoodsController {
   @Get('recent')
   recent(@CurrentUser() userId: number): Promise<FoodItem[]> {
     return this.foodsService.recent(userId);
+  }
+
+  /**
+   * **上次份量记忆**（D-1）：`GET /api/foods/last-portions?ids=1,2,3`。
+   *
+   * 返回若干食物「**最近一次有有效份量**的记录」，供前端在选食物前预填默认份量。
+   * `ids` 为逗号分隔的正整数列表（去重、上限 50，脏值静默忽略）。
+   *
+   * ⚠️ **声明位置**：必须放在 `@Get(':id')` **之前**（本文件顶部注释已约定
+   * 「静态子路径先于动态参数路由」）；否则 `/foods/last-portions` 会被 `:id` 抢先匹配，
+   * `ParseIntPipe` 再把 `'last-portions'` 打成 400。
+   *
+   * 归属：`userId` 取自 JWT（`@CurrentUser`），**绝不接受客户端传入**。
+   */
+  @Get('last-portions')
+  lastPortions(@CurrentUser() userId: number, @Query('ids') ids?: string): Promise<LastPortionsResponse> {
+    return this.foodsService.lastPortions(userId, parseFoodIdCsv(ids));
   }
 
   /**

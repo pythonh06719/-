@@ -15,6 +15,8 @@ import type {
   ExternalFoodItem,
   FoodItem,
   FoodSearchHit,
+  LastPortion,
+  LastPortionsResponse,
   LiveSearchResponse,
   TopFoodItem,
   TopFoodsResponse,
@@ -253,6 +255,73 @@ export class FoodsService {
       orderBy: { category: 'asc' },
     });
     return rows.map((row) => row.category);
+  }
+
+  /**
+   * **上次份量记忆**（D-1）：批量取若干个食物「**最近一次有有效份量**的记录」。
+   *
+   * ## 为什么是**批量**端点（而不是单个 `GET /foods/:id/last-portion`）
+   *
+   * 前端要在**点选前**就把默认份量算好（才能真正「不多点一次」）；若走单点端点，
+   * 列表里每一条都要各发一次请求（搜索列表一屏 20 条、每次改关键词都会重拉），
+   * 请求数会随列表长度线性放大。批量端点把「一屏食物的上次份量」收敛成**一次请求**，
+   * 也让默认值在用户点下去之前就已就绪（不会出现「先显示默认、再跳成上次值」的抖动）。
+   *
+   * ## 只查本人（NFR-2 / K7）
+   *
+   * `userId` 一律取自 JWT（控制器传入），**绝不接受客户端传入**。且先按
+   * `visibleFoodWhere` 过滤可见 id：对当前用户**不可见**的食物，其键**根本不出现**
+   * 在结果里（不泄露「这个食物是否存在」）。
+   *
+   * ## 「有有效份量」的判定（与 `@qsh/core` 的 `hasUsablePortion` 镜像）
+   *
+   * 记录必须满足 `grams` 非空 **或** `servingUnit` 非空 —— 快加卡 / 自定义空白记录
+   * （三者皆空，`grams` 为 `null`）**不是**「上次份量」，否则会把用户上次吃的量抹成 0。
+   *
+   * ## 取「最近一次」的排序
+   *
+   * `orderBy: [loggedDate desc, id desc]` —— 先用**本地日粒度**日期倒排，同日再按自增
+   * `id` 倒排取最后写入的一条。命中 `ix_meal_user_food`（`@@index([userId, foodItemId])`）。
+   *
+   * @param userId 当前登录用户 id（来自 JWT）
+   * @param ids    已规整的食物 id 列表（去重、正整数、上限见 `parseFoodIdCsv`）
+   * @returns `{ portions }`：可见 id → 最近一次份量；可见但无历史 → `null`；不可见 → 无键
+   */
+  async lastPortions(userId: number, ids: readonly number[]): Promise<LastPortionsResponse> {
+    const unique = [...new Set(ids)].filter((id) => Number.isInteger(id) && id > 0);
+    if (unique.length === 0) {
+      return { portions: {} };
+    }
+
+    // ① 可见性过滤（K7）：只处理对本人可见的食物，不可见的**不出键**。
+    const visible = await this.prisma.foodItem.findMany({
+      where: { id: { in: unique }, ...visibleFoodWhere(userId) },
+      select: { id: true },
+    });
+
+    // ② 逐个取「最近一次有有效份量的本人记录」（命中 ix_meal_user_food）。
+    //    用 `Promise.all` 并行：单个请求的 id 数已被 `parseFoodIdCsv` 限制在上限内。
+    const portions: Record<string, LastPortion | null> = {};
+    await Promise.all(
+      visible.map(async (food) => {
+        const row = await this.prisma.mealLog.findFirst({
+          where: {
+            userId,
+            foodItemId: food.id,
+            // 有效份量：克数非空 或 份量单位非空（快加卡 / 空白记录三者皆空 → 跳过）。
+            OR: [{ grams: { not: null } }, { servingUnit: { not: null } }],
+          },
+          orderBy: [{ loggedDate: 'desc' }, { id: 'desc' }],
+          select: { grams: true, servingUnit: true, servingQty: true },
+        });
+        portions[String(food.id)] =
+          row === null
+            ? null
+            : { grams: row.grams, servingUnit: row.servingUnit, servingQty: row.servingQty };
+      }),
+    );
+
+    return { portions };
   }
 
   /**

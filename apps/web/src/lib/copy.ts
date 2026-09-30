@@ -633,7 +633,28 @@ export const COPY = {
   profileMoreReport: '周报',
   /** 更多功能·数字是怎么来的（可解释性页） */
   profileMoreWhyNumbers: '数字是怎么来的',
+  /* ---------------------------------------------------------------------------
+   * 上次份量记忆（D-1）—— 份量确认区的一句小字说明。
+   *
+   * 回显的是**用户自己上一次记这个食物时填的克数**，不是我们算出的新数字，
+   * 也不是「推荐份量」。所以措辞只用**中性陈述**（「上次记的是 300g」）：
+   * 不做任何对比 / 评价（不出现「上次吃少了 / 这次多一点」这类话），也不用红色。
+   *
+   * ⚠️ 它只作为**默认填值**，不参与任何统计口径；是否采用由用户当场决定（可直接改掉）。
+   * ⚠️ 本小节**只追加新键**，不改动上方任何既有行。
+   * ------------------------------------------------------------------------- */
+  /** 「上次记的是 300g」—— 克数由用户自己的历史回显，故不带任何评价词 */
+  lastPortionHint: (grams: number) => `上次记的是 ${formatGramsLabel(grams)}g`,
 } as const;
+
+/** 克数展示：整数不带小数，非整数保留 1 位（用于「上次记的是 300g / 137.5g」这类回显）。 */
+function formatGramsLabel(grams: number): string {
+  if (!Number.isFinite(grams)) {
+    return '0';
+  }
+  const rounded = Math.round(grams * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
 
 /** 记录完成后带热量的反馈文案。 */
 export function mealLoggedWithKcal(kcal: number): string {

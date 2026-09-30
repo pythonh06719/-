@@ -41,3 +41,48 @@ export function keywordWhere(keyword: string): Prisma.FoodItemWhereInput {
     ],
   };
 }
+
+/**
+ * 「上次份量」批量查询的 id 列表上限（纵深防御）。
+ *
+ * 前端只会在**当前列表**（搜索分页 ≤ 20 / 常吃榜 ≤ 50）上预取，正常远小于此上限；
+ * 该值仅用于堵住「一次传上千个 id」把请求放大成 N 次单点查询。
+ */
+export const LAST_PORTIONS_MAX_IDS = 50;
+
+/**
+ * 解析 `?ids=1,2,3` 形式的逗号分隔 id 列表（`GET /api/foods/last-portions`）。
+ *
+ * 健壮性（不信任客户端输入）：
+ * - 去空白；非法 / 非正 / 非整数的片段被**静默忽略**（不抛错 —— 这是只读的展示增强，不该因脏参 400）；
+ * - **去重**（同 id 只查一次）；超过 {@link LAST_PORTIONS_MAX_IDS} 的部分丢弃。
+ *
+ * 整数判定用纯数字正则（而非 `Number.parseInt`）—— 后者会把 `'2.5'` 解析成 `2`、
+ * 把 `'7abc'` 解析成 `7`，把脏参「悄悄变成一个合法的另一个 id」，违背「脏值忽略」语义。
+ *
+ * @param raw `ids` 查询参数原文（可缺省）
+ * @returns 规整后的正整数 id 数组（可能为空数组）
+ */
+export function parseFoodIdCsv(raw: string | null | undefined): number[] {
+  if (typeof raw !== 'string' || raw.trim().length === 0) {
+    return [];
+  }
+  const ids: number[] = [];
+  const seen = new Set<number>();
+  for (const part of raw.split(',')) {
+    const trimmed = part.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      continue;
+    }
+    const value = Number(trimmed);
+    if (!Number.isSafeInteger(value) || value <= 0 || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    ids.push(value);
+    if (ids.length >= LAST_PORTIONS_MAX_IDS) {
+      break;
+    }
+  }
+  return ids;
+}
