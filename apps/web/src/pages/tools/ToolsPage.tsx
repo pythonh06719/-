@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -11,6 +11,7 @@ import {
   findMetActivity,
   snackRedemption,
 } from '@qsh/core';
+import { energyLabel, fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { readRememberedChoice, rememberToolChoice } from '@/lib/tool-memory';
 
 /** 工具标签（R5.1~R5.4）。 */
@@ -53,6 +54,7 @@ export default function ToolsPage(): ReactElement {
   const [tab, setTab] = useState<ToolTab>('takeout');
   const [takeoutKind, setTakeoutKind] = useState<string>(rememberedTakeout?.kind ?? 'malatang');
   const [snackName, setSnackName] = useState<string>('薯片（一包）');
+  /** 零食热量真值（**始终以 kcal 存储**，换算只发生在展示层） */
   const [snackKcal, setSnackKcal] = useState<number>(550);
   const [weightKg, setWeightKg] = useState<number>(60);
   const [feastKind, setFeastKind] = useState<string>('hotpot');
@@ -62,6 +64,23 @@ export default function ToolsPage(): ReactElement {
     return Number.isFinite(size) && size >= 100 && size <= 2000 ? Math.round(size) : 500;
   });
   const [sugarLevel, setSugarLevel] = useState<string>(rememberedDrink?.sugar ?? 'regular');
+
+  /** 全局热量单位（K6 / R2.11）：所有热量文字按此换算，**不改任何估算口径**。 */
+  const unit = useUnitStore((state) => state.unit);
+
+  /**
+   * 零食热量输入框的**回显文本**（当前单位下的数值）。
+   *
+   * 为什么需要独立的文本态：输入框是「人填的数字」，若直接用换算后的数值做受控值，
+   * 每敲一位都会 `input → toDisplayEnergy → 回显` 来回取整，kJ 模式下边打字边跳数。
+   * 故文本态独立保存、仅在**切换单位**时按新单位重新回显；真值 `snackKcal` 始终是 kcal。
+   */
+  const [snackKcalText, setSnackKcalText] = useState<string>(() => String(toDisplayEnergy(550, unit)));
+  useEffect(() => {
+    // 单位切换时把输入框按新单位重新表达（kcal 真值 snackKcal 不变）
+    setSnackKcalText(String(toDisplayEnergy(snackKcal, unit)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unit]);
 
   const takeout = estimateTakeout(takeoutKind);
   const feast = estimateFeast(feastKind);
@@ -127,9 +146,9 @@ export default function ToolsPage(): ReactElement {
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 一整份大约{' '}
                 <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                  {takeout.range.min}–{takeout.range.max}
+                  {toDisplayEnergy(takeout.range.min, unit)}–{toDisplayEnergy(takeout.range.max, unit)}
                 </span>{' '}
-                kcal
+                {energyLabel(unit)}
               </p>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{takeout.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">这样点更轻松</h3>
@@ -158,15 +177,21 @@ export default function ToolsPage(): ReactElement {
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-slate-600 dark:text-slate-300" htmlFor="snack-kcal">
-                大约热量 kcal
+                大约热量（{energyLabel(unit)}）
               </label>
               <input
                 id="snack-kcal"
                 type="number"
                 min={0}
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-                value={snackKcal}
-                onChange={(event) => setSnackKcal(Math.max(0, Number(event.target.value) || 0))}
+                value={snackKcalText}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  setSnackKcalText(raw);
+                  const parsed = Number(raw);
+                  // 输入按当前单位理解，回写成 kcal 真值（口径不变）
+                  setSnackKcal(Number.isFinite(parsed) ? Math.max(0, fromDisplayEnergy(parsed, unit)) : 0);
+                }}
               />
             </div>
             <div>
@@ -185,7 +210,7 @@ export default function ToolsPage(): ReactElement {
             </div>
           </div>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            「{snack.name}」约 {snack.kcal} kcal，换成这些会更轻松：
+            「{snack.name}」约 {toDisplayEnergy(snack.kcal, unit)} {energyLabel(unit)}，换成这些会更轻松：
           </p>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
             {snack.swaps.map((swap) => (
@@ -225,9 +250,9 @@ export default function ToolsPage(): ReactElement {
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 {feast.name}人均大约{' '}
                 <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                  {feast.perPerson.min}–{feast.perPerson.max}
+                  {toDisplayEnergy(feast.perPerson.min, unit)}–{toDisplayEnergy(feast.perPerson.max, unit)}
                 </span>{' '}
-                kcal（不含酒水）
+                {energyLabel(unit)}（不含酒水）
               </p>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{feast.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">当天可以这样安排</h3>
@@ -316,9 +341,9 @@ export default function ToolsPage(): ReactElement {
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
             这一杯大约{' '}
             <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-              {drink.range.min}–{drink.range.max}
+              {toDisplayEnergy(drink.range.min, unit)}–{toDisplayEnergy(drink.range.max, unit)}
             </span>{' '}
-            kcal
+            {energyLabel(unit)}
           </p>
           <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">低卡点单攻略</h3>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">

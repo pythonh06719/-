@@ -6,6 +6,7 @@ import type { FoodItem } from '@qsh/shared-types';
 import { api, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY, myFoodDeleteAria } from '@/lib/copy';
+import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import EditFoodDialog from './EditFoodDialog';
 import type { EditFoodSubmit } from './EditFoodDialog';
 
@@ -48,6 +49,8 @@ export default function MyFoodsPage(): ReactElement {
   const [editing, setEditing] = useState<FoodItem | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  /** 全局热量单位（K6 / R2.11）：每 100g 热量按此换算 —— 与食物库其它位置同一展示口径。 */
+  const unit = useUnitStore((state) => state.unit);
 
   const mineQuery = useQuery({
     queryKey: queryKeys.foodMine,
@@ -131,7 +134,7 @@ export default function MyFoodsPage(): ReactElement {
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-800 dark:text-slate-100">{food.name}</p>
                   <p className="qsh-tnum truncate text-xs text-slate-600 dark:text-slate-300">
-                    {foodCategoryLabel(food.category)} · {COPY.myFoodsKcalPer100g(food.kcalPer100g)}
+                    {foodCategoryLabel(food.category)} · 每 100g {toDisplayEnergy(food.kcalPer100g, unit)} {energyLabel(unit)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">

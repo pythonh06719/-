@@ -487,7 +487,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       await api.post<MealLog>('/meals', request);
       setComposerMeal(null);
       setNotice(null);
-      setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${kcal} kcal`);
+      setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${toDisplayEnergy(kcal, unit)} ${energyLabel(unit)}`);
       await invalidate();
     } catch (error) {
       if (isNetworkError(error)) {
@@ -531,7 +531,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         });
         setComposerMeal(null);
         setNotice(COPY.offlineQueued);
-        setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${kcal} kcal`);
+        setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录，约 ${toDisplayEnergy(kcal, unit)} ${energyLabel(unit)}`);
         return;
       }
       // 业务错误（如校验未通过 / 日期不合法）：**不入队**、不做本地乐观插入

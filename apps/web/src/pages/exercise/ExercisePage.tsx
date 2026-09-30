@@ -2,13 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { OnboardingResponse } from '@qsh/shared-types';
 import { MET_ACTIVITY_LIBRARY, calcExerciseKcal } from '@qsh/core';
 import { api, isNetworkError } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth.store';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { COPY, exerciseDeleteAria } from '@/lib/copy';
+import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { enqueueRequest } from '@/pwa/offline-queue';
+import { WATER_QUICK_ADD_ML } from '@/theme/tokens';
 import BrandDecor from '@/components/common/BrandDecor';
 
 /**
@@ -41,6 +45,15 @@ interface WaterState {
 
 const EMPTY_WATER: WaterState = { totalMl: 0, history: [] };
 
+/**
+ * 档案体重拿不到时的兜底估算体重（kg）。
+ *
+ * 与服务端 `ExerciseService.currentWeight()` 的**终端兜底**一致（`?? 60`）：
+ * 正常情况下预览用的是档案里的真实体重（见下方 `previewWeightKg`），
+ * 只有在读不到档案时才会退到这里 —— 与服务端此刻的口径也一致，不会出现「预览一个数、落库另一个数」。
+ */
+const FALLBACK_WEIGHT_KG = 60;
+
 /** 与看板共用同一本地缓存键（离线兜底的一致性来源）。 */
 function readLocalWater(date: string): WaterState {
   return cacheGet<WaterState>(`qsh:cache:water:${date}`) ?? EMPTY_WATER;
@@ -70,8 +83,33 @@ export default function ExercisePage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activity = MET_ACTIVITY_LIBRARY.find((item) => item.code === activityCode) ?? MET_ACTIVITY_LIBRARY[0]!;
-  /** 本地即时预估（与服务端公式一致：MET × 体重 × 时长；体重取默认 60，服务端会按档案精确计算） */
-  const previewKcal = useMemo(() => calcExerciseKcal(activity.met, 60, minutes), [activity, minutes]);
+  const unit = useUnitStore((state) => state.unit);
+
+  /**
+   * 档案体重（供本地即时预估用真实值，避免「预览按 60kg、落库按档案体重」两个数字）。
+   *
+   * - 数据源：`GET /profile` 的 `goal.startWeightKg` —— **正是服务端 `currentWeight()`
+   *   优先采用的那个字段**（`user_goals.start_weight_kg` 随每次记体重联动更新），
+   *   故此处算出的预览与「记下这次运动」后服务端返回的 `kcalBurned` 同源同值。
+   * - 未登录时不发请求（`enabled`）：避免 401 触发全局登出（同 `WhyNumbersPage` 的收口做法）。
+   * - 公式仍走 `@qsh/core` 的 `calcExerciseKcal`（前后端同一真源），这里只把**体重入参**换成真实值，
+   *   不重写任何计算口径。
+   */
+  const profileQuery = useQuery({
+    queryKey: queryKeys.profile,
+    queryFn: () => api.get<OnboardingResponse>('/profile'),
+    enabled: getAccessToken() !== null,
+    retry: 0,
+  });
+  const profileWeightKg = profileQuery.data?.goal?.startWeightKg;
+  const previewWeightKg =
+    typeof profileWeightKg === 'number' && profileWeightKg > 0 ? profileWeightKg : FALLBACK_WEIGHT_KG;
+
+  /** 本地即时预估（与服务端公式一致：MET × 体重 × 时长；体重取档案真实值，读不到时同服务端兜底 60） */
+  const previewKcal = useMemo(
+    () => calcExerciseKcal(activity.met, previewWeightKg, minutes),
+    [activity, minutes, previewWeightKg],
+  );
 
   const dayQuery = useQuery({
     queryKey: queryKeys.exerciseDay(today),
@@ -156,7 +194,10 @@ export default function ExercisePage(): ReactElement {
   /** 离线兜底：把本地缓存一并更新（在线时以服务端返回为准）。 */
   const addWaterLocal = (): void => {
     const state = readLocalWater(today);
-    const next: WaterState = { totalMl: state.totalMl + 250, history: [...state.history, Date.now()] };
+    const next: WaterState = {
+      totalMl: state.totalMl + WATER_QUICK_ADD_ML,
+      history: [...state.history, Date.now()],
+    };
     cacheSet(`qsh:cache:water:${today}`, next);
     addWater.mutate();
   };
@@ -168,7 +209,7 @@ export default function ExercisePage(): ReactElement {
       return;
     }
     const next: WaterState = {
-      totalMl: Math.max(0, state.totalMl - 250),
+      totalMl: Math.max(0, state.totalMl - WATER_QUICK_ADD_ML),
       history: state.history.slice(0, -1),
     };
     cacheSet(`qsh:cache:water:${today}`, next);
@@ -263,7 +304,8 @@ export default function ExercisePage(): ReactElement {
         />
 
         <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
-          大约消耗 <span className="text-xl font-bold text-brand-600 dark:text-brand-400">{previewKcal}</span> kcal
+          大约消耗 <span className="text-xl font-bold text-brand-600 dark:text-brand-400">{toDisplayEnergy(previewKcal, unit)}</span>{' '}
+          {energyLabel(unit)}
         </p>
 
         <button
@@ -278,7 +320,7 @@ export default function ExercisePage(): ReactElement {
 
         <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            今日运动消耗合计 <span className="font-bold">{dayTotal}</span> kcal
+            今日运动消耗合计 <span className="font-bold">{toDisplayEnergy(dayTotal, unit)}</span> {energyLabel(unit)}
           </p>
           <ul className="mt-2 space-y-1 text-sm text-slate-500 dark:text-slate-400">
             {dayLogs.length === 0 ? (
@@ -290,7 +332,7 @@ export default function ExercisePage(): ReactElement {
               dayLogs.map((log) => (
                 <li key={log.id} className="flex items-center justify-between gap-3">
                   <span className="min-w-0 truncate">
-                    {log.activityName} · {log.minutes} 分钟 · 约 {log.kcalBurned} kcal
+                    {log.activityName} · {log.minutes} 分钟 · 约 {toDisplayEnergy(log.kcalBurned, unit)} {energyLabel(unit)}
                   </span>
                   <button
                     type="button"
@@ -336,7 +378,7 @@ export default function ExercisePage(): ReactElement {
             className="flex-1 rounded-xl bg-sky-500 px-4 py-3 font-medium text-white"
             onClick={addWaterLocal}
           >
-            +250ml
+            +{WATER_QUICK_ADD_ML}ml
           </button>
           <button
             type="button"

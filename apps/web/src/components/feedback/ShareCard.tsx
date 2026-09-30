@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
+import type { UnitSystem } from '@qsh/shared-types';
+import { energyLabel, toDisplayEnergy } from '@/lib/units';
 
 /**
  * 分享卡片（三期）：把周报关键数据用 Canvas 画成 720×960 卡片，一键下载 PNG。
@@ -8,6 +10,11 @@ import type { ReactElement } from 'react';
  * - 不含邮箱、不含绝对体重数值，**只有体重变化量**；
  * - 卡片自带浅色底 + 深色文字，深色模式下下载出来的图片同样可读；
  * - 纯前端实现（原生 canvas API），无新依赖。
+ *
+ * ⚠️ **单位口径**：卡片热量同样跟随全局 kcal / kJ 切换（NFR-11）。因绘制入口是纯函数
+ * `drawShareCard(canvas, data)`，故把 `unit` 放进 `ShareCardProps` 由调用方传入，
+ * draw 内用 `toDisplayEnergy()` / `energyLabel()` 换算 —— 与页面其它热量同一口径，
+ * **不改任何数据、不重算任何业务值**。
  */
 
 export interface ShareCardProps {
@@ -19,6 +26,8 @@ export interface ShareCardProps {
   totalExerciseKcal: number;
   /** 体重变化 kg（无记录为 null → 显示「—」） */
   weightChangeKg: number | null;
+  /** 展示单位（kcal / kJ）：卡片热量文字按此换算（NFR-11 显示口径） */
+  unit: UnitSystem;
   /** 一句鼓励语（来自周报数据生成，不含敏感信息） */
   encouragement: string;
 }
@@ -65,10 +74,10 @@ export function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardProps): 
   ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
   ctx.fillText(data.weekLabel, 56, 140);
 
-  // 三个数据块
+  // 三个数据块（热量按全局单位换算：kcal / kJ，见文件头「单位口径」）
   const cards: Array<{ label: string; value: string; unit: string }> = [
-    { label: '日均摄入', value: `${Math.round(data.avgIntakeKcal)}`, unit: 'kcal' },
-    { label: '运动消耗', value: `${Math.round(data.totalExerciseKcal)}`, unit: 'kcal' },
+    { label: '日均摄入', value: `${toDisplayEnergy(data.avgIntakeKcal, data.unit)}`, unit: energyLabel(data.unit) },
+    { label: '运动消耗', value: `${toDisplayEnergy(data.totalExerciseKcal, data.unit)}`, unit: energyLabel(data.unit) },
     {
       label: '体重变化',
       value: data.weightChangeKg === null ? '—' : data.weightChangeKg > 0 ? `+${data.weightChangeKg}` : `${data.weightChangeKg}`,

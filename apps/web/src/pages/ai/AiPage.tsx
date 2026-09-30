@@ -12,6 +12,7 @@ import type {
 import { api, ApiClientError, postStream } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
+import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { todayKey } from '@/lib/format';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 
@@ -263,6 +264,8 @@ function FoodRecognizePanel(): ReactElement {
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [confirmedName, setConfirmedName] = useState<string | null>(null);
+  /** 全局热量单位（K6 / R2.11）：候选热量按此换算（显示口径，不改识别 / 入库计算）。 */
+  const unit = useUnitStore((state) => state.unit);
 
   const recognizeQuery = useQuery({
     queryKey: queryKeys.aiRecognizeFood(submitted),
@@ -344,9 +347,9 @@ function FoodRecognizePanel(): ReactElement {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100">{candidate.name}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
-                      每 100g 约 {candidate.kcalPer100g} kcal
+                      每 100g 约 {toDisplayEnergy(candidate.kcalPer100g, unit)} {energyLabel(unit)}
                       {candidate.servingKcal !== null && candidate.servingUnitLabel !== null
-                        ? `；一份（${candidate.servingUnitLabel}）约 ${candidate.servingKcal} kcal`
+                        ? `；一份（${candidate.servingUnitLabel}）约 ${toDisplayEnergy(candidate.servingKcal, unit)} ${energyLabel(unit)}`
                         : ''}
                     </p>
                   </div>

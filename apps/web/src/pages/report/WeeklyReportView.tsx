@@ -12,6 +12,7 @@ import {
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { formatMonthDay, todayKey } from '@/lib/format';
+import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import {
   COPY,
   reportHabitRateLabel,
@@ -60,6 +61,7 @@ function safeNum(value: unknown): number {
  */
 export default function WeeklyReportView(): ReactElement {
   const today = todayKey();
+  const unit = useUnitStore((state) => state.unit);
   /** 正在回看的这一周的「最后一天」（窗口末日 = endDate）。 */
   const [endDate, setEndDate] = useState<string>(today);
 
@@ -197,6 +199,7 @@ export default function WeeklyReportView(): ReactElement {
           avgIntakeKcal={report.avgIntakeKcal}
           totalExerciseKcal={report.totalExerciseKcal}
           weightChangeKg={report.weightChangeKg}
+          unit={unit}
           encouragement="这一周都好好吃饭了，值得记下来"
         />
       )}
@@ -223,13 +226,13 @@ export default function WeeklyReportView(): ReactElement {
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">日均摄入</p>
-                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{report.avgIntakeKcal}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">kcal</p>
+                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">运动消耗</p>
-                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{report.totalExerciseKcal}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">kcal</p>
+                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
@@ -258,7 +261,7 @@ export default function WeeklyReportView(): ReactElement {
                 >
                   <span className="w-12 shrink-0">{safeStr(day.date).length >= 5 ? safeStr(day.date).slice(5) : '—'}</span>
                   <span className="flex-1 text-right text-slate-600 dark:text-slate-300">
-                    摄入 {Math.round(safeNum(day.intakeKcal))} · 运动 {Math.round(safeNum(day.exerciseKcal))} kcal
+                    摄入 {toDisplayEnergy(safeNum(day.intakeKcal), unit)} · 运动 {toDisplayEnergy(safeNum(day.exerciseKcal), unit)} {energyLabel(unit)}
                   </span>
                 </li>
               ))}

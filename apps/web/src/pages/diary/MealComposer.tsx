@@ -699,7 +699,7 @@ export default function MealComposer({
                 )}
               </span>
               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
-                {foodCategoryLabel(food.category)} · 每 100g {food.kcalPer100g} kcal
+                {foodCategoryLabel(food.category)} · 每 100g {toDisplayEnergy(food.kcalPer100g, unit)} {energyLabel(unit)}
               </span>
             </button>
             <button
@@ -894,7 +894,7 @@ export default function MealComposer({
                                   {item.name}
                                 </p>
                                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
-                                  {item.brand !== null ? `${item.brand} · ` : ''}每 100g {item.kcalPer100g} kcal
+                                  {item.brand !== null ? `${item.brand} · ` : ''}每 100g {toDisplayEnergy(item.kcalPer100g, unit)} {energyLabel(unit)}
                                 </p>
                               </div>
                               <button

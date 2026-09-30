@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { FOOD_CATEGORIES, foodCategoryLabel } from '@qsh/core';
 import type { FoodItem } from '@qsh/shared-types';
 import { COPY } from '@/lib/copy';
+import { energyLabel, fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
 
 /**
  * 「改一下这个食物」编辑弹窗（pages/foods/EditFoodDialog.tsx，C-4 第二步）。
@@ -54,9 +55,11 @@ export default function EditFoodDialog({
   onCancel,
   onSubmit,
 }: EditFoodDialogProps): ReactElement {
+  const unit = useUnitStore((state) => state.unit);
   const [name, setName] = useState<string>(food.name);
   const [category, setCategory] = useState<string>(food.category);
-  const [kcal, setKcal] = useState<string>(String(food.kcalPer100g));
+  /** 每 100g 热量：输入框按当前单位回显，提交时再换算回 kcal 真值（口径不变，同 MealPortionEditor）。 */
+  const [kcal, setKcal] = useState<string>(() => String(toDisplayEnergy(food.kcalPer100g, unit)));
   const [hint, setHint] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const titleId = 'edit-food-title';
@@ -92,7 +95,7 @@ export default function EditFoodDialog({
       return;
     }
     setHint(null);
-    onSubmit({ name: name.trim(), category, kcalPer100g: parsedKcal });
+    onSubmit({ name: name.trim(), category, kcalPer100g: fromDisplayEnergy(parsedKcal, unit) });
   };
 
   /** 就地提示（父级错误优先，其次本地提示）。 */
@@ -167,7 +170,7 @@ export default function EditFoodDialog({
         </label>
 
         <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
-          {COPY.myFoodsEditKcalLabel}
+          {`每 100g 热量（${energyLabel(unit)}）`}
           <input
             type="number"
             inputMode="decimal"
@@ -186,7 +189,7 @@ export default function EditFoodDialog({
                 submit();
               }
             }}
-            aria-label={COPY.myFoodsEditKcalLabel}
+            aria-label={`每 100g 热量（${energyLabel(unit)}）`}
             className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
