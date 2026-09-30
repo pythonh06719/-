@@ -56,11 +56,28 @@ function bare(page: ReactNode): ReactElement {
 }
 
 /**
- * 12 组路由（PRD §6）—— 全部可导航。
+ * 路由表（PRD §6）—— 每条路由都在应用内有可达入口。
+ *
+ * ⚠️ 本注释曾写「12 组路由……全部可导航」，但与实现不符：`/habits`、`/report`、
+ * `/fasting`、`/ai` 四条路由**全站没有任何入口**，只能手输 URL（`/fasting` 甚至
+ * 是全站唯一能开关断食功能的地方）。已补齐入口，下面按「入口分布」如实描述。
+ *
+ * 入口分布（每条路由都能从应用内某个页面到达）：
+ * - 底部导航 `BottomNav`（刻意只有 4 项）：`/dashboard`、`/diary`、`/weight`、`/profile`；
+ * - 「今天」页 `/dashboard` 的行动卡：`/diary`、`/exercise`、`/habits`、`/report`、
+ *   `/why-numbers`、`/weight`，以及空态时的 `/onboarding`；
+ * - 「我的」页 `/profile` 的设置类落点：`/settings/data`、`/settings/foods`，
+ *   加「更多功能」区兜底列出不在底部导航里的页面：`/fasting`、`/ai`、`/exercise`、
+ *   `/habits`、`/tools`、`/report`、`/why-numbers`；
+ * - 落地页 `/` 与引导页 `/onboarding`：`/dashboard`、`/onboarding`、`/tools`。
+ *
+ * ⚠️ **新增页面时必须同时补一个应用内入口**，否则用户只能手输 URL —— 否则会踩
+ * 本轮修复的同一个坑。「所有路由都有入口」由 `test/nav-reachability.test.tsx`
+ * 穷举校验守着（遍历本路由表，断言除 `/`、`/onboarding`、`*` 与底部导航 4 项外，
+ * 每条路由都能在 Dashboard / Profile 渲染出的链接里找到）。
  *
  * 一期实现：`/`、`/onboarding`、`/dashboard`、`/diary`、`/weight`、`/profile`、`/settings/data`；
- * 二期实现：`/exercise`、`/habits`、`/tools`、`/fasting`、`/report`；三期 `/ai` 以**分期占位**存在，
- * 文案友好并标注「二期/三期即将到来」（不使用生硬字眼）。
+ * 二期实现：`/exercise`、`/habits`、`/tools`、`/fasting`、`/report`；三期 `/ai`。
  */
 export const routes: AppRoute[] = [
   // 1. 落地页（免注册计算器 + 隐私承诺 + 免责声明）—— 同步引入，见文件顶部说明

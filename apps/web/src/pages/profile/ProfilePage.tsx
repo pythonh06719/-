@@ -53,6 +53,34 @@ const INITIAL_EDIT: EditState = {
   activityLevel: 'sedentary',
 };
 
+interface MoreLink {
+  /** 目标路由 */
+  to: string;
+  /** 链接文案（走 `copy.ts`，可读、非图标-only，满足无障碍要求） */
+  label: string;
+  /** 可选的补充说明（仅断食计时用到：点明「开关在这里」） */
+  hint?: string;
+}
+
+/**
+ * 「我的」页 · 更多功能区的导航条目。
+ *
+ * 这里集中列出**不在底部导航里的页面**，作为导航兜底 —— 用户从应用内任意位置
+ * 出发都能到达（`BottomNav` 的四项刻意保持不变，见其注释）。
+ *
+ * ⚠️ **断食计时（`/fasting`）固定放在最前**：它是全站**唯一**能开关断食功能的地方
+ * （`FastingPage` 的「关闭断食功能」按钮），此前没有任何入口，必须显眼、好找。
+ */
+const MORE_LINKS: ReadonlyArray<MoreLink> = [
+  { to: '/fasting', label: COPY.profileMoreFasting, hint: COPY.profileMoreFastingHint },
+  { to: '/ai', label: COPY.profileMoreAi },
+  { to: '/exercise', label: COPY.profileMoreExercise },
+  { to: '/habits', label: COPY.profileMoreHabits },
+  { to: '/tools', label: COPY.profileMoreTools },
+  { to: '/report', label: COPY.profileMoreReport },
+  { to: '/why-numbers', label: COPY.profileMoreWhyNumbers },
+];
+
 export default function ProfilePage(): ReactElement {
   const unit = useUnitStore((state) => state.unit);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -302,6 +330,41 @@ export default function ProfilePage(): ReactElement {
       >
         我的食物库
       </Link>
+
+      {/* 更多功能（导航兜底）—— 「我的」页是设置类信息的落点（见本页顶部注释），
+          把不在底部导航里的页面集中列在这里，用户从任意位置出发都能找到它们。
+          用「列表行 + 箭头」的次级样式（模式 B 的次级 Link），层级低于上面的主行动作；
+          每条链接都是可读的文字（不是图标-only），满足无障碍要求。
+          ⚠️ 断食计时列在最前 —— 它是断食功能的唯一开关入口，此前全站不可达。 */}
+      <section
+        aria-label={COPY.profileMoreTitle}
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      >
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.profileMoreTitle}
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.profileMoreDesc}</p>
+        <ul className="mt-3 divide-y divide-brand-100 dark:divide-slate-700">
+          {MORE_LINKS.map((link) => (
+            <li key={link.to}>
+              <Link
+                to={link.to}
+                className="qsh-touch-target flex items-center justify-between gap-3 py-3 font-medium text-brand-700 dark:text-brand-200"
+              >
+                <span>
+                  {link.label}
+                  {link.hint !== undefined && (
+                    <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                      {link.hint}
+                    </span>
+                  )}
+                </span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* 安装到桌面的一句静态说明（GAP-8 降级版）—— 零 JS：
           不做 `beforeinstallprompt` 弹窗、不做 iOS 图示引导、不做横幅/浮层。

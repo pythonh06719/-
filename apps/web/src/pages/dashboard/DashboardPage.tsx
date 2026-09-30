@@ -282,6 +282,33 @@ export default function DashboardPage(): ReactElement {
         </Link>
       </section>
 
+      {/* ②b 习惯 / 周报入口（导航缺口修复）——
+          这两条路由此前全站没有任何入口，只能手输 URL。习惯打卡是每日动作、周报是
+          核心的「回头看」，都放在主屏最自然。用同一套 `qsh-action-card`（模式 A），
+          与上面的行动卡同一层级；文案走 `COPY.dashboard*Entry`，中性、不催。
+          单独成行（grid-cols-2）而非并入上面 3 列：既保住上面「记一餐 / 喝一杯水 /
+          动一动」三足鼎立的主 CTA 排布，也让这两项不至于挤成第 4、5 个格子。 */}
+      <section aria-label="每天和每周" className="grid grid-cols-2 gap-3">
+        <Link to="/habits" className="qsh-action-card qsh-touch-target">
+          <span aria-hidden="true" className="text-2xl">
+            ✅
+          </span>
+          <span>{COPY.dashboardHabitsEntry}</span>
+          <span className="text-xs font-normal text-slate-600 dark:text-slate-400">
+            {COPY.dashboardHabitsEntryHint}
+          </span>
+        </Link>
+        <Link to="/report" className="qsh-action-card qsh-touch-target">
+          <span aria-hidden="true" className="text-2xl">
+            📊
+          </span>
+          <span>{COPY.dashboardReportEntry}</span>
+          <span className="text-xs font-normal text-slate-600 dark:text-slate-400">
+            {COPY.dashboardReportEntryHint}
+          </span>
+        </Link>
+      </section>
+
       {/* ③ 生活化摘要：热量环降级为次要信息，配生活用语 */}
       <div className="qsh-surface-warm p-5">
         <div className="flex items-center justify-between gap-3">
