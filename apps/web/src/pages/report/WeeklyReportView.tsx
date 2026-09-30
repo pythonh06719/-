@@ -306,7 +306,12 @@ export default function WeeklyReportView(): ReactElement {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
             <ul className="mt-3 space-y-3">
               {micronutrients.map((item) => {
-                const percent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
+                // 视觉条长上限 150%（外层 overflow-hidden 会把超过 100% 的部分裁掉）。
+                const barPercent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
+                // ARIA 值必须落在 [aria-valuemin, aria-valuemax] = [0, 100] 内：
+                // 直接把 150 喂给 aria-valuenow 是越界值，读屏会读到与视觉（条已满）不一致的数值。
+                // 钳到 100 与「视觉上条已满」一致；真实数值由同行的「{dailyAvg} {unit}」文字给出。
+                const ariaPercent = Math.min(100, barPercent);
                 const onTrack = item.direction === 'atLeast' ? item.dailyAvg >= item.reference : item.dailyAvg <= item.reference;
                 return (
                   <li key={item.key}>
@@ -324,9 +329,9 @@ export default function WeeklyReportView(): ReactElement {
                     <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                       <div
                         className={`h-full rounded-full ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
-                        style={{ width: `${percent}%` }}
+                        style={{ width: `${barPercent}%` }}
                         role="meter"
-                        aria-valuenow={percent}
+                        aria-valuenow={ariaPercent}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-label={`${item.name}日均占参考值百分比`}

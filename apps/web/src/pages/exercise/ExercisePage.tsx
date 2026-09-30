@@ -182,13 +182,26 @@ export default function ExercisePage(): ReactElement {
   const addWater = useMutation({
     mutationFn: () => api.post<WaterDay>('/water', { loggedDate: today }),
     onSuccess: (day) => void queryClient.setQueryData(queryKeys.waterDay(today), day),
-    onError: () => undefined, // 离线时静默落到本地缓存
+    // 分流（照抄同页 `logExercise` / `deleteExercise` 的既有写法）：
+    // - 网络错误 → 静默（`addWaterLocal` 已先把本地缓存 +250，联网后再同步，原意图）；
+    // - 业务错误 → 中性提示。此前无条件静默会把业务错误也吞掉：本地那 +250 不显示、又没有提示，
+    //   用户会以为「点了没反应」而反复点。
+    onError: (error: unknown) => {
+      if (!isNetworkError(error)) {
+        setFeedback(COPY.waterAddMissed);
+      }
+    },
   });
 
   const undoWater = useMutation({
     mutationFn: () => api.delete<{ undone: boolean }>(`/water/last?date=${today}`),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.waterDay(today) }),
-    onError: () => undefined,
+    // 同上：网络错误静默（本地已先撤），业务错误给一句中性软着陆。
+    onError: (error: unknown) => {
+      if (!isNetworkError(error)) {
+        setFeedback(COPY.waterUndoMissed);
+      }
+    },
   });
 
   /** 离线兜底：把本地缓存一并更新（在线时以服务端返回为准）。 */

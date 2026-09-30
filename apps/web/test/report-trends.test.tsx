@@ -180,4 +180,39 @@ describe('ReportPage 摄入 vs 运动 + 达成率（C2）', () => {
     });
     expect(screen.getByText(COPY.reportHabitEmpty)).toBeDefined();
   });
+
+  it('项 6：微量营养素进度条的 aria-valuenow 不越过 aria-valuemax（越界值被钳到 100）', async () => {
+    const withMicro = {
+      ...makeReport(sevenDays(), 0.2),
+      micronutrients: [
+        // 40 / 25 = 160% —— 越界（视觉条长限幅 150%，ARIA 值必须 ≤ 100）
+        { key: 'fiberG', name: '膳食纤维', unit: 'g', dailyAvg: 40, reference: 25, direction: 'atLeast' },
+        // 正常范围内
+        { key: 'calciumMg', name: '钙', unit: 'mg', dailyAvg: 400, reference: 800, direction: 'atLeast' },
+      ],
+    };
+    const container = renderReport(withMicro);
+
+    await waitFor(() => {
+      expect(screen.getByText('微量营养素（日均）')).toBeDefined();
+    });
+
+    // 通用不变量：每个 meter 的 valuenow 都落在 [valuemin, valuemax] 内
+    const meters = Array.from(container.querySelectorAll('[role="meter"]'));
+    expect(meters.length).toBeGreaterThanOrEqual(2);
+    for (const meter of meters) {
+      const now = Number(meter.getAttribute('aria-valuenow'));
+      const min = Number(meter.getAttribute('aria-valuemin'));
+      const max = Number(meter.getAttribute('aria-valuemax'));
+      expect(Number.isFinite(now)).toBe(true);
+      expect(now).toBeGreaterThanOrEqual(min);
+      expect(now).toBeLessThanOrEqual(max);
+    }
+
+    // 越界样例（160%）的条：ARIA 值钳到 100，视觉宽度仍为限幅后的 150%（只改 ARIA，不改视觉）
+    const overMeter = meters.find((m) => m.getAttribute('aria-label') === '膳食纤维日均占参考值百分比');
+    expect(overMeter?.getAttribute('aria-valuenow')).toBe('100');
+    expect(overMeter?.getAttribute('aria-valuemax')).toBe('100');
+    expect((overMeter as HTMLElement | undefined)?.style.width).toBe('150%');
+  });
 });

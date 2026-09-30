@@ -54,8 +54,15 @@ export const WATER_QUICK_ADD_ML = 250;
 /** 一杯水的容量（ml）——用于把毫升换算成「第几杯」的生活化表达。 */
 export const WATER_ML_PER_CUP = 250;
 
-/** 默认每日饮水目标（ml）。 */
-export const DEFAULT_WATER_GOAL_ML = 1500;
+/**
+ * 默认每日饮水目标（ml）。
+ *
+ * ⚠️ **必须与服务端真源一致**（`water.service.ts` 的 `?? 2000` + `schema.prisma`
+ * `UserSettings.waterGoalMl @default(2000)`）。此前这里是 1500，导致断网 / 接口失败时
+ * 看板显示「目标 6 杯」、运动页显示「0 / 2000 ml」—— 同一天、同一用户出现两个目标。
+ * 统一到 2000：它是服务端真实默认值，也是用户在离线时刻最该看到的那一个。
+ */
+export const DEFAULT_WATER_GOAL_ML = 2000;
 
 /** 各餐次在每日预算中的参考占比（「每餐独立预算」，R3.8）。 */
 export const MEAL_BUDGET_SHARE = {

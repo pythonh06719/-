@@ -409,7 +409,7 @@ export default function SettingsDataPage(): ReactElement {
       >
         <h2 className="text-sm font-semibold text-coral-700 dark:text-coral-200">删除我的全部数据</h2>
         <p className="mt-1 text-xs leading-relaxed text-coral-700 dark:text-coral-100">
-          这是**硬删除**：账号、体重、饮食、设置等全部记录都会从服务器真实移除，无法恢复。
+          这是<strong className="font-semibold">硬删除</strong>：账号、体重、饮食、设置等全部记录都会从服务器真实移除，无法恢复。
           建议先「导出我的数据」留一份备份。
         </p>
 
