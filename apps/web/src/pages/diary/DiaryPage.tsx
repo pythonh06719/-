@@ -22,7 +22,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatDateLabel, formatMonthDay, todayKey } from '@/lib/format';
 import { normalizeTrendResponse } from '@/lib/trend';
-import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { energyLabel, formatWeightNumber, toDisplayEnergy, useUnitStore, weightLabel } from '@/lib/units';
 import {
   COPY,
   comboDefaultName,
@@ -177,6 +177,8 @@ function normalizeGroups(response: ListMealsResponse | undefined): MealGroup[] {
 
 export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement {
   const unit = useUnitStore((state) => state.unit);
+  /** 全局体重单位（D-3）：一日档案里的体重按此换算展示（存储仍为 kg）。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   const queryClient = useQueryClient();
   const [date, setDate] = useState<string>(() => initialDate ?? todayKey());
   const [composerMeal, setComposerMeal] = useState<MealGroup['mealType'] | null>(null);
@@ -697,8 +699,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           </p>
         ) : (
           <p className="qsh-tnum mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {weightOfDay.weightKg.toFixed(1)}
-            <span className="ml-1 text-sm font-medium text-slate-500 dark:text-slate-400">kg</span>
+            {formatWeightNumber(weightOfDay.weightKg, weightUnit)}
+            <span className="ml-1 text-sm font-medium text-slate-500 dark:text-slate-400">{weightLabel(weightUnit)}</span>
           </p>
         )}
       </div>

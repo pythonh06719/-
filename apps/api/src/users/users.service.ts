@@ -338,6 +338,7 @@ export class UsersService {
       where: { userId },
       data: {
         ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+        ...(dto.weightUnit !== undefined ? { weightUnit: dto.weightUnit } : {}),
         ...(dto.darkMode !== undefined ? { darkMode: dto.darkMode } : {}),
         ...(dto.waterGoalMl !== undefined ? { waterGoalMl: dto.waterGoalMl } : {}),
         ...(dto.fastingEnabled !== undefined ? { fastingEnabled: dto.fastingEnabled } : {}),

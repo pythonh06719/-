@@ -80,7 +80,7 @@ export interface ParsedExportPayload {
   habits: Array<{ date: string; habitId: string; done: boolean }>;
   water: Array<{ date: string; ml: number }>;
   wins: ExportWinRowLike[];
-  settings: { unit: 'kcal' | 'kj'; darkMode: boolean; fastingEnabled: boolean };
+  settings: { unit: 'kcal' | 'kj'; weightUnit: 'kg' | 'jin'; darkMode: boolean; fastingEnabled: boolean };
 }
 
 /** 恢复预览的事实统计。`meals` 按最终落库的餐次条目数计数。 */
@@ -317,6 +317,13 @@ function parsePayloadObject(root: Record<string, unknown>): ParsedExportPayload 
   if (unit !== 'kcal' && unit !== 'kj') {
     throw new PayloadShapeError('settings.unit 不在支持范围内');
   }
+  /**
+   * `settings.weightUnit`（D-3）—— **宽容读取**（与 `unit` 的严格不同）：
+   * 该字段是后续新增的**可选**展示偏好，旧备份（v1/v2 均无此键）必须照常导入，
+   * 缺失 / 非法值一律回退默认 `kg`，绝不因它把整份备份判为「格式不一致」。
+   */
+  const weightUnitRaw = settingsRaw.weightUnit;
+  const weightUnit = weightUnitRaw === 'jin' ? 'jin' : 'kg';
 
   return {
     meta: { app: 'qingshenghuo', schemaVersion, exportedAt },
@@ -330,6 +337,7 @@ function parsePayloadObject(root: Record<string, unknown>): ParsedExportPayload 
     wins,
     settings: {
       unit,
+      weightUnit,
       darkMode: readBoolean(settingsRaw.darkMode, 'settings.darkMode'),
       fastingEnabled: readBoolean(settingsRaw.fastingEnabled, 'settings.fastingEnabled'),
     },

@@ -1,11 +1,15 @@
 import type { ReactElement } from 'react';
-import { formatWeight } from '@/lib/format';
+import type { WeightUnit } from '@qsh/shared-types';
+import { formatWeightNumber, weightSpokenLabel } from '@/lib/units';
 
 /**
  * 迷你趋势图（components/common/Sparkline.tsx）。
  *
  * 纯 SVG 实现（不依赖图表库），用于看板最近 7 天体重迷你趋势；
  * `null` 视为断点（该日无记录），不连线、不补零（诚实呈现，避免误导）。
+ *
+ * ⚠️ 几何坐标一律按 kg 绘制（仅形状，不显示数值）；只有读屏标签里的「最新 X」
+ * 会按 `weightUnit` 换算（D-3）—— 换算只是等价显示，不改变数据。
  */
 
 export interface SparklineProps {
@@ -17,6 +21,8 @@ export interface SparklineProps {
   height?: number;
   /** 无障碍标签 */
   ariaLabel?: string;
+  /** 体重展示单位（D-3，仅影响读屏标签里的数值口径）；缺省 `kg` */
+  weightUnit?: WeightUnit;
 }
 
 export default function Sparkline({
@@ -24,6 +30,7 @@ export default function Sparkline({
   width = 260,
   height = 72,
   ariaLabel = '最近体重趋势',
+  weightUnit = 'kg',
 }: SparklineProps): ReactElement {
   const numeric = data.filter(
     (point): point is { date: string; weightKg: number } => point.weightKg !== null,
@@ -79,7 +86,7 @@ export default function Sparkline({
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`${ariaLabel}，最新 ${latest === undefined ? '—' : formatWeight(latest.weightKg)} 公斤`}
+        aria-label={`${ariaLabel}，最新 ${latest === undefined ? '—' : formatWeightNumber(latest.weightKg, weightUnit)} ${weightSpokenLabel(weightUnit)}`}
       >
         <path d={path} fill="none" stroke="#2f9e78" strokeWidth={2.5} strokeLinecap="round" />
         {numeric.map((point) => {

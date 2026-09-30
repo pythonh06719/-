@@ -63,6 +63,7 @@ function SettingsCalibrator(): null {
       const localMode = currentStoredMode();
       return {
         unit: useUnitStore.getState().unit,
+        weightUnit: useUnitStore.getState().weightUnit,
         ...(localMode === 'system' ? {} : { darkMode: localMode === 'dark' }),
       };
     });

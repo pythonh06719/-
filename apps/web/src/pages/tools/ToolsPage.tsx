@@ -11,7 +11,15 @@ import {
   findMetActivity,
   snackRedemption,
 } from '@qsh/core';
-import { energyLabel, fromDisplayEnergy, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import {
+  energyLabel,
+  fromDisplayEnergy,
+  fromDisplayWeight,
+  toDisplayEnergy,
+  toDisplayWeight,
+  useUnitStore,
+  weightLabel,
+} from '@/lib/units';
 import { readRememberedChoice, rememberToolChoice } from '@/lib/tool-memory';
 
 /** 工具标签（R5.1~R5.4）。 */
@@ -81,6 +89,23 @@ export default function ToolsPage(): ReactElement {
     setSnackKcalText(String(toDisplayEnergy(snackKcal, unit)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit]);
+
+  /** 全局体重单位（D-3）：体重输入按当前单位回显 / 理解，真值 `weightKg` 始终是 kg。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
+
+  /**
+   * 体重输入框的**回显文本**（当前单位下的数值），与 `snackKcalText` 同一模式：
+   * 文本态独立保存，避免边打字边换算取整；仅在**切换单位**时按新单位重新表达。
+   * 真值 `weightKg` 始终是 kg（换算只在展示与输入层，D-3）。
+   */
+  const [weightText, setWeightText] = useState<string>(() =>
+    String(toDisplayWeight(60, useUnitStore.getState().weightUnit)),
+  );
+  useEffect(() => {
+    // 单位切换时把输入框按新单位重新表达（kg 真值 weightKg 不变）
+    setWeightText(String(toDisplayWeight(weightKg, weightUnit)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weightUnit]);
 
   const takeout = estimateTakeout(takeoutKind);
   const feast = estimateFeast(feastKind);
@@ -196,16 +221,24 @@ export default function ToolsPage(): ReactElement {
             </div>
             <div>
               <label className="block text-sm text-slate-600 dark:text-slate-300" htmlFor="snack-weight">
-                你的体重 kg
+                你的体重（{weightLabel(weightUnit)}）
               </label>
               <input
                 id="snack-weight"
                 type="number"
-                min={20}
-                max={400}
+                min={Math.round(toDisplayWeight(20, weightUnit))}
+                max={Math.round(toDisplayWeight(400, weightUnit))}
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-                value={weightKg}
-                onChange={(event) => setWeightKg(Math.max(20, Number(event.target.value) || 60))}
+                value={weightText}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  setWeightText(raw);
+                  const parsed = Number(raw);
+                  // 输入按当前单位理解，回写成 kg 真值（口径不变，同 snackKcal）
+                  if (Number.isFinite(parsed) && parsed > 0) {
+                    setWeightKg(Math.min(400, Math.max(20, fromDisplayWeight(parsed, weightUnit))));
+                  }
+                }}
               />
             </div>
           </div>

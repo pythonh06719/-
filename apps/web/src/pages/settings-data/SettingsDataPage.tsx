@@ -64,6 +64,7 @@ type ImportState =
 export default function SettingsDataPage(): ReactElement {
   const navigate = useNavigate();
   const unit = useUnitStore((state) => state.unit);
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   const clearAuth = useAuthStore((state) => state.clear);
   const [exportState, setExportState] = useState<string | null>(null);
   const [importState, setImportState] = useState<ImportState>(null);
@@ -103,6 +104,7 @@ export default function SettingsDataPage(): ReactElement {
     // 本地回退值（仅服务端不可达时使用）：单位取当前 store，深色取 `<html class>`
     payload.settings = {
       unit,
+      weightUnit,
       darkMode:
         typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
       fastingEnabled: false,
@@ -113,6 +115,7 @@ export default function SettingsDataPage(): ReactElement {
     if (serverSettings !== null) {
       payload.settings = {
         unit: serverSettings.unit,
+        weightUnit: serverSettings.weightUnit,
         darkMode: serverSettings.darkMode,
         fastingEnabled: serverSettings.fastingEnabled,
       };

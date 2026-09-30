@@ -151,6 +151,7 @@ model WeightGoalHistory {
 model UserSettings {
   userId         BigInt   @id @map("user_id")
   unit           String   @default("kcal")
+  weightUnit     String   @default("kg") @map("weight_unit")
   darkMode       Boolean  @default(false) @map("dark_mode")
   waterGoalMl    Int      @default(2000) @map("water_goal_ml")
   fastingEnabled Boolean  @default(false) @map("fasting_enabled")

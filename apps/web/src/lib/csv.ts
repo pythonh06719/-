@@ -138,7 +138,8 @@ export function createEmptyExportPayload(exportedAtIso: string): ExportJsonPaylo
     water: [],
     // R11.4（schemaVersion 2）：`wins` 为必填顶层键，导出骨架必须带空数组
     wins: [],
-    settings: { unit: 'kcal', darkMode: false, fastingEnabled: false },
+    // D-3：体重展示单位默认 kg（存储与导出恒为 kg，这里只带偏好）
+    settings: { unit: 'kcal', weightUnit: 'kg', darkMode: false, fastingEnabled: false },
   };
 }
 

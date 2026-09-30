@@ -1,14 +1,12 @@
 import type { ReactElement } from 'react';
 import type { GoalProgress } from '@qsh/shared-types';
 import ProgressRing from '@/components/common/ProgressRing';
+import { COPY, goalEtaLine, maintenanceLine } from '@/lib/copy';
 import {
-  COPY,
   goalBaselineLine,
-  goalEtaLine,
   goalRemainingLine,
   goalTargetLine,
-  maintenanceLine,
-} from '@/lib/copy';
+} from '@/lib/weight-copy';
 import { useUnitStore } from '@/lib/units';
 
 /**
@@ -30,6 +28,8 @@ export interface GoalProgressCardProps {
 export default function GoalProgressCard({ progress }: GoalProgressCardProps): ReactElement {
   /** 全局热量单位（K6 / R2.11）：维持热量行必须跟随顶栏的 kcal↔kJ 切换。 */
   const unit = useUnitStore((state) => state.unit);
+  /** 全局体重单位（D-3）：三条含体重的句子按此换算（存储 / 计算仍为 kg）。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   const percent = Math.round(progress.progressRatio * 100);
   const title = progress.maintenance ? COPY.goalProgressReachedTitle : COPY.goalProgressTitle;
 
@@ -37,8 +37,8 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
   const primaryLine = progress.maintenance
     ? COPY.goalProgressReachedBody
     : progress.remainingKg !== null
-      ? goalRemainingLine(progress.remainingKg)
-      : goalTargetLine(progress.targetWeightKg);
+      ? goalRemainingLine(progress.remainingKg, weightUnit)
+      : goalTargetLine(progress.targetWeightKg, weightUnit);
 
   /** 副行：维持模式给维持热量；未达成优先给「还需几周」，算不出来才退回目标值。 */
   const secondaryLine = progress.maintenance
@@ -47,7 +47,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
       : null
     : progress.etaWeeks !== null && progress.etaWeeks > 0
       ? goalEtaLine(progress.etaWeeks)
-      : goalTargetLine(progress.targetWeightKg);
+      : goalTargetLine(progress.targetWeightKg, weightUnit);
 
   return (
     <section
@@ -75,7 +75,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
           <p className="font-medium text-slate-800 dark:text-slate-100">{primaryLine}</p>
           {secondaryLine !== null && <p>{secondaryLine}</p>}
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {goalBaselineLine(progress.baselineKg, progress.targetWeightKg)}
+            {goalBaselineLine(progress.baselineKg, progress.targetWeightKg, weightUnit)}
           </p>
         </div>
       </div>

@@ -1,10 +1,7 @@
 import type { ReactElement } from 'react';
-import {
-  COPY,
-  plateauSlopeHint,
-  plateauSlopeLine,
-  plateauStalledLine,
-} from '@/lib/copy';
+import { COPY, plateauSlopeHint } from '@/lib/copy';
+import { plateauSlopeLine, plateauStalledLine } from '@/lib/weight-copy';
+import { useUnitStore } from '@/lib/units';
 
 /**
  * 平台期说明卡（pages/weight/PlateauCard.tsx，R2.7 / AC-11.1.6）。
@@ -35,6 +32,8 @@ export default function PlateauCard({
   slope4wKgPerWeek,
   onDismiss,
 }: PlateauCardProps): ReactElement {
+  /** 全局体重单位（D-3）：停滞阈值与斜率两行按此换算；判定本身不受影响。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   return (
     <section
       aria-labelledby="plateau-title"
@@ -49,14 +48,14 @@ export default function PlateauCard({
         <div>
           <dt className="text-xs text-slate-500 dark:text-slate-400">这几周发生了什么</dt>
           <dd className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
-            {plateauStalledLine(stalledDays)}
+            {plateauStalledLine(stalledDays, weightUnit)}
           </dd>
         </div>
         {slope4wKgPerWeek !== null && (
           <div>
             <dt className="text-xs text-slate-500 dark:text-slate-400">换个尺度看</dt>
             <dd className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
-              <span className="block">{plateauSlopeLine(slope4wKgPerWeek)}</span>
+              <span className="block">{plateauSlopeLine(slope4wKgPerWeek, weightUnit)}</span>
               <span className="block">{plateauSlopeHint(slope4wKgPerWeek)}</span>
             </dd>
           </div>

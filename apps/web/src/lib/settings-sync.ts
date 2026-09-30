@@ -47,6 +47,8 @@ import { api } from '@/lib/api';
 /** `PATCH /users/settings` 的可更新字段（与后端 `UpdateSettingsDto` 对齐）。 */
 export interface SettingsPatch {
   unit?: UserSettings['unit'];
+  /** 体重展示单位（D-3，kg / 斤）；存储与导出恒为 kg，仅展示换算。 */
+  weightUnit?: UserSettings['weightUnit'];
   darkMode?: boolean;
   fastingEnabled?: boolean;
   waterGoalMl?: number;
@@ -185,6 +187,9 @@ export async function flushPendingSettings(current: SettingsPatch): Promise<bool
   const patch: SettingsPatch = {};
   if (dirtyFields.has('unit') && current.unit !== undefined) {
     patch.unit = current.unit;
+  }
+  if (dirtyFields.has('weightUnit') && current.weightUnit !== undefined) {
+    patch.weightUnit = current.weightUnit;
   }
   if (dirtyFields.has('darkMode') && current.darkMode !== undefined) {
     patch.darkMode = current.darkMode;

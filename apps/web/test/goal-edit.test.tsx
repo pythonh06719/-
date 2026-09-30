@@ -127,8 +127,9 @@ describe('「我的目标」卡片 · 渲染现值', () => {
     renderCard();
 
     const summary = await screen.findByTestId('goal-current');
-    expect(summary).toHaveTextContent('60 kg');
-    expect(summary).toHaveTextContent('55 kg');
+    // 体重统一按 1 位小数展示（与全站 formatWeight 口径一致；D-3 起走统一格式化）
+    expect(summary).toHaveTextContent('60.0 kg');
+    expect(summary).toHaveTextContent('55.0 kg');
     expect(summary).toHaveTextContent('12 周');
   });
 

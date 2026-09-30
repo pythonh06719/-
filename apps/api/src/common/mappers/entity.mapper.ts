@@ -149,6 +149,8 @@ export function toUserSettings(row: UserSettingsRow): UserSettings {
   return {
     userId: row.userId,
     unit: row.unit === 'kj' ? 'kj' : 'kcal',
+    // D-3：体重展示单位；缺省 / 脏值一律回退 kg（存储与导出恒为 kg，仅展示换算）
+    weightUnit: row.weightUnit === 'jin' ? 'jin' : 'kg',
     darkMode: row.darkMode,
     waterGoalMl: row.waterGoalMl,
     fastingEnabled: row.fastingEnabled,

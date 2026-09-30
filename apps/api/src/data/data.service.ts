@@ -168,6 +168,8 @@ export class DataService {
       wins: wins.map((win) => ({ date: win.loggedDate, text: win.text })),
       settings: {
         unit: (settings?.unit ?? 'kcal') === 'kj' ? ('kj' as const) : ('kcal' as const),
+        // D-3：体重展示单位随备份导出（存储口径仍是 kg，这里只带「偏好」）
+        weightUnit: (settings?.weightUnit ?? 'kg') === 'jin' ? ('jin' as const) : ('kg' as const),
         darkMode: settings?.darkMode ?? false,
         fastingEnabled: settings?.fastingEnabled ?? false,
       },
@@ -372,11 +374,14 @@ export class DataService {
           create: {
             userId,
             unit: payload.settings.unit,
+            // D-3：恢复备份时把体重展示单位一并还原（core 解析层对旧备份缺省为 kg）
+            weightUnit: payload.settings.weightUnit,
             darkMode: payload.settings.darkMode,
             fastingEnabled: payload.settings.fastingEnabled,
           },
           update: {
             unit: payload.settings.unit,
+            weightUnit: payload.settings.weightUnit,
             darkMode: payload.settings.darkMode,
             fastingEnabled: payload.settings.fastingEnabled,
             updatedAt: nowIso,

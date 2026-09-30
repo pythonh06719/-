@@ -42,6 +42,17 @@ export type WeightLogSource = 'manual' | 'import';
 /** `user_settings.unit` */
 export type UnitSystem = 'kcal' | 'kj';
 
+/**
+ * `user_settings.weight_unit` —— 体重展示单位（D-3）。
+ *
+ * `kg` = 千克（内部统一存储口径）；`jin` = 中国市斤（1 kg = 2 市斤）。
+ *
+ * ⚠️ **存储与导出恒为 kg**：`weight_logs.weight_kg`、API 契约、CSV/JSON 导出一律千克，
+ * 本字段**只**决定前端如何把 kg 换算成展示 / 输入用的数值 ——
+ * 换算是纯显示层的事，不引入斤的存储（数据主权：导出的原始数据与行业标准一致）。
+ */
+export type WeightUnit = 'kg' | 'jin';
+
 /** `fasting_settings.plan` / `fasting_sessions.plan` */
 export type FastingPlan = '16:8' | '18:6' | 'custom';
 
@@ -175,12 +186,18 @@ export interface WeightGoalHistory {
 // 6. user_settings
 // ---------------------------------------------------------------------------
 
-/** 表 `user_settings` —— 单位/深色/饮水目标/断食开关（1:1 `users`）。 */
+/** 表 `user_settings` —— 单位/深色/饮水目标/断食开关/体重单位（1:1 `users`）。 */
 export interface UserSettings {
   /** db: user_id —— 主键兼外键 */
   userId: number;
   /** db: unit —— kcal / kJ 切换（R2.11） */
   unit: UnitSystem;
+  /**
+   * db: weight_unit —— 体重展示单位 kg / jin（D-3）。
+   *
+   * 存储与导出恒为 kg；仅 UI 显示与输入按此换算（1 kg = 2 市斤）。
+   */
+  weightUnit: WeightUnit;
   /** db: dark_mode —— INTEGER(0/1) */
   darkMode: boolean;
   /** db: water_goal_ml */

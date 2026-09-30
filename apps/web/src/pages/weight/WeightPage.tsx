@@ -13,8 +13,17 @@ import type {
 import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
-import { addDays, formatFullDate, formatSigned, todayKey } from '@/lib/format';
+import { addDays, formatFullDate, todayKey } from '@/lib/format';
 import { COPY, weightRangeCaption, weightRangeName } from '@/lib/copy';
+import {
+  formatSignedWeight,
+  formatWeight,
+  formatWeightNumber,
+  fromDisplayWeight,
+  toDisplayWeight,
+  useUnitStore,
+} from '@/lib/units';
+import { weightInputLabel } from '@/lib/weight-copy';
 import { detectWeightPlateau } from '@qsh/core';
 import {
   DEFAULT_WEIGHT_RANGE_DAYS,
@@ -112,6 +121,8 @@ export default function WeightPage(): ReactElement {
   const [weight, setWeight] = useState('');
   const [note, setNote] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
+  /** 全局体重单位（D-3）：只影响展示与输入换算，内部一律以 kg 记录 / 传参。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   /**
    * 区间视图（C4）：默认选**最宽**的 90 天 —— 尽量贴近改动前「固定展示最近 200 笔」的观感。
    * 只改变「把哪一段摊开看」，不改变取数逻辑（仍只发一次 `/weights` 请求）。
@@ -245,9 +256,13 @@ export default function WeightPage(): ReactElement {
   );
 
   const handleSubmit = (): void => {
-    const value = Number(weight);
+    // 输入按**当前展示单位**理解，回写成 kg 真值（存储 / API 一律 kg，D-3）。
+    const entered = Number(weight);
+    const value = fromDisplayWeight(entered, weightUnit);
     if (!Number.isFinite(value) || value <= 0 || value >= 500) {
-      setNotice('体重填一个 0 到 500 之间的数字就好');
+      // 提示里的范围按**当前单位**给出，避免斤模式下报一个看不懂的 kg 区间。
+      const upper = Math.round(toDisplayWeight(500, weightUnit));
+      setNotice(`体重填一个 0 到 ${upper} 之间的数字就好`);
       return;
     }
     const payload: CreateWeightLogRequest = {
@@ -286,12 +301,12 @@ export default function WeightPage(): ReactElement {
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
-            体重（kg）
+            {weightInputLabel(weightUnit)}
             <input
               inputMode="decimal"
               value={weight}
               onChange={(event) => setWeight(event.target.value)}
-              placeholder="如：59.8"
+              placeholder={weightUnit === 'jin' ? '如：120' : '如：59.8'}
               className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
@@ -389,6 +404,7 @@ export default function WeightPage(): ReactElement {
                 weights={chartData.weights}
                 movingAverage={chartData.movingAverage}
                 forecast={chartData.forecast}
+                unit={weightUnit}
               />
             </Suspense>
           </div>
@@ -409,25 +425,25 @@ export default function WeightPage(): ReactElement {
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
           <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {stats.minKg === null ? '—' : stats.minKg.toFixed(1)}
+            {formatWeightNumber(stats.minKg, weightUnit)}
           </dd>
         </div>
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
           <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {stats.maxKg === null ? '—' : stats.maxKg.toFixed(1)}
+            {formatWeightNumber(stats.maxKg, weightUnit)}
           </dd>
         </div>
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
           <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {stats.meanKg === null ? '—' : stats.meanKg.toFixed(1)}
+            {formatWeightNumber(stats.meanKg, weightUnit)}
           </dd>
         </div>
         <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
           <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {stats.changeKg === null ? '—' : formatSigned(stats.changeKg)}
+            {formatSignedWeight(stats.changeKg, weightUnit)}
           </dd>
         </div>
       </dl>
@@ -462,7 +478,7 @@ export default function WeightPage(): ReactElement {
                     {point.date === todayKey() ? `今天（${point.date}）` : formatFullDate(point.date)}
                   </span>
                   <span className="qsh-tnum text-slate-800 dark:text-slate-100">
-                    {point.weightKg.toFixed(1)} kg
+                    {formatWeight(point.weightKg, weightUnit)}
                   </span>
                 </li>
               ))}

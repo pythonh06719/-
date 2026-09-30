@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import type { UnitSystem } from '@qsh/shared-types';
-import { energyLabel, toDisplayEnergy } from '@/lib/units';
+import type { UnitSystem, WeightUnit } from '@qsh/shared-types';
+import { energyLabel, formatSignedWeight, toDisplayEnergy, weightLabel } from '@/lib/units';
 
 /**
  * 分享卡片（三期）：把周报关键数据用 Canvas 画成 720×960 卡片，一键下载 PNG。
@@ -28,6 +28,11 @@ export interface ShareCardProps {
   weightChangeKg: number | null;
   /** 展示单位（kcal / kJ）：卡片热量文字按此换算（NFR-11 显示口径） */
   unit: UnitSystem;
+  /**
+   * 体重展示单位（kg / 斤，D-3）：卡片「体重变化」按此换算。
+   * 缺省 `kg` —— 仅影响该一格的数值与单位文字，不改变传入的数据。
+   */
+  weightUnit?: WeightUnit;
   /** 一句鼓励语（来自周报数据生成，不含敏感信息） */
   encouragement: string;
 }
@@ -74,14 +79,15 @@ export function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardProps): 
   ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
   ctx.fillText(data.weekLabel, 56, 140);
 
-  // 三个数据块（热量按全局单位换算：kcal / kJ，见文件头「单位口径」）
+  // 三个数据块（热量按全局单位换算：kcal / kJ；体重变化按全局体重单位换算：kg / 斤）
+  const weightUnit = data.weightUnit ?? 'kg';
   const cards: Array<{ label: string; value: string; unit: string }> = [
     { label: '日均摄入', value: `${toDisplayEnergy(data.avgIntakeKcal, data.unit)}`, unit: energyLabel(data.unit) },
     { label: '运动消耗', value: `${toDisplayEnergy(data.totalExerciseKcal, data.unit)}`, unit: energyLabel(data.unit) },
     {
       label: '体重变化',
-      value: data.weightChangeKg === null ? '—' : data.weightChangeKg > 0 ? `+${data.weightChangeKg}` : `${data.weightChangeKg}`,
-      unit: 'kg',
+      value: formatSignedWeight(data.weightChangeKg, weightUnit),
+      unit: weightLabel(weightUnit),
     },
   ];
 

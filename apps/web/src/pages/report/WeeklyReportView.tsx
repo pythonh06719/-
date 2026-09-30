@@ -12,7 +12,7 @@ import {
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { formatMonthDay, todayKey } from '@/lib/format';
-import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { energyLabel, formatSignedWeight, toDisplayEnergy, useUnitStore, weightLabel } from '@/lib/units';
 import {
   COPY,
   reportHabitRateLabel,
@@ -62,6 +62,8 @@ function safeNum(value: unknown): number {
 export default function WeeklyReportView(): ReactElement {
   const today = todayKey();
   const unit = useUnitStore((state) => state.unit);
+  /** 全局体重单位（D-3）：体重变化卡与分享卡片按此换算（存储仍为 kg）。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   /** 正在回看的这一周的「最后一天」（窗口末日 = endDate）。 */
   const [endDate, setEndDate] = useState<string>(today);
 
@@ -200,6 +202,7 @@ export default function WeeklyReportView(): ReactElement {
           totalExerciseKcal={report.totalExerciseKcal}
           weightChangeKg={report.weightChangeKg}
           unit={unit}
+          weightUnit={weightUnit}
           encouragement="这一周都好好吃饭了，值得记下来"
         />
       )}
@@ -237,9 +240,9 @@ export default function WeeklyReportView(): ReactElement {
               <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
                 <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
-                  {report.weightChangeKg === null ? '—' : report.weightChangeKg > 0 ? `+${report.weightChangeKg}` : report.weightChangeKg}
+                  {formatSignedWeight(report.weightChangeKg, weightUnit)}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">kg</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">{weightLabel(weightUnit)}</p>
               </div>
             </div>
 

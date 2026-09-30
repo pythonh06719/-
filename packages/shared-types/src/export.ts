@@ -10,7 +10,7 @@
 
 import type { ActivityLevel, Gender, MacroRatio } from '@qsh/core';
 
-import type { MealType, UnitSystem } from './entities';
+import type { MealType, UnitSystem, WeightUnit } from './entities';
 
 // ---------------------------------------------------------------------------
 // §9.1 导出 JSON 顶层结构
@@ -108,6 +108,14 @@ export interface ExportSettings {
   unit: UnitSystem;
   darkMode: boolean;
   fastingEnabled: boolean;
+  /**
+   * 体重展示单位（D-3，1 kg = 2 市斤）。
+   *
+   * ⚠️ 这是**展示偏好**，与 `weights[].weightKg` 的存储口径无关 ——
+   * 备份里的体重记录**恒为 kg**，本字段只让「恢复备份后单位偏好不丢」成立
+   * （与 `unit` / `darkMode` 同属 GAP-4 承诺的「设置可完整恢复」）。
+   */
+  weightUnit: WeightUnit;
 }
 
 /** `wins[]` 元素（来源 `win_logs`）。语义是用户自由文本，与其他业务实体无外键，导出时不联表。 */

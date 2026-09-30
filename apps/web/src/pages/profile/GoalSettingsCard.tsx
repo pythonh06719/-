@@ -11,6 +11,8 @@ import {
   goalWeightInvalidFor,
   goalWeeksInvalidFor,
 } from '@/lib/copy';
+import { fromDisplayWeight, formatWeight, toDisplayWeight, useUnitStore } from '@/lib/units';
+import { goalCurrentWeightLabel, goalTargetWeightLabel } from '@/lib/weight-copy';
 import type { ThemeBudget } from '@/theme/tokens';
 
 /**
@@ -89,6 +91,8 @@ export default function GoalSettingsCard(): ReactElement | null {
   const queryClient = useQueryClient();
   const [edit, setEdit] = useState<EditGoalState>(INITIAL_EDIT);
   const [notice, setNotice] = useState<string | null>(null);
+  /** 全局体重单位（D-3）：输入 / 回显按此换算，提交前一律换算回 kg。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
 
   const profileQuery = useQuery({
     queryKey: queryKeys.profile,
@@ -97,7 +101,8 @@ export default function GoalSettingsCard(): ReactElement | null {
 
   const goal = profileQuery.data?.goal ?? null;
 
-  // 服务端数据到达 / 目标变更后回填编辑表单
+  // 服务端数据到达 / 目标变更 / 单位切换后回填编辑表单。
+  // 输入框里放的是**当前单位**下的数值（斤模式放斤），提交时再换算回 kg。
   useEffect(() => {
     if (
       goal !== null &&
@@ -106,12 +111,12 @@ export default function GoalSettingsCard(): ReactElement | null {
       Number.isFinite(goal.targetWeeks)
     ) {
       setEdit({
-        currentWeightKg: String(goal.startWeightKg),
-        targetWeightKg: String(goal.targetWeightKg),
+        currentWeightKg: String(toDisplayWeight(goal.startWeightKg, weightUnit)),
+        targetWeightKg: String(toDisplayWeight(goal.targetWeightKg, weightUnit)),
         targetWeeks: String(goal.targetWeeks),
       });
     }
-  }, [goal]);
+  }, [goal, weightUnit]);
 
   const updateGoal = useMutation({
     mutationFn: (payload: UpdateGoalRequest) =>
@@ -150,16 +155,27 @@ export default function GoalSettingsCard(): ReactElement | null {
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const currentWeightKg = parseNumber(edit.currentWeightKg);
-    const targetWeightKg = parseNumber(edit.targetWeightKg);
+    // 输入按**当前单位**理解（斤模式输入的是斤），先换算回 kg 真值再校验 / 提交（D-3）。
+    const currentWeightKg = fromDisplayWeight(parseNumber(edit.currentWeightKg), weightUnit);
+    const targetWeightKg = fromDisplayWeight(parseNumber(edit.targetWeightKg), weightUnit);
     const targetWeeks = parseNumber(edit.targetWeeks);
 
     if (!inRange(currentWeightKg, WEIGHT_MIN, WEIGHT_MAX)) {
-      setNotice(goalWeightInvalidFor(WEIGHT_MIN, WEIGHT_MAX));
+      setNotice(
+        goalWeightInvalidFor(
+          Math.round(toDisplayWeight(WEIGHT_MIN, weightUnit)),
+          Math.round(toDisplayWeight(WEIGHT_MAX, weightUnit)),
+        ),
+      );
       return;
     }
     if (!inRange(targetWeightKg, TARGET_MIN, TARGET_MAX)) {
-      setNotice(goalTargetWeightInvalidFor(TARGET_MIN, TARGET_MAX));
+      setNotice(
+        goalTargetWeightInvalidFor(
+          Math.round(toDisplayWeight(TARGET_MIN, weightUnit)),
+          Math.round(toDisplayWeight(TARGET_MAX, weightUnit)),
+        ),
+      );
       return;
     }
     if (
@@ -203,18 +219,18 @@ export default function GoalSettingsCard(): ReactElement | null {
       >
         <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
           <dt className="text-xs text-slate-600 dark:text-slate-400">
-            {COPY.goalCurrentWeightLabel}
+            {goalCurrentWeightLabel(weightUnit)}
           </dt>
           <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {goal.startWeightKg} kg
+            {formatWeight(goal.startWeightKg, weightUnit)}
           </dd>
         </div>
         <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
           <dt className="text-xs text-slate-600 dark:text-slate-400">
-            {COPY.goalTargetWeightLabel}
+            {goalTargetWeightLabel(weightUnit)}
           </dt>
           <dd className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
-            {goal.targetWeightKg} kg
+            {formatWeight(goal.targetWeightKg, weightUnit)}
           </dd>
         </div>
         <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
@@ -235,7 +251,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         <p className="text-sm text-slate-600 dark:text-slate-300">{COPY.goalEditHint}</p>
         <div className="grid grid-cols-3 gap-3">
           <label className="text-sm text-slate-600 dark:text-slate-300">
-            {COPY.goalCurrentWeightLabel}
+            {goalCurrentWeightLabel(weightUnit)}
             <input
               data-testid="goal-input-current"
               inputMode="decimal"
@@ -245,7 +261,7 @@ export default function GoalSettingsCard(): ReactElement | null {
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
-            {COPY.goalTargetWeightLabel}
+            {goalTargetWeightLabel(weightUnit)}
             <input
               data-testid="goal-input-target"
               inputMode="decimal"

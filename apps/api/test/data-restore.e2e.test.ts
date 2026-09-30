@@ -76,7 +76,7 @@ function validPayload(overrides: Partial<ExportJsonPayload> = {}): ExportJsonPay
     habits: [],
     water: [],
     wins: [],
-    settings: { unit: 'kcal', darkMode: false, fastingEnabled: false },
+    settings: { unit: 'kcal', weightUnit: 'kg', darkMode: false, fastingEnabled: false },
     ...overrides,
   };
 }

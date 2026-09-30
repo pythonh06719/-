@@ -3,7 +3,7 @@ import type { ReactElement, ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import BrandDecor from '@/components/common/BrandDecor';
 import { useTheme } from '@/theme/useTheme';
-import { energyLabel, useUnitStore } from '@/lib/units';
+import { energyLabel, useUnitStore, weightLabel } from '@/lib/units';
 import { COPY } from '@/lib/copy';
 import { flushQueue, queueLength, subscribeQueue } from '@/pwa/offline-queue';
 
@@ -201,6 +201,8 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
   const { resolved, toggle } = useTheme();
   const unit = useUnitStore((state) => state.unit);
   const toggleUnit = useUnitStore((state) => state.toggle);
+  const weightUnit = useUnitStore((state) => state.weightUnit);
+  const toggleWeightUnit = useUnitStore((state) => state.toggleWeightUnit);
   const online = useOnlineStatus();
 
   return (
@@ -216,7 +218,7 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
           <p className="text-title font-semibold tracking-tight text-slate-800 dark:text-slate-100">
             {title}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {/* 品牌角饰：一朵小花的「印章」，放在按钮左侧。shrink-0 保证它不会被标题挤扁 */}
             <BrandDecor variant="corner" className="h-6 w-6 shrink-0 text-brand-300 opacity-50" />
             <button
@@ -226,6 +228,17 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
               aria-label={`切换热量单位为${unit === 'kcal' ? '千焦' : '千卡'}，当前 ${energyLabel(unit)}`}
             >
               {energyLabel(unit)}
+            </button>
+            {/* 体重单位切换（D-3）：与热量单位按钮同构 —— 同为「展示换算」，不改变任何存储。
+                顶栏原本已有两个按钮（热量 + 深色），第三个用更紧凑的间距（`gap-1.5`）容纳：
+                按钮本身仍是 ≥44px 的触控目标，窄屏下标题仍占得下。 */}
+            <button
+              type="button"
+              onClick={toggleWeightUnit}
+              className="qsh-touch-target rounded-xl px-3 text-caption font-medium text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+              aria-label={`切换体重单位为${weightUnit === 'jin' ? '千克' : '斤'}，当前 ${weightLabel(weightUnit)}`}
+            >
+              {weightLabel(weightUnit)}
             </button>
             <button
               type="button"

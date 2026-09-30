@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import type { DashboardResponse, ListMealsResponse } from '@qsh/shared-types';
+import type { DashboardResponse, ListMealsResponse, WeightUnit } from '@qsh/shared-types';
 import { isNetworkError } from '@/lib/api';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { formatDateLine, todayKey } from '@/lib/format';
-import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { energyLabel, toDisplayEnergy, toDisplayWeight, useUnitStore, weightLabel } from '@/lib/units';
 import {
   COPY,
   cupProgress,
@@ -61,7 +61,10 @@ function readMealCount(date: string): number {
 }
 
 /** 「这周的小变化」的一句话叙事（中性、不评判，涨跌都用平常口吻）。 */
-function weightStory(trend: ReadonlyArray<{ weightKg: number | null }>): string {
+function weightStory(
+  trend: ReadonlyArray<{ weightKg: number | null }>,
+  unit: WeightUnit,
+): string {
   if (trend.length < 2) {
     return '再记两天，就能看出这几天的小变化了';
   }
@@ -74,10 +77,12 @@ function weightStory(trend: ReadonlyArray<{ weightKg: number | null }>): string 
   if (Math.abs(delta) < 0.1) {
     return '这几天挺稳的，保持现在的节奏就好';
   }
+  // 差值按**当前体重单位**换算后展示（存储恒为 kg，D-3）。
+  const displayDelta = Math.abs(toDisplayWeight(delta, unit)).toFixed(1);
   if (delta < 0) {
-    return `这周轻轻往下走了 ${Math.abs(delta)} kg，挺自然的`;
+    return `这周轻轻往下走了 ${displayDelta} ${weightLabel(unit)}，挺自然的`;
   }
-  return `这周有点小波动（+${delta} kg），很正常，看趋势就好`;
+  return `这周有点小波动（+${displayDelta} ${weightLabel(unit)}），很正常，看趋势就好`;
 }
 
 /** 由本地缓存的预算兜底构造看板数据（后端不可用时使用）。 */
@@ -110,6 +115,8 @@ export default function DashboardPage(): ReactElement {
   const date = todayKey();
   const hour = new Date().getHours();
   const unit = useUnitStore((state) => state.unit);
+  /** 全局体重单位（D-3）：迷你趋势文案与读屏标签按此换算。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
   const [water, setWater] = useState<WaterState>(() => readWater(date));
 
   const dashboardQuery = useQuery({
@@ -400,9 +407,9 @@ export default function DashboardPage(): ReactElement {
       {/* 这周的小变化（迷你体重趋势） */}
       <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend)}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
         <div className="mt-3">
-          <Sparkline data={data.miniTrend} />
+          <Sparkline data={data.miniTrend} weightUnit={weightUnit} />
         </div>
         <Link
           to="/weight"

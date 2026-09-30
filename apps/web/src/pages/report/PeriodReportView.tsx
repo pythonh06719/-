@@ -17,11 +17,11 @@ import {
   periodRangeFallbackLine,
   periodRangeLine,
   periodTopDaysText,
-  periodWeightDownLine,
-  periodWeightUpLine,
   periodWinCountLine,
   topFoodsAria,
 } from '@/lib/copy';
+import { periodWeightDownLine, periodWeightUpLine } from '@/lib/weight-copy';
+import { useUnitStore } from '@/lib/units';
 
 /** 回顾页常吃 Top 条数（D-4：复用 `GET /foods/top`，不进 `PeriodReport` 白名单）。 */
 const PERIOD_TOP_FOODS_LIMIT = 5;
@@ -53,6 +53,8 @@ function safeNum(value: unknown): number {
 export default function PeriodReportView(): ReactElement {
   const [days, setDays] = useState<PeriodDays>(30);
   const endDate = todayKey();
+  /** 全局体重单位（D-3）：体重变化那行按此换算（计算仍为 kg）。 */
+  const weightUnit = useUnitStore((state) => state.weightUnit);
 
   const reportQuery = useQuery({
     queryKey: queryKeys.periodReport(days, endDate),
@@ -162,8 +164,8 @@ export default function PeriodReportView(): ReactElement {
               data-testid="period-weight"
             >
               {weightDeltaKg < 0
-                ? periodWeightDownLine(weightDeltaKg)
-                : periodWeightUpLine(weightDeltaKg)}
+                ? periodWeightDownLine(weightDeltaKg, weightUnit)
+                : periodWeightUpLine(weightDeltaKg, weightUnit)}
             </p>
           )}
         </section>

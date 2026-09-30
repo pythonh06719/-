@@ -181,7 +181,7 @@ export interface UpdateGoalRequest {
 
 /** `GET /api/settings` / `PATCH /api/settings` 请求与响应。 */
 export type UpdateSettingsRequest = Partial<
-  Pick<UserSettings, 'unit' | 'darkMode' | 'waterGoalMl' | 'fastingEnabled'>
+  Pick<UserSettings, 'unit' | 'weightUnit' | 'darkMode' | 'waterGoalMl' | 'fastingEnabled'>
 >;
 
 // ---------------------------------------------------------------------------

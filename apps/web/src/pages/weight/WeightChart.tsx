@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react';
-import type { GoalForecastPoint } from '@qsh/shared-types';
+import type { GoalForecastPoint, WeightUnit } from '@qsh/shared-types';
 import { TOKENS } from '@/theme/tokens';
+import { formatWeight, formatWeightNumber, toDisplayWeight, weightSpokenLabel } from '@/lib/units';
 
 /**
  * 体重趋势图（pages/weight/WeightChart.tsx）。
@@ -34,6 +35,14 @@ export interface WeightChartProps {
   movingAverage: ReadonlyArray<number | null>;
   /** 目标达成预测曲线（R2.6，可选；为空 / 未传时不绘制预测线） */
   forecast?: ReadonlyArray<GoalForecastPoint>;
+  /**
+   * 体重展示单位（D-3）。
+   *
+   * ⚠️ **只影响文字标签**（y 轴刻度、悬浮提示、图例、读屏）；SVG 的几何坐标
+   * 一律仍按 kg 计算 —— 换算在展示层做，坐标系不因单位而变（等价换算）。
+   * 缺省 `kg`，便于测试直接渲染本组件时保持原观感。
+   */
+  unit?: WeightUnit;
 }
 
 /** 绘图区内边距（与原 ECharts `grid` 逐值一致，保证观感不变）。 */
@@ -137,6 +146,7 @@ export default function WeightChart({
   weights,
   movingAverage,
   forecast,
+  unit = 'kg',
 }: WeightChartProps): ReactElement {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number }>(FALLBACK);
@@ -394,7 +404,8 @@ export default function WeightChart({
   const hoverAverage = hoverIndex === null ? null : (movingAverage[hoverIndex] ?? null);
   const hoverX = hoverIndex === null ? 0 : geometry.xAt(hoverIndex);
 
-  const averageSummary = hoverAverage === null ? '暂无均线值' : `7 日均线 ${hoverAverage.toFixed(1)} kg`;
+  const averageSummary =
+    hoverAverage === null ? '暂无均线值' : `7 日均线 ${formatWeight(hoverAverage, unit)}`;
 
   return (
     <div ref={boxRef} className="relative h-full w-full">
@@ -406,7 +417,7 @@ export default function WeightChart({
         aria-label={
           count === 0
             ? '体重趋势折线图，暂无数据'
-            : `体重趋势折线图，共 ${count} 个数据点，最新 ${(weights[count - 1] ?? 0).toFixed(1)} 公斤${
+            : `体重趋势折线图，共 ${count} 个数据点，最新 ${formatWeightNumber(weights[count - 1], unit)} ${weightSpokenLabel(unit)}${
                 geometry.hasForecast ? '，含目标达成预测线' : ''
               }`
         }
@@ -421,7 +432,7 @@ export default function WeightChart({
             <g key={`y-${tickIndex}`}>
               <line x1={PAD.left} y1={y} x2={size.width - PAD.right} y2={y} stroke={GRID_COLOR} strokeWidth={1} />
               <text x={PAD.left - 6} y={y} textAnchor="end" dominantBaseline="middle" fontSize={10} fill={AXIS_COLOR}>
-                {tick.toFixed(1)}
+                {toDisplayWeight(tick, unit).toFixed(1)}
               </text>
             </g>
           );
@@ -506,7 +517,7 @@ export default function WeightChart({
           style={{ left: Math.min(Math.max(hoverX, 64), Math.max(size.width - 64, 64)) }}
         >
           <p className="font-medium">{hoverDate}</p>
-          {hoverWeight !== null && <p>{hoverWeight.toFixed(1)} kg</p>}
+          {hoverWeight !== null && <p>{formatWeight(hoverWeight, unit)}</p>}
           <p className="text-slate-300 dark:text-slate-200">{averageSummary}</p>
         </div>
       )}
@@ -530,7 +541,7 @@ export default function WeightChart({
             />
             {geometry.targetKg === null
               ? '目标预测'
-              : `目标预测（目标 ${geometry.targetKg.toFixed(1)} kg）`}
+              : `目标预测（目标 ${formatWeight(geometry.targetKg, unit)}）`}
           </span>
         )}
       </div>

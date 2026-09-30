@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
-import type { UnitSystem } from '@qsh/shared-types';
+import type { UnitSystem, WeightUnit } from '@qsh/shared-types';
 
 /** `PATCH /api/settings` 请求体（与 `@qsh/shared-types` 的 `UpdateSettingsRequest` 对齐）。 */
 export class UpdateSettingsDto {
@@ -9,6 +9,15 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsIn(['kcal', 'kj'], { message: '单位仅支持 kcal 或 kJ' })
   unit?: UnitSystem;
+
+  /**
+   * 体重展示单位（kg / 斤，D-3）。
+   *
+   * ⚠️ 仅影响前端换算口径；存储与导出恒为 kg（`weight_logs.weight_kg` 不变）。
+   */
+  @IsOptional()
+  @IsIn(['kg', 'jin'], { message: '体重单位仅支持 kg 或 斤' })
+  weightUnit?: WeightUnit;
 
   /** 深色模式 */
   @IsOptional()
