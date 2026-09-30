@@ -879,7 +879,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="运动" value="次数与时长求和" />
           <DerivationRow
             term="体重变化量"
-            value="取区间内**有记录**的首条与末条之差，不是日历首末日"
+            value="取区间内「有记录」的首条与末条之差，不是日历首末日"
             hint="只有一条记录时整块不显示"
           />
         </dl>
@@ -930,7 +930,7 @@ export default function WhyNumbersPage(): ReactElement {
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           周报的「微量营养素（日均）」里有一条「饱和脂肪」。它和热量、蛋白那些不太一样 ——
-          有一部分不是数据源直接给的克数，而是按比例**推算**出来的，所以在这里把口径摊开讲清楚。
+          有一部分不是数据源直接给的克数，而是按比例<strong className="font-semibold">推算</strong>出来的，所以在这里把口径摊开讲清楚。
         </p>
         <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
@@ -1125,7 +1125,7 @@ export default function WhyNumbersPage(): ReactElement {
           />
           <DerivationRow
             term="频次口径"
-            value="用过的**天数**，不是次数"
+            value="用过的「天数」，不是次数"
             hint="同一天换着点几次也只算 1 天 —— 与常吃榜同源"
           />
           <DerivationRow
@@ -1228,11 +1228,11 @@ export default function WhyNumbersPage(): ReactElement {
           </div>
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">
-              为什么我们**不**告诉你「有几笔没能送出去」
+              为什么我们<strong className="font-semibold">不</strong>告诉你「有几笔没能送出去」
             </dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
               某条记录可能连着几次都送不出去（比如它引用的那条记录已经被删了），
-              这时我们会把它从队列里放下，不再反复打扰你。但**那个数字我们不说** ——
+              这时我们会把它从队列里放下，不再反复打扰你。但<strong className="font-semibold">那个数字我们不说</strong> ——
               把「丢了 N 条」摆到眼前，只会让你回头一条条去对，而这几笔多半本来就是写不进来的内容。
               我们只留一句「回头在页面上补一笔就好」：想补就补，不补也没关系。
             </dd>
@@ -1241,6 +1241,52 @@ export default function WhyNumbersPage(): ReactElement {
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
           这个数字只说明「本机还有几笔在路上」，不评价你、也不影响任何记录内容 ——
           它归零只代表它们都送到了，不代表你今天做得够不够好。
+        </p>
+      </section>
+
+      {/* ㉒ 周报里两处「日均」的分母（缺陷收尾：口径统一，NFR-11） */}
+      <section aria-labelledby="why-daily-avg-title" className="qsh-surface rounded-2xl p-5">
+        <h2 id="why-daily-avg-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉒ 周报里两处「日均」用的是同一个分母
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          周报上「日均摄入」和「微量营养素（日均）」里的「日均」是同一个意思：都除以这一周里
+          <strong className="font-semibold">「有饮食记录的天数」</strong>，不是固定的 7 天。
+          这样两个数字才能互相印证 —— 一个说吃了多少，一个说钙铁大概够不够，分母相同才比得起来。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="「日均」的分母"
+            value="本周 7 天里「当日有饮食记录」的天数"
+            hint="某天一条饮食都没记 → 不进入分母"
+          />
+          <DerivationRow term="日均摄入" value="一周摄入合计 ÷ 有记录的天数" />
+          <DerivationRow term="微量营养素（日均）" value="一周该营养素合计 ÷ 同一个有记录的天数" />
+          <DerivationRow
+            term="整周都没有饮食记录时"
+            value="分母兜底为 1，各项显示 0"
+            hint="不会出现「除以 0」"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不用固定的 7 天</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              一周只记了 3 天、却拿 7 天去摊，会把钙铁纤维压到真实值的一小半，
+              看起来像「几乎没吃什么」，和「日均摄入」也对不上 —— 同一个词在同一张卡上必须是同一个意思。
+              分母对齐「真正记了的那几天」，数字才对得上你实际吃的那几天。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">没记的那几天怎么算</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              留白就是留白：既不算成 0 摊进平均（那会显得吃得很少），也不去替它补一个估计值。
+              想看得更完整，随时补记就好；不补也没关系。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          两处「日均」都由服务端用同一个分母算出，前端只负责展示 —— 不会各算一套。
         </p>
       </section>
 

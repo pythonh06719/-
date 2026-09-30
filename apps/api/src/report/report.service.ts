@@ -103,6 +103,15 @@ export class ReportService {
     }
 
     const loggedDays = days.filter((day) => day.intakeKcal > 0);
+    /**
+     * ★ 周报两处「日均」共用同一个分母（缺陷收尾 · 口径统一 + NFR-11）。
+     *
+     * 此前 `avgIntakeKcal` 除以「有记录的天数」、`micronutrients[].dailyAvg` 却固定除以 7 ——
+     * 一周只记了 3 天饮食时，前者按 3 天算、后者按 7 天算，同一张卡上两个「日均」不同义，
+     * 微量营养素会看起来约为真实值的 3/7（「几乎没吃什么」的错觉）。
+     * 这里统一为「有记录的天数」（`|| 1` 兜底，避免整周无记录时除零），口径写进 `/why-numbers` ㉒。
+     */
+    const loggedDayCount = loggedDays.length || 1;
     const weightChangeKg =
       weights.length >= 2 ? this.round2(weights[weights.length - 1]!.weightKg - weights[0]!.weightKg) : null;
 
@@ -113,14 +122,14 @@ export class ReportService {
       from,
       to,
       days,
-      avgIntakeKcal: this.round1(loggedDays.reduce((sum, day) => sum + day.intakeKcal, 0) / (loggedDays.length || 1)),
+      avgIntakeKcal: this.round1(loggedDays.reduce((sum, day) => sum + day.intakeKcal, 0) / loggedDayCount),
       totalExerciseKcal: this.round1(days.reduce((sum, day) => sum + day.exerciseKcal, 0)),
       weightChangeKg,
       micronutrients: DRI_REFERENCES.map((reference) => ({
         key: reference.key,
         name: reference.name,
         unit: reference.unit,
-        dailyAvg: this.round2(this.sumMicronutrient(micronutrientRows, reference.key) / 7),
+        dailyAvg: this.round2(this.sumMicronutrient(micronutrientRows, reference.key) / loggedDayCount),
         reference: reference.reference,
         direction: reference.direction,
       })),
