@@ -23,6 +23,7 @@ import {
   topFoodsAria,
 } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
+import PeriodArchiveAction from './PeriodArchiveAction';
 
 /** 回顾页常吃 Top 条数（D-4：复用 `GET /foods/top`，不进 `PeriodReport` 白名单）。 */
 const PERIOD_TOP_FOODS_LIMIT = 5;
@@ -177,6 +178,14 @@ export default function PeriodReportView(): ReactElement {
                 : periodWeightUpLine(weightDeltaKg, weightUnit)}
             </p>
           )}
+
+          {/* C-5：把当前 R11.3 聚合快照交给本地 HTML 生成器，不另算主指标。 */}
+          <PeriodArchiveAction
+            report={report}
+            topFoods={topItems}
+            weightUnit={weightUnit}
+            topFoodsLoading={topQuery.isFetching}
+          />
         </section>
       )}
 
