@@ -43,6 +43,9 @@ const { AppModule } = require('../dist/apps/api/src/app.module.js') as {
 const { PrismaService } = require('../dist/apps/api/src/prisma/prisma.service.js') as {
   PrismaService: typeof PrismaServiceClass;
 };
+// core 的判定函数：用于「API 结论 == core 结论」的一致性断言（口径必须唯一）。
+const core = require('../dist/packages/core/src/index.js') as typeof import('@qsh/core');
+const { hasUsablePortion } = core;
 
 const API = '/api';
 const USER_A = 'e2e-last-portion-a@qinglife.test';
@@ -342,5 +345,74 @@ describe('GET /foods/last-portions 上次份量记忆（D-1）', () => {
 
   it('路由回归：静态子路径不被 `GET /foods/:id` 吞掉（/foods/recent 仍 200）', async () => {
     await request(server as never).get(`${API}/foods/recent`).set(auth(tokenA)).expect(200);
+  });
+});
+
+/**
+ * ★ P2-2：SQL 过滤与 core `hasUsablePortion` 的**口径一致性**门禁。
+ *
+ * 背景：`lastPortions` 的 SQL 曾是 `grams 非空 OR servingUnit 非空`，比 core 的判定
+ * **松一格** —— 形如 `{ grams: null, servingUnit: '', servingQty: null }` 这类记录会被
+ * SQL 选中、API 返回该对象（而非 `null`），而 core 判它无效。两处口径不同即隐患。
+ *
+ * 本组用例逐个构造**边界形态**，同时断言：
+ * ① API 对该形态返回 `null`（无效）或对象（有效）；
+ * ② 同一输入下 **core 的 `hasUsablePortion` 给出相同结论**（两处不可分叉）。
+ */
+describe('GET /foods/last-portions：SQL 与 core hasUsablePortion 口径一致（P2-2）', () => {
+  interface BoundaryCase {
+    label: string;
+    log: { loggedDate: string; grams: number | null; servingUnit: string | null; servingQty: number | null };
+    expectValid: boolean;
+  }
+
+  const boundaryCases: BoundaryCase[] = [
+    // —— 无效形态（core 判 false，API 必须返回 null）——
+    { label: '三者皆空', log: { loggedDate: '2026-06-01', grams: null, servingUnit: null, servingQty: null }, expectValid: false },
+    { label: '空串单位', log: { loggedDate: '2026-06-01', grams: null, servingUnit: '', servingQty: null }, expectValid: false },
+    { label: '空串单位带数量', log: { loggedDate: '2026-06-01', grams: null, servingUnit: '', servingQty: 2 }, expectValid: false },
+    { label: '有单位无数量', log: { loggedDate: '2026-06-01', grams: null, servingUnit: '碗', servingQty: null }, expectValid: false },
+    { label: '有单位数量为0', log: { loggedDate: '2026-06-01', grams: null, servingUnit: '碗', servingQty: 0 }, expectValid: false },
+    { label: '克数为0', log: { loggedDate: '2026-06-01', grams: 0, servingUnit: null, servingQty: null }, expectValid: false },
+    { label: '克数为负', log: { loggedDate: '2026-06-01', grams: -10, servingUnit: null, servingQty: null }, expectValid: false },
+    // —— 有效形态（core 判 true，API 必须返回对象）——
+    { label: '正克数', log: { loggedDate: '2026-06-01', grams: 180, servingUnit: null, servingQty: null }, expectValid: true },
+    { label: '单位加正数量', log: { loggedDate: '2026-06-01', grams: null, servingUnit: '碗', servingQty: 2 }, expectValid: true },
+  ];
+
+  for (const boundary of boundaryCases) {
+    it(`「${boundary.label}」→ API 与 core 判定一致（${boundary.expectValid ? '有效' : '无效'}）`, async () => {
+      const foodId = await createFood(`${KEYWORD}边界${boundary.label}`, 'builtin', null);
+      await insertLog(userAId, foodId, boundary.log);
+
+      const portions = await queryPortions(tokenA, String(foodId));
+      const apiValid = portions[String(foodId)] !== null;
+      const coreValid = hasUsablePortion(boundary.log);
+
+      // ① 两处口径一致
+      expect(apiValid).toBe(coreValid);
+      // ② 与期望相符
+      expect(apiValid).toBe(boundary.expectValid);
+      if (boundary.expectValid) {
+        expect(portions[String(foodId)]).toEqual({
+          grams: boundary.log.grams,
+          servingUnit: boundary.log.servingUnit,
+          servingQty: boundary.log.servingQty,
+        });
+      } else {
+        expect(portions[String(foodId)]).toBeNull();
+      }
+    });
+  }
+
+  it('★ 无效记录更晚 → 仍返回更早的有效记录（SQL 跳过无效行，而非把结果抹成 null）', async () => {
+    const foodId = await createFood(`${KEYWORD}边界回退`, 'builtin', null);
+    // 更早的有效记录
+    await insertLog(userAId, foodId, { loggedDate: '2026-06-10', grams: 150, servingUnit: null, servingQty: null });
+    // 更晚的无效记录（空洞单位）→ 必须被 SQL 跳过，让上面那条浮上来
+    await insertLog(userAId, foodId, { loggedDate: '2026-06-20', grams: null, servingUnit: '', servingQty: null });
+
+    const portions = await queryPortions(tokenA, String(foodId));
+    expect(portions[String(foodId)]).toEqual({ grams: 150, servingUnit: null, servingQty: null });
   });
 });

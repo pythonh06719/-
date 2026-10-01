@@ -273,10 +273,21 @@ export class FoodsService {
    * `visibleFoodWhere` 过滤可见 id：对当前用户**不可见**的食物，其键**根本不出现**
    * 在结果里（不泄露「这个食物是否存在」）。
    *
-   * ## 「有有效份量」的判定（与 `@qsh/core` 的 `hasUsablePortion` 镜像）
+   * ## 「有有效份量」的判定（与 `@qsh/core` 的 `hasUsablePortion` **逐条同口径**）
    *
-   * 记录必须满足 `grams` 非空 **或** `servingUnit` 非空 —— 快加卡 / 自定义空白记录
-   * （三者皆空，`grams` 为 `null`）**不是**「上次份量」，否则会把用户上次吃的量抹成 0。
+   * 一条记录算「有有效份量」须满足二者之一：
+   * 1. **正克数**（`grams > 0`）；
+   * 2. 或 **非空 `servingUnit` 且 `servingQty > 0`**（此时克数需借食物库单位表才能换算）。
+   *
+   * 快加卡 / 自定义空白记录（三者皆空、`grams` 为 `null`）**不是**「上次份量」，
+   * 否则会把用户上次吃的量抹成 0。
+   *
+   * ⚠️ **本 SQL 过滤与 core 的判定必须同步修改**：任一处改了规则，
+   * `test/foods-last-portion.e2e.test.ts` 的边界用例必须先红（本项目反复出现的
+   * 「同一件事两处实现口径不一致」正是靠这条镜像约束兜住）。
+   * 注：写入路径（`resolveMealAmount` / 更新路径）落库的 `servingUnit` 要么是 `null`，
+   * 要么是**已 trim 且命中食物库单位表**的非空串，故不存在「纯空白单位」形态，
+   * `非空` 判据用 `not: ''` 即可与 core 的 `trim().length > 0` 等价。
    *
    * ## 取「最近一次」的排序
    *
@@ -308,8 +319,20 @@ export class FoodsService {
           where: {
             userId,
             foodItemId: food.id,
-            // 有效份量：克数非空 或 份量单位非空（快加卡 / 空白记录三者皆空 → 跳过）。
-            OR: [{ grams: { not: null } }, { servingUnit: { not: null } }],
+            // 有效份量（与 @qsh/core 的 `hasUsablePortion` 逐条镜像，见方法注释）：
+            // ① 有**正克数**（`gt: 0` 天然排除 null / 0 / 负数）；或
+            // ② **非空份量单位 + 正数量**（`servingUnit` 既非 null 又非空串，且 `servingQty > 0`）。
+            // 快加卡 / 空白记录（三者皆空）两条分支都不满足 → 被跳过，让更早的有效记录浮上来。
+            OR: [
+              { grams: { gt: 0 } },
+              {
+                AND: [
+                  { servingUnit: { not: null } },
+                  { servingUnit: { not: '' } },
+                  { servingQty: { gt: 0 } },
+                ],
+              },
+            ],
           },
           orderBy: [{ loggedDate: 'desc' }, { id: 'desc' }],
           select: { grams: true, servingUnit: true, servingQty: true },
