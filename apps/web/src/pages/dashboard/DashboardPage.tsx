@@ -232,9 +232,14 @@ export default function DashboardPage(): ReactElement {
 
   return (
     // C-6 宽屏（≥1024px）：`space-y-6` 单栏在 `lg` 变成三栏。移动端所有类名不变。
-    // 三栏各是一层 `space-y-6` 的普通包裹块 —— 每栏**独立自上而下堆叠**（不共享行高），
-    // 因而不会因各栏卡片高矮不一而在栏内出现空档。包裹块在移动端只是中性容器：
-    // `space-y-6` 与父级同款，卡片顺序 / 间距与改动前一致。
+    //
+    // ⚠️ 下方三栏各自的包裹 `<div>` **不是**多余的嵌套，**不要删** ——
+    // CSS Grid 同一行内各列**共享行高**：若把卡片直接平铺进栅格，矮栏会被相邻高栏的行高
+    // 撑出一段可见的空白。包裹块让每栏**独立自上而下堆叠**，栏内才没有空档。
+    // ⚠️ 这个空档**只有真实浏览器（会排版）看得见，jsdom 不算布局 → 单测证明不了**；
+    // 删掉包裹块时 `wide-layout.test.tsx` 仍会全绿（它只断言类名与 DOM 顺序）。
+    //
+    // 包裹块在移动端只是中性容器（`space-y-6` 与父级同款），卡片顺序 / 间距与改动前一致。
     // DOM 顺序 == 视觉「先左栏、再中栏、再右栏」→ **不改变焦点顺序**。
     <section
       aria-labelledby="dashboard-title"
@@ -258,6 +263,7 @@ export default function DashboardPage(): ReactElement {
       )}
 
       {/* 左栏（C-6，≥1024px）：今日状态 + 快捷动作。
+          包裹块用于消除跨栏共享行高的空档 —— 理由与「删不得」的警告见上方栅格注释，**别删**。
           移动端这是一层中性包裹（`space-y-6` 与父级同款），间距 / 顺序与改动前一致。 */}
       <div className="space-y-6 lg:col-start-1">
         {/* ① 时段问候 + 一句生活叙事 */}
@@ -328,7 +334,7 @@ export default function DashboardPage(): ReactElement {
         </section>
       </div>
 
-      {/* 中栏（C-6，≥1024px）：今天的记录 + 喝水 */}
+      {/* 中栏（C-6，≥1024px）：今天的记录 + 喝水。同左栏 —— 这层包裹块别删（见上方栅格注释）。 */}
       <div className="space-y-6 lg:col-start-2">
         {/* ③ 生活化摘要：热量环降级为次要信息，配生活用语 */}
         <div className="qsh-surface-warm p-5">
@@ -419,7 +425,7 @@ export default function DashboardPage(): ReactElement {
         </div>
       </div>
 
-      {/* 右栏（C-6，≥1024px）：这周的小变化 + 安全提示与鼓励 */}
+      {/* 右栏（C-6，≥1024px）：这周的小变化 + 安全提示与鼓励。同左栏 —— 这层包裹块别删。 */}
       <div className="space-y-6 lg:col-start-3">
         {/* 这周的小变化（迷你体重趋势） */}
         <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">

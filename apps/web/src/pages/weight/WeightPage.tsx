@@ -274,8 +274,13 @@ export default function WeightPage(): ReactElement {
 
   return (
     // C-6 宽屏（≥1024px）：`space-y-5` 单栏在 `lg` 变成两栏。移动端所有类名不变。
-    // 两栏各是一层 `space-y-5` 的普通包裹块 —— 每栏**独立自上而下堆叠**（不共享行高），
-    // 因而不会因左右栏卡片高矮不一而在栏内出现空档。
+    //
+    // ⚠️ 下方两栏各自的包裹 `<div>` **不是**多余的嵌套，**不要删** ——
+    // CSS Grid 同一行内各列**共享行高**：若把卡片直接平铺进栅格，矮栏会被相邻高栏的行高
+    // 撑出一段可见的空白（本页真机实测过约 90px 空档）。包裹块让每栏**独立自上而下堆叠**，栏内才没有空档。
+    // ⚠️ 这个空档**只有真实浏览器（会排版）看得见，jsdom 不算布局 → 单测证明不了**；
+    // 删掉包裹块时 `wide-layout.test.tsx` 仍会全绿（它只断言类名与 DOM 顺序）。
+    //
     // 左栏「记录与曲线」（表单 + 波动原因 + 趋势图），右栏「进度与回顾」（目标 / 平台期 /
     // 区间统计 / 近期记录 / 体重之外的变化）。DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
     <section
@@ -286,7 +291,8 @@ export default function WeightPage(): ReactElement {
         体重趋势
       </h1>
 
-      {/* 左栏（C-6）：记录与曲线。移动端为中性包裹块，间距 / 顺序与改动前一致。 */}
+      {/* 左栏（C-6）：记录与曲线。包裹块用于消除跨栏共享行高的空档 —— 理由与「删不得」的
+          警告见上方栅格注释，**别删**。移动端为中性包裹块，间距 / 顺序与改动前一致。 */}
       <div className="space-y-5 lg:col-start-1">
         <form
           className="qsh-surface space-y-3 rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
@@ -421,8 +427,9 @@ export default function WeightPage(): ReactElement {
         </div>
       </div>
 
-      {/* 右栏（C-6，≥1024px）：进度与回顾。移动端这是一层无样式的中性包裹块
-          （`space-y-5` 与父级同款），视觉与结构语义与改动前一致；桌面下整体归入第 2 栏。 */}
+      {/* 右栏（C-6，≥1024px）：进度与回顾。同左栏 —— 这层包裹块别删（消除跨栏共享行高空档，见上方注释）。
+          移动端这是一层无样式的中性包裹块（`space-y-5` 与父级同款），视觉与结构语义与改动前一致；
+          桌面下整体归入第 2 栏。 */}
       <div className="space-y-5 lg:col-start-2">
         {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
 

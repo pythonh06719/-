@@ -138,8 +138,14 @@ export default function WeeklyReportView(): ReactElement {
   return (
     // C-6 宽屏（≥1024px）：整块周报在 `lg` 变成两栏。移动端这层是无样式的中性包裹
     // （`flex flex-col gap-4`，与改动前「子项直接排在 `ReportPage` 容器里、由容器 `gap-4` 分隔」
-    // 的视觉完全一致）。左栏放分享入口与周报摘要，右栏放多样性 / 习惯 / 微量营养素；
-    // 两栏各自独立自上而下堆叠，栏内无空档。DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
+    // 的视觉完全一致）。左栏放分享入口与周报摘要，右栏放多样性 / 习惯 / 微量营养素。
+    //
+    // ⚠️ 下方左 / 右栏各自的包裹 `<div>` **不是**多余的嵌套，**不要删** ——
+    // CSS Grid 同一行内各列**共享行高**：若把卡片直接平铺进栅格，矮栏会被相邻高栏的行高
+    // 撑出一段可见的空白。包裹块让每栏**独立自上而下堆叠**，栏内才没有空档。
+    // ⚠️ 这个空档**只有真实浏览器（会排版）看得见，jsdom 不算布局 → 单测证明不了**；
+    // 删掉包裹块时 `wide-layout.test.tsx` 仍会全绿（它只断言类名与 DOM 顺序）。
+    // DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
       {/* B2：周选择器（常驻渲染 —— 切周时控件不消失，避免闪烁） */}
       <section className="qsh-surface p-4 lg:col-span-2" aria-label={COPY.weekSwitchTitle}>
@@ -214,7 +220,8 @@ export default function WeeklyReportView(): ReactElement {
         </section>
       ) : (
         <>
-          {/* 左栏（C-6，≥1024px）：分享入口 + 周报摘要。每栏独立自上而下堆叠，栏内无空档。 */}
+          {/* 左栏（C-6，≥1024px）：分享入口 + 周报摘要。包裹块用于消除跨栏共享行高的空档 ——
+              理由与「删不得」的警告见上方栅格注释，**别删**。 */}
           <div className="flex flex-col gap-4 lg:col-start-1">
             {/* 分享卡片（三期）：周报关键数据 → 720×960 PNG，仅含变化量等非敏感信息 */}
             <ShareCard
@@ -280,7 +287,8 @@ export default function WeeklyReportView(): ReactElement {
             </section>
           </div>
 
-          {/* 右栏（C-6，≥1024px）：饮食多样性 / 习惯达成 / 微量营养素 */}
+          {/* 右栏（C-6，≥1024px）：饮食多样性 / 习惯达成 / 微量营养素。
+              同左栏 —— 这层包裹块别删（消除跨栏共享行高空档，见上方注释）。 */}
           <div className="flex flex-col gap-4 lg:col-start-2">
             {/* R11.7：饮食多样性行（count = 0 时整行隐藏，AC-11.7.5） */}
             <WeeklyDiversityRow report={report} />

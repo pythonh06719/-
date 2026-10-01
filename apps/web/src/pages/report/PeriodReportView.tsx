@@ -107,6 +107,9 @@ export default function PeriodReportView(): ReactElement {
 
   return (
     // C-6 宽屏（≥1024px）：档位切换占满一行，下方两栏 —— 左栏六项白名单指标，右栏「常吃 Top5」。
+    // 这里两栏各只有**一个** section，直接挂 `lg:col-start-N` 即可（`lg:grid-flow-row-dense`
+    // 保证两 section 落在同一行）；与今天 / 变化 / 周报不同，**不需要**包裹 div ——
+    // 那三页每栏有多个卡片，须靠包裹块消除跨栏共享行高造成的空档（理由见各自组件注释）。
     // 移动端 `flex flex-col gap-4` 不变。
     <div
       className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:grid-flow-row-dense"
