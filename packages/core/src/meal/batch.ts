@@ -61,14 +61,22 @@ export interface BatchMealItem {
   kcal: number;
 }
 
-/** 克数文本是否合法（> 0 的有限数，空串按「没填」处理）。 */
+/**
+ * 解析克数文本 → 克数：**合法**（> 0 的有限数）→ 该数值；**其余一律 `0`**
+ * （空串 / 空白 / `0` / 负数 / 非数 / `Infinity`）。
+ *
+ * ⚠️ **绝不产生 `NaN`**：`NaN` 会顺着乘法（`kcalPer100g * grams`）污染热量，还会继续传染给下游。
+ * 这里把「非法」统一收敛成 `0`，与 {@link isPositiveGramsText} 的「合法」定义**同源**
+ * —— 同一输入下，合法 ⇔ 解析结果 > 0，不可能出现「校验说合法、解析却得 `NaN`」的自相矛盾。
+ */
+function parseGramsText(text: string): number {
+  const parsed = Number(text.trim());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+/** 克数文本是否合法（> 0 的有限数；空串 / `0` / 非数一律视为「没填」）。 */
 function isPositiveGramsText(text: string): boolean {
-  const trimmed = text.trim();
-  if (trimmed === '') {
-    return false;
-  }
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) && parsed > 0;
+  return parseGramsText(text) > 0;
 }
 
 /**
@@ -145,14 +153,15 @@ export function isPendingListRecordable(list: readonly PendingMealItem[]): boole
 /**
  * 清单 → 批量入账项（解析克数 + 逐条热量预估）。
  *
- * ⚠️ 调用方应先以 {@link isPendingListRecordable} 确认可提交；本函数对非法克数
- * 解析为 `0` 而不抛错（纯函数不抛），由服务端做最终校验。
+ * ⚠️ 调用方应先以 {@link isPendingListRecordable} 确认可提交；本函数对**非法克数**
+ * （空 / `0` / 负数 / 非数 / `Infinity`）**一律解析为 `0`、绝不产出 `NaN`**，也不抛错
+ * （纯函数不抛），由服务端做最终校验。
  *
  * @param list 待记清单（非空）
  */
 export function toBatchItems(list: readonly PendingMealItem[]): BatchMealItem[] {
   return list.map((entry) => {
-    const grams = Number(entry.gramsText.trim());
+    const grams = parseGramsText(entry.gramsText);
     return {
       foodId: entry.foodId,
       name: entry.name,

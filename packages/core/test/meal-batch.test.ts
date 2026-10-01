@@ -106,10 +106,23 @@ describe('toBatchItems：清单 → 入账项', () => {
     expect(items.map((entry) => entry.kcal)).toEqual([200, 20]);
   });
 
-  it('非法克数不产生 NaN（解析为 0，交给服务端最终校验）', () => {
-    const items = toBatchItems([item(1, '宽粉', '')]);
-    expect(items[0]?.grams).toBe(0);
-    expect(Number.isNaN(items[0]?.kcal ?? NaN)).toBe(false);
-    expect(items[0]?.kcal).toBe(0);
+  it('合法克数（含小数 / 两端空白）解析为对应数值', () => {
+    const items = toBatchItems([item(1, '宽粉', '12.5', 120), item(2, '青菜', ' 200 ', 40)]);
+    expect(items.map((entry) => entry.grams)).toEqual([12.5, 200]);
+    expect(items.map((entry) => entry.kcal)).toEqual([15, 80]); // 120×12.5/100、40×200/100
+  });
+
+  it('★ 非法克数一律解析为 0，绝不产生 NaN（交给服务端最终校验）', () => {
+    // 真实非法输入：空串 / 纯空白 / 非数 / 带单位 / 零 / 负数 / Infinity。
+    // ⚠️ 这条用例的意义在于**喂真实非法输入**（旧版只喂 ''，被 Number('') === 0 碰巧掩盖）。
+    const inputs = ['', '  ', 'abc', '1.5kg', '0', '-5', 'Infinity'];
+    const items = toBatchItems(inputs.map((text, index) => item(index + 1, `样例${index}`, text, 120)));
+
+    for (const entry of items) {
+      expect(Number.isNaN(entry.grams)).toBe(false);
+      expect(entry.grams).toBe(0);
+      expect(Number.isNaN(entry.kcal)).toBe(false);
+      expect(entry.kcal).toBe(0);
+    }
   });
 });
