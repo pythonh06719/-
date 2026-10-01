@@ -5,10 +5,16 @@ import {
   FOOD_CATEGORIES,
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   FREQUENT_FOOD_DEFAULTS,
+  addPendingItem,
   findSameNameFood,
   foodCategoryLabel,
+  isPendingListRecordable,
+  removePendingItem,
   resolveLastPortionServing,
+  setPendingItemGramsText,
+  toBatchItems,
 } from '@qsh/core';
+import type { BatchMealItem, PendingMealItem } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
@@ -52,7 +58,14 @@ import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './
 export type ComposerSubmit =
   | { kind: 'food'; food: FoodItem; grams: number; servingUnit: string; source?: 'search' | 'barcode' }
   | { kind: 'quick'; name: string; kcal: number }
-  | { kind: 'combo'; comboId: number };
+  | { kind: 'combo'; comboId: number }
+  /**
+   * C-3 一餐多品项批量记录：一次把整份**待记清单**写入同一餐次。
+   *
+   * `items` 由 `@qsh/core` 的 `toBatchItems()` 从清单算出（含逐条克数与内部热量预估）；
+   * 父组件负责把它转成 `POST /meals/batch` 请求（单事务写入）。
+   */
+  | { kind: 'batch'; items: BatchMealItem[] };
 
 export interface MealComposerProps {
   /** 记录日期（`YYYY-MM-DD`） */
@@ -146,6 +159,26 @@ export default function MealComposer({
    * 只存「展示用的一句话所需的最小数据」；不参与任何热量的计算。
    */
   const [lastPortionGrams, setLastPortionGrams] = useState<number | null>(null);
+
+  /**
+   * C-3 多选模式开关。
+   *
+   * **为什么用「开关」而不是新 tab**：多选是**正交于来源**的 —— 用户可能在搜索 /
+   * 分类 / 常吃 / 收藏任何一处想「多选」，把它做成第 8 个 tab 会逼用户先选来源再选
+   * 模式（且要么复制一套列表、要么只能在单一来源里多选）。开关则是一处布尔状态，
+   * 复用到**所有**渲染食物行的 tab 上，「点一行」的含义随开关切换。
+   *
+   * **默认关闭**且**不改变任何既有路径**：关闭时行为与从前逐字节一致（G1「≤3 次
+   * 点击记一餐」不受影响）。
+   */
+  const [multiSelect, setMultiSelect] = useState(false);
+  /**
+   * 待记清单（C-3）：多选模式下「点食物 → 加进这里」的累积列表。
+   *
+   * 状态机（去重 / 移除 / 改份量 / 提交校验）在 `@qsh/core` 的 `meal/batch.ts` 单一真源，
+   * 本组件只做渲染与事件接线 —— 这样「重复点同一样不产生两行」这类口径可被单测钉死。
+   */
+  const [pendingItems, setPendingItems] = useState<PendingMealItem[]>([]);
 
   /**
    * 搜索：`GET /foods/search`（**相关度优先**：前缀 > 子串 > 仅别名，同档按 id 稳定分页）。
@@ -586,6 +619,12 @@ export default function MealComposer({
    * 用户仍可在份量确认区直接改（这里只是**默认填值**，不锁死、也不跳过确认）。
    */
   const chooseFood = (food: FoodItem, source: 'search' | 'barcode' = 'search'): void => {
+    // C-3 多选模式：点一行 = 加进待记清单（**不入库、不进份量确认**）。
+    // 去重语义在 core（`addPendingItem`）：重复点同一样不产生第二行、也不重置已调份量。
+    if (multiSelect) {
+      addToPending(food);
+      return;
+    }
     const portion = lastPortionsQuery.data?.portions?.[String(food.id)] ?? null;
     const remembered = resolveLastPortionServing(portion, food);
     const serving = remembered ?? resolveDefaultServing(food);
@@ -594,6 +633,61 @@ export default function MealComposer({
     setServingUnit(serving.unit);
     setGrams(String(serving.grams));
     setLastPortionGrams(remembered === null ? null : serving.grams);
+  };
+
+  /**
+   * C-3 把一条食物加入待记清单。
+   *
+   * 默认份量与单条路径**同口径**（有历史先用上次记的量，否则食物库默认份量）——
+   * 用户在清单里仍可逐项改（红线③：可逐项取消 / 可整体放弃）。
+   */
+  const addToPending = (food: FoodItem): void => {
+    const portion = lastPortionsQuery.data?.portions?.[String(food.id)] ?? null;
+    const remembered = resolveLastPortionServing(portion, food);
+    const serving = remembered ?? resolveDefaultServing(food);
+    setPendingItems((current) =>
+      addPendingItem(current, {
+        foodId: food.id,
+        name: food.name,
+        gramsText: String(serving.grams),
+        servingUnit: serving.unit,
+        kcalPer100g: food.kcalPer100g,
+      }),
+    );
+  };
+
+  /** 从待记清单移除一项（红线③：可逐项取消）。 */
+  const removeFromPending = (foodId: number): void => {
+    setPendingItems((current) => removePendingItem(current, foodId));
+  };
+
+  /** 改清单里某一项的克数文本（逐项调份量）。 */
+  const changePendingGrams = (foodId: number, gramsText: string): void => {
+    setPendingItems((current) => setPendingItemGramsText(current, foodId, gramsText));
+  };
+
+  /** 整体放弃清单（红线③）—— 清空后不发出任何写入请求。 */
+  const discardPending = (): void => {
+    setPendingItems([]);
+  };
+
+  /**
+   * 一次确认 → 把整份清单写入（`onSubmit({ kind: 'batch' })`，父组件走单事务端点）。
+   *
+   * 校验先于提交：有份量没填对 → 一句中性提示，**不发请求**（避免「按钮能点、点了报错」）。
+   */
+  const submitBatch = async (): Promise<void> => {
+    if (!isPendingListRecordable(pendingItems)) {
+      setNote(COPY.pendingGramsInvalid);
+      return;
+    }
+    setBusy(true);
+    setNote(null);
+    try {
+      await onSubmit({ kind: 'batch', items: toBatchItems(pendingItems) });
+    } finally {
+      setBusy(false);
+    }
   };
 
   /** 加入在线食物（服务端按条码重新拉取 OFF 后幂等入库）→ 复用既有份量确认流程。 */
@@ -849,6 +943,33 @@ export default function MealComposer({
               {item.label}
             </button>
           ))}
+        </div>
+
+        {/* C-3 多选模式开关（**正交于来源**：在任何渲染食物行的 tab 下都能开）。
+            默认关闭 → 单条快速路径（G1 ≤3 次点击）逐字节不变。 */}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={multiSelect}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setMultiSelect(next);
+                // 关掉多选 = 退出多选状态：清空清单，避免「隐藏的清单」日后被意外写入
+                if (!next) {
+                  setPendingItems([]);
+                }
+                // 切到多选时收起单条的份量确认区，避免两套交互并存
+                setSelected(null);
+                setNote(null);
+              }}
+              className="h-4 w-4 shrink-0 rounded border-brand-200 text-brand-600 dark:border-slate-600"
+            />
+            {COPY.multiSelectToggle}
+          </label>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {multiSelect ? COPY.multiSelectHintOn : COPY.multiSelectHintOff}
+          </span>
         </div>
 
         {note !== null && (
@@ -1315,9 +1436,71 @@ export default function MealComposer({
           </section>
         )}
 
+        {/* C-3 待记清单（多选模式）：显示已加入项 + 每项可调份量 + 可逐项移除 + 可整体放弃。
+            🔴 红线①：这里**不展示任何合计热量 / 超标提示**，不出现「合计 / 超出」等字样。 */}
+        {multiSelect && pendingItems.length > 0 && (
+          <section aria-label="待记清单" className="mt-5 rounded-2xl bg-brand-50 p-4 dark:bg-slate-900">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {COPY.pendingListTitle(pendingItems.length)}
+              </h3>
+              <button
+                type="button"
+                onClick={discardPending}
+                className="qsh-touch-target rounded-lg px-3 text-sm text-slate-500 dark:text-slate-400"
+              >
+                {COPY.pendingListDiscard}
+              </button>
+            </div>
+            <ul className="mt-2 space-y-2">
+              {pendingItems.map((entry) => (
+                <li
+                  key={entry.foodId}
+                  className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 dark:bg-slate-800"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
+                    {entry.name}
+                  </span>
+                  <input
+                    inputMode="decimal"
+                    value={entry.gramsText}
+                    onChange={(event) => changePendingGrams(entry.foodId, event.target.value)}
+                    aria-label={COPY.pendingGramsAria(entry.name)}
+                    className="qsh-tnum w-16 rounded-lg border border-brand-100 px-2 py-1 text-right text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">g</span>
+                  <button
+                    type="button"
+                    aria-label={COPY.pendingListRemoveAria(entry.name)}
+                    onClick={() => removeFromPending(entry.foodId)}
+                    className="qsh-touch-target shrink-0 rounded-lg px-2 text-sm text-slate-500 dark:text-slate-400"
+                  >
+                    移除
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* 确认按钮 */}
         <div className="mt-5 flex gap-2">
-          {tab === 'quick' || selected !== null ? (
+          {multiSelect ? (
+            pendingItems.length > 0 ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void submitBatch()}
+                className="qsh-touch-target flex-1 rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+              >
+                {busy ? '正在记录…' : COPY.pendingConfirm(pendingItems.length)}
+              </button>
+            ) : (
+              <p className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                {COPY.pendingListEmpty}
+              </p>
+            )
+          ) : tab === 'quick' || selected !== null ? (
             <button
               type="button"
               disabled={busy}

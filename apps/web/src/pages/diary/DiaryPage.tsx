@@ -4,6 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateMealLogRequest,
+  CreateMealsBatchRequest,
+  CreateMealsBatchResponse,
   DashboardResponse,
   ListMealsResponse,
   MealComboRequest,
@@ -451,6 +453,80 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       return;
     }
     const mealType = composerMeal;
+
+    /**
+     * C-3 一餐多品项**批量记录**：把整份待记清单一次性写入（单事务端点 `POST /meals/batch`）。
+     *
+     * - **一次请求**（不是 N 次单条）：服务端在**同一事务**里写入，避免「写一半失败」；
+     *   各条 `sortOrder` 由服务端分配、**互不相同**；
+     * - 离线：整批入离线队列（重放时仍是一次原子写入），并**逐条**本地乐观插入，
+     *   `sortOrder` 依次递增（与服务端口径一致）；
+     * - 🔴 无负罪感：这里**不计算、不展示、不播报任何合计 / 超标**内容（红线①）。
+     */
+    if (payload.kind === 'batch') {
+      const body: CreateMealsBatchRequest = {
+        loggedDate: date,
+        mealType,
+        items: payload.items.map((item) => ({
+          foodId: item.foodId,
+          grams: item.grams,
+          servingUnit: item.servingUnit,
+          source: 'search',
+        })),
+      };
+      const count = payload.items.length;
+      try {
+        await api.post<CreateMealsBatchResponse>('/meals/batch', body);
+        setComposerMeal(null);
+        setNotice(null);
+        setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录 ${count} 样`);
+        await invalidate();
+      } catch (error) {
+        if (isNetworkError(error)) {
+          await enqueueRequest({ path: '/meals/batch', method: 'POST', body });
+          // 本地乐观：按清单顺序依次插入（sortOrder 递增，与服务端「下一个下标 + index」同口径）
+          let localMax = (groups.find((group) => group.mealType === mealType)?.logs ?? []).reduce(
+            (max, log) => Math.max(max, log.sortOrder),
+            -1,
+          );
+          for (const item of payload.items) {
+            localMax += 1;
+            applyOptimistic(mealType, {
+              id: Date.now() + localMax,
+              userId: 0,
+              loggedDate: date,
+              mealType,
+              foodItemId: item.foodId,
+              customName: null,
+              foodName: item.name,
+              grams: item.grams,
+              servingUnit: item.servingUnit,
+              servingQty: null,
+              kcal: item.kcal,
+              proteinG: null,
+              fatG: null,
+              carbG: null,
+              fiberG: null,
+              sodiumMg: null,
+              source: 'search',
+              comboId: null,
+              note: null,
+              sortOrder: localMax,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+          }
+          setComposerMeal(null);
+          setNotice(COPY.offlineQueued);
+          setAnnouncement(`${MEAL_TYPE_LABELS[mealType]}已记录 ${count} 样`);
+          return;
+        }
+        // 业务错误（如某条食物已不可见）：不入队、保留面板，给中性提示让用户处理。
+        setNotice(noticeFromError(error, COPY.batchFailed));
+      }
+      return;
+    }
+
     let kcal = 0;
     let request: CreateMealLogRequest;
 

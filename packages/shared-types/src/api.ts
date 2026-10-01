@@ -445,6 +445,59 @@ export interface UpdateMealLogRequest {
 }
 
 // ---------------------------------------------------------------------------
+// 一餐多品项批量记录（batch）：C-3
+// ---------------------------------------------------------------------------
+
+/**
+ * 批量入账里的**一条**（`POST /api/meals/batch` 的 `items[*]`）。
+ *
+ * 字段与 `CreateMealLogRequest` 同口径（只少了 `loggedDate` / `mealType` —— 它们提到
+ * 请求体顶层，因为一餐里所有条目共用同一个日期与餐次）。
+ */
+export interface BatchMealItemInput {
+  /** 食物库条目 id（search / barcode 来源） */
+  foodId?: number;
+  /** 自定义名称（无 foodId 时必填） */
+  customName?: string;
+  /** 自定义热量 kcal（无 foodId 时必填） */
+  customKcal?: number;
+  /** 选定克数（g） */
+  grams?: number;
+  /** 选定份量单位（个/碗/杯/片/袋） */
+  servingUnit?: string;
+  /** 份量数量 */
+  servingQty?: number;
+  /** 记录来源 */
+  source?: MealLogSource;
+}
+
+/**
+ * `POST /api/meals/batch` 请求 —— 一次把「一餐的多品项」写入（C-3）。
+ *
+ * 语义：**单事务、全有或全无**。任一 `items[*]` 不合法（如 `foodId` 对本人不可见）→
+ * **整体不写入**（不是写一半）；成功时全部落库，且各条 `sortOrder` 互不相同。
+ */
+export interface CreateMealsBatchRequest {
+  /** 记录日期 `YYYY-MM-DD`（缺省=服务端本地今天，D1） */
+  loggedDate?: string;
+  /** 餐次（整批共用） */
+  mealType: MealType;
+  /** 待记清单（至少 1 条） */
+  items: BatchMealItemInput[];
+}
+
+/** 批量入账结果 —— 与单条写入同口径：新条目数组 + 当日合计。 */
+export interface CreateMealsBatchResponse {
+  entries: MealLog[];
+  dayTotals: {
+    kcal: number;
+    proteinG: number;
+    fatG: number;
+    carbG: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // 套餐模板（combos）：R3.9 —— 模板修改不影响历史（US-10）
 // ---------------------------------------------------------------------------
 

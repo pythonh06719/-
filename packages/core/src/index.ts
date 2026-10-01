@@ -274,6 +274,17 @@ export {
   type LastPortionServing,
 } from './meal/last-portion';
 
+// 「一餐多品项批量记录」的待记清单口径（C-3）：去重 / 移除 / 改份量 / 提交校验 / 转载荷
+export {
+  addPendingItem,
+  isPendingListRecordable,
+  removePendingItem,
+  setPendingItemGramsText,
+  toBatchItems,
+  type BatchMealItem,
+  type PendingMealItem,
+} from './meal/batch';
+
 // ---------------------------------------------------------------------------
 // 四期全新项（R11.3 / R11.4 / R11.7）
 // ---------------------------------------------------------------------------

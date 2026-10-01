@@ -9,6 +9,7 @@ import type {
   MealComboItem,
   MealGroup,
   MealLog,
+  MealLogSource,
   MealType,
   ReorderMealsResponse,
 } from '@qsh/shared-types';
@@ -20,6 +21,7 @@ import { isValidLocalDateKey, todayLocalKey } from '../common/utils/date.util';
 import { FoodsService } from '../foods/foods.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyComboDto, ComboItemDto, CreateComboDto } from './dto/combo.dto';
+import { BatchMealItemDto, CreateMealsBatchDto } from './dto/create-meals-batch.dto';
 import { CreateMealDto } from './dto/create-meal.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
@@ -47,6 +49,32 @@ export interface MealWriteResult {
 export interface ComboApplyResult {
   entries: MealLog[];
   dayTotals: DayTotals;
+}
+
+/** 一餐多品项批量入账结果（C-3）—— 与单条写入同口径：新条目数组 + 当日合计。 */
+export interface MealBatchResult {
+  entries: MealLog[];
+  dayTotals: DayTotals;
+}
+
+/** 批量入账里**已算好**的一条（准备阶段的产物，写库阶段只做映射）。 */
+interface PreparedBatchItem {
+  foodItemId: number | null;
+  /** 写库用的名称：食物库条目为 `null`（保留 join 派生名），自定义条目为手填名 */
+  customName: string | null;
+  /** 响应派生名（食物库条目 = 食物名；自定义条目 = `null`，前端用 customName） */
+  foodName: string | null;
+  grams: number | null;
+  servingUnit: string | null;
+  servingQty: number | null;
+  kcal: number;
+  proteinG: number | null;
+  fatG: number | null;
+  carbG: number | null;
+  fiberG: number | null;
+  sodiumMg: number | null;
+  source: MealLogSource;
+  note: string | null;
 }
 
 /** 套餐明细写入载荷（Prisma 输入）。 */
@@ -230,6 +258,88 @@ export class MealsService {
     throw new ApiException(400, ERROR_CODES.VALID_INPUT, '请选择食物，或填写名称与热量', {
       foodId: '请选择食物，或填写名称与热量',
     });
+  }
+
+  /**
+   * **一餐多品项批量记录**（C-3）—— 把待记清单**一次性、单事务**写入。
+   *
+   * ## 为什么是「一个批量端点」而不是「前端串行发 N 次单条」
+   *
+   * - **原子性**：串行发 N 次时，若第 k 次失败（断网 / 校验），前 k-1 条已经落库 ——
+   *   用户看到的是「记了一半的麻辣烫」，还得自己找出哪几样没记上。PM 明确要求
+   *   **避免写一半失败**，故必须单事务；
+   * - **性能**：N 次网络往返在弱网上是 N 倍延迟，本场景 N 常达 10+。
+   *
+   * ## 全有或全无如何保证
+   *
+   * **两阶段**：
+   * 1. **准备阶段（事务外）**：逐条算好营养与名称。任一 `foodId` 对本人不可见 / 条目既无
+   *    食物又无名称热量 → **立即抛错**（此时**一行都还没写**，天然满足「整体不写入」）；
+   * 2. **写入阶段（单事务）**：`nextSortOrder` 取「本用户·本日·本餐」的下一个下标，再
+   *    按清单元顺序编号 `base + index` —— 与 `applyCombo` 同款，故**每条 sortOrder 必不相同**。
+   *
+   * 把校验放在事务外是刻意的：Prisma 的交互式事务内抛错虽也会回滚，但**先把不可能成立的
+   * 请求全部挡在事务之外**更省数据库锁（SQLite 写事务会串行化）、语义也更清晰 ——
+   * 「没有任何一条可写入」与「写了又回滚」对调用方不可区分，但对日志与性能有差别。
+   *
+   * 🔴 无负罪感（PRD §7）：本方法**只返回新条目与当日合计**，不做任何「超标 / 超出预算 /
+   * 比目标多了多少」的判断，也不返回任何评价性字段 —— 一次勾十几样本来量就大，
+   * 此时弹「超标」= 直接制造负罪感（红线①）。
+   */
+  async createBatch(userId: number, dto: CreateMealsBatchDto): Promise<MealBatchResult> {
+    const loggedDate = dto.loggedDate ?? todayLocalKey();
+    const items = dto.items ?? [];
+    if (items.length === 0) {
+      // DTO 的 `@ArrayMinSize(1)` 已拦一层，这里是服务端 API 的**兜底**（例如内部调用）。
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '清单里至少要有一样', {
+        items: '清单里至少要有一样',
+      });
+    }
+
+    // ① 准备阶段：算好每一条。任一非法 → 抛错，此时一行都还没写。
+    const prepared: PreparedBatchItem[] = [];
+    for (const item of items) {
+      prepared.push(await this.prepareBatchItem(userId, item));
+    }
+
+    // ② 写入阶段：同一事务；sortOrder 从本餐下一个下标起按顺序编号（每条都不同）。
+    const created = await this.prisma.$transaction(async (tx) => {
+      const baseSortOrder = await this.nextSortOrder(tx, userId, loggedDate, dto.mealType);
+      const rows: MealLogRow[] = [];
+      for (let index = 0; index < prepared.length; index += 1) {
+        const item = prepared[index] as PreparedBatchItem;
+        rows.push(
+          await tx.mealLog.create({
+            data: {
+              userId,
+              loggedDate,
+              mealType: dto.mealType,
+              foodItemId: item.foodItemId,
+              customName: item.customName,
+              grams: item.grams,
+              servingUnit: item.servingUnit,
+              servingQty: item.servingQty,
+              kcal: item.kcal,
+              proteinG: item.proteinG,
+              fatG: item.fatG,
+              carbG: item.carbG,
+              fiberG: item.fiberG,
+              sodiumMg: item.sodiumMg,
+              source: item.source,
+              note: item.note,
+              sortOrder: baseSortOrder + index,
+            },
+          }),
+        );
+      }
+      return rows;
+    });
+
+    // 食物库条目已在准备阶段带出派生名（前端直接采用本响应也能显示人话名字）。
+    return {
+      entries: created.map((row, index) => toMealLog(row, prepared[index]?.foodName ?? null)),
+      dayTotals: await this.dayTotals(userId, loggedDate),
+    };
   }
 
   /** 快速加卡（跳过搜索，仅名称 + 热量，TC-19）。 */
@@ -646,6 +756,78 @@ export class MealsService {
     const nextByMax = (agg._max.sortOrder ?? -1) + 1;
     const nextByCount = agg._count._all;
     return Math.max(nextByMax, nextByCount);
+  }
+
+  /**
+   * 归一**批量入账**里的一条（C-3）—— 与单条 `create()` 同一套换算口径：
+   * - 食物库条目（`foodId` 非空）：`requireVisibleFood` 校验可见性 → `resolveMealAmount`
+   *   解析份量 → `scaleFoodNutrients` 按克数算营养。不可见 / 不存在 → 404（K7）；
+   * - 自定义条目（无 `foodId`）：需有名称 + 热量，其余按原样写（快照，不重算）。
+   *
+   * ⚠️ 本方法**必须在写入事务之前**调用：它一抛错就代表整批都不该写入。
+   */
+  private async prepareBatchItem(
+    userId: number,
+    item: BatchMealItemDto,
+  ): Promise<PreparedBatchItem> {
+    const explicitGrams = item.grams ?? item.amountG;
+
+    if (typeof item.foodId === 'number') {
+      const foodRow = await this.foodsService.requireVisibleFood(userId, item.foodId);
+      const food = toFoodItem(foodRow);
+      const amount = resolveMealAmount(food, {
+        grams: explicitGrams,
+        servingUnit: item.servingUnit,
+        servingQty: item.servingQty,
+      });
+      const nutrients = scaleFoodNutrients(food, amount.grams);
+
+      return {
+        foodItemId: food.id,
+        customName: item.customName ?? null,
+        foodName: food.name,
+        grams: amount.grams,
+        servingUnit: amount.servingUnit,
+        servingQty: amount.servingQty,
+        kcal: nutrients.kcal,
+        proteinG: nutrients.proteinG,
+        fatG: nutrients.fatG,
+        carbG: nutrients.carbG,
+        fiberG: nutrients.fiberG,
+        sodiumMg: nutrients.sodiumMg,
+        source: item.source ?? 'search',
+        note: item.note ?? null,
+      };
+    }
+
+    const customName = item.customName?.trim();
+    if (customName && customName.length > 0) {
+      if (typeof item.customKcal !== 'number') {
+        throw new ApiException(400, ERROR_CODES.VALID_INPUT, '清单里有一样没填热量', {
+          items: '清单里有一样没填热量',
+        });
+      }
+      return {
+        foodItemId: null,
+        customName,
+        foodName: null,
+        grams: typeof explicitGrams === 'number' ? round1(explicitGrams) : null,
+        servingUnit: null,
+        servingQty: null,
+        kcal: round1(item.customKcal),
+        proteinG: null,
+        fatG: null,
+        carbG: null,
+        fiberG: null,
+        sodiumMg: null,
+        source: 'quick_add',
+        note: item.note ?? null,
+      };
+    }
+
+    throw new ApiException(400, ERROR_CODES.VALID_INPUT, '清单里有一样没选食物，也没填名称热量', {
+      items: '清单里有一样没选食物，也没填名称热量',
+    });
   }
 
   /** 归一单条套餐明细（食物库条目自动换算热量；自定义条目需显式热量）。 */

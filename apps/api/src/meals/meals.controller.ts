@@ -16,12 +16,13 @@ import {
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateMealDto } from './dto/create-meal.dto';
+import { CreateMealsBatchDto } from './dto/create-meals-batch.dto';
 import { ListMealsDto } from './dto/list-meals.dto';
 import { QuickAddDto } from './dto/quick-add.dto';
 import { ReorderMealsDto } from './dto/reorder-meals.dto';
 import { UpdateMealDto } from './dto/update-meal.dto';
 import { MealsService } from './meals.service';
-import type { DayTotals, MealWriteResult } from './meals.service';
+import type { DayTotals, MealBatchResult, MealWriteResult } from './meals.service';
 import type { ListMealsResponse, ReorderMealsResponse } from '@qsh/shared-types';
 
 /**
@@ -48,6 +49,21 @@ export class MealsController {
   @HttpCode(HttpStatus.OK)
   create(@CurrentUser() userId: number, @Body() dto: CreateMealDto): Promise<MealWriteResult> {
     return this.mealsService.create(userId, dto);
+  }
+
+  /**
+   * 一餐多品项**批量记录**（C-3）—— 把待记清单一次性写入同一餐次。
+   *
+   * **单事务、全有或全无**：任一 `items[*]` 不合法（如 `foodId` 对本人不可见）→ 整体不写入；
+   * 成功时各条 `sortOrder` 互不相同（服务端分配，见 `MealsService.createBatch`）。
+   */
+  @Post('batch')
+  @HttpCode(HttpStatus.OK)
+  createBatch(
+    @CurrentUser() userId: number,
+    @Body() dto: CreateMealsBatchDto,
+  ): Promise<MealBatchResult> {
+    return this.mealsService.createBatch(userId, dto);
   }
 
   /** 快速加卡（R3.5 / TC-19）。 */
