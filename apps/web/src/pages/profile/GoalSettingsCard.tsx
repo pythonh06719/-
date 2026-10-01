@@ -7,12 +7,13 @@ import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheSet } from '@/lib/local-cache';
 import {
   COPY,
+  goalCurrentWeightLabel,
   goalTargetWeightInvalidFor,
+  goalTargetWeightLabel,
   goalWeightInvalidFor,
   goalWeeksInvalidFor,
 } from '@/lib/copy';
 import { fromDisplayWeight, formatWeight, toDisplayWeight, useUnitStore } from '@/lib/units';
-import { goalCurrentWeightLabel, goalTargetWeightLabel } from '@/lib/weight-copy';
 import type { ThemeBudget } from '@/theme/tokens';
 
 /**

@@ -14,7 +14,7 @@ import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { addDays, formatFullDate, todayKey } from '@/lib/format';
-import { COPY, weightRangeCaption, weightRangeName } from '@/lib/copy';
+import { COPY, weightInputLabel, weightRangeCaption, weightRangeName } from '@/lib/copy';
 import {
   formatSignedWeight,
   formatWeight,
@@ -23,7 +23,6 @@ import {
   toDisplayWeight,
   useUnitStore,
 } from '@/lib/units';
-import { weightInputLabel } from '@/lib/weight-copy';
 import { detectWeightPlateau } from '@qsh/core';
 import {
   DEFAULT_WEIGHT_RANGE_DAYS,

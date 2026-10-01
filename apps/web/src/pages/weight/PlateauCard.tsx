@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
-import { COPY, plateauSlopeHint } from '@/lib/copy';
-import { plateauSlopeLine, plateauStalledLine } from '@/lib/weight-copy';
+import { COPY, plateauSlopeHint, plateauSlopeLine, plateauStalledLine } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
 
 /**

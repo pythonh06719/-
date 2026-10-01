@@ -42,7 +42,7 @@ import {
   plateauSlopeLine,
   plateauStalledLine,
   weightInputLabel,
-} from '@/lib/weight-copy';
+} from '@/lib/copy';
 import { COPY } from '@/lib/copy';
 import { useAuthStore } from '@/lib/auth.store';
 import { cacheClearAll } from '@/lib/local-cache';

@@ -17,10 +17,11 @@ import {
   periodRangeFallbackLine,
   periodRangeLine,
   periodTopDaysText,
+  periodWeightDownLine,
+  periodWeightUpLine,
   periodWinCountLine,
   topFoodsAria,
 } from '@/lib/copy';
-import { periodWeightDownLine, periodWeightUpLine } from '@/lib/weight-copy';
 import { useUnitStore } from '@/lib/units';
 
 /** 回顾页常吃 Top 条数（D-4：复用 `GET /foods/top`，不进 `PeriodReport` 白名单）。 */

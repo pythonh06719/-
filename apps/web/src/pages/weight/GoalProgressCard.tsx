@@ -1,12 +1,14 @@
 import type { ReactElement } from 'react';
 import type { GoalProgress } from '@qsh/shared-types';
 import ProgressRing from '@/components/common/ProgressRing';
-import { COPY, goalEtaLine, maintenanceLine } from '@/lib/copy';
 import {
+  COPY,
   goalBaselineLine,
+  goalEtaLine,
   goalRemainingLine,
   goalTargetLine,
-} from '@/lib/weight-copy';
+  maintenanceLine,
+} from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
 
 /**
