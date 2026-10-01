@@ -1120,14 +1120,30 @@ export function topFoodDaysLabel(dayCount: number): string {
 }
 
 /**
- * 「近 90 天里，米饭出现了 12 天」——**一句事实陈述**，不是一句评语。
+ * 「近 90 天里，米饭出现了 12 天，上次是 9月8日」——**一句事实陈述**，不是一句评语。
  *
  * ⚠️ 绝不可改写成「你摄入了过多糖分」「建议少喝」这类句式（PRD §7 反例）。
+ *
+ * **为什么日期要并进 aria（而不是只显示在行内）**：带 `aria-label` 的控件，读屏
+ * **只念 aria-label、不念行内文本**（aria-label 覆盖内容）。日期小字若只在行内，
+ * 读屏用户就听不到这一事实 —— 视觉与读屏信息不对等（NFR-7）。故**一个控件一个
+ * aria-label**，把日期并进这一句，而不是再挂一个 aria 属性让读屏念两遍。
+ *
+ * @param lastLoggedMonthDay 已格式化的「9月8日」（由调用方用 `formatMonthDay` 生成）；
+ *   省略 / 空串（日期缺失或非法）→ **只念频次那半句**，不留「上次是」这种断尾。
  */
-export function topFoodsAria(name: string, dayCount: number, days: number): string {
+export function topFoodsAria(
+  name: string,
+  dayCount: number,
+  days: number,
+  lastLoggedMonthDay?: string,
+): string {
   const window = Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 90;
   const count = Number.isFinite(dayCount) ? Math.max(0, Math.floor(dayCount)) : 0;
-  return `近 ${window} 天里，${name}出现了 ${count} 天`;
+  const frequency = `近 ${window} 天里，${name}出现了 ${count} 天`;
+  const lastLogged = topFoodsLastLoggedLabel(lastLoggedMonthDay ?? '');
+  // 仍是一句**频次陈述句**，只是多了一个日期事实：不比较、不评价、不给任何建议
+  return lastLogged === '' ? frequency : `${frequency}，${lastLogged}`;
 }
 
 /**
@@ -1135,6 +1151,8 @@ export function topFoodsAria(name: string, dayCount: number, days: number): stri
  *
  * 口径：**不产生新数字**。日期本身由 `@qsh/core` 的 `FrequentFood.lastLoggedDate`
  * 算好、经契约原样透传；这里只把它拼成一句话，**不算「隔了多少天」、不比较、不评价**。
+ *
+ * **行内小字与 `topFoodsAria` 共用这一句**（视觉与读屏同一口径，不错位）。
  *
  * 日期的**格式化不在这里做**（`copy.ts` 只管措辞）：由调用方用 `formatMonthDay()`
  * 把 `YYYY-MM-DD` 转成「9月8日」再传进来（本地时区，K5）。

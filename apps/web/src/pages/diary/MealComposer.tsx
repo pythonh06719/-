@@ -110,20 +110,21 @@ const TOP_IN_EMPTY_STATE = 5;
 const CATEGORY_QUERY_KEYWORD_SENTINEL = '\u0000category';
 
 /**
- * 常吃榜每行的「上次食用日期」小字 —— **只陈述一个日期**（AC-11.5.3 黑名单同样适用）。
+ * 常吃榜「上次食用日期」的**已格式化**月日（「9月8日」）—— 行内小字与 aria **共用**同一份，
+ * 保证视觉用户与读屏用户看到/听到的是同一句话（NFR-7）。
  *
  * 口径：**零新计算**。日期由 `@qsh/core` 的 `FrequentFood.lastLoggedDate` 算好、
- * 经 `TopFoodItem` 原样透传；这里只做「合法就显示、不合法就不显示」，
+ * 经 `TopFoodItem` 原样透传；这里只做「合法就格式化、不合法就空串」，
  * **不算「隔了多少天」、不给任何评价**。
  *
  * 防御（旧缓存 / 脏数据：字段可能不是合法日期键）→ 返回 `''`，**整句不渲染**，
  * 既不猜一个日期、也不兜底成「未知 / 暂无」这类把缺失说成亏欠的文案。
  */
-function topFoodLastLoggedLine(dateKey: string | undefined): string {
+function topFoodLastLoggedMonthDay(dateKey: string | undefined): string {
   if (typeof dateKey !== 'string' || !isDateKey(dateKey)) {
     return '';
   }
-  return topFoodsLastLoggedLabel(formatMonthDay(dateKey));
+  return formatMonthDay(dateKey);
 }
 
 const TABS: ReadonlyArray<{ key: TabKey; label: string }> = [
@@ -655,11 +656,18 @@ export default function MealComposer({
    * 日期行是**行内的一行小字**（与「搜索结果行」的 `renderFoodList` 同款排版）：
    * 它**不是**独立控件，故直接放进这个整行 `<button>` 里 —— 不新增嵌套 `<button>`
    * （嵌套 button 是非法 HTML，读屏会读乱，见 `renderFoodList` 注释）。
+   *
+   * ⚠️ **日期必须并进 `aria-label`**：`aria-label` 会**覆盖**按钮内的文本，读屏只念它。
+   * 日期若只渲染在行内，读屏用户就听不到 —— 视觉与读屏信息不对等（NFR-7）。
+   * 故这里是「一个控件一个 aria-label」：`topFoodsAria(..., lastLoggedMonthDay)`，
+   * 而不是另挂一个 aria 属性让读屏念两遍。
    */
   const renderTopList = (items: readonly TopFoodItem[], days: number): ReactElement => (
     <ul className="mt-3 space-y-2">
       {items.map((item) => {
-        const lastLoggedLine = topFoodLastLoggedLine(item.lastLoggedDate);
+        // 行内小字与 aria **共用**这一份格式化结果（视觉 == 读屏，NFR-7）
+        const lastLoggedMonthDay = topFoodLastLoggedMonthDay(item.lastLoggedDate);
+        const lastLoggedLine = topFoodsLastLoggedLabel(lastLoggedMonthDay);
         return (
           <li key={item.foodItemId ?? item.name}>
             <button
@@ -669,7 +677,7 @@ export default function MealComposer({
                   chooseFood(item.food);
                 }
               }}
-              aria-label={topFoodsAria(item.name, item.dayCount, days)}
+              aria-label={topFoodsAria(item.name, item.dayCount, days, lastLoggedMonthDay)}
               className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
             >
               <span className="min-w-0 flex-1">

@@ -169,15 +169,27 @@ describe('R11.5 常吃榜 tab（AC-11.5.5）', () => {
     expect(screen.queryByText(/kcal/)).not.toBeInTheDocument();
     expect(screen.queryByRole('meter')).not.toBeInTheDocument();
 
-    // 无障碍标签是「频次」陈述句，不是评价
-    expect(screen.getByLabelText('近 90 天里，番茄炒蛋出现了 12 天')).toBeInTheDocument();
+    // 无障碍标签是「频次」陈述句，不是评价。
+    // ⚠️ 这里**不写死整条 aria 字符串**：曾写成精确相等，并入日期后那种写法就变成
+    // 「恰好等于某个字符串」的脆弱断言（文案微调就红，但它守的红线其实没变）。
+    // 它真正守的是：**aria 含频次事实 + 含日期事实 + 不含任何禁用词**。
+    const aria = screen.getByLabelText(/近 90 天里，番茄炒蛋出现了 12 天/).getAttribute('aria-label') ?? '';
+    expect(aria).toContain('近 90 天里，番茄炒蛋出现了 12 天');
+    // aria-label 会覆盖行内文本 → 日期**必须**在 aria 里，否则读屏听不到（NFR-7）
+    expect(aria).toContain('上次是 9月8日');
+    // 红线：aria 仍不得变成评价 / 建议（AC-11.5.3）
+    for (const word of ['过多', '过量', '超标', '不健康', '少喝', '少吃', '建议替换', '热量炸弹', '含糖', '高钠', '推荐摄入']) {
+      expect(aria).not.toContain(word);
+    }
+    expect(aria).not.toMatch(/kcal|蛋白|脂肪|碳水/);
   });
 
   it('点击走既有 chooseFood 路径：先进份量确认、再确认记录（不跳过份量）', async () => {
     renderComposer();
     await openTopTab();
 
-    fireEvent.click(screen.getByLabelText('近 90 天里，番茄炒蛋出现了 12 天'));
+    // 同样用频次句定位（不写死整条 aria），点击行为与从前完全一致
+    fireEvent.click(screen.getByLabelText(/近 90 天里，番茄炒蛋出现了 12 天/));
 
     // 出现了「选择份量」区块，但**还没有提交**
     await waitFor(() => {
@@ -254,6 +266,33 @@ describe('R11.5+ 常吃榜「上次食用日期」透传（core 已算好，UI �
     // 接口顺序 12 天 → 9 天 → 5 天；日期（9-08 / 9-10 / 9-05）**不参与**排序
     expect(html.indexOf('番茄炒蛋')).toBeLessThan(html.indexOf('米饭'));
     expect(html.indexOf('米饭')).toBeLessThan(html.indexOf('奶茶'));
+  });
+
+  it('★ aria 里也有日期：读屏不因 aria-label 覆盖行内文本而丢掉这一句（NFR-7）', async () => {
+    renderComposer();
+    await openTopTab();
+
+    const visible = screen.getByText('上次是 9月8日');
+    const button = visible.closest('button') as HTMLElement;
+    const aria = button.getAttribute('aria-label') ?? '';
+
+    // ① 视觉与读屏**同一句话**（共用 `topFoodsLastLoggedLabel` 口径）
+    expect(aria).toContain(visible.textContent ?? '');
+    // ② 仍是频次陈述句（不是被替换成了评价）
+    expect(aria).toContain('近 90 天里，番茄炒蛋出现了 12 天');
+    // ③ 一个控件一个 aria-label：没有额外挂 aria-describedby 之类让读屏念两遍
+    expect(button.hasAttribute('aria-describedby')).toBe(false);
+  });
+
+  it('★ 日期非法时 aria 不留断尾的「上次是」', async () => {
+    topItems = [makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋'), 'not-a-date')];
+    renderComposer();
+    await openTopTab();
+
+    const aria =
+      screen.getByLabelText(/近 90 天里，番茄炒蛋出现了 12 天/).getAttribute('aria-label') ?? '';
+    expect(aria).toBe('近 90 天里，番茄炒蛋出现了 12 天');
+    expect(aria).not.toContain('上次是');
   });
 
   it('★ 红线：日期行无 role="meter"、无营养字段、无红/黄警示色', async () => {
@@ -357,7 +396,8 @@ describe('R11.5 零营养评判（AC-11.5.3 可 grep 校验）', () => {
     const text = [
       COPY.topFoodsTab,
       COPY.topFoodsTitle,
-      screen.getByLabelText('近 90 天里，番茄炒蛋出现了 12 天').getAttribute('aria-label') ?? '',
+      // aria 取**整条**（含并进来的日期），一并受黑名单约束；用频次句定位，不写死整条
+      screen.getByLabelText(/近 90 天里，番茄炒蛋出现了 12 天/).getAttribute('aria-label') ?? '',
       screen.getByText('12 天').textContent ?? '',
       // 新增的「上次食用日期」也必须在同一份黑名单之下
       screen.getByText('上次是 9月8日').textContent ?? '',
