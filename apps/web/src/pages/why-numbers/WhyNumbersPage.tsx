@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ACTIVITY_FACTORS,
   AI_DAILY_LIMIT,
+  CALENDAR_DEPTH_MAX_LEVEL,
   DEFICIT_CAP_RATIO,
   KCAL_PER_G_CARB,
   KCAL_PER_G_FAT,
@@ -1287,6 +1288,63 @@ export default function WhyNumbersPage(): ReactElement {
         </dl>
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
           两处「日均」都由服务端用同一个分母算出，前端只负责展示 —— 不会各算一套。
+        </p>
+      </section>
+
+      {/* ㉓ 记录足迹日历的颜色深浅是怎么定的（C-1，NFR-11 硬约束） */}
+      <section aria-labelledby="why-footprint-title" className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+        <h2 id="why-footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉓ 足迹日历里颜色的深浅是怎么定的
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          「足迹」那张月历里，有记录的日期会被点亮。颜色的深浅只表示一件事：
+          <strong className="font-semibold">那一天记了几类</strong> —— 不表示好坏，也不表示热量高低。
+          口径写在这里，你可以对着它去核对每一格。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="点亮某一天的依据"
+            value="那一天「有记录」的模块数量大于 0"
+            hint="没有记录的日子留白，不标记、不填灰"
+          />
+          <DerivationRow
+            term="「一类」指什么"
+            value="体重 / 饮食 / 运动 / 习惯 / 饮水 / 体重之外的变化"
+            hint="同一天记了多次，同一类只算一次"
+          />
+          <DerivationRow term="记 1 类" value="第 1 档（最浅）" hint="例如：只记了体重" />
+          <DerivationRow term="记 2 类" value="第 2 档（更深）" hint="例如：记了饮食 + 体重" />
+          <DerivationRow
+            term={`记 ${CALENDAR_DEPTH_MAX_LEVEL} 类及以上`}
+            value={`第 ${CALENDAR_DEPTH_MAX_LEVEL} 档（最深，封顶）`}
+            hint="再多也只到这一档"
+          />
+          <DerivationRow
+            term="无记录的日子"
+            value="不点亮（留白）"
+            hint="不是「第 0 档颜色」，没有任何负向标记"
+          />
+        </dl>
+        <dl className="mt-3 space-y-3 text-sm">
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不用百分比、也不数「连着记了多少天」</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              一旦出现分母，这张月历就变成了进度条 —— 「记了 12/30 天」会被读成「只做到四成」。
+              它本来想回答的只是「我这些日子记没记、记了哪几类」，所以这里只标出是哪几天，没有完成度。
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么没记的日子什么都不显示</dt>
+            <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
+              留白是记录本身的样子，不是一种缺失。我们不在没记的日子上画叉、填灰或写「未完成」——
+              那些都是评判，而这张月历只想把「你记过的日子」摊开给你看。
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          档位封顶值 <span className="font-mono">CALENDAR_DEPTH_MAX_LEVEL</span> 与分档函数{' '}
+          <span className="font-mono">calendarDepthLevel</span> 都来自 @qsh/core：月历配色与这一页解释用的是同一份，
+          不会各说各话。
         </p>
       </section>
 

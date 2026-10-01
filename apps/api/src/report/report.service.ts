@@ -4,6 +4,9 @@ import type {
   MicronutrientSummary,
   PeriodDays,
   PeriodReport,
+  ReportCalendarDay,
+  ReportCalendarKind,
+  ReportCalendarResponse,
   ReportDay,
   WeeklyReport,
 } from '@qsh/shared-types';
@@ -12,7 +15,7 @@ import { DISTINCT_FOOD_LIMIT, distinctFoodKeys, resolvePeriodWindow, summarizePe
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
-import { addDays, toDateKey, todayLocalKey } from '../common/utils/date.util';
+import { addDays, monthDateRange, toDateKey, todayLocalKey } from '../common/utils/date.util';
 import { FOOD_IDENTITY_PROJECTION_LIMIT, visibleFoodWhere } from '../foods/foods.util';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -35,6 +38,19 @@ export const DRI_REFERENCES = [
 ] as const;
 
 export type MicronutrientKey = (typeof DRI_REFERENCES)[number]['key'];
+
+/**
+ * 记录足迹日历的模块种类**固定顺序**（C-1）—— 与 `shared-types` 的
+ * `ReportCalendarKind` 保持一致，保证 `kinds` 数组顺序可复现（便于前后端一致断言）。
+ */
+const CALENDAR_KIND_ORDER: readonly ReportCalendarKind[] = [
+  'weight',
+  'meal',
+  'exercise',
+  'habit',
+  'water',
+  'win',
+];
 
 /**
  * 周报 + 阶段回顾服务（二期 R4.1 / R11.1 · 四期 R11.3 / R11.7）。
@@ -248,6 +264,76 @@ export class ReportService {
 
     const summary = summarizePeriod(facts, { from, to });
     return { ...summary, days };
+  }
+
+  /**
+   * 记录足迹日历（C-1）：返回某月**有记录的日子 + 当天记了哪几类**（让前端算深浅）。
+   *
+   * - 只查**本人**（`userId` 取自 JWT）；
+   * - 月份参数经 `monthDateRange` 校验（非法 → 400，不允许隐式默认）；
+   * - 复用 meals / weights / water / habits / exercise / wins 的**日期聚合**（与 N2 一日档案、
+   *   R11.6 记录概览同源数据），**零新表**、6 个并发只读查询，每个都 ≤ 当月行数；
+   * - 习惯口径：`habitCheckin` 行存在即算「记过」（含 `done=false`，与 `period()` 的
+   *   「有记录的天数」及 `/data/overview` 行数口径一致）；
+   * - 响应**不含**任何分母 / 百分比 / 连续天数 —— 深浅由前端按 `kinds.length` 映射（NFR-11 ㉓）。
+   */
+  async calendar(userId: number, month: string): Promise<ReportCalendarResponse> {
+    const range = monthDateRange(month);
+    if (range === null) {
+      throw new ApiException(400, ERROR_CODES.VALID_INPUT, '月份格式应为 YYYY-MM', {
+        month: '月份格式应为 YYYY-MM',
+      });
+    }
+    const { from, to } = range;
+
+    const [meals, exercises, waters, habits, wins, weights] = await Promise.all([
+      this.prisma.mealLog.groupBy({
+        by: ['loggedDate'],
+        where: { userId, loggedDate: { gte: from, lte: to } },
+      }),
+      this.prisma.exerciseLog.groupBy({
+        by: ['loggedDate'],
+        where: { userId, loggedDate: { gte: from, lte: to } },
+      }),
+      this.prisma.waterLog.groupBy({
+        by: ['loggedDate'],
+        where: { userId, loggedDate: { gte: from, lte: to } },
+      }),
+      this.prisma.habitCheckin.groupBy({
+        by: ['loggedDate'],
+        where: { userId, loggedDate: { gte: from, lte: to } },
+      }),
+      this.prisma.winLog.groupBy({
+        by: ['loggedDate'],
+        where: { userId, loggedDate: { gte: from, lte: to } },
+      }),
+      // 体重用 `loggedAt`（date-only 列）：`toDateKey` 兼容 SQLite 的 string 与 PG 的 Date
+      this.prisma.weightLog.findMany({
+        where: { userId, loggedAt: { gte: from, lte: to } },
+        select: { loggedAt: true },
+      }),
+    ]);
+
+    /** 日期 → 该日有记录的模块种类集合（Set 天然去重）。 */
+    const kindsByDate = new Map<string, Set<ReportCalendarKind>>();
+    const record = (kind: ReportCalendarKind, dateKey: string): void => {
+      const bucket = kindsByDate.get(dateKey) ?? new Set<ReportCalendarKind>();
+      bucket.add(kind);
+      kindsByDate.set(dateKey, bucket);
+    };
+
+    for (const row of meals) record('meal', row.loggedDate);
+    for (const row of exercises) record('exercise', row.loggedDate);
+    for (const row of waters) record('water', row.loggedDate);
+    for (const row of habits) record('habit', row.loggedDate);
+    for (const row of wins) record('win', row.loggedDate);
+    for (const row of weights) record('weight', toDateKey(row.loggedAt));
+
+    const days: ReportCalendarDay[] = [...kindsByDate.entries()]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([date, kinds]) => ({ date, kinds: CALENDAR_KIND_ORDER.filter((kind) => kinds.has(kind)) }));
+
+    return { month, from, to, days };
   }
 
   /**

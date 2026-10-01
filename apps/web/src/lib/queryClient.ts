@@ -68,6 +68,8 @@ export const queryKeys = {
   weeklyReport: (endDate: string) => ['report', 'weekly', endDate] as const,
   /** 阶段回顾（R11.3）：按档位与结束日期分键 */
   periodReport: (days: number, endDate: string) => ['report', 'period', days, endDate] as const,
+  /** 记录足迹日历（C-1）：按月份分键 */
+  reportCalendar: (month: string) => ['report', 'calendar', month] as const,
   /** 「体重之外的变化」时间线（R11.4）：按回看天数分键 */
   wins: (days: number) => ['wins', days] as const,
   fastingSettings: ['fasting', 'settings'] as const,

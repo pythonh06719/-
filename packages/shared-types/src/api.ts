@@ -795,6 +795,45 @@ export interface PeriodReportQuery {
 }
 
 // ---------------------------------------------------------------------------
+// C-1 · 记录足迹日历（`GET /api/report/calendar`）
+// ---------------------------------------------------------------------------
+
+/**
+ * 当天「有记录的模块」种类（**只表示「哪几类记了」**，不含任何好坏 / 热量口径）。
+ *
+ * 顺序固定为：`weight` → `meal` → `exercise` → `habit` → `water` → `win`
+ * （与 `RecordOverviewKey` 同序，便于前后端一致断言）。
+ */
+export type ReportCalendarKind = 'weight' | 'meal' | 'exercise' | 'habit' | 'water' | 'win';
+
+/**
+ * 单日足迹（**仅有记录的日子才出现**，无记录的日子**不出现在数组里** —— 前端据此留白）。
+ */
+export interface ReportCalendarDay {
+  /** 本地日期键 `YYYY-MM-DD` */
+  date: string;
+  /** 当天有记录的模块种类（去重、按 {@link ReportCalendarKind} 固定顺序） */
+  kinds: ReportCalendarKind[];
+}
+
+/**
+ * `GET /api/report/calendar` 响应（C-1）。
+ *
+ * ⚠️ **反评判红线**：本契约**刻意不提供**任何分母 / 百分比 / 连续天数 / 缺失天数字段 ——
+ * 「深浅」只由前端按 `kinds.length` 映射（口径见 `@qsh/core` 的 `calendarDepthLevel`）。
+ */
+export interface ReportCalendarResponse {
+  /** 查询的月份 `YYYY-MM` */
+  month: string;
+  /** 当月首日 `YYYY-MM-01` */
+  from: string;
+  /** 当月末日 `YYYY-MM-DD` */
+  to: string;
+  /** 当月**有记录的日子**（升序、去重）；一天没记则为空数组（不是报错） */
+  days: ReportCalendarDay[];
+}
+
+// ---------------------------------------------------------------------------
 // R11.4 · 体重之外的变化（wins）
 // ---------------------------------------------------------------------------
 

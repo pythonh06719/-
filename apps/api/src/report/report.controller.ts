@@ -1,14 +1,15 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 
-import type { PeriodDays, PeriodReport, WeeklyReport } from '@qsh/shared-types';
+import type { PeriodDays, PeriodReport, ReportCalendarResponse, WeeklyReport } from '@qsh/shared-types';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CalendarReportDto } from './dto/calendar-report.dto';
 import { PeriodReportDto } from './dto/period-report.dto';
 import { WeeklyReportDto } from './dto/weekly-report.dto';
 import { ReportService } from './report.service';
 
-/** 周报 / 阶段回顾控制器（`/api/report/**`，R4.1 / R4.2 / R11.1 / R11.3 / R11.7）。 */
+/** 周报 / 阶段回顾 / 记录足迹控制器（`/api/report/**`，R4.1 / R4.2 / R11.1 / R11.3 / R11.7 / C-1）。 */
 @Controller('report')
 @UseGuards(JwtAuthGuard)
 export class ReportController {
@@ -27,5 +28,14 @@ export class ReportController {
   @Get('period')
   period(@CurrentUser() userId: number, @Query() query: PeriodReportDto): Promise<PeriodReport> {
     return this.reportService.period(userId, query.days as PeriodDays, query.endDate);
+  }
+
+  /**
+   * 记录足迹日历（`?month=YYYY-MM`，C-1）。
+   * `month` 缺省 / 非法 → 400（不允许隐式默认，见 `CalendarReportDto`）。
+   */
+  @Get('calendar')
+  calendar(@CurrentUser() userId: number, @Query() query: CalendarReportDto): Promise<ReportCalendarResponse> {
+    return this.reportService.calendar(userId, query.month);
   }
 }

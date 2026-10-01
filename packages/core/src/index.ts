@@ -324,3 +324,9 @@ export {
   type ParsedExportPayload,
   type ParseExportPayloadResult,
 } from './export/payload';
+
+// 记录足迹日历的深浅口径（C-1）：当天「有记录的模块数量」→ 3 档深浅（唯一真源，NFR-11 ㉓）
+export {
+  CALENDAR_DEPTH_MAX_LEVEL,
+  calendarDepthLevel,
+} from './report/calendar';

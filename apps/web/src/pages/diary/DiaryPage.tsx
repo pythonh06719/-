@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateMealLogRequest,
@@ -20,7 +21,7 @@ import { applyReorder } from '@qsh/core';
 import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
-import { addDays, formatDateLabel, formatMonthDay, todayKey } from '@/lib/format';
+import { addDays, formatDateLabel, formatMonthDay, isDateKey, todayKey } from '@/lib/format';
 import { normalizeTrendResponse } from '@/lib/trend';
 import { energyLabel, formatWeightNumber, toDisplayEnergy, useUnitStore, weightLabel } from '@/lib/units';
 import {
@@ -58,6 +59,19 @@ import { enqueueRequest } from '@/pwa/offline-queue';
 interface DiaryPageProps {
   /** 允许外部注入初始日期（测试用） */
   initialDate?: string;
+}
+
+/**
+ * 解析首屏日期（C-1 接入：从「足迹日历」点格跳来时带 `?date=YYYY-MM-DD`）。
+ *
+ * 优先级：URL `?date=`（合法）> 外部注入 `initialDate` > 今天。
+ * 非法 / 缺失的 query 一律回退 —— 绝不把脏参数当日期用（脏值会静默变成别的日子）。
+ */
+function resolveInitialDate(injected: string | undefined, fromQuery: string | null): string {
+  if (fromQuery !== null && isDateKey(fromQuery)) {
+    return fromQuery;
+  }
+  return injected ?? todayKey();
 }
 
 /** 每餐参考预算 = 每日预算 × 餐次占比。 */
@@ -180,7 +194,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   /** 全局体重单位（D-3）：一日档案里的体重按此换算展示（存储仍为 kg）。 */
   const weightUnit = useUnitStore((state) => state.weightUnit);
   const queryClient = useQueryClient();
-  const [date, setDate] = useState<string>(() => initialDate ?? todayKey());
+  const [searchParams] = useSearchParams();
+  const [date, setDate] = useState<string>(() => resolveInitialDate(initialDate, searchParams.get('date')));
   const [composerMeal, setComposerMeal] = useState<MealGroup['mealType'] | null>(null);
   const [announcement, setAnnouncement] = useState<string>('');
   const [notice, setNotice] = useState<string | null>(null);

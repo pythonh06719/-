@@ -79,3 +79,45 @@ export function diffDays(fromKey: string, toKey: string): number {
   const to = parseLocalDateKey(toKey).getTime();
   return Math.round((to - from) / 86_400_000);
 }
+
+// ---------------------------------------------------------------------------
+// 月份键 `YYYY-MM`（C-1 记录足迹日历的查询参数）
+// ---------------------------------------------------------------------------
+
+/** 严格 `YYYY-MM` 正则（供 DTO 校验）。 */
+export const MONTH_PATTERN_STRICT = /^\d{4}-\d{2}$/;
+
+/**
+ * 判断字符串是否为合法的**月份键** `YYYY-MM`：格式正确且月份在 `01~12`。
+ *
+ * ⚠️ 服务端只接收 `01~12` 两位月（`2026-9` / `2026-13` 一律拒绝）——
+ * 月份参数直接决定查询区间，宽松解析会静默落到别的月份（与 `endDate` 同口径，宁拒绝不猜测）。
+ */
+export function isValidMonthKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !MONTH_PATTERN_STRICT.test(value)) {
+    return false;
+  }
+  const month = Number(value.slice(5, 7));
+  return month >= 1 && month <= 12;
+}
+
+/** 某年某月的天数（不依赖 `Date`：避开 JS `Date` 对 0–99 年做 1900 偏移的坑）。 */
+function daysInMonth(year: number, month: number): number {
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const table = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return table[month - 1] ?? 31;
+}
+
+/**
+ * 月份键 `YYYY-MM` → 该月的首日 / 末日（`YYYY-MM-01` / `YYYY-MM-DD`）。
+ *
+ * 非法入参返回 `null`（调用方转 400），**不做任何隐式默认**。
+ */
+export function monthDateRange(monthKey: string): { from: string; to: string } | null {
+  if (!isValidMonthKey(monthKey)) {
+    return null;
+  }
+  const year = Number(monthKey.slice(0, 4));
+  const month = Number(monthKey.slice(5, 7));
+  return { from: `${monthKey}-01`, to: `${monthKey}-${pad2(daysInMonth(year, month))}` };
+}

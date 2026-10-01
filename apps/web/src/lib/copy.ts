@@ -7,10 +7,10 @@
  * 命名约定：`COPY.xxx` 为常量，`xxxFor(...)` 为按参数生成的文案。
  */
 
-import { PLATEAU_THRESHOLD_KG } from '@qsh/core';
-import type { RecordOverviewKey, UnitSystem } from '@qsh/shared-types';
+import { CALENDAR_DEPTH_MAX_LEVEL, PLATEAU_THRESHOLD_KG } from '@qsh/core';
+import type { RecordOverviewKey, UnitSystem, WeightUnit } from '@qsh/shared-types';
 import { WATER_ML_PER_CUP } from '@/theme/tokens';
-import { energyLabel, toDisplayEnergy } from '@/lib/units';
+import { energyLabel, toDisplayEnergy, toDisplayWeight, weightLabel } from '@/lib/units';
 
 export const COPY = {
   /** 通用鼓励（看板无数据 / 默认兜底） */
@@ -315,6 +315,8 @@ export const COPY = {
    */
   reportTabWeekly: '本周',
   reportTabPeriod: '这段时间',
+  /** 记录足迹（C-1）：`/report` 的第三个 tab —— 一张月历看「这个月哪几天记过东西」 */
+  reportTabFootprint: '足迹',
   periodDayOptionPrefix: '近',
   periodDayOptionSuffix: '天',
   periodEmpty: '这段时间还没有记录，什么时候想起来都可以开始',
@@ -645,6 +647,38 @@ export const COPY = {
    * ------------------------------------------------------------------------- */
   /** 「上次记的是 300g」—— 克数由用户自己的历史回显，故不带任何评价词 */
   lastPortionHint: (grams: number) => `上次记的是 ${formatGramsLabel(grams)}g`,
+  /* ---------------------------------------------------------------------------
+   * 记录足迹日历（C-1）—— 一张月历看「这个月哪几天记过东西」，点格子直达当天。
+   *
+   * 语气红线（PRD §7 / `docs/PRD-新增功能探索-2026-09-28.md` §C-1）：
+   * ① **没有任何分母**：不出现「连续 N 天 / 断了几次 / 完成率 / 百分比」；
+   * ② **缺记录的日子留白**：不填灰、不画叉、不写「未完成」；
+   * ③ **颜色只表示「丰富度」**（当天有记录的**种类数**），不表示好坏、不表示热量高低；
+   * ④ 词汇里不出现「连续 / 断 / 完成率 / 达成率 / 缺失」。
+   * 深浅口径（几类算深）的唯一真源是 `@qsh/core` 的 `calendarDepthLevel`，
+   * 与 `/why-numbers` ㉓ 同源；本文件只负责把口径讲给人听。
+   * ⚠️ 本小节**只追加新键**，不改动上方任何既有行。
+   * ------------------------------------------------------------------------- */
+  /** 页卡标题 */
+  footprintTitle: '这个月的足迹',
+  /** 页卡说明：一句话讲清这张月历在说什么，强调「深浅 = 记的种类多不多」 */
+  footprintDesc: '点亮的日期，是你记下过东西的日子。颜色深一点，说明那天记的种类多一些 —— 只表示记了没有、记了几类。',
+  /** 汇总行：**只有分子，没有分母**（有分母就会被读成完成度） */
+  footprintEmptyMonth: '这个月还没有记录，什么时候想记都可以',
+  /** 读取不顺：软着陆，**不得**复用空态文案（读不到 ≠ 没记过） */
+  footprintLoadError: '这个月的记录暂时取不到，待会儿再看看',
+  /** 加载中 */
+  footprintLoading: '正在整理这个月的足迹…',
+  /** 上 / 下个月切换按钮 */
+  footprintPrevMonth: '‹ 上个月',
+  footprintNextMonth: '下个月 ›',
+  /** 上 / 下个月切换的读屏标签 */
+  footprintPrevMonthAria: '上个月',
+  footprintNextMonthAria: '下个月',
+  /** 回到当前月 */
+  footprintCurrentMonth: '回到这个月',
+  /** 图例：把深浅含义摊开讲（中性陈述，无评判、无分母） */
+  footprintLegendNote: '颜色越深，那天记的种类越多；空着的那天还没记',
 } as const;
 
 /** 克数展示：整数不带小数，非整数保留 1 位（用于「上次记的是 300g / 137.5g」这类回显）。 */
@@ -691,16 +725,26 @@ export function remainingLabel(remainingKcal: number): string {
 // ---------------------------------------------------------------------------
 // 目标进度 / 维持模式（R2.7）
 // 语气规范同 §7：只陈述事实与下一步，**不催促、不打分、不在维持模式制造缺口**。
+//
+// ⚠️ **单位感知（D-3 整合）**：本组含体重的句子一律接受可选的 `unit: WeightUnit`
+// （缺省 `'kg'`）。历史上它们被拆到 `lib/weight-copy.ts`（为规避 `copy.ts` 并发编辑），
+// 现收敛回此文件：**kg 模式输出逐字不变**，斤模式按 `lib/units` 的等价换算展示。
+// 换算走 `lib/units`（唯一实现），本文件不重写公式。
 // ---------------------------------------------------------------------------
 
-/** 一位小数（本地不依赖千分位，避免 `toLocaleString` 在部分环境下的差异）。 */
-function oneDecimal(value: number): string {
+/**
+ * 一位小数（本地不依赖千分位，避免 `toLocaleString` 在部分环境下的差异）。
+ *
+ * 入参 `kg` 恒为**内部统一存储的 kg**（kg 是真源），按 `unit` 换算后再取 1 位小数。
+ */
+function oneDecimal(kg: number, unit: WeightUnit): string {
+  const value = toDisplayWeight(kg, unit);
   return Number.isFinite(value) ? value.toFixed(1) : '—';
 }
 
-/** 「距离目标还有 X kg」。 */
-export function goalRemainingLine(remainingKg: number): string {
-  return `距离目标还有 ${oneDecimal(remainingKg)} kg`;
+/** 「距离目标还有 X kg / 斤」。 */
+export function goalRemainingLine(remainingKg: number, unit: WeightUnit = 'kg'): string {
+  return `距离目标还有 ${oneDecimal(remainingKg, unit)} ${weightLabel(unit)}`;
 }
 
 /**
@@ -714,13 +758,40 @@ export function goalEtaLine(etaWeeks: number): string {
 }
 
 /** 无法给出 ETA（如缺口为 0）时的兜底：只说目标，不编造周数。 */
-export function goalTargetLine(targetWeightKg: number): string {
-  return `目标 ${oneDecimal(targetWeightKg)} kg，按自己的节奏来`;
+export function goalTargetLine(targetWeightKg: number, unit: WeightUnit = 'kg'): string {
+  return `目标 ${oneDecimal(targetWeightKg, unit)} ${weightLabel(unit)}，按自己的节奏来`;
 }
 
 /** 进度基准说明（可解释性：让用户知道百分比是怎么算出来的）。 */
-export function goalBaselineLine(baselineKg: number, targetWeightKg: number): string {
-  return `从 ${oneDecimal(baselineKg)} kg 出发，目标 ${oneDecimal(targetWeightKg)} kg`;
+export function goalBaselineLine(
+  baselineKg: number,
+  targetWeightKg: number,
+  unit: WeightUnit = 'kg',
+): string {
+  return `从 ${oneDecimal(baselineKg, unit)} ${weightLabel(unit)} 出发，目标 ${oneDecimal(targetWeightKg, unit)} ${weightLabel(unit)}`;
+}
+
+// ---------------------------------------------------------------------------
+// 体重字段标签（单位感知，D-3）—— 目标卡 / 编辑卡 / 体重输入框的标签。
+//
+// ⚠️ `COPY.goalCurrentWeightLabel` / `COPY.goalTargetWeightLabel` 是**写死 kg 的历史静态标签**
+// （少量测试仍引用），与下面这组函数**并存**：函数是它们在斤模式下的单位感知替代。
+// 展示组件一律用函数，不再用写死 kg 的常量。
+// ---------------------------------------------------------------------------
+
+/** 「当前体重（kg / 斤）」。 */
+export function goalCurrentWeightLabel(unit: WeightUnit = 'kg'): string {
+  return `当前体重（${weightLabel(unit)}）`;
+}
+
+/** 「目标体重（kg / 斤）」。 */
+export function goalTargetWeightLabel(unit: WeightUnit = 'kg'): string {
+  return `目标体重（${weightLabel(unit)}）`;
+}
+
+/** 「体重（kg / 斤）」—— 体重记录输入框的标签。 */
+export function weightInputLabel(unit: WeightUnit = 'kg'): string {
+  return `体重（${weightLabel(unit)}）`;
 }
 
 /**
@@ -741,15 +812,17 @@ export function maintenanceLine(maintenanceKcal: number, unit: UnitSystem): stri
 // 语气规范同 §7：只解释原因 + 给一个新的观察视角，**不指责、不建议加大缺口、不用红色**。
 // ---------------------------------------------------------------------------
 
-/** 「最近 X 天，7 日均线的变化不到 0.3 kg」—— 把判定依据直接摊开讲。 */
-export function plateauStalledLine(stalledDays: number): string {
-  return `最近 ${Math.round(stalledDays)} 天，7 日均线的变化不到 ${PLATEAU_THRESHOLD_KG} kg`;
+/** 「最近 X 天，7 日均线的变化不到 0.3 kg / 0.6 斤」—— 把判定依据直接摊开讲。 */
+export function plateauStalledLine(stalledDays: number, unit: WeightUnit = 'kg'): string {
+  return `最近 ${Math.round(stalledDays)} 天，7 日均线的变化不到 ${oneDecimal(PLATEAU_THRESHOLD_KG, unit)} ${weightLabel(unit)}`;
 }
 
 /** 把视角从「每天」拉到「4 周」：给斜率，不给评价。 */
-export function plateauSlopeLine(kgPerWeek: number): string {
-  const sign = kgPerWeek > 0 ? '+' : '';
-  return `把时间拉到 4 周看，平均每周 ${sign}${kgPerWeek.toFixed(2)} kg`;
+export function plateauSlopeLine(kgPerWeek: number, unit: WeightUnit = 'kg'): string {
+  const value = toDisplayWeight(kgPerWeek, unit);
+  const sign = value > 0 ? '+' : '';
+  const text = Number.isFinite(value) ? value.toFixed(2) : '—';
+  return `把时间拉到 4 周看，平均每周 ${sign}${text} ${weightLabel(unit)}`;
 }
 
 /** 斜率的中性解读（三个方向都不带褒贬：往下走 / 持平 / 略微上浮都是正常的事）。 */
@@ -1347,16 +1420,16 @@ export function periodExerciseLine(sessions: number, totalMinutes: number): stri
   return `运动了 ${safeSessions} 次，一共 ${safeMinutes} 分钟`;
 }
 
-/** ⑥ 下降：「这段时间体重减少了 2.3 kg」—— 后面**不接任何判断句**（QR-4）。 */
-export function periodWeightDownLine(deltaKg: number): string {
-  const value = Math.abs(Number.isFinite(deltaKg) ? deltaKg : 0);
-  return `这段时间体重减少了 ${value} kg`;
+/** ⑥ 下降：「这段时间体重减少了 2.3 kg / 4.6 斤」—— 后面**不接任何判断句**（QR-4）。 */
+export function periodWeightDownLine(deltaKg: number, unit: WeightUnit = 'kg'): string {
+  const value = Math.abs(Number.isFinite(deltaKg) ? toDisplayWeight(deltaKg, unit) : 0);
+  return `这段时间体重减少了 ${value} ${weightLabel(unit)}`;
 }
 
-/** ⑥ 上涨：「这段时间体重增加了 0.4 kg」—— 同样只是陈述，不评价。 */
-export function periodWeightUpLine(deltaKg: number): string {
-  const value = Math.abs(Number.isFinite(deltaKg) ? deltaKg : 0);
-  return `这段时间体重增加了 ${value} kg`;
+/** ⑥ 上涨：「这段时间体重增加了 0.4 kg / 0.8 斤」—— 同样只是陈述，不评价。 */
+export function periodWeightUpLine(deltaKg: number, unit: WeightUnit = 'kg'): string {
+  const value = Math.abs(Number.isFinite(deltaKg) ? toDisplayWeight(deltaKg, unit) : 0);
+  return `这段时间体重增加了 ${value} ${weightLabel(unit)}`;
 }
 
 /** 「你写下了 N 条体重之外的变化」（唯一计数出口，AC-11.4.6）。 */
@@ -1480,4 +1553,69 @@ export function goalTargetWeightInvalidFor(min: number, max: number): string {
 /** 目标期限越界提示（范围形如 1–260，且须为整数周）。 */
 export function goalWeeksInvalidFor(min: number, max: number): string {
   return `期限填一个 ${min} 到 ${max} 之间的整数周就好`;
+}
+
+// ---------------------------------------------------------------------------
+// 记录足迹日历（C-1）
+// 语气规范同 §7 / C-1 红线：**只有分子没有分母**、留白不评判、深浅只讲「丰富度」。
+// 所有含数字的句子一律在此生成，组件里不内联拼数字。
+// ---------------------------------------------------------------------------
+
+/**
+ * 月份标题「2026年9月」。
+ *
+ * `monthKey` 形如 `YYYY-MM`；非法 / 缺失时原样回显（不抛错，避免一张月历因参数脏而崩）。
+ */
+export function footprintMonthTitle(monthKey: string): string {
+  const matched = /^(\d{4})-(\d{2})$/.exec(monthKey);
+  if (matched === null) {
+    return monthKey;
+  }
+  const year = Number(matched[1]);
+  const month = Number(matched[2]);
+  return `${year}年${month}月`;
+}
+
+/** 「这个月有 12 天记下了点什么」——**只有分子，没有分母**（有分母就会被读成完成度）。 */
+export function footprintMonthSummary(recordedDays: number): string {
+  const safe = Number.isFinite(recordedDays) ? Math.max(0, Math.floor(recordedDays)) : 0;
+  return `这个月有 ${safe} 天记下了点什么`;
+}
+
+/**
+ * 月历整体读屏标签。
+ *
+ * 只播报「有几天记过东西」这一事实，**不播报「几天没记」**（避免把留白读成缺失）。
+ */
+export function footprintCalendarAria(monthLabel: string, recordedDays: number): string {
+  const safe = Number.isFinite(recordedDays) ? Math.max(0, Math.floor(recordedDays)) : 0;
+  const head = monthLabel.trim() === '' ? '这个月' : monthLabel;
+  return `${head}的记录足迹，有 ${safe} 天记过东西`;
+}
+
+/**
+ * 单日格子的读屏语句。
+ *
+ * - 有记录 → 「9月5日，记了 2 类」（只陈述种类数）；
+ * - 无记录 → 「9月5日，这天还没有记录」（中性，不写「未完成 / 空缺」）。
+ *
+ * @param dayLabel 形如「9月5日」
+ * @param kindCount 当天有记录的类别数（0 = 没记）
+ */
+export function footprintDayAria(dayLabel: string, kindCount: number): string {
+  const count = Number.isFinite(kindCount) ? Math.max(0, Math.floor(kindCount)) : 0;
+  if (count <= 0) {
+    return `${dayLabel}，这天还没有记录`;
+  }
+  return `${dayLabel}，记了 ${count} 类`;
+}
+
+/**
+ * 图例里单个色块的说明（如「记 1 类」「记 3 类以上」）。
+ *
+ * 档位封顶值 = `@qsh/core` 的 {@link CALENDAR_DEPTH_MAX_LEVEL}（与深浅口径同源）。
+ */
+export function footprintLegendLevel(level: number): string {
+  const safe = Number.isFinite(level) ? Math.max(0, Math.floor(level)) : 0;
+  return safe >= CALENDAR_DEPTH_MAX_LEVEL ? `记 ${CALENDAR_DEPTH_MAX_LEVEL} 类以上` : `记 ${safe} 类`;
 }
