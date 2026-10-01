@@ -6,6 +6,7 @@ import {
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   FREQUENT_FOOD_DEFAULTS,
   addPendingItem,
+  findSameMealItem,
   findSameNameFood,
   foodCategoryLabel,
   isPendingListRecordable,
@@ -14,7 +15,7 @@ import {
   setPendingItemGramsText,
   toBatchItems,
 } from '@qsh/core';
-import type { BatchMealItem, PendingMealItem } from '@qsh/core';
+import type { BatchMealItem, MealItemIdentity, PendingMealItem } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
@@ -76,6 +77,17 @@ export interface MealComposerProps {
   onClose: () => void;
   /** 提交（由父组件负责入库 / 离线队列 / 反馈） */
   onSubmit: (payload: ComposerSubmit) => Promise<void>;
+  /**
+   * D-2「重复记录温和提示」：**这一天已有的记录**（最小投影，含 `loggedDate` / `mealType` /
+   * `foodItemId` / `customName`）。
+   *
+   * 由父组件（`DiaryPage`）从当天的 `mealsQuery` 传入 —— 面板本身不另发请求。
+   * 判定口径在 `@qsh/core` 的 `findSameMealItem`（同一天 + 同一餐 + 同一样）。
+   *
+   * ⚠️ **可选**，缺省 `[]`（不给就不提示）：既有调用方 / 测试无需改动，行为与从前一致。
+   * ⚠️ 它只用于**呈现一句觉察**，**绝不参与提交路径**（默认放行，见本文件 `sameMealMatches`）。
+   */
+  existingMealItems?: readonly MealItemIdentity[];
 }
 
 type TabKey = 'search' | 'category' | 'recent' | 'top' | 'favorite' | 'quick' | 'combo';
@@ -112,6 +124,7 @@ export default function MealComposer({
   mealType,
   onClose,
   onSubmit,
+  existingMealItems,
 }: MealComposerProps): ReactElement {
   const unit = useUnitStore((state) => state.unit);
   const [tab, setTab] = useState<TabKey>('search');
@@ -259,6 +272,43 @@ export default function MealComposer({
     () => findSameNameFood(sameNameQuery.data?.items ?? [], quickNameTrimmed),
     [sameNameQuery.data, quickNameTrimmed],
   );
+
+  /**
+   * D-2「重复记录温和提示」：这一餐里是不是**已经有它了**。
+   *
+   * ## 三个入口同源 —— 都调 `@qsh/core` 的 `findSameMealItem`（判定只有一份实现）
+   *
+   * - `selected`：选中某条**食物库食物**后，看当天同餐里有没有同 `foodItemId` 的记录；
+   * - `quick`：**快加**填了名称后，看当天同餐里有没有同名（去空白后同名）的自定义记录；
+   * - `pending`：多选清单里**任意一项**已记过（C-3 批量路径同样给觉察）。
+   *
+   * ## 🔴 默认放行（本功能成败的关键）
+   *
+   * 这可能**真的不是重复**（用户可能就是又吃了一碗饭），所以：
+   * - 它只驱动一句**中性小字**，**不是弹窗、不是红色、不要求确认**；
+   * - 它**不参与**任何提交判断 —— `submitBatch` / 确认按钮 / `onSubmit` 都读不到它的结果，
+   *   用户无视它继续记，**照常成功**（测试里「默认放行」那条把这一点锁死）。
+   *
+   * 作用域（同一天 + 同一餐）由 `findSameMealItem` 自身按 `loggedDate` + `mealType` 过滤，
+   * 故早餐已记、午餐再记同一食物**不会**提示（那是正常的）。
+   */
+  const sameMealMatches = useMemo(() => {
+    const existing = existingMealItems ?? [];
+    const scope = { loggedDate: date, mealType };
+    return {
+      selected:
+        selected === null
+          ? null
+          : findSameMealItem(existing, { ...scope, foodItemId: selected.id }),
+      quick:
+        quickNameTrimmed === ''
+          ? null
+          : findSameMealItem(existing, { ...scope, customName: quickNameTrimmed }),
+      pending: pendingItems.some(
+        (entry) => findSameMealItem(existing, { ...scope, foodItemId: entry.foodId }) !== null,
+      ),
+    };
+  }, [existingMealItems, date, mealType, selected, quickNameTrimmed, pendingItems]);
 
   /**
    * 分类浏览（A2 / R3.4）：`GET /foods/categories` → 分类 chip 行。
@@ -1284,6 +1334,17 @@ export default function MealComposer({
             </label>
             <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
 
+            {/* D-2：快加的名称与今天这一餐已记过的自定义条目同名时，给同一句中性觉察
+                （判定口径与「选中食物」同源，都走 `findSameMealItem`）。仍是不阻断。 */}
+            {sameMealMatches.quick !== null && (
+              <p
+                data-testid="same-meal-hint-quick"
+                className="text-xs text-slate-500 dark:text-slate-400"
+              >
+                {COPY.sameMealHint}
+              </p>
+            )}
+
             {/*
               C-4 第一步 · 「存进我的食物库」（勾选框，**默认不勾**）。
 
@@ -1400,6 +1461,17 @@ export default function MealComposer({
                 {COPY.lastPortionHint(lastPortionGrams)}
               </p>
             )}
+            {/* D-2：这一餐里可能已经记过同一样时，给一句**中性觉察** ——
+                不是弹窗、不是红色、不需要确认、**不阻断提交**（默认放行）。
+                用户无视它继续点「确认记录」照常成功。 */}
+            {sameMealMatches.selected !== null && (
+              <p
+                data-testid="same-meal-hint"
+                className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+              >
+                {COPY.sameMealHint}
+              </p>
+            )}
             <div className="mt-2 flex flex-wrap gap-2">
               {(selected.servingUnits ?? []).map((item) => (
                 <button
@@ -1480,6 +1552,16 @@ export default function MealComposer({
                 </li>
               ))}
             </ul>
+            {/* D-2：清单里任意一项在今天这一餐已经记过 → 同一句中性觉察。
+                🔴 仍然**不阻断**「记录这 N 样」：用户可以直接提交（默认放行）。 */}
+            {sameMealMatches.pending && (
+              <p
+                data-testid="same-meal-hint-batch"
+                className="mt-2 text-xs text-slate-500 dark:text-slate-400"
+              >
+                {COPY.sameMealHint}
+              </p>
+            )}
           </section>
         )}
 

@@ -20,6 +20,7 @@ import type {
   WeightTrendResponse,
 } from '@qsh/shared-types';
 import { applyReorder } from '@qsh/core';
+import type { MealItemIdentity } from '@qsh/core';
 import { api, isNetworkError, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
@@ -244,6 +245,27 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
     () => normalizeGroups(mealsQuery.data ?? cacheGet<ListMealsResponse>(CACHE_KEYS.meals(date)) ?? undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mealsQuery.data, date],
+  );
+
+  /**
+   * D-2「重复记录温和提示」的数据来源：**这一天的全部记录**（最小投影）。
+   *
+   * 交给 `MealComposer` 后由 `@qsh/core` 的 `findSameMealItem` 按「同一天 + 同一餐」过滤，
+   * 故这里**不需要**预先按餐次切分 —— 传全天，让判定只有一份实现，也让父组件保持简单。
+   *
+   * 只投影判定真正用到的四个字段（`MealLog` 字段远多于这些），避免把整行记录传进面板。
+   */
+  const existingMealItems = useMemo(
+    (): MealItemIdentity[] =>
+      groups.flatMap((group) =>
+        group.logs.map((log) => ({
+          loggedDate: log.loggedDate,
+          mealType: log.mealType,
+          foodItemId: log.foodItemId,
+          customName: log.customName,
+        })),
+      ),
+    [groups],
   );
 
   /**
@@ -929,6 +951,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         <MealComposer
           date={date}
           mealType={composerMeal}
+          existingMealItems={existingMealItems}
           onClose={() => setComposerMeal(null)}
           onSubmit={handleSubmit}
         />

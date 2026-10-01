@@ -285,6 +285,15 @@ export {
   type PendingMealItem,
 } from './meal/batch';
 
+// 「重复记录温和提示」的判定口径（D-2）：同一天 + 同一餐 + 同一样食物是否已有记录
+// （只判定、不拦截；措辞与呈现由前端负责，见 lib/copy.ts 的 sameMealHint）
+export {
+  findSameMealItem,
+  hasSameMealItem,
+  type MealItemIdentity,
+  type SameMealQuery,
+} from './meal/same-item';
+
 // ---------------------------------------------------------------------------
 // 四期全新项（R11.3 / R11.4 / R11.7）
 // ---------------------------------------------------------------------------
