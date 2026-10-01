@@ -136,9 +136,13 @@ export default function WeeklyReportView(): ReactElement {
       : `${formatMonthDay(weekWindow.from)} ~ ${formatMonthDay(weekWindow.to)} · ${weekRelativeLabel(weeksBefore)}`;
 
   return (
-    <>
+    // C-6 宽屏（≥1024px）：整块周报在 `lg` 变成两栏。移动端这层是无样式的中性包裹
+    // （`flex flex-col gap-4`，与改动前「子项直接排在 `ReportPage` 容器里、由容器 `gap-4` 分隔」
+    // 的视觉完全一致）。左栏放分享入口与周报摘要，右栏放多样性 / 习惯 / 微量营养素；
+    // 两栏各自独立自上而下堆叠，栏内无空档。DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
       {/* B2：周选择器（常驻渲染 —— 切周时控件不消失，避免闪烁） */}
-      <section className="qsh-surface p-4" aria-label={COPY.weekSwitchTitle}>
+      <section className="qsh-surface p-4 lg:col-span-2" aria-label={COPY.weekSwitchTitle}>
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
@@ -194,26 +198,14 @@ export default function WeeklyReportView(): ReactElement {
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weekWindowNote}</p>
       </section>
 
-      {/* 分享卡片（三期）：周报关键数据 → 720×960 PNG，仅含变化量等非敏感信息 */}
-      {report !== undefined && hasRecords && (
-        <ShareCard
-          weekLabel={reportFrom !== '' && reportTo !== '' ? `${reportFrom.slice(5)} ~ ${reportTo.slice(5)}` : '近 7 天'}
-          avgIntakeKcal={report.avgIntakeKcal}
-          totalExerciseKcal={report.totalExerciseKcal}
-          weightChangeKg={report.weightChangeKg}
-          unit={unit}
-          weightUnit={weightUnit}
-          encouragement="这一周都好好吃饭了，值得记下来"
-        />
-      )}
       {report === undefined ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
           {reportQuery.isLoading ? weeklyLoadingLine(windowLabel) : '暂时拿不到周报，稍后再看看'}
         </p>
       ) : !hasRecords ? (
         /* B2 空态：这一周一条记录都没有 —— 只说「哪一周 + 一句中性话」，不渲染任何 0 值指标。
            标题沿用 `report.from ~ report.to`：空态也要让用户看清自己在看哪一周（NFR-11）。 */
-        <section className="qsh-surface p-5" data-testid="weekly-empty">
+        <section className="qsh-surface p-5 lg:col-span-2" data-testid="weekly-empty">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
             近 7 天（{rangeText}）
           </h2>
@@ -222,132 +214,149 @@ export default function WeeklyReportView(): ReactElement {
         </section>
       ) : (
         <>
-          <section className="qsh-surface p-5">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              近 7 天（{rangeText}）
-            </h2>
-            <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-300">日均摄入</p>
-                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-300">运动消耗</p>
-                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
-                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
-                  {formatSignedWeight(report.weightChangeKg, weightUnit)}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-300">{weightLabel(weightUnit)}</p>
-              </div>
-            </div>
+          {/* 左栏（C-6，≥1024px）：分享入口 + 周报摘要。每栏独立自上而下堆叠，栏内无空档。 */}
+          <div className="flex flex-col gap-4 lg:col-start-1">
+            {/* 分享卡片（三期）：周报关键数据 → 720×960 PNG，仅含变化量等非敏感信息 */}
+            <ShareCard
+              weekLabel={reportFrom !== '' && reportTo !== '' ? `${reportFrom.slice(5)} ~ ${reportTo.slice(5)}` : '近 7 天'}
+              avgIntakeKcal={report.avgIntakeKcal}
+              totalExerciseKcal={report.totalExerciseKcal}
+              weightChangeKg={report.weightChangeKg}
+              unit={unit}
+              weightUnit={weightUnit}
+              encouragement="这一周都好好吃饭了，值得记下来"
+            />
 
-            {/* 摄入 vs 运动（C2）：零依赖手写 SVG 柱状对比，柱高同一尺度 */}
-            <h3 className="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {COPY.reportTrendTitle}
-            </h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
-            <div className="mt-2">
-              <IntakeExerciseChart days={reportDays} />
-            </div>
-
-            {/* 逐日精确数值（图表给对比、列表给数字），沿用既有列表形式 */}
-            <ul className="mt-4 space-y-1.5" aria-label="每日摄入与运动">
-              {reportDays.map((day, index) => (
-                <li
-                  key={`${index}-${safeStr(day.date)}`}
-                  className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
-                >
-                  <span className="w-12 shrink-0">{safeStr(day.date).length >= 5 ? safeStr(day.date).slice(5) : '—'}</span>
-                  <span className="flex-1 text-right text-slate-600 dark:text-slate-300">
-                    摄入 {toDisplayEnergy(safeNum(day.intakeKcal), unit)} · 运动 {toDisplayEnergy(safeNum(day.exerciseKcal), unit)} {energyLabel(unit)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              {weeklyWeightReading(report.weightChangeKg)}
-            </p>
-          </section>
-
-          {/* R11.7：饮食多样性行（趋势图 section 之后；count = 0 时整行隐藏，AC-11.7.5） */}
-          <WeeklyDiversityRow report={report} />
-
-          <section className="qsh-surface p-5">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              {COPY.reportHabitTitle}
-            </h2>
-            {habitRate === null ? (
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{COPY.reportHabitEmpty}</p>
-            ) : (
-              <>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
-                  {reportHabitRateLabel(habitsDoneTotal, habitRate)}
-                </p>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                  <div
-                    className="h-full rounded-full bg-brand-400"
-                    style={{ width: `${habitRate}%` }}
-                    role="meter"
-                    aria-valuenow={habitRate}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={COPY.reportHabitTitle}
-                  />
+            <section className="qsh-surface p-5">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                近 7 天（{rangeText}）
+              </h2>
+              <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-300">日均摄入</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.reportHabitNote}</p>
-              </>
-            )}
-          </section>
+                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-300">运动消耗</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
+                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
+                    {formatSignedWeight(report.weightChangeKg, weightUnit)}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-300">{weightLabel(weightUnit)}</p>
+                </div>
+              </div>
 
-          <section className="qsh-surface p-5">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
-            <ul className="mt-3 space-y-3">
-              {micronutrients.map((item) => {
-                // 视觉条长上限 150%（外层 overflow-hidden 会把超过 100% 的部分裁掉）。
-                const barPercent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
-                // ARIA 值必须落在 [aria-valuemin, aria-valuemax] = [0, 100] 内：
-                // 直接把 150 喂给 aria-valuenow 是越界值，读屏会读到与视觉（条已满）不一致的数值。
-                // 钳到 100 与「视觉上条已满」一致；真实数值由同行的「{dailyAvg} {unit}」文字给出。
-                const ariaPercent = Math.min(100, barPercent);
-                const onTrack = item.direction === 'atLeast' ? item.dailyAvg >= item.reference : item.dailyAvg <= item.reference;
-                return (
-                  <li key={item.key}>
-                    <div className="flex items-baseline justify-between text-sm">
-                      <span className="text-slate-700 dark:text-slate-200">
-                        {item.name}
-                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
-                          参考{item.direction === 'atLeast' ? '≥' : '≤'} {item.reference} {item.unit}
-                        </span>
-                      </span>
-                      <span className="text-slate-600 dark:text-slate-300">
-                        {item.dailyAvg} {item.unit}
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                      <div
-                        className={`h-full rounded-full ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
-                        style={{ width: `${barPercent}%` }}
-                        role="meter"
-                        aria-valuenow={ariaPercent}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`${item.name}日均占参考值百分比`}
-                      />
-                    </div>
+              {/* 摄入 vs 运动（C2）：零依赖手写 SVG 柱状对比，柱高同一尺度 */}
+              <h3 className="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {COPY.reportTrendTitle}
+              </h3>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
+              <div className="mt-2">
+                <IntakeExerciseChart days={reportDays} />
+              </div>
+
+              {/* 逐日精确数值（图表给对比、列表给数字），沿用既有列表形式 */}
+              <ul className="mt-4 space-y-1.5" aria-label="每日摄入与运动">
+                {reportDays.map((day, index) => (
+                  <li
+                    key={`${index}-${safeStr(day.date)}`}
+                    className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
+                  >
+                    <span className="w-12 shrink-0">{safeStr(day.date).length >= 5 ? safeStr(day.date).slice(5) : '—'}</span>
+                    <span className="flex-1 text-right text-slate-600 dark:text-slate-300">
+                      摄入 {toDisplayEnergy(safeNum(day.intakeKcal), unit)} · 运动 {toDisplayEnergy(safeNum(day.exerciseKcal), unit)} {energyLabel(unit)}
+                    </span>
                   </li>
-                );
-              })}
-            </ul>
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
-          </section>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                {weeklyWeightReading(report.weightChangeKg)}
+              </p>
+            </section>
+          </div>
+
+          {/* 右栏（C-6，≥1024px）：饮食多样性 / 习惯达成 / 微量营养素 */}
+          <div className="flex flex-col gap-4 lg:col-start-2">
+            {/* R11.7：饮食多样性行（count = 0 时整行隐藏，AC-11.7.5） */}
+            <WeeklyDiversityRow report={report} />
+
+            <section className="qsh-surface p-5">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                {COPY.reportHabitTitle}
+              </h2>
+              {habitRate === null ? (
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{COPY.reportHabitEmpty}</p>
+              ) : (
+                <>
+                  <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                    {reportHabitRateLabel(habitsDoneTotal, habitRate)}
+                  </p>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                    <div
+                      className="h-full rounded-full bg-brand-400"
+                      style={{ width: `${habitRate}%` }}
+                      role="meter"
+                      aria-valuenow={habitRate}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={COPY.reportHabitTitle}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.reportHabitNote}</p>
+                </>
+              )}
+            </section>
+
+            <section className="qsh-surface p-5">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
+              <ul className="mt-3 space-y-3">
+                {micronutrients.map((item) => {
+                  // 视觉条长上限 150%（外层 overflow-hidden 会把超过 100% 的部分裁掉）。
+                  const barPercent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
+                  // ARIA 值必须落在 [aria-valuemin, aria-valuemax] = [0, 100] 内：
+                  // 直接把 150 喂给 aria-valuenow 是越界值，读屏会读到与视觉（条已满）不一致的数值。
+                  // 钳到 100 与「视觉上条已满」一致；真实数值由同行的「{dailyAvg} {unit}」文字给出。
+                  const ariaPercent = Math.min(100, barPercent);
+                  const onTrack = item.direction === 'atLeast' ? item.dailyAvg >= item.reference : item.dailyAvg <= item.reference;
+                  return (
+                    <li key={item.key}>
+                      <div className="flex items-baseline justify-between text-sm">
+                        <span className="text-slate-700 dark:text-slate-200">
+                          {item.name}
+                          <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                            参考{item.direction === 'atLeast' ? '≥' : '≤'} {item.reference} {item.unit}
+                          </span>
+                        </span>
+                        <span className="text-slate-600 dark:text-slate-300">
+                          {item.dailyAvg} {item.unit}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                        <div
+                          className={`h-full rounded-full ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
+                          style={{ width: `${barPercent}%` }}
+                          role="meter"
+                          aria-valuenow={ariaPercent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${item.name}日均占参考值百分比`}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
+            </section>
+          </div>
         </>
       )}
-    </>
+    </div>
   );
 }

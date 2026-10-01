@@ -106,9 +106,14 @@ export default function PeriodReportView(): ReactElement {
     : periodRangeFallbackLine(periodDayOptionLabel(safeNum(report?.days)));
 
   return (
-    <div className="flex flex-col gap-4" aria-label={COPY.reportTabPeriod}>
+    // C-6 宽屏（≥1024px）：档位切换占满一行，下方两栏 —— 左栏六项白名单指标，右栏「常吃 Top5」。
+    // 移动端 `flex flex-col gap-4` 不变。
+    <div
+      className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:grid-flow-row-dense"
+      aria-label={COPY.reportTabPeriod}
+    >
       {/* 档位切换：近 30 天 / 近 365 天（QR-3 只两档） */}
-      <div role="tablist" aria-label="回顾档位" className="flex gap-1.5">
+      <div role="tablist" aria-label="回顾档位" className="flex gap-1.5 lg:col-span-2">
         {PERIOD_DAY_OPTIONS.map((option) => (
           <button
             key={option}
@@ -129,16 +134,16 @@ export default function PeriodReportView(): ReactElement {
       </div>
 
       {!hasReport ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
           {reportQuery.isLoading ? '正在整理这段时间…' : '暂时拿不到回顾，稍后再看看'}
         </p>
       ) : !report.hasAnyData ? (
         /* 整屏空态：不渲染任何指标卡（AC-11.3.5） */
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
           {COPY.periodEmpty}
         </p>
       ) : (
-        <section className="qsh-surface p-5" aria-labelledby="period-metrics-title">
+        <section className="qsh-surface p-5 lg:col-start-1" aria-labelledby="period-metrics-title">
           <h2 id="period-metrics-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
             {COPY.reportTabPeriod}
           </h2>
@@ -174,7 +179,7 @@ export default function PeriodReportView(): ReactElement {
 
       {/* 常吃 Top5（复用 `GET /foods/top`，D-4）：不足门槛 → 整块隐藏（AC-11.5.2 同规则） */}
       {hasReport && report.hasAnyData && topItems.length > 0 && (
-        <section className="qsh-surface p-5" aria-labelledby="period-top-title">
+        <section className="qsh-surface p-5 lg:col-start-2" aria-labelledby="period-top-title">
           <h2 id="period-top-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
             {COPY.periodTopTitle}
           </h2>

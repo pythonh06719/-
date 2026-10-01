@@ -41,10 +41,13 @@ export interface AppRoute {
  *
  * `Suspense` 放在 `AppShell` **内部**：页面 chunk 到达前只让内容区显示兜底，
  * 顶栏与底部导航保持可见 —— 否则每次切换路由整页都会闪一下外壳。
+ *
+ * `wide`（C-6）：≥1024px 放宽内容列宽，供多栏布局。**只给信息密度最高的 3 个页面开启**
+ * （今天 / 变化 / 周报）；其余单栏页面在桌面维持 `max-w-3xl` 的舒适阅读宽度。
  */
-function withShell(page: ReactNode, title?: string): ReactElement {
+function withShell(page: ReactNode, title?: string, wide = false): ReactElement {
   return (
-    <AppShell {...(title === undefined ? {} : { title })}>
+    <AppShell {...(title === undefined ? {} : { title })} wide={wide}>
       <Suspense fallback={<RouteLoading />}>{page}</Suspense>
     </AppShell>
   );
@@ -87,13 +90,15 @@ export const routes: AppRoute[] = [
   { path: '/onboarding', element: bare(<OnboardingPage />) },
 
   // 3. 今天（生活流首页）——顶栏用品牌字标，页面 h1 才是「今天」，避免重复
-  { path: '/dashboard', element: withShell(<DashboardPage />, '轻生活') },
+  //    C-6：wide —— 桌面下摊成三栏（今日动作 / 今天的记录 / 这周的小变化）
+  { path: '/dashboard', element: withShell(<DashboardPage />, '轻生活', true) },
 
   // 4. 饮食记录（≤3 次点击记一餐）
   { path: '/diary', element: withShell(<DiaryPage />, '记录') },
 
   // 5. 体重变化（7 日移动平均）
-  { path: '/weight', element: withShell(<WeightPage />, '变化') },
+  //    C-6：wide —— 桌面下摊成两栏（记录与曲线 / 数据与回顾）
+  { path: '/weight', element: withShell(<WeightPage />, '变化', true) },
 
   // 6. 我的（基础数据修改 + 参考来源）
   { path: '/profile', element: withShell(<ProfilePage />, '我的') },
@@ -109,7 +114,7 @@ export const routes: AppRoute[] = [
   { path: '/habits', element: withShell(<HabitsPage />, '习惯打卡') },
   { path: '/tools', element: withShell(<ToolsPage />, '生活化工具') },
   { path: '/fasting', element: withShell(<FastingPage />, '断食计时') },
-  { path: '/report', element: withShell(<ReportPage />, '周报') },
+  { path: '/report', element: withShell(<ReportPage />, '周报', true) },
   // 三期（T05 三期）：AI 助手（每日总结 / 今日方案 / 自由提问 + 食物识别）
   { path: '/ai', element: withShell(<AiPage />, 'AI 助手') },
 

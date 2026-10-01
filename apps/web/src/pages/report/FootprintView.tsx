@@ -69,10 +69,13 @@ export default function FootprintView(): ReactElement {
   const isEmptyMonth = calendarQuery.isSuccess && recordedDays === 0;
 
   return (
+    // C-6 宽屏（≥1024px）：单张月历不适合摊进多栏 —— 7 列格子拉满 5xl 会变成超大方块。
+    // 故 `lg` 下把整卡居中并限宽（`max-w-lg`），格子尺寸回到与移动端相近的舒适区。
+    // 移动端类名不变。
     <section
       data-testid="report-footprint"
       aria-labelledby="footprint-title"
-      className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
     >
       <h2 id="footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
         {COPY.footprintTitle}

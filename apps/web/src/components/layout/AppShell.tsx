@@ -15,6 +15,7 @@ import { flushQueue, queueLength, subscribeQueue } from '@/pwa/offline-queue';
  * - 无障碍：跳过导航链接、`main` 语义区、离线状态 `aria-live` 提示（TC-48）
  * - **不发任何用户未开启的通知**（NFR-10）
  * - **GAP-9**：顶部横幅同时承载「离线」与「N 笔待同步」两件事（见 `OfflineSyncBanner`）
+ * - **C-6**：`wide` 页面（今天 / 变化 / 周报）在 ≥1024px（`lg`）放宽内容列宽，容纳多栏布局
  */
 
 export interface AppShellProps {
@@ -22,6 +23,18 @@ export interface AppShellProps {
   children: ReactNode;
   /** 顶栏标题（缺省「轻生活」） */
   title?: string;
+  /**
+   * 宽屏（≥1024px）放宽内容列宽（C-6）。
+   *
+   * - `false`（默认）：`main` 恒为 `max-w-3xl`，与改动前逐字节一致 —— 移动端优先是产品定位，
+   *   大多数单栏页面在桌面也保持这条舒适阅读宽度（过宽会让正文行长得难读）。
+   * - `true`：**仅在 `lg:` 断点**额外加 `lg:max-w-6xl`，供少数信息密度高的页面（今天 / 变化 / 周报）
+   *   在桌面摊成两栏 / 三栏。移动端（`<1024px`）一行不变。
+   *
+   * ⚠️ 刻意**不**全局放宽：那会让 /why-numbers 这类长文页面在桌面变成超宽长行，属于「全站重排」，
+   * 与 C-6「只做信息密度最高的 2~3 个页面」的收敛要求相冲突。故按页开启。
+   */
+  wide?: boolean;
 }
 
 function useOnlineStatus(): boolean {
@@ -197,13 +210,18 @@ function OfflineSyncBanner({ online }: { online: boolean }): ReactElement | null
   );
 }
 
-export default function AppShell({ children, title = '轻生活' }: AppShellProps): ReactElement {
+export default function AppShell({ children, title = '轻生活', wide = false }: AppShellProps): ReactElement {
   const { resolved, toggle } = useTheme();
   const unit = useUnitStore((state) => state.unit);
   const toggleUnit = useUnitStore((state) => state.toggle);
   const weightUnit = useUnitStore((state) => state.weightUnit);
   const toggleWeightUnit = useUnitStore((state) => state.toggleWeightUnit);
   const online = useOnlineStatus();
+  /**
+   * 宽屏列宽增量：**只加 `lg:` 前缀**。`wide === false` 时拼接空串，
+   * 保证顶栏 / `main` 的 `className` 与改动前逐字符相同（移动端零回归）。
+   */
+  const wideWidth = wide ? ' lg:max-w-6xl' : '';
 
   return (
     <div className="min-h-screen bg-brand-50 pb-20 dark:bg-slate-900 md:pb-8">
@@ -212,7 +230,7 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
       </a>
 
       <header className="sticky top-0 z-30 border-b border-brand-100 bg-white/90 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
+        <div className={`mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5${wideWidth}`}>
           {/* 标题用 `text-title`（20px）而非正文号：页头是全站层级的地基，
               标题与正文同号会让每一页都「没有开始」 */}
           <p className="text-title font-semibold tracking-tight text-slate-800 dark:text-slate-100">
@@ -255,8 +273,9 @@ export default function AppShell({ children, title = '轻生活' }: AppShellProp
       {/* 离线 / 待同步横幅（GAP-9）：`!online` 或「还有 N 笔在路上」时出现 */}
       <OfflineSyncBanner online={online} />
 
-      {/* 内容两侧多留一档呼吸（py-8）：全站每页统一；页面内部间距各自负责，此处不叠加 */}
-      <main id="main" className="mx-auto max-w-3xl animate-fade-in px-5 py-8">
+      {/* 内容两侧多留一档呼吸（py-8）：全站每页统一；页面内部间距各自负责，此处不叠加。
+          C-6：`wide` 页面在 lg 断点放宽到 6xl，供内部多栏；非 wide 页面类名与改动前一致。 */}
+      <main id="main" className={`mx-auto max-w-3xl animate-fade-in px-5 py-8${wideWidth}`}>
         {children}
       </main>
 

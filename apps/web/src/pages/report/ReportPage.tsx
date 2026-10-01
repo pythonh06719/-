@@ -29,7 +29,11 @@ export default function ReportPage(): ReactElement {
   const [tab, setTab] = useState<ReportTabKey>('weekly');
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4">
+    // C-6 宽屏（≥1024px）：回顾页本身已是「周报 / 阶段回顾 / 足迹」的多栏载体，
+    // 容器在 `lg` 放宽到 `max-w-5xl`（移动端仍 `max-w-xl`，一行不变）；各 tab 视图
+    // 各自负责内部两栏栅格（见 WeeklyReportView / PeriodReportView）。
+    // `lg:pb-8`：桌面端底部导航转为页内常驻（非固定浮层），无需再留 `pb-24` 的避让空间。
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4 lg:max-w-5xl lg:pb-8">
       <ReportTabs value={tab} onChange={setTab} />
       {tab === 'weekly' ? <WeeklyReportView /> : tab === 'period' ? <PeriodReportView /> : <FootprintView />}
     </div>

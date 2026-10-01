@@ -273,223 +273,238 @@ export default function WeightPage(): ReactElement {
   };
 
   return (
-    <section aria-labelledby="weight-title" className="space-y-5">
-      <h1 id="weight-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+    // C-6 宽屏（≥1024px）：`space-y-5` 单栏在 `lg` 变成两栏。移动端所有类名不变。
+    // 两栏各是一层 `space-y-5` 的普通包裹块 —— 每栏**独立自上而下堆叠**（不共享行高），
+    // 因而不会因左右栏卡片高矮不一而在栏内出现空档。
+    // 左栏「记录与曲线」（表单 + 波动原因 + 趋势图），右栏「进度与回顾」（目标 / 平台期 /
+    // 区间统计 / 近期记录 / 体重之外的变化）。DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
+    <section
+      aria-labelledby="weight-title"
+      className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0"
+    >
+      <h1 id="weight-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100 lg:col-span-2">
         体重趋势
       </h1>
 
-      <form
-        className="qsh-surface space-y-3 rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
-        onSubmit={(event) => {
-          event.preventDefault();
-          handleSubmit();
-        }}
-      >
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          建议早晨空腹、上厕所后称重，数值更稳定。
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm text-slate-600 dark:text-slate-300">
-            日期
-            <input
-              type="date"
-              max={todayKey()}
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-            />
-          </label>
-          <label className="text-sm text-slate-600 dark:text-slate-300">
-            {weightInputLabel(weightUnit)}
-            <input
-              inputMode="decimal"
-              value={weight}
-              onChange={(event) => setWeight(event.target.value)}
-              placeholder={weightUnit === 'jin' ? '如：120' : '如：59.8'}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-            />
-          </label>
-        </div>
-        <label className="block text-sm text-slate-600 dark:text-slate-300">
-          备注（可选，≤200 字）
-          <input
-            value={note}
-            maxLength={200}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="如：昨天聚餐，睡得比较晚"
-            className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={addWeight.isPending}
-          className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+      {/* 左栏（C-6）：记录与曲线。移动端为中性包裹块，间距 / 顺序与改动前一致。 */}
+      <div className="space-y-5 lg:col-start-1">
+        <form
+          className="qsh-surface space-y-3 rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}
         >
-          {addWeight.isPending ? '正在保存…' : '记录今天的体重'}
-        </button>
-        {notice !== null && (
-          <p role="status" aria-live="polite" className="text-sm text-brand-700 dark:text-brand-300">
-            {notice}
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            建议早晨空腹、上厕所后称重，数值更稳定。
           </p>
-        )}
-      </form>
-
-      {/* 体重波动的日常原因（N3）。
-          ⚠️ 刻意**不做**数据因果归因（不说「因为你昨天吃多了」）—— 那会把身体正常的起伏
-          变成一种指责，直接违背「无负罪感」这条硬约束。这里只陈述日常里本来就会让数字上浮的事，
-          不做因果推断，判断权留给用户自己。 */}
-      {rising && (
-        <section
-          aria-labelledby="weight-rise-title"
-          className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
-        >
-          <h2 id="weight-rise-title" className="font-semibold">
-            {COPY.weightRiseTitle}
-          </h2>
-          <p role="status" className="mt-1">
-            {COPY.weightFluctuation}
-          </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>{COPY.weightRiseReasonWater}</li>
-            <li>{COPY.weightRiseReasonFood}</li>
-            <li>{COPY.weightRiseReasonSalt}</li>
-            <li>{COPY.weightRiseReasonSleep}</li>
-          </ul>
-          <p className="mt-2 font-medium">{COPY.weightRiseClosing}</p>
-        </section>
-      )}
-
-      <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
-
-        {/* 区间切换（C4）：近 7 / 30 / 90 天。分段控件语义用 role=group + aria-pressed。
-            只切换「看哪一段」，不触发新请求；默认 90 天，尽量贴近改动前的观感。 */}
-        <div role="group" aria-label={COPY.weightRangeLabel} className="mt-2 flex flex-wrap gap-1.5 px-1">
-          {WEIGHT_RANGE_DAYS_OPTIONS.map((days) => {
-            const active = days === rangeDays;
-            return (
-              <button
-                key={days}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setRangeDays(days)}
-                className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition ${
-                  active
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
-                }`}
-              >
-                {weightRangeName(days)}
-              </button>
-            );
-          })}
-        </div>
-
-        {points.length === 0 ? (
-          <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">
-            {allPoints.length === 0 ? COPY.emptyWeight : COPY.weightRangeEmpty}
-          </p>
-        ) : (
-          <div className="mt-2 h-64 w-full" aria-label="体重趋势折线图">
-            <Suspense
-              fallback={
-                <p className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                  正在准备图表…
-                </p>
-              }
-            >
-              <WeightChart
-                dates={chartData.dates}
-                weights={chartData.weights}
-                movingAverage={chartData.movingAverage}
-                forecast={chartData.forecast}
-                unit={weightUnit}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-slate-600 dark:text-slate-300">
+              日期
+              <input
+                type="date"
+                max={todayKey()}
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
-            </Suspense>
+            </label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">
+              {weightInputLabel(weightUnit)}
+              <input
+                inputMode="decimal"
+                value={weight}
+                onChange={(event) => setWeight(event.target.value)}
+                placeholder={weightUnit === 'jin' ? '如：120' : '如：59.8'}
+                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </label>
           </div>
+          <label className="block text-sm text-slate-600 dark:text-slate-300">
+            备注（可选，≤200 字）
+            <input
+              value={note}
+              maxLength={200}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="如：昨天聚餐，睡得比较晚"
+              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={addWeight.isPending}
+            className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+          >
+            {addWeight.isPending ? '正在保存…' : '记录今天的体重'}
+          </button>
+          {notice !== null && (
+            <p role="status" aria-live="polite" className="text-sm text-brand-700 dark:text-brand-300">
+              {notice}
+            </p>
+          )}
+        </form>
+
+        {/* 体重波动的日常原因（N3）。
+            ⚠️ 刻意**不做**数据因果归因（不说「因为你昨天吃多了」）—— 那会把身体正常的起伏
+            变成一种指责，直接违背「无负罪感」这条硬约束。这里只陈述日常里本来就会让数字上浮的事，
+            不做因果推断，判断权留给用户自己。 */}
+        {rising && (
+          <section
+            aria-labelledby="weight-rise-title"
+            className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+          >
+            <h2 id="weight-rise-title" className="font-semibold">
+              {COPY.weightRiseTitle}
+            </h2>
+            <p role="status" className="mt-1">
+              {COPY.weightFluctuation}
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>{COPY.weightRiseReasonWater}</li>
+              <li>{COPY.weightRiseReasonFood}</li>
+              <li>{COPY.weightRiseReasonSalt}</li>
+              <li>{COPY.weightRiseReasonSleep}</li>
+            </ul>
+            <p className="mt-2 font-medium">{COPY.weightRiseClosing}</p>
+          </section>
         )}
+
+        <div className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+          <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
+
+          {/* 区间切换（C4）：近 7 / 30 / 90 天。分段控件语义用 role=group + aria-pressed。
+              只切换「看哪一段」，不触发新请求；默认 90 天，尽量贴近改动前的观感。 */}
+          <div role="group" aria-label={COPY.weightRangeLabel} className="mt-2 flex flex-wrap gap-1.5 px-1">
+            {WEIGHT_RANGE_DAYS_OPTIONS.map((days) => {
+              const active = days === rangeDays;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setRangeDays(days)}
+                  className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition ${
+                    active
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  {weightRangeName(days)}
+                </button>
+              );
+            })}
+          </div>
+
+          {points.length === 0 ? (
+            <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">
+              {allPoints.length === 0 ? COPY.emptyWeight : COPY.weightRangeEmpty}
+            </p>
+          ) : (
+            <div className="mt-2 h-64 w-full" aria-label="体重趋势折线图">
+              <Suspense
+                fallback={
+                  <p className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+                    正在准备图表…
+                  </p>
+                }
+              >
+                <WeightChart
+                  dates={chartData.dates}
+                  weights={chartData.weights}
+                  movingAverage={chartData.movingAverage}
+                  forecast={chartData.forecast}
+                  unit={weightUnit}
+                />
+              </Suspense>
+            </div>
+          )}
+        </div>
       </div>
 
-      {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
+      {/* 右栏（C-6，≥1024px）：进度与回顾。移动端这是一层无样式的中性包裹块
+          （`space-y-5` 与父级同款），视觉与结构语义与改动前一致；桌面下整体归入第 2 栏。 */}
+      <div className="space-y-5 lg:col-start-2">
+        {goalProgress !== null && <GoalProgressCard progress={goalProgress} />}
 
-      {plateauVisible && plateau !== null && (
-        <PlateauCard
-          stalledDays={plateau.stalledDays}
-          slope4wKgPerWeek={plateau.slope4wKgPerWeek}
-          onDismiss={handleDismissPlateau}
-        />
-      )}
-
-      <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-        <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {formatWeightNumber(stats.minKg, weightUnit)}
-          </dd>
-        </div>
-        <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {formatWeightNumber(stats.maxKg, weightUnit)}
-          </dd>
-        </div>
-        <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {formatWeightNumber(stats.meanKg, weightUnit)}
-          </dd>
-        </div>
-        <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
-          <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
-            {formatSignedWeight(stats.changeKg, weightUnit)}
-          </dd>
-        </div>
-      </dl>
-
-      <p className="px-1 text-xs text-slate-600 dark:text-slate-400">
-        {weightRangeCaption(
-          rangeDays,
-          points.length,
-          points.length > 0 ? formatFullDate(points[0]?.date ?? today) : null,
+        {plateauVisible && plateau !== null && (
+          <PlateauCard
+            stalledDays={plateau.stalledDays}
+            slope4wKgPerWeek={plateau.slope4wKgPerWeek}
+            onDismiss={handleDismissPlateau}
+          />
         )}
-        {movingAverage.some((value) => value !== null)
-          ? ' 7 日均线在每个记录日往前 7 个自然日的窗口内取平均。'
-          : ''}
-        {COPY.weightRangeOlderHint}
-      </p>
 
-      <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
-        {points.length === 0 ? (
-          <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-            <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
-            还没有记录
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-1.5">
-            {[...points]
-              .reverse()
-              .slice(0, 8)
-              .map((point) => (
-                <li key={point.date} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-300">
-                    {point.date === todayKey() ? `今天（${point.date}）` : formatFullDate(point.date)}
-                  </span>
-                  <span className="qsh-tnum text-slate-800 dark:text-slate-100">
-                    {formatWeight(point.weightKg, weightUnit)}
-                  </span>
-                </li>
-              ))}
-          </ul>
-        )}
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-          参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
+        <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
+            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              {formatWeightNumber(stats.minKg, weightUnit)}
+            </dd>
+          </div>
+          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
+            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              {formatWeightNumber(stats.maxKg, weightUnit)}
+            </dd>
+          </div>
+          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
+            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              {formatWeightNumber(stats.meanKg, weightUnit)}
+            </dd>
+          </div>
+          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
+            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              {formatSignedWeight(stats.changeKg, weightUnit)}
+            </dd>
+          </div>
+        </dl>
+
+        <p className="px-1 text-xs text-slate-600 dark:text-slate-400">
+          {weightRangeCaption(
+            rangeDays,
+            points.length,
+            points.length > 0 ? formatFullDate(points[0]?.date ?? today) : null,
+          )}
+          {movingAverage.some((value) => value !== null)
+            ? ' 7 日均线在每个记录日往前 7 个自然日的窗口内取平均。'
+            : ''}
+          {COPY.weightRangeOlderHint}
         </p>
-      </div>
 
-      {/* 「体重之外的变化」（R11.4）：挂在体重页底部 —— 秤称不出来的变化也值得记（AC-11.4.1） */}
-      <WinLogCard />
+        <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
+          {points.length === 0 ? (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+              <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
+              还没有记录
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {[...points]
+                .reverse()
+                .slice(0, 8)
+                .map((point) => (
+                  <li key={point.date} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-300">
+                      {point.date === todayKey() ? `今天（${point.date}）` : formatFullDate(point.date)}
+                    </span>
+                    <span className="qsh-tnum text-slate-800 dark:text-slate-100">
+                      {formatWeight(point.weightKg, weightUnit)}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
+          </p>
+        </div>
+
+        {/* 「体重之外的变化」（R11.4）：挂在体重页底部 —— 秤称不出来的变化也值得记（AC-11.4.1） */}
+        <WinLogCard />
+      </div>
     </section>
   );
 }
