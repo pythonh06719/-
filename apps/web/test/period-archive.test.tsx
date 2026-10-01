@@ -51,8 +51,8 @@ const periodPayload: PeriodReport = {
 };
 
 const topFoods: TopFoodItem[] = [
-  { name: '燕麦', dayCount: 31, foodItemId: null, food: null },
-  { name: '番茄炒蛋', dayCount: 24, foodItemId: null, food: null },
+  { name: '燕麦', dayCount: 31, foodItemId: null, food: null, lastLoggedDate: '2026-09-20' },
+  { name: '番茄炒蛋', dayCount: 24, foodItemId: null, food: null, lastLoggedDate: '2026-09-18' },
 ];
 
 const weightPoints: WeightTrendPoint[] = [
@@ -208,7 +208,9 @@ describe('C-5 阶段回顾本地存档', () => {
 
   it('用户文字和食物名按 HTML 文本转义，离线文件不执行记录内容', () => {
     const input = archiveInput();
-    input.topFoods = [{ name: '<img src=x onerror=alert(1)>', dayCount: 3, foodItemId: null, food: null }];
+    input.topFoods = [
+      { name: '<img src=x onerror=alert(1)>', dayCount: 3, foodItemId: null, food: null, lastLoggedDate: '2026-09-01' },
+    ];
     input.wins = [
       {
         ...wins[0]!,

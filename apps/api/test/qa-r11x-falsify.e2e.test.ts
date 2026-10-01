@@ -456,7 +456,14 @@ describe('B · 常吃榜出现天数口径（QA 独立证伪）', () => {
     const items = (res.body.data as { items: Array<Record<string, unknown>> }).items;
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
-      expect(Object.keys(item).sort()).toEqual(['dayCount', 'food', 'foodItemId', 'name']);
+      // `lastLoggedDate` 是 core 已算好的**日期**（不是营养字段），故在白名单内
+      expect(Object.keys(item).sort()).toEqual(['dayCount', 'food', 'foodItemId', 'lastLoggedDate', 'name']);
+    }
+    // 反向再钉一次：kcal / 三大营养素一个都不许出现
+    for (const item of items) {
+      for (const key of Object.keys(item)) {
+        expect(key.toLowerCase()).not.toMatch(/kcal|protein|fat|carb|sodium|sugar/);
+      }
     }
   });
 

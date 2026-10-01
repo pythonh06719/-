@@ -520,13 +520,99 @@ describe('R11.5 · GET /api/foods/top', () => {
     expect(badLimit.body.error.code).toBe('E_VALID_INPUT');
   });
 
-  it('榜单条目只有名称 + 天数，没有任何营养字段（AC-11.5.3）', async () => {
+  it('榜单条目只有名称 + 天数 + 上次日期，没有任何营养字段（AC-11.5.3）', async () => {
     const res = await request(server as never).get(`${API}/foods/top`).set(auth(tokenA)).expect(200);
     const items = (res.body.data as { items: Array<Record<string, unknown>> }).items;
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
-      expect(Object.keys(item).sort()).toEqual(['dayCount', 'food', 'foodItemId', 'name']);
+      // `lastLoggedDate` 是 core 已算好的**日期**（非营养字段，非衍生数字），故在名单内
+      expect(Object.keys(item).sort()).toEqual(['dayCount', 'food', 'foodItemId', 'lastLoggedDate', 'name']);
     }
+  });
+});
+
+/**
+ * R11.5+ · 常吃榜「上次食用日期」透传。
+ *
+ * **本组零新端点、零新查询**：`@qsh/core` 的 `rankFrequentFoods` 早已算好
+ * `FrequentFood.lastLoggedDate`（出现日期集合里的最大值），此前只是没往契约与前端带。
+ * 这里钉死「带出来的就是 core 的那个值」—— 含最近一次、跨用户、快加条目与边界。
+ */
+describe('R11.5+ · GET /api/foods/top 的 lastLoggedDate（core 透传）', () => {
+  /** 取 A 的完整常吃榜。 */
+  async function topItemsOf(
+    token: string,
+  ): Promise<Array<{ name: string; dayCount: number; lastLoggedDate: string }>> {
+    const res = await request(server as never).get(`${API}/foods/top`).set(auth(token)).expect(200);
+    return (res.body.data as { items: Array<{ name: string; dayCount: number; lastLoggedDate: string }> }).items;
+  }
+
+  it('★ 每条都带 lastLoggedDate，且等于该食物**最近一次**记录的日期', async () => {
+    const name = 'R115P-上次日期';
+    const first = shiftDays(today, -6);
+    const middle = shiftDays(today, -3);
+    const last = shiftDays(today, -1);
+    for (const date of [first, middle, last]) {
+      await createMeal(tokenA, { loggedDate: date, mealType: 'lunch', customName: name });
+    }
+
+    const items = await topItemsOf(tokenA);
+    const hit = items.find((item) => item.name === name);
+    expect(hit).toBeDefined();
+    // 不是第一次（-6）、不是中间那次（-3），而是最近一次（-1）
+    expect(hit?.lastLoggedDate).toBe(last);
+    expect(hit?.dayCount).toBe(3);
+  });
+
+  it('★ 再记一次更晚的 → lastLoggedDate 跟着前进（同一个身份，不是新条目）', async () => {
+    const name = 'R115P-日期前进';
+    for (const delta of [-8, -7, -6]) {
+      await createMeal(tokenA, { loggedDate: shiftDays(today, delta), mealType: 'lunch', customName: name });
+    }
+    const before = await topItemsOf(tokenA);
+    expect(before.find((item) => item.name === name)?.lastLoggedDate).toBe(shiftDays(today, -6));
+
+    const later = shiftDays(today, -2);
+    await createMeal(tokenA, { loggedDate: later, mealType: 'dinner', customName: name });
+
+    const after = await topItemsOf(tokenA);
+    const hit = after.find((item) => item.name === name);
+    expect(hit?.lastLoggedDate).toBe(later);
+    expect(hit?.dayCount).toBe(4);
+  });
+
+  it('★ 快加条目（customName，foodItemId 为 null）也带日期', async () => {
+    const name = 'R115P-快加上次日期';
+    for (const delta of [-4, -3, -2]) {
+      await quickAdd(tokenA, { loggedDate: shiftDays(today, delta), mealType: 'snack', customName: name });
+    }
+
+    const items = await topItemsOf(tokenA);
+    const hit = items.find((item) => item.name === name);
+    expect(hit).toBeDefined();
+    expect(hit?.lastLoggedDate).toBe(shiftDays(today, -2));
+  });
+
+  it('★ 每天都是合法 YYYY-MM-DD，且不晚于今天、不早于窗口起点', async () => {
+    const items = await topItemsOf(tokenA);
+    expect(items.length).toBeGreaterThan(0);
+    const windowStart = shiftDays(today, -89);
+    for (const item of items) {
+      expect(item.lastLoggedDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(item.lastLoggedDate <= today).toBe(true);
+      expect(item.lastLoggedDate >= windowStart).toBe(true);
+    }
+  });
+
+  it('★ 跨用户隔离：B 的榜里没有 A 的食物，也就谈不上有 A 的日期', async () => {
+    const itemsB = await topItemsOf(tokenB);
+    expect(itemsB).toEqual([]);
+  });
+
+  it('边界：无记录 → items 为 []（日期字段的「无记录」就是整块不存在，不是空串/null）', async () => {
+    const res = await request(server as never).get(`${API}/foods/top`).set(auth(tokenB)).expect(200);
+    const items = (res.body.data as { items: Array<Record<string, unknown>> }).items;
+    expect(items).toEqual([]);
   });
 });
 

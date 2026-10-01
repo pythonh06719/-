@@ -470,10 +470,13 @@ export class FoodsService {
       }
     }
 
+    // ⑤ 透传 core 已算好的 `lastLoggedDate`（该身份最近一次出现的日期）。
+    //    **零新查询**：它就是上面 `rankFrequentFoods` 的返回值之一，此前只是没往下带。
     const items: TopFoodItem[] = ranked.map((item) => ({
       name: item.name,
       dayCount: item.dayCount,
       foodItemId: item.foodItemId,
+      lastLoggedDate: item.lastLoggedDate,
       food: item.foodItemId === null ? null : (foodById.get(item.foodItemId) ?? null),
     }));
 

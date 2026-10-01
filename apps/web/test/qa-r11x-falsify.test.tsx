@@ -476,8 +476,8 @@ describe('B · 常吃榜 tab 与面板一致性（QA 独立证伪）', () => {
    */
   it('B-QA1 · 榜单只有快加条目时「常吃」tab 整块隐藏（BUG-QA-01 已修复）', async () => {
     stubTop([
-      { name: '自制酸奶', dayCount: 5, foodItemId: null, food: null },
-      { name: '手冲咖啡', dayCount: 4, foodItemId: null, food: null },
+      { name: '自制酸奶', dayCount: 5, foodItemId: null, food: null, lastLoggedDate: '2026-09-09' },
+      { name: '手冲咖啡', dayCount: 4, foodItemId: null, food: null, lastLoggedDate: '2026-09-07' },
     ]);
     renderComposer();
 
@@ -490,7 +490,7 @@ describe('B · 常吃榜 tab 与面板一致性（QA 独立证伪）', () => {
 
   it('B-QA2 · 有可点条目时，tab 与面板一致（正向对照）', async () => {
     stubTop([
-      { name: '番茄炒蛋', dayCount: 12, foodItemId: 1, food: makeFood(1, '番茄炒蛋') },
+      { name: '番茄炒蛋', dayCount: 12, foodItemId: 1, food: makeFood(1, '番茄炒蛋'), lastLoggedDate: '2026-09-08' },
     ]);
     renderComposer();
 

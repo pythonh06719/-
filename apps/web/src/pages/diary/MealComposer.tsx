@@ -38,8 +38,10 @@ import {
   foodCategoryAriaFor,
   topFoodDaysLabel,
   topFoodsAria,
+  topFoodsLastLoggedLabel,
 } from '@/lib/copy';
 import { emojiForCategory } from '@/lib/food-emoji';
+import { formatMonthDay, isDateKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
@@ -106,6 +108,23 @@ const TOP_IN_EMPTY_STATE = 5;
  * 让「分类查询的键」与「搜索查询的键」从**键本身**就区分开（见 `categoryQuery` 注释）。
  */
 const CATEGORY_QUERY_KEYWORD_SENTINEL = '\u0000category';
+
+/**
+ * 常吃榜每行的「上次食用日期」小字 —— **只陈述一个日期**（AC-11.5.3 黑名单同样适用）。
+ *
+ * 口径：**零新计算**。日期由 `@qsh/core` 的 `FrequentFood.lastLoggedDate` 算好、
+ * 经 `TopFoodItem` 原样透传；这里只做「合法就显示、不合法就不显示」，
+ * **不算「隔了多少天」、不给任何评价**。
+ *
+ * 防御（旧缓存 / 脏数据：字段可能不是合法日期键）→ 返回 `''`，**整句不渲染**，
+ * 既不猜一个日期、也不兜底成「未知 / 暂无」这类把缺失说成亏欠的文案。
+ */
+function topFoodLastLoggedLine(dateKey: string | undefined): string {
+  if (typeof dateKey !== 'string' || !isDateKey(dateKey)) {
+    return '';
+  }
+  return topFoodsLastLoggedLabel(formatMonthDay(dateKey));
+}
 
 const TABS: ReadonlyArray<{ key: TabKey; label: string }> = [
   { key: 'search', label: '搜索' },
@@ -624,37 +643,52 @@ export default function MealComposer({
   });
 
   /**
-   * 常吃榜列表项：**只有名称 + 天数**，没有任何营养字段、没有 `role="meter"`（AC-11.5.3 / AC-11.5.4）。
+   * 常吃榜列表项：**名称 + 天数 + 一行「上次是 X 月 X 日」**，没有任何营养字段、
+   * 没有 `role="meter"`（AC-11.5.3 / AC-11.5.4）。
    *
    * 点击行为与 `recent` / `favorite` **完全一致**：走既有 `chooseFood()` → 份量确认 → 确认记录
    * （跳过份量会让热量记录失真，这是硬红线）。
    *
    * UI 规范（`docs/VISUAL-SYSTEM.md`）：圆角用语义令牌 `rounded-control`，
    * 触控目标 `qsh-touch-target`（≥44×44），12px 文字用 `slate-600 / dark:slate-300`（§5 约束）。
+   *
+   * 日期行是**行内的一行小字**（与「搜索结果行」的 `renderFoodList` 同款排版）：
+   * 它**不是**独立控件，故直接放进这个整行 `<button>` 里 —— 不新增嵌套 `<button>`
+   * （嵌套 button 是非法 HTML，读屏会读乱，见 `renderFoodList` 注释）。
    */
   const renderTopList = (items: readonly TopFoodItem[], days: number): ReactElement => (
     <ul className="mt-3 space-y-2">
-      {items.map((item) => (
-        <li key={item.foodItemId ?? item.name}>
-          <button
-            type="button"
-            onClick={() => {
-              if (item.food !== null) {
-                chooseFood(item.food);
-              }
-            }}
-            aria-label={topFoodsAria(item.name, item.dayCount, days)}
-            className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
-          >
-            <span className="min-w-0 truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-              {item.name}
-            </span>
-            <span className="qsh-tnum shrink-0 text-xs text-slate-600 dark:text-slate-300">
-              {topFoodDaysLabel(item.dayCount)}
-            </span>
-          </button>
-        </li>
-      ))}
+      {items.map((item) => {
+        const lastLoggedLine = topFoodLastLoggedLine(item.lastLoggedDate);
+        return (
+          <li key={item.foodItemId ?? item.name}>
+            <button
+              type="button"
+              onClick={() => {
+                if (item.food !== null) {
+                  chooseFood(item.food);
+                }
+              }}
+              aria-label={topFoodsAria(item.name, item.dayCount, days)}
+              className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                  {item.name}
+                </span>
+                {lastLoggedLine !== '' && (
+                  <span className="mt-0.5 block text-xs text-slate-600 dark:text-slate-300">
+                    {lastLoggedLine}
+                  </span>
+                )}
+              </span>
+              <span className="qsh-tnum shrink-0 text-xs text-slate-600 dark:text-slate-300">
+                {topFoodDaysLabel(item.dayCount)}
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 

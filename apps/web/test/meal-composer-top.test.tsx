@@ -54,9 +54,14 @@ function makeFood(id: number, name: string): FoodItem {
   };
 }
 
-/** 造一条常吃榜条目。 */
-function makeTopItem(name: string, dayCount: number, food: FoodItem | null): TopFoodItem {
-  return { name, dayCount, foodItemId: food === null ? null : food.id, food };
+/** 造一条常吃榜条目（`lastLoggedDate` 与契约一致：`YYYY-MM-DD`）。 */
+function makeTopItem(
+  name: string,
+  dayCount: number,
+  food: FoodItem | null,
+  lastLoggedDate = '2026-09-08',
+): TopFoodItem {
+  return { name, dayCount, foodItemId: food === null ? null : food.id, food, lastLoggedDate };
 }
 
 /** 常吃榜响应（3 条可点 + 1 条快加条目 `food: null`）。 */
@@ -118,9 +123,9 @@ async function openTopTab(): Promise<void> {
 beforeEach(() => {
   searchItems = [];
   topItems = [
-    makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋')),
-    makeTopItem('米饭', 9, makeFood(2, '米饭')),
-    makeTopItem('奶茶', 5, makeFood(3, '奶茶')),
+    makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋'), '2026-09-08'),
+    makeTopItem('米饭', 9, makeFood(2, '米饭'), '2026-09-10'),
+    makeTopItem('奶茶', 5, makeFood(3, '奶茶'), '2026-09-05'),
     // 快加条目无法反查份量 → 只展示、不可点（Q-4）
     makeTopItem('楼下麻辣烫', 4, null),
   ];
@@ -141,7 +146,15 @@ describe('R11.5 常吃榜 tab（AC-11.5.5）', () => {
     expect(tabs.indexOf('最近')).toBeLessThan(tabs.indexOf(COPY.topFoodsTab));
   });
 
-  it('列表项只有名称 + 天数：无营养字段、无 role="meter"', async () => {
+  /**
+   * ⚠️ 这条用例的标题曾写作「列表项**只有**名称 + 天数」。加入「上次是 X 月 X 日」后，
+   * 字面上的「只有」已不成立 —— 但它**真正守的红线**是「无营养字段、无 `role="meter"`」，
+   * 元素个数从来不是红线（AC-11.5.3 / 11.5.4 说的是「不出现什么」，不是「只能有两个」）。
+   *
+   * 故此处只把标题改成与实际断言一致的说法，`kcal` / `meter` / aria 陈述句
+   * 三条断言**一个不减、一个不放宽**（不为让测试变绿而弱化红线）。
+   */
+  it('列表项无营养字段、无 role="meter"（日期这类频次事实不在此限）', async () => {
     renderComposer();
     await openTopTab();
 
@@ -192,6 +205,85 @@ describe('R11.5 常吃榜 tab（AC-11.5.5）', () => {
     });
     expect(screen.queryByText(COPY.topFoodsTitle)).not.toBeInTheDocument();
     expect(screen.queryByText(/还没有常吃|还没有记录过食物以外/)).not.toBeInTheDocument();
+  });
+});
+
+describe('R11.5+ 常吃榜「上次食用日期」透传（core 已算好，UI 只接线）', () => {
+  it('★ 每行都显示「上次是 X 月 X 日」（复用 formatMonthDay 的既有格式）', async () => {
+    renderComposer();
+    await openTopTab();
+
+    // 契约给的 `lastLoggedDate` 是 `YYYY-MM-DD`，界面上是「9月8日」这种本地写法
+    expect(screen.getByText('上次是 9月8日')).toBeInTheDocument();
+    expect(screen.getByText('上次是 9月10日')).toBeInTheDocument();
+    expect(screen.getByText('上次是 9月5日')).toBeInTheDocument();
+  });
+
+  it('★ 显示的是接口给的那一天（纯透传，UI 不另算「隔了几天」）', async () => {
+    topItems = [makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋'), '2026-09-08')];
+    renderComposer();
+    await openTopTab();
+
+    expect(screen.getByText('上次是 9月8日')).toBeInTheDocument();
+    // 「隔了多少天」这类衍生数字一律不出现（QD-6 / 健康暗示红线）
+    expect(screen.queryByText(/隔了|已经\s*\d+\s*天没|没吃/)).not.toBeInTheDocument();
+  });
+
+  it('★ 日期行不是独立控件：行内仍是**一个**按钮，没有嵌套 button', async () => {
+    renderComposer();
+    await openTopTab();
+
+    const line = screen.getByText('上次是 9月8日');
+    const button = line.closest('button');
+    expect(button).not.toBeNull();
+    // 整行按钮内部不能再套 button（嵌套 button 是非法 HTML，读屏会读乱）
+    expect(button?.querySelectorAll('button')).toHaveLength(0);
+    // 点击这一行仍走既有 chooseFood 路径（与日期小字无关）
+    fireEvent.click(button as HTMLElement);
+    await waitFor(() => {
+      expect(screen.getByLabelText('选择份量')).toBeInTheDocument();
+    });
+  });
+
+  it('★ 排序仍只按频次：加了日期后顺序不变（AC-11.5.4）', async () => {
+    renderComposer();
+    await openTopTab();
+
+    const list = screen.getByText('上次是 9月8日').closest('ul') as HTMLElement;
+    const html = list.innerHTML;
+    // 接口顺序 12 天 → 9 天 → 5 天；日期（9-08 / 9-10 / 9-05）**不参与**排序
+    expect(html.indexOf('番茄炒蛋')).toBeLessThan(html.indexOf('米饭'));
+    expect(html.indexOf('米饭')).toBeLessThan(html.indexOf('奶茶'));
+  });
+
+  it('★ 红线：日期行无 role="meter"、无营养字段、无红/黄警示色', async () => {
+    renderComposer();
+    await openTopTab();
+
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
+
+    const line = screen.getByText('上次是 9月8日');
+    // 警示语义色（红 / 黄 / 橙）一律不得用于这一行（AC-11.5.3）
+    expect(line.className).not.toMatch(/red|amber|yellow|orange/);
+
+    const panelText = (screen.getByText('上次是 9月8日').closest('ul') as HTMLElement).textContent ?? '';
+    for (const word of ['kcal', '千卡', '蛋白', '脂肪', '碳水', '热量']) {
+      expect(panelText).not.toContain(word);
+    }
+  });
+
+  it('日期缺失 / 非法 → 整句不渲染（不猜日期、不写「未知」）', async () => {
+    topItems = [
+      makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋'), ''),
+      makeTopItem('米饭', 9, makeFood(2, '米饭'), 'not-a-date'),
+    ];
+    renderComposer();
+    await openTopTab();
+
+    expect(screen.getByText('番茄炒蛋')).toBeInTheDocument();
+    expect(screen.queryByText(/上次是/)).not.toBeInTheDocument();
+    // 不把「没有日期」写成一句让用户觉得缺了什么的话
+    expect(screen.queryByText(/未知|暂无|没有记录/)).not.toBeInTheDocument();
   });
 });
 
@@ -267,10 +359,14 @@ describe('R11.5 零营养评判（AC-11.5.3 可 grep 校验）', () => {
       COPY.topFoodsTitle,
       screen.getByLabelText('近 90 天里，番茄炒蛋出现了 12 天').getAttribute('aria-label') ?? '',
       screen.getByText('12 天').textContent ?? '',
+      // 新增的「上次食用日期」也必须在同一份黑名单之下
+      screen.getByText('上次是 9月8日').textContent ?? '',
     ].join(' ');
 
     for (const word of BANNED) {
       expect(text).not.toContain(word);
     }
+    // 健康暗示句式（不只是单个禁用词）：日期行不得变成「你已经 N 天没吃 X 了」
+    expect(text).not.toMatch(/已经\s*\d+\s*天没|隔了\s*\d+\s*天|吃得(有点)?频繁/);
   });
 });

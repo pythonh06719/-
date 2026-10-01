@@ -704,6 +704,19 @@ export interface TopFoodItem {
   /** 食物库条目 id；纯快加条目为 `null` */
   foodItemId: number | null;
   /**
+   * **最近一次**记录的日期（`YYYY-MM-DD`），口径与 `@qsh/core` 的
+   * `FrequentFood.lastLoggedDate` **完全一致**（core 算、本契约只透传）。
+   *
+   * 语义（读 core 确认，勿另发明）：该身份在统计窗口内出现过的日期集合里的**最大值**。
+   * 能进榜的条目出现天数 ≥ `minDays`（默认 3 ≥ 1），故**只要条目存在，该字段一定是合法的
+   * `YYYY-MM-DD`，不会是空串、不会是 `null`** —— 这也是它不做成可选 / 可空的原因。
+   * 「无记录」的表现不是本字段为空，而是 `items` 为 `[]`（整块隐藏，AC-11.5.2）。
+   *
+   * ⚠️ UI 只可**陈述这个日期本身**：不得据此推算「隔了多少天」、不得写成
+   * 「你已经 N 天没吃 X 了」（健康暗示 + AC-11.5.3 黑名单）。
+   */
+  lastLoggedDate: string;
+  /**
    * `foodItemId` 非空时的完整食物条目，供 MealComposer 复用既有
    * `chooseFood()` → 份量确认 → 确认记录 路径；
    * 为 `null` 时该行**只展示名称 + 天数**（快加条目无法反查份量，Q-4）。

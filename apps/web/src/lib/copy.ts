@@ -1130,6 +1130,25 @@ export function topFoodsAria(name: string, dayCount: number, days: number): stri
   return `近 ${window} 天里，${name}出现了 ${count} 天`;
 }
 
+/**
+ * 「上次是 9月8日」—— 常吃榜里**一行纯事实**：这道菜最近一次记在哪天。
+ *
+ * 口径：**不产生新数字**。日期本身由 `@qsh/core` 的 `FrequentFood.lastLoggedDate`
+ * 算好、经契约原样透传；这里只把它拼成一句话，**不算「隔了多少天」、不比较、不评价**。
+ *
+ * 日期的**格式化不在这里做**（`copy.ts` 只管措辞）：由调用方用 `formatMonthDay()`
+ * 把 `YYYY-MM-DD` 转成「9月8日」再传进来（本地时区，K5）。
+ *
+ * ⚠️ 语气红线（同 `topFoodsAria`）：**绝不可**改写成「你已经 N 天没吃它了」
+ * 「最近吃得有点频繁」这类句式 —— 那是健康暗示，违反 AC-11.5.3 与 §7 语气规范。
+ *
+ * @param monthDay 已格式化的「9月8日」；空串（调用方判定日期非法时）→ 返回 `''`，由调用方整句不渲染。
+ */
+export function topFoodsLastLoggedLabel(monthDay: string): string {
+  const text = typeof monthDay === 'string' ? monthDay.trim() : '';
+  return text === '' ? '' : `上次是 ${text}`;
+}
+
 // ---------------------------------------------------------------------------
 // 收藏（R3.4 / GAP-1）
 // 语气规范同 §7：按钮只说「这一步做什么」，并把**是哪个食物**带进句子 ——
