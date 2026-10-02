@@ -35,7 +35,7 @@
 | 语言 | TypeScript 5（strict） | ✅ | 前后端同语言，契约共享 |
 | 前端 | React 18 + Vite 5 + Tailwind 3 + React Router 6 | ✅ | 移动端优先、构建快、PWA 友好 |
 | 状态/数据 | Zustand + TanStack Query | ✅ | 轻量本地态 + 服务端缓存 |
-| 图表 | ECharts 5 | ✅（体重趋势） | 移动端自适应、趋势/移动平均线现成 |
+| 图表 | **手写 SVG**（原 ECharts 5 已于后续迭代移除） | ✅（体重趋势） | 去掉 `echarts`/`echarts-for-react` 两个依赖，包体降到 KB 级（`WeightChart.tsx` 零图表库依赖，见 §5.4） |
 | 后端 | NestJS 10（Express） | ✅ | 模块化 DI，贴合成长型项目与鉴权分层 |
 | ORM | Prisma 5 | ✅ | 迁移 + 类型安全；SQLite/PG 双 provider 可切换 |
 | 数据库 | **SQLite（MVP 开发）→ PostgreSQL（生产）** | ✅ | 先跑通再上生产库，DDL 双版本已给 |
@@ -128,7 +128,8 @@
 ### 1.10 MVP 最小落地清单（一期必做）
 
 `packages/core`（引擎+测试）→ `packages/shared-types` → `docs/SCHEMA.sql`+Prisma → `apps/api`（auth/onboarding/foods/meals/combos/weights/dashboard）→ `apps/web`（`/`、`/onboarding`、`/dashboard`、`/diary`、`/weight`、`/profile`+`/settings/data`）。
-其余路由（`/exercise`、`/habits`、`/tools`、`/fasting`、`/report`、`/ai`）以**占位路由 + 分期标注**存在，二三期填充。
+> ⚠️ **回填（2026-10-02）**：原设计此处写「其余路由（`/exercise`、`/habits`、`/tools`、`/fasting`、`/report`、`/ai`）以**占位路由 + 分期标注**存在，二三期填充」——
+> **该表述已过期**：这些页面**均已实装**（见 `apps/web/src/pages/**`），不再是占位。
 
 ---
 
@@ -222,14 +223,17 @@ qingshenghuo/
 │  │     ├─ fasting/                 #                              // Phase 2
 │  │     ├─ report/                  # 周报 + 微量营养素                // Phase 2
 │  │     ├─ data/                    # 导出/导入/硬删除（R10.1~R10.4）  // Phase 2
-│  │     └─ ai/                      # AI 助手（R9.x，key 仅服务端）     // Phase 3
+│  │     ├─ ai/                      # AI 助手（R9.x，key 仅服务端）     // Phase 3
+│  │     ├─ wins/                    # 体重之外的变化（R11.4，四期）      # 回填
+│  │     ├─ health/                  # 健康检查端点                       # 回填
+│  │     └─ config/                  # 应用配置（env 只读访问器）          # 回填
 │  └─ web/                           # Vite + React 18 + Tailwind PWA
 │     ├─ package.json · tsconfig.json · vite.config.ts · tailwind.config.ts
 │     ├─ postcss.config.js · index.html
 │     ├─ public/{manifest.webmanifest, icons/*}   # PWA
 │     └─ src/
 │        ├─ main.tsx · App.tsx                    # 入口 + 路由挂载
-│        ├─ router/routes.tsx                     # 12 组路由（含分期占位）
+│        ├─ router/routes.tsx                     # 15 条实路由 + 1 条兜底（均已实装，无占位）
 │        ├─ lib/{api.ts, queryClient.ts, auth.store.ts}
 │        ├─ pwa/{service-worker.ts, offline-queue.ts}   # SW + IndexedDB 队列
 │        ├─ theme/{tokens.ts, dark.css, a11y.css}
@@ -264,7 +268,7 @@ qingshenghuo/
 > **可执行 DDL**：`docs/SCHEMA.sql`（SQLite，MVP 默认）与 `docs/schema.pg.sql`（PostgreSQL 16，生产）。
 > 本节说明设计意图；字段级定义以两个 SQL 文件为准。
 
-### 3.1 表清单（20 张）
+### 3.1 表清单（22 张）
 
 | # | 表 | 期 | 职责 | 关键约束 |
 | --- | --- | --- | --- | --- |
@@ -273,7 +277,7 @@ qingshenghuo/
 | 3 | `user_profiles` | 一期 | 性别/生日/身高/活动量/饮食偏好/**疾病(敏感)** | 1:1 `user_id` PK |
 | 4 | `user_goals` | 一期 | **当前生效**目标（目标体重/期限/缺口/宏量比例） | `user_id` 唯一 |
 | 5 | `weight_goal_history` | 一期 | 目标变更历史（追加式） | `(user_id, effective_from)` |
-| 6 | `user_settings` | 一期 | 单位 kcal/kJ、深色模式、饮水目标、断食开关 | 1:1 `user_id` PK |
+| 6 | `user_settings` | 一期 | 热量单位 kcal/kJ、**体重单位 kg/斤（D-3）**、深色模式、饮水目标、断食开关 | 1:1 `user_id` PK |
 | 7 | `weight_logs` | 一期 | 每日体重 + 备注 | `(user_id, logged_at)` 索引；同日唯一 |
 | 8 | `food_items` | 一期 | 食物库（每 100g 营养 + 份量单位） | `name`、`barcode`(唯一,部分) 索引 |
 | 9 | `food_favorites` | 一期 | 收藏（R3.4） | 复合 PK |
@@ -288,6 +292,8 @@ qingshenghuo/
 | 18 | `fasting_settings` | 二期 | 断食设置（默认关闭） | 1:1 `user_id` PK |
 | 19 | `fasting_sessions` | 二期 | 断食会话 | `(user_id, started_at)` |
 | 20 | `ai_usage` | 三期 | AI 每日限额计数（R9.4） | `(user_id, usage_date, feature)` 唯一 |
+| 21 | `ai_traces` | 三期 | AI Agent 轨迹（调试/评估；含待确认写操作，不含密钥） | `(user_id, id)` 索引 |
+| 22 | `win_logs` | 四期 | 体重之外的变化（R11.4「随手记」） | `(user_id, logged_date)` 索引；**刻意无同日唯一**（同日可多条，反游戏化） |
 
 **补充表理由（超出 PRD 显式列表者）**
 
@@ -373,7 +379,7 @@ qingshenghuo/
 | `exercises[]` | `exercise_logs` | `type ← activity_code`、`met`、`minutes`、`kcalBurned ← kcal_burned` |
 | `habits[]` | `habit_checkins`（join `habit_definitions`） | `habitId ← code` |
 | `water[]` | `water_logs`（按日聚合 `SUM(amount_ml)`） | `ml` 为当日合计 |
-| `settings` | `user_settings` | `unit/darkMode/fastingEnabled` |
+| `settings` | `user_settings` | `unit/weightUnit/darkMode/fastingEnabled/waterGoalMl` |
 | CSV 文件（§9.2） | `weights/meals/exercises/habits/water/wins` | UTF-8 with BOM，日期 `YYYY-MM-DD` |
 | CSV 导入（§9.3） | → `weight_logs` | 同 `logged_at` **UPSERT 覆盖**；非法行跳过并汇总报错 |
 
@@ -714,8 +720,8 @@ type CalorieResult = {
 | `@nestjs/jwt` `@nestjs/passport` `passport` `passport-jwt` | `^10.x` / `^10.x` / `^0.7.0` / `^4.0.1` | deps | JWT 鉴权（R1.7） |
 | `bcryptjs` | `^2.4.3` | deps | bcrypt 密码哈希（cost 12；纯 JS，免原生编译） |
 | `class-validator` `class-transformer` | `^0.14.1` / `^0.5.1` | deps | DTO 校验 |
-| `@prisma/client` | `^5.19.1` | deps | ORM 运行时 |
-| `prisma` | `^5.19.1` | dev | 迁移/生成 |
+| `@prisma/client` | `^5.22.0` | deps | ORM 运行时 |
+| `prisma` | `^5.22.0` | dev | 迁移/生成 |
 | `helmet` | `^7.1.0` | deps | 安全头 + CSP（C4） |
 | `@nestjs/throttler` | `^6.2.1` | deps | 限流 |
 | `cookie-parser` | `^1.4.6` | deps | Refresh Cookie |
@@ -728,10 +734,9 @@ type CalorieResult = {
 | 包 | 版本 | 类型 | 用途 |
 | --- | --- | --- | --- |
 | `react` `react-dom` | `^18.3.1` | deps | UI |
-| `react-router-dom` | `^6.26.1` | deps | 12 组路由 |
+| `react-router-dom` | `^6.26.1` | deps | 15 条实路由 + 1 条兜底 |
 | `zustand` | `^4.5.5` | deps | 本地态（含内存态 token） |
 | `@tanstack/react-query` | `^5.51.23` | deps | 服务端缓存/离线回退 |
-| `echarts` `echarts-for-react` | `^5.5.1` / `^3.0.2` | deps | 趋势图/移动平均 |
 | `vite` `@vitejs/plugin-react` | `^5.4.2` / `^4.3.1` | dev | 构建 |
 | `tailwindcss` `postcss` `autoprefixer` | `^3.4.10` / `^8.4.41` / `^10.4.20` | dev | 样式 |
 | `vite-plugin-pwa` | `^0.20.5` | dev | PWA/SW（NFR-4） |
@@ -748,9 +753,9 @@ type CalorieResult = {
 | Task ID | 任务名 | 阶段 | 优先级 | 依赖 | 产出文件（相对路径） | 完成判据（DoD） |
 | --- | --- | --- | --- | --- | --- | --- |
 | **T01** | **可运行最小骨架 + 热量引擎 + 单元测试**（脚手架+引擎+测试跑通） | 一期 | P0 | — | `package.json`、`tsconfig.base.json`、`.gitignore`、`packages/core/package.json`、`packages/core/tsconfig.json`、`packages/core/vitest.config.ts`、`packages/core/src/index.ts`、`packages/core/src/calorie/{types,constants,formulas,validate,macros,messages}.ts`、`packages/core/src/units/convert.ts`、`packages/core/src/date/daykey.ts`、`packages/core/test/{budget,boundaries,acceptance,macros,validate,units-date}.test.ts`、`packages/core/test/fixtures/acceptance.json`、`apps/web/`（Vite+React+TS+Tailwind 最小壳 + `CalorieCalculator.tsx` 试用计算器）、`apps/web/src/pages/landing/*` | ① `npm install` 成功 ② `npm test` **全绿**（TC-01/02/04~12 通过，覆盖率 ≥90%）③ `npm run dev` 打开落地页可本地完成一次免注册计算 ④ 引擎零运行时依赖（无 `dependencies`） |
-| **T02** | **数据层：Schema + Prisma + 共享契约 + 种子** | 一期 | P0 | T01 | `docs/SCHEMA.sql`（已交付）、`docs/schema.pg.sql`（已交付）、`apps/api/prisma/schema.prisma`、`apps/api/prisma/schema.pg.prisma`、`packages/shared-types/src/{index,api,entities,export}.ts`、`infra/db/seed/food_items.seed.json` | ① SQLite 上 `SCHEMA.sql` 可执行且 20 张表创建成功 ② `prisma migrate dev`/`db push` 通过 ③ `shared-types` 编译并导出 `CalorieInput/CalorieResult` ③ 种子 ≥500 条（数据待客户提供，Q8；先用合规样例集） |
+| **T02** | **数据层：Schema + Prisma + 共享契约 + 种子** | 一期 | P0 | T01 | `docs/SCHEMA.sql`（已交付）、`docs/schema.pg.sql`（已交付）、`apps/api/prisma/schema.prisma`、`apps/api/prisma/schema.pg.prisma`、`packages/shared-types/src/{index,api,entities,export}.ts`、`infra/db/seed/food_items.seed.json` | ① SQLite 上 `SCHEMA.sql` 可执行且 22 张表创建成功 ② `prisma migrate dev`/`db push` 通过 ③ `shared-types` 编译并导出 `CalorieInput/CalorieResult` ③ 种子 ≥500 条（数据待客户提供，Q8；先用合规样例集） |
 | **T03** | **后端 API（NestJS）**：鉴权 + 引导/重算 + 食物库 + 饮食记录 + 套餐 + 体重 + 看板 | 一期 | P0 | T01、T02 | `apps/api/src/main.ts`、`app.module.ts`、`common/**`（guard/decorator/interceptor/filter）、`auth/**`、`users/**`、`foods/**`、`meals/**`、`weights/**`、`dashboard/**`（含各 `dto/`） | ① 邮箱验证码登录 + bcrypt 签发 JWT ② `/onboarding` 与 `/profile` 修改后**服务端重算并落库**（TC-12）③ **越权：忽略 body userId、一律取 JWT，命中他人资源 404**（TC-42/43）④ 响应统一 `{ data, error }` ⑤ 记录接口 P95 < 300ms（NFR-3） |
-| **T04** | **前端应用（Vite React PWA）**：落地页 + 引导 + 看板 + 饮食日记 + 体重 + 我的/数据管理 | 一期 | P0 | T01、T02 | `apps/web/{vite.config.ts, tailwind.config.ts, index.html}`、`src/router/routes.tsx`、`src/lib/**`、`src/pwa/**`、`src/theme/**`、`src/components/**`、`src/pages/{landing,onboarding,dashboard,diary,weight,profile,settings-data}/**` | ① 12 组路由可导航（未开发页显示分期占位）② `/diary` **≤3 次点击**完成记录并即时反馈（TC-25）③ `/weight` 叠加 7 日移动平均（TC-34）④ `/settings/data` 导出 JSON+CSV（TC-39）⑤ 落地页含隐私承诺无三方 SDK（TC-46）⑥ 断网可查看历史（TC-47） |
+| **T04** | **前端应用（Vite React PWA）**：落地页 + 引导 + 看板 + 饮食日记 + 体重 + 我的/数据管理 | 一期 | P0 | T01、T02 | `apps/web/{vite.config.ts, tailwind.config.ts, index.html}`、`src/router/routes.tsx`、`src/lib/**`、`src/pwa/**`、`src/theme/**`、`src/components/**`、`src/pages/{landing,onboarding,dashboard,diary,weight,profile,settings-data}/**` | ① 15 条实路由 + 1 条兜底可导航（均已实装，无「分期占位」页）② `/diary` **≤3 次点击**完成记录并即时反馈（TC-25）③ `/weight` 叠加 7 日移动平均（TC-34）④ `/settings/data` 导出 JSON+CSV（TC-39）⑤ 落地页含隐私承诺无三方 SDK（TC-46）⑥ 断网可查看历史（TC-47） |
 | **T05** | **集成、容器化与分期扩展** | 二期/三期 | P1 | T03、T04 | `docker-compose.yml`、`infra/nginx/default.conf`、`.github/workflows/ci.yml`、`apps/api/src/{exercise,water,habits,fasting,report,data,ai}/**`、`apps/web/src/pages/{exercise,habits,tools,fasting,report,ai}/**`、`packages/core/src/{exercise/met.ts, tools/estimates.ts, export/serialize.ts}`、`infra/db/seed/{met_activities,habit_templates}.seed.json` | ① `docker compose up` 一键起 web+api+postgres ② CI 以**引擎单测为门禁**（失败即阻断）③ 二期：运动/饮水/习惯/断食/周报/微量营养素/生活化工具 ④ 三期：AI（key 仅服务端、限额 50/天、就医兜底）⑤ 硬删除级联验证（TC-41） |
 
 ### 6.1 任务依赖图
