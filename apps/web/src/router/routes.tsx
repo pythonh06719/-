@@ -10,8 +10,9 @@ import LandingPage from '@/pages/landing/LandingPage';
  *
  * `LandingPage` **刻意保持同步引入**：它是匿名访客的第一屏（免注册计算器 + 隐私承诺），
  * 拆成独立 chunk 只会给这一屏多加一次往返 —— 而它恰恰是最需要立刻出现的一屏。
- * 其余页面全部按需加载：既缩小首屏主包，也让重依赖（如 `WeightPage` 动态引入的 ECharts，
- * 约 1 MB）只在真正访问该页时才请求。加新页面时记得同步 `lazy()` 与下面的路由表。
+ * 其余页面全部按需加载：既缩小首屏主包，也让各页面的重依赖只在真正访问该页时才请求
+ * （体重页曾动态引入 `ECharts`，约 1 MB；现已改为**手写 SVG、零图表库依赖**，见
+ * `WeightChart.tsx`）。加新页面时记得同步 `lazy()` 与下面的路由表。
  */
 const OnboardingPage = lazy(() => import('@/pages/onboarding/OnboardingPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
