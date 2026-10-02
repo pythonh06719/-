@@ -11,14 +11,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { formatFullDate, todayKey, weekdayLabel } from '@/lib/format';
 import { resolveMealLogName } from '@/lib/meal-name';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '@/pages/diary/meal-utils';
-import {
-  ON_THIS_DAY_FOOTNOTE,
-  ON_THIS_DAY_LEAD,
-  ON_THIS_DAY_OPEN_FULL,
-  ON_THIS_DAY_SCALE_LABEL,
-  ON_THIS_DAY_TITLE,
-  onThisDayOpenFullAria,
-} from './on-this-day-copy';
+import { COPY, onThisDayOpenFullAria } from '@/lib/copy';
 
 /**
  * 「历史上的今天」（D-4）—— 一年前 / 一个月前的今天，你记了什么。
@@ -49,6 +42,9 @@ import {
  * - ⛔ **无历史时整块隐藏**（返回 `null`）：不留空卡、不写「暂无历史」，
  *   候选里那天没记录就**顺延**到下一个尺度，用户看不到任何「缺失」的痕迹；
  * - ⛔ 不做任何主动提醒：不弹窗、不轮询、不预取。
+ * - ⛔ **不做时间尺度切换器**：一次只呈现一个尺度（`onThisDayCandidates` 的候选
+ *   顺序固定「一年前 → 一个月前」，组件取第一个真有记录的）。切换器不只是「集邮册」，
+ *   它会**诱导用户主动去查一个空尺度** —— 而「查了是空的」这个结果本身就是一次指控。
  *
  * ## NFR-11（可解释性）
  *
@@ -149,7 +145,8 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
   }
 
   const { target, groups } = found;
-  const scaleLabel = ON_THIS_DAY_SCALE_LABEL[target.scale];
+  const scaleLabel =
+    target.scale === 'year' ? COPY.onThisDayScaleYear : COPY.onThisDayScaleMonth;
   const dateLabel = `${formatFullDate(target.dateKey)} · ${weekdayLabel(target.dateKey)}`;
 
   return (
@@ -160,7 +157,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
     >
       <h2 id="on-this-day-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
-        {ON_THIS_DAY_TITLE}
+        {COPY.onThisDayTitle}
       </h2>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{scaleLabel}</p>
       {/* 真实日期：给这段记忆一个落点（日期不是评判）。 */}
@@ -168,7 +165,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
         {dateLabel}
       </p>
 
-      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{ON_THIS_DAY_LEAD}</p>
+      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{COPY.onThisDayLead}</p>
 
       {/* 那天吃了什么：按餐次分组，只列食物名。
           刻意不写「共 N 餐 / N 样 / N kcal」—— 计数与热量都是分母型数字（红线②③）。 */}
@@ -186,7 +183,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       </ul>
 
       {/* 尾注：把「这只是回看」讲清楚 —— 反缺席指控。 */}
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{ON_THIS_DAY_FOOTNOTE}</p>
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{COPY.onThisDayFootnote}</p>
 
       {/* 去那一天完整看 —— 复用 C-1 的 `/diary?date=`（DiaryPage 已支持该 query）。 */}
       <Link
@@ -195,7 +192,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
         aria-label={onThisDayOpenFullAria(dateLabel)}
         className="qsh-touch-target mt-3 inline-block rounded-xl bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
       >
-        {ON_THIS_DAY_OPEN_FULL}
+        {COPY.onThisDayOpenFull}
       </Link>
     </section>
   );
