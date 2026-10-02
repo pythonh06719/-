@@ -17,6 +17,7 @@ import {
   footprintMonthTitle,
 } from '@/lib/copy';
 import { WEEKDAY_HEADERS, addMonths, buildMonthCells, currentMonthKey } from '@/lib/month-grid';
+import OnThisDayRecall from './OnThisDayRecall';
 
 /**
  * 记录足迹（pages/report/FootprintView.tsx，C-1）—— `/report` 的第三个 tab。
@@ -69,14 +70,23 @@ export default function FootprintView(): ReactElement {
   const isEmptyMonth = calendarQuery.isSuccess && recordedDays === 0;
 
   return (
-    // C-6 宽屏（≥1024px）：单张月历不适合摊进多栏 —— 7 列格子拉满 5xl 会变成超大方块。
-    // 故 `lg` 下把整卡居中并限宽（`max-w-lg`），格子尺寸回到与移动端相近的舒适区。
-    // 移动端类名不变。
-    <section
-      data-testid="report-footprint"
-      aria-labelledby="footprint-title"
-      className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
-    >
+    // 外层用 fragment：回望卡（D-4）与月历是**两张独立卡片**。
+    // 回望卡没有历史时**整块不渲染**（返回 null），此时页面上就只剩月历一张卡 ——
+    // 不会出现「空着的回望卡」，也就不会出现「暂无历史」这类缺席指控文案。
+    <>
+      {/* D-4「历史上的今天」：一年前 / 一个月前的今天，你吃了什么。
+          放在月历**上方** —— 先给一段有温度的记忆，再给工具。
+          仅在用户主动点进「足迹」tab 时才挂载，无弹窗、无通知（NFR-10）。 */}
+      <OnThisDayRecall />
+
+      {/* C-6 宽屏（≥1024px）：单张月历不适合摊进多栏 —— 7 列格子拉满 5xl 会变成超大方块。
+          故 `lg` 下把整卡居中并限宽（`max-w-lg`），格子尺寸回到与移动端相近的舒适区。
+          移动端类名不变。 */}
+      <section
+        data-testid="report-footprint"
+        aria-labelledby="footprint-title"
+        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
+      >
       <h2 id="footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
         {COPY.footprintTitle}
       </h2>
@@ -209,6 +219,7 @@ export default function FootprintView(): ReactElement {
           </div>
         </>
       )}
-    </section>
+      </section>
+    </>
   );
 }
