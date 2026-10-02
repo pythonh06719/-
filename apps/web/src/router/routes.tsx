@@ -109,7 +109,8 @@ export const routes: AppRoute[] = [
   // 7b. 我的食物库（C-4 第二步）：管理自己存进库的食物（改 / 删）
   { path: '/settings/foods', element: withShell(<MyFoodsPage />, '我的食物库') },
 
-  // 8~13. 分期占位（文案友好，不出现「未实现」字眼）
+  // 8~13. 生活化 / 追踪 / 回看类页面（均已实装；旧注释「分期占位」已过时 ——
+  //        这些是正式路由，且已通过 /profile 的「更多功能」入口在全站可达）
   { path: '/exercise', element: withShell(<ExercisePage />, '运动与饮水') },
   { path: '/habits', element: withShell(<HabitsPage />, '习惯打卡') },
   { path: '/tools', element: withShell(<ToolsPage />, '生活化工具') },
