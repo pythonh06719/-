@@ -701,6 +701,9 @@ type CalorieResult = {
 | `husky` / `lint-staged` | `^9.x` / `^15.x` | 提交门禁 |
 | `concurrently` | `^8.2.2` | 并行 dev |
 | `npm-run-all` | `^4.1.5` | 根脚本编排 |
+| `pinyin-pro` | `^3.29.4` | 种子数据拼音检索（生成食物名拼音索引） |
+
+> ⚠️ **规划 vs 现状（回填 2026-10-02）**：根 `package.json` 的 `devDependencies` 当前**实际只装** `typescript` 与 `pinyin-pro`；上表中 `eslint`/`@typescript-eslint/*`、`prettier`、`husky`/`lint-staged`、`concurrently`、`npm-run-all` 均为**设计规划、尚未安装** —— 请勿据此文档直接调用 `npx eslint` 等命令。
 
 ### 5.2 `packages/core`（运行时零依赖；tester 见 dev）
 
@@ -741,6 +744,10 @@ type CalorieResult = {
 | `tailwindcss` `postcss` `autoprefixer` | `^3.4.10` / `^8.4.41` / `^10.4.20` | dev | 样式 |
 | `vite-plugin-pwa` | `^0.20.5` | dev | PWA/SW（NFR-4） |
 | `@testing-library/react` `@testing-library/jest-dom` `jsdom` | `^16.0.0` / `^6.5.0` / `^24.1.1` | dev | 组件测试 |
+| `@testing-library/user-event` | `^14.6.7` | dev | 交互测试（`fireEvent` 的推荐替代） |
+| `vitest` | `^2.1.9` | dev | 单测（与 Vite 同源；workspace 内与 `packages/core` 的 `^2.0.5` 并存） |
+| `playwright` `@playwright/test` | `^1.63.0` | dev | E2E（`npm run e2e`） |
+| `gifenc` | `^1.0.3` | dev | 录制演示 GIF（`scripts/record-demo.mjs`） |
 | `@qsh/core` `@qsh/shared-types` | `workspace:*` | deps | 落地页就地计算（US-01） |
 
 ---
