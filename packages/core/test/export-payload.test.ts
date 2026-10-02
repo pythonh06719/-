@@ -195,4 +195,44 @@ describe('parseExportPayload（JSON 备份恢复）', () => {
     if (!result.ok) return;
     expect(result.summary.dateRange).toBeNull();
   });
+
+  // GAP-3：`settings.waterGoalMl` 是后加字段 —— 旧备份缺失 / 越界都必须宽容读取，
+  // 不得因此把整份备份判为「格式不一致」。
+  it('GAP-3：settings.waterGoalMl 缺省 → 归一到默认 2000，仍可解析', () => {
+    const payload = validPayload(2);
+    // 旧备份的 settings 里没有这个键
+    payload.settings = { unit: 'kcal', darkMode: false, fastingEnabled: false };
+    const result = parseExportPayload(payload);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.payload.settings.waterGoalMl).toBe(2000);
+  });
+
+  it('GAP-3：settings.waterGoalMl 合法值原样保留', () => {
+    const payload = validPayload(2);
+    payload.settings = {
+      unit: 'kcal',
+      darkMode: false,
+      fastingEnabled: false,
+      waterGoalMl: 3200,
+    };
+    const result = parseExportPayload(payload);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.payload.settings.waterGoalMl).toBe(3200);
+  });
+
+  it('GAP-3：settings.waterGoalMl 越界 → 归一到默认 2000，不判为格式不一致', () => {
+    const payload = validPayload(2);
+    payload.settings = {
+      unit: 'kcal',
+      darkMode: false,
+      fastingEnabled: false,
+      waterGoalMl: 100,
+    };
+    const result = parseExportPayload(payload);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.payload.settings.waterGoalMl).toBe(2000);
+  });
 });

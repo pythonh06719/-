@@ -27,11 +27,20 @@ export const WEIGHT_UNIT_PREFERENCE_KEY = 'qsh:weightUnit';
 /** 深色模式偏好本地键（与 `theme/tokens.ts` 的 `THEME_STORAGE_KEY` 同值）。 */
 export const THEME_PREFERENCE_KEY = 'qsh:theme';
 
+/**
+ * 每日饮水目标偏好本地键（GAP-3，与 `lib/water-goal.ts` 的 `WATER_GOAL_STORAGE_KEY` 同值）。
+ *
+ * 与单位 / 深色同理：它是**跟着账号走的偏好**，登出换账号时必须一并清除，
+ * 否则新账号离线时会看到上个账号的饮水目标。值以字符串存毫升整数。
+ */
+export const WATER_GOAL_PREFERENCE_KEY = 'qsh:waterGoalMl';
+
 /** 所有「跟账号走的设置类偏好键」，登出时应一并清除。 */
 export const PREFERENCE_KEYS: readonly string[] = [
   UNIT_PREFERENCE_KEY,
   WEIGHT_UNIT_PREFERENCE_KEY,
   THEME_PREFERENCE_KEY,
+  WATER_GOAL_PREFERENCE_KEY,
 ];
 
 /**

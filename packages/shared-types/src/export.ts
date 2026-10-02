@@ -116,6 +116,15 @@ export interface ExportSettings {
    * （与 `unit` / `darkMode` 同属 GAP-4 承诺的「设置可完整恢复」）。
    */
   weightUnit: WeightUnit;
+  /**
+   * 每日饮水目标（ml，GAP-3）。
+   *
+   * ⚠️ 与 `water[].ml` 无关：那是「每天实际喝了多少」的事实，本字段是用户设的**目标**。
+   * 它让「恢复备份后饮水目标不丢」成立 —— 否则用户改过的目标一恢复就打回默认 2000，
+   * 与「设置可完整恢复」的承诺相反。合法区间 500–8000，默认 2000
+   * （与后端 `UpdateSettingsDto` / `water.service.ts` 一致）。
+   */
+  waterGoalMl: number;
 }
 
 /** `wins[]` 元素（来源 `win_logs`）。语义是用户自由文本，与其他业务实体无外键，导出时不联表。 */

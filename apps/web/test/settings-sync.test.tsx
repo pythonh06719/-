@@ -277,10 +277,12 @@ describe('GAP-4：导出时 payload.settings 反映服务端真值（不被本�
 
     const bundle = (downloadExportBundle as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0]?.[0] as { json: { settings: unknown } };
+    // GAP-3：导出 settings 现额外含 `waterGoalMl`（服务端权威值），契约随之更新。
     expect(bundle.json.settings).toEqual({
       unit: 'kj',
       darkMode: true,
       fastingEnabled: true,
+      waterGoalMl: 2000,
     });
   });
 

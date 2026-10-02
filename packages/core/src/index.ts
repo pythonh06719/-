@@ -350,3 +350,12 @@ export {
   CALENDAR_DEPTH_MAX_LEVEL,
   calendarDepthLevel,
 } from './report/calendar';
+
+// 每日饮水目标口径（GAP-3）：合法区间 500–8000 与宽容归一化（前端输入校验 + 导出兼容读取同源）
+export {
+  DEFAULT_WATER_GOAL_ML,
+  WATER_GOAL_MAX_ML,
+  WATER_GOAL_MIN_ML,
+  isValidWaterGoalMl,
+  normalizeWaterGoalMl,
+} from './water/goal';

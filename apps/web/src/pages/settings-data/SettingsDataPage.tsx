@@ -12,6 +12,7 @@ import type {
   WeightTrendResponse,
 } from '@qsh/shared-types';
 import { api } from '@/lib/api';
+import { DEFAULT_WATER_GOAL_ML } from '@qsh/core';
 import { CACHE_KEYS, cacheClearAll, cacheGet } from '@/lib/local-cache';
 import { toExportWeightRows } from '@/lib/csv';
 import { JSON_MIME, createEmptyExportPayload, parseWeightCsv, serializeExportBundle } from '@/lib/csv';
@@ -22,6 +23,7 @@ import { todayKey } from '@/lib/format';
 import { COPY, backupHintCopy, lastBackupLabel } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
 import { fetchServerSettings } from '@/lib/settings-sync';
+import { readStoredWaterGoalMl } from '@/lib/water-goal';
 import { useAuthStore } from '@/lib/auth.store';
 import { clearQueuedRequests, enqueueRequest } from '@/pwa/offline-queue';
 import { toTrendPoints } from '@/lib/trend';
@@ -41,10 +43,12 @@ import DataOverviewCard from './DataOverviewCard';
  * 接口不可用时仍导出本地缓存数据、仍清空本地数据（详见任务回传说明）。
  *
  * ⚠️ **GAP-4（「可完整恢复」的真实范围）**：本页 JSON 覆盖
- * 资料 / 目标 / 体重 / 饮食 / 运动 / 习惯 / 饮水 / 小确幸 / **设置（单位、深色、断食开关）**。
+ * 资料 / 目标 / 体重 / 饮食 / 运动 / 习惯 / 饮水 / 小确幸 / **设置（单位、体重单位、深色、断食开关、每日饮水目标）**。
  * 此前设置段被本地状态覆盖，导致「可完整恢复」名不副实；现已改为取服务端权威值（见 `gatherPayload`）。
- * **范围说明**：`waterGoalMl`（每日饮水目标）**不在**导出内 —— 当前 App 无设置入口，
- * 该值恒为默认；补入需后端配合，留待后续立项（本页文案据实标注，不做虚承诺）。
+ * **范围说明（GAP-3 已补齐）**：`waterGoalMl`（每日饮水目标）现**已在**导出内 ——
+ * 此前 App 没有设置入口、也不在导出内（值恒为默认），现已于 `/exercise` 喝水区补上编辑入口，
+ * 且服务端 `/data/export` 与本页导出骨架均带 `settings.waterGoalMl`、恢复路径一并还原，
+ * 「设置可完整恢复」对饮水目标同样成立。
  */
 
 /**
@@ -101,13 +105,15 @@ export default function SettingsDataPage(): ReactElement {
    */
   const gatherPayload = async (): Promise<ExportJsonPayload> => {
     const payload = createEmptyExportPayload(new Date().toISOString());
-    // 本地回退值（仅服务端不可达时使用）：单位取当前 store，深色取 `<html class>`
+    // 本地回退值（仅服务端不可达时使用）：单位取当前 store，深色取 `<html class>`，
+    // 饮水目标取本机记住的值（离线时用户仍能导出自己设过的目标，而不是被打回默认）。
     payload.settings = {
       unit,
       weightUnit,
       darkMode:
         typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
       fastingEnabled: false,
+      waterGoalMl: readStoredWaterGoalMl() ?? DEFAULT_WATER_GOAL_ML,
     };
 
     // 设置：优先服务端权威值（GAP-4：导出的 settings 必须反映服务端真值）
@@ -118,6 +124,8 @@ export default function SettingsDataPage(): ReactElement {
         weightUnit: serverSettings.weightUnit,
         darkMode: serverSettings.darkMode,
         fastingEnabled: serverSettings.fastingEnabled,
+        // GAP-3：饮水目标随导出（此前不在导出内，恢复后会打回默认 —— 与承诺相反）
+        waterGoalMl: serverSettings.waterGoalMl,
       };
     }
 
@@ -297,7 +305,7 @@ export default function SettingsDataPage(): ReactElement {
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          JSON 可完整恢复你的资料、目标、记录与设置（单位、深色、断食开关）；
+          JSON 可完整恢复你的资料、目标、记录与设置（单位、体重单位、深色、断食开关、饮水目标）；
           CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
         </p>
         <button

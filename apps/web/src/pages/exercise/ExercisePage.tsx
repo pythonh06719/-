@@ -14,6 +14,7 @@ import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import { WATER_QUICK_ADD_ML } from '@/theme/tokens';
 import BrandDecor from '@/components/common/BrandDecor';
+import WaterGoalCard from '@/pages/exercise/WaterGoalCard';
 
 /**
  * 运动与饮水（`/exercise`，PRD §6 第 5 行 / R6.1~R6.3，二期）。
@@ -403,6 +404,11 @@ export default function ExercisePage(): ReactElement {
         </div>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.waterGentle}</p>
       </section>
+
+      {/* 每日饮水目标编辑（GAP-3）：紧接喝水卡 —— 这里刚展示过 `0 / 2000 ml`，
+          用户正是在此处「看见」那个目标，把「可以改」放在同一处最易被发现。
+          当前值取本页已有的 `GET /water` 的 `goalMl`（不额外发请求）。 */}
+      <WaterGoalCard serverGoalMl={waterQuery.data?.goalMl} />
     </div>
   );
 }

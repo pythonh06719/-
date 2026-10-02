@@ -8,6 +8,8 @@
  * 读取侧必须视为「没有这类记录」而不是「文件坏了」—— 导入/回看不因版本差而报错。
  */
 
+import { normalizeWaterGoalMl } from '../water/goal';
+
 /** `wins` 顶层键自 schemaVersion 2 起存在。 */
 export const EXPORT_SCHEMA_VERSION_MIN_WINS = 2;
 
@@ -80,7 +82,14 @@ export interface ParsedExportPayload {
   habits: Array<{ date: string; habitId: string; done: boolean }>;
   water: Array<{ date: string; ml: number }>;
   wins: ExportWinRowLike[];
-  settings: { unit: 'kcal' | 'kj'; weightUnit: 'kg' | 'jin'; darkMode: boolean; fastingEnabled: boolean };
+  settings: {
+    unit: 'kcal' | 'kj';
+    weightUnit: 'kg' | 'jin';
+    darkMode: boolean;
+    fastingEnabled: boolean;
+    /** 每日饮水目标（ml，GAP-3）；旧备份缺此键时归一化为默认 2000。 */
+    waterGoalMl: number;
+  };
 }
 
 /** 恢复预览的事实统计。`meals` 按最终落库的餐次条目数计数。 */
@@ -325,6 +334,13 @@ function parsePayloadObject(root: Record<string, unknown>): ParsedExportPayload 
   const weightUnitRaw = settingsRaw.weightUnit;
   const weightUnit = weightUnitRaw === 'jin' ? 'jin' : 'kg';
 
+  /**
+   * `settings.waterGoalMl`（GAP-3）—— 同样**宽容读取**：该字段是后加的可选偏好，
+   * 旧备份（v1/v2 均无此键）必须照常导入；缺失 / 非整数 / 越界一律回退默认 2000。
+   * 区间口径走 core 的 `normalizeWaterGoalMl`（500–8000），与前端校验、后端 DTO 同源。
+   */
+  const waterGoalMl = normalizeWaterGoalMl(settingsRaw.waterGoalMl);
+
   return {
     meta: { app: 'qingshenghuo', schemaVersion, exportedAt },
     profile,
@@ -340,6 +356,7 @@ function parsePayloadObject(root: Record<string, unknown>): ParsedExportPayload 
       weightUnit,
       darkMode: readBoolean(settingsRaw.darkMode, 'settings.darkMode'),
       fastingEnabled: readBoolean(settingsRaw.fastingEnabled, 'settings.fastingEnabled'),
+      waterGoalMl,
     },
   };
 }

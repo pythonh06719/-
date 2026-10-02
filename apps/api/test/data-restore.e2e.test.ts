@@ -76,7 +76,14 @@ function validPayload(overrides: Partial<ExportJsonPayload> = {}): ExportJsonPay
     habits: [],
     water: [],
     wins: [],
-    settings: { unit: 'kcal', weightUnit: 'kg', darkMode: false, fastingEnabled: false },
+    settings: {
+      unit: 'kcal',
+      weightUnit: 'kg',
+      darkMode: false,
+      fastingEnabled: false,
+      // GAP-3：设置段新增 `waterGoalMl`（导出 / 恢复契约）
+      waterGoalMl: 2000,
+    },
     ...overrides,
   };
 }
@@ -241,6 +248,35 @@ describe('R10.2 · POST /api/data/restore/preview + /restore', () => {
       [SAME_DATE, '备份第一句'],
       [SAME_DATE, '备份第二句'],
     ]);
+  });
+
+  it('GAP-3：恢复备份会还原每日饮水目标（设置段含 waterGoalMl）', async () => {
+    const payload = validPayload({
+      settings: {
+        unit: 'kj',
+        weightUnit: 'jin',
+        darkMode: false,
+        fastingEnabled: false,
+        waterGoalMl: 3200,
+      },
+    });
+    const restorePreview = await preview(tokenA, payload);
+    await request(server as never)
+      .post(`${API}/data/restore`)
+      .set(auth(tokenA))
+      .send({ previewToken: restorePreview.previewToken })
+      .expect(200);
+
+    const settings = await prisma.userSettings.findUniqueOrThrow({ where: { userId: userAId } });
+    expect(settings.waterGoalMl).toBe(3200);
+    expect(settings.unit).toBe('kj');
+
+    // ★ 导出通道也必须带上它 —— 否则「设置可完整恢复」对饮水目标不成立（GAP-3 的收口）。
+    const exported = await request(server as never)
+      .get(`${API}/data/export`)
+      .set(auth(tokenA))
+      .expect(200);
+    expect((exported.body.data as ExportJsonPayload).settings.waterGoalMl).toBe(3200);
   });
 
   it('A 的预览凭据由 B 确认时返回 404，且不会写入 B 的账号', async () => {

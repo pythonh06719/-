@@ -13,6 +13,7 @@ import {
   type RestoreResult,
 } from '@qsh/shared-types';
 import {
+  DEFAULT_WATER_GOAL_ML,
   deriveWeeklyLossKg,
   parseExportPayload,
   parseWeightCsv,
@@ -172,6 +173,10 @@ export class DataService {
         weightUnit: (settings?.weightUnit ?? 'kg') === 'jin' ? ('jin' as const) : ('kg' as const),
         darkMode: settings?.darkMode ?? false,
         fastingEnabled: settings?.fastingEnabled ?? false,
+        // GAP-3：每日饮水目标随备份导出，使「设置可完整恢复」对饮水目标也成立
+        // （默认值 2000 与 `water.service.ts` 的 `?? 2000`、DDL `@default(2000)` 一致，
+        //   常量取自 core，避免在多处各写一个字面量）
+        waterGoalMl: settings?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
       },
     };
   }
@@ -378,12 +383,16 @@ export class DataService {
             weightUnit: payload.settings.weightUnit,
             darkMode: payload.settings.darkMode,
             fastingEnabled: payload.settings.fastingEnabled,
+            // GAP-3：饮水目标一并还原（core 解析层对旧备份缺省为默认 2000）
+            waterGoalMl: payload.settings.waterGoalMl,
           },
           update: {
             unit: payload.settings.unit,
             weightUnit: payload.settings.weightUnit,
             darkMode: payload.settings.darkMode,
             fastingEnabled: payload.settings.fastingEnabled,
+            // GAP-3：饮水目标一并还原
+            waterGoalMl: payload.settings.waterGoalMl,
             updatedAt: nowIso,
           },
         });

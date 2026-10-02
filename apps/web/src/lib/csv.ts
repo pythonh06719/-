@@ -18,6 +18,7 @@ import {
   parseWeightCsv as parseWeightCsvCore,
   serializeCsv,
   withBom,
+  DEFAULT_WATER_GOAL_ML,
   type ParsedWeightCsv as ParsedWeightCsvCore,
 } from '@qsh/core';
 import { isDateKey } from './format';
@@ -139,7 +140,14 @@ export function createEmptyExportPayload(exportedAtIso: string): ExportJsonPaylo
     // R11.4（schemaVersion 2）：`wins` 为必填顶层键，导出骨架必须带空数组
     wins: [],
     // D-3：体重展示单位默认 kg（存储与导出恒为 kg，这里只带偏好）
-    settings: { unit: 'kcal', weightUnit: 'kg', darkMode: false, fastingEnabled: false },
+    // GAP-3：饮水目标默认 2000（后端不可用时导出骨架的兜底值，与后端默认同源）
+    settings: {
+      unit: 'kcal',
+      weightUnit: 'kg',
+      darkMode: false,
+      fastingEnabled: false,
+      waterGoalMl: DEFAULT_WATER_GOAL_ML,
+    },
   };
 }
 

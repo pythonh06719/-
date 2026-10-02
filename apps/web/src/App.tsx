@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/auth.store';
 import { hydrateUnitFromServer, useUnitStore } from '@/lib/units';
 import { currentStoredMode, hydrateThemeFromServer } from '@/theme/useTheme';
 import { registerSettingsOnlineFlush } from '@/lib/settings-sync';
+import { readStoredWaterGoalMl } from '@/lib/water-goal';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { COPY } from '@/lib/copy';
 import UpdatePrompt from '@/pwa/UpdatePrompt';
@@ -58,13 +59,17 @@ function SettingsCalibrator(): null {
   const calibratedFor = useRef<string | null>(null);
 
   // P0-2：联网时补推待同步设置（读取当前本地值，最后值语义）。
+  // GAP-3：饮水目标一并纳入 —— 它同样是「最后值语义」的设置类字段，
+  // 离线改动后要从本机读到当前值，才能在联网时补推（见 lib/water-goal.ts）。
   useEffect(() => {
     return registerSettingsOnlineFlush(() => {
       const localMode = currentStoredMode();
+      const waterGoalMl = readStoredWaterGoalMl();
       return {
         unit: useUnitStore.getState().unit,
         weightUnit: useUnitStore.getState().weightUnit,
         ...(localMode === 'system' ? {} : { darkMode: localMode === 'dark' }),
+        ...(waterGoalMl === undefined ? {} : { waterGoalMl }),
       };
     });
   }, []);
