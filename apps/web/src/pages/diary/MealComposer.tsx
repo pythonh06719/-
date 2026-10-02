@@ -615,11 +615,17 @@ export default function MealComposer({
   }, [selectedCategory]);
 
   /**
-   * 常吃榜：只保留**可反查份量**的条目（`food !== null`）。
+   * 常吃榜：只保留**可反查份量**的条目（`food` 非空）。
    *
    * 快加条目（`foodItemId` 为 `null`）无法反查份量，按 Q-4 **不渲染为可点按钮**。
+   *
+   * ⚠️ 用 `!= null` 而非 `!== null`：`food` 是**前后端边界**上的字段，
+   * 若后端某天漏发该键（`undefined` 而非 `null`），`undefined !== null` 为真会把
+   * 这条**无 `food` 的脏数据放进 topItems**，随后 `item.food.id` 直接解引用 `undefined` 抛错。
+   * 契约上 `food` 恒为 `null | 对象`（`@qsh/shared-types`的 `TopFoodItem`），
+   * 故这是**防御性**而非现网可修的 bug —— 但边界校验按项目约定不砍（同 `lib/api.ts`）。
    */
-  const topItems: TopFoodItem[] = (topQuery.data?.items ?? []).filter((item) => item.food !== null);
+  const topItems: TopFoodItem[] = (topQuery.data?.items ?? []).filter((item) => item.food != null);
   /** 搜索空态里置顶的 Top 5（数据不足 → 空数组 → 整块不渲染）。 */
   const emptyStateTopItems = topItems.slice(0, TOP_IN_EMPTY_STATE);
 
@@ -634,7 +640,7 @@ export default function MealComposer({
     if (tab === 'search') {
       for (const food of localItems) ids.add(food.id);
       for (const item of emptyStateTopItems) {
-        if (item.food !== null) ids.add(item.food.id);
+        if (item.food != null) ids.add(item.food.id);
       }
     } else if (tab === 'category') {
       for (const food of categoryItems) ids.add(food.id);
@@ -644,7 +650,7 @@ export default function MealComposer({
       for (const food of Array.isArray(favoriteQuery.data) ? favoriteQuery.data : []) ids.add(food.id);
     } else if (tab === 'top') {
       for (const item of topItems) {
-        if (item.food !== null) ids.add(item.food.id);
+        if (item.food != null) ids.add(item.food.id);
       }
     }
     return [...ids].sort((a, b) => a - b);
@@ -702,7 +708,7 @@ export default function MealComposer({
             <button
               type="button"
               onClick={() => {
-                if (item.food !== null) {
+                if (item.food != null) {
                   chooseFood(item.food);
                 }
               }}

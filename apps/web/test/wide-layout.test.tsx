@@ -343,7 +343,52 @@ describe('回顾页（/report）宽屏两栏', () => {
   it('阶段回顾（这段时间）也是两栏：档位占满一行，指标左 / 常吃右', async () => {
     stubFetchByUrl((url) => {
       if (url.includes('/report/period')) return PERIOD_PAYLOAD;
-      if (url.includes('/foods/top')) return { items: [{ name: '米饭', dayCount: 5, foodItemId: 1 }], total: 1 };
+      if (url.includes('/foods/top')) {
+        // 契约（`TopFoodItem`）：`foodItemId` 非空 ⟺ `food` 是完整 `FoodItem`。
+        // 此前此桩只给了 `foodItemId: 1` 而**漏了 `food`**，靠 `Record<string, unknown>`
+        // 的松类型蒙混过关 —— 若`PeriodReportView` 将来解引用 `item.food.id`，
+        // 这里就会在运行时炸 `undefined`。按契约补齐（`lastLoggedDate` 同样必填）。
+        return {
+          days: 30,
+          items: [
+            {
+              name: '米饭',
+              dayCount: 5,
+              foodItemId: 1,
+              lastLoggedDate: '2026-09-20',
+              food: {
+                id: 1,
+                name: '米饭',
+                namePinyin: null,
+                aliases: [],
+                category: '主食',
+                kcalPer100g: 116,
+                proteinGPer100g: 2.6,
+                fatGPer100g: 0.3,
+                carbGPer100g: 25.9,
+                fiberGPer100g: null,
+                sodiumMgPer100g: null,
+                saturatedFatGPer100g: null,
+                sugarGPer100g: null,
+                calciumMgPer100g: null,
+                ironMgPer100g: null,
+                potassiumMgPer100g: null,
+                vitaminDUgPer100g: null,
+                b12UgPer100g: null,
+                magnesiumMgPer100g: null,
+                servingUnits: [{ unit: '碗', grams: 200, label: '一碗' }],
+                defaultServingGrams: 200,
+                barcode: null,
+                source: 'builtin',
+                createdByUserId: null,
+                isVerified: true,
+                createdAt: '2026-09-01T00:00:00.000Z',
+                updatedAt: '2026-09-01T00:00:00.000Z',
+              },
+            },
+          ],
+        };
+      }
       return WEEKLY_PAYLOAD;
     });
     const { container } = renderWithShell(<ReportPage />, true);

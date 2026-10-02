@@ -410,3 +410,52 @@ describe('R11.5 零营养评判（AC-11.5.3 可 grep 校验）', () => {
     expect(text).not.toMatch(/已经\s*\d+\s*天没|隔了\s*\d+\s*天|吃得(有点)?频繁/);
   });
 });
+
+/**
+ * 边界防御：`food` 字段**缺失**（`undefined`）时不得崩。
+ *
+ * ## 为什么值得钉一条
+ *
+ * 契约（`TopFoodItem`）上 `food` 恒为 `FoodItem | null`，故「缺字段」现网不可达；
+ * 但这是**前后端边界**，项目约定「信任边界校验不砍」（同 `lib/api.ts` 对
+ * `payload.error` 的处理）。若实现写成 `item.food !== null`，后端某天漏发该键时
+ * `undefined !== null` 为真 → 脏条目进入榜单 → `item.food.id` 解引用 `undefined` 抛错，
+ * **整个记录弹窗白屏**。
+ *
+ * 本条即该加固的**缺陷注入靶点**：把 `!= null` 改回 `!== null` 它必须转红。
+ */
+describe('边界防御：`food` 缺失（undefined）时不崩', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('条目缺 `food` 字段 → 被安全过滤，不渲染、也不抛错', async () => {
+    // 刻意绕过 makeTopItem：直接造一个**没有 food 键**的脏条目（模拟后端漏发字段）。
+    const malformedItem = {
+      name: '数据缺失的食物',
+      dayCount: 7,
+      foodItemId: 42,
+      lastLoggedDate: '2026-09-12',
+    } as unknown as TopFoodItem;
+
+    topItems = [
+      makeTopItem('番茄炒蛋', 12, makeFood(1, '番茄炒蛋'), '2026-09-08'),
+      malformedItem,
+    ];
+    stubFetch();
+
+    renderComposer();
+
+    // tab 仍能出现（说明渲染未崩），且脏条目被过滤掉、正常条目照常渲染
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: COPY.topFoodsTab })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('tab', { name: COPY.topFoodsTab }));
+    await waitFor(() => {
+      expect(screen.getByText('番茄炒蛋')).toBeInTheDocument();
+    });
+
+    // 缺 `food` 的条目既不可点（Q-4：无可反查份量）也不该出现在榜里
+    expect(screen.queryByText('数据缺失的食物')).toBeNull();
+  });
+});
