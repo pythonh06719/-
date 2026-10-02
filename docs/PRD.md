@@ -128,7 +128,7 @@
 ### 3.6 数据主权用户
 
 - **US-18**：As a 用户，I want 一键导出全部数据为 JSON + CSV，so that 数据真正属于我。
-  - **验收**：`/settings/data` 可导出 JSON（完整可恢复备份）与 CSV（模板见 §9.5）；导出包含体重、饮食、运动、习惯、饮水、设置。
+  - **验收**：`/settings/data` 可导出 JSON（完整可恢复备份）与 CSV（格式见 §9.2）；导出包含体重、饮食、运动、习惯、饮水、设置。
 
 - **US-19**：As a 用户，I want 导入历史数据、彻底删除账号，so that 我能自主掌控。
   - **验收**：支持 JSON 备份恢复与 CSV 模板批量导入历史体重；账号删除为**硬删除**（数据库真实移除，非标记删除）。
@@ -378,7 +378,12 @@
 
 ---
 
-## 6. 页面结构与交互要点（12 组路由）
+## 6. 页面结构与交互要点（15 条实路由 + 1 条兜底）
+
+> ⚠️ **回填（2026-10-02，据 `apps/web/src/router/routes.tsx` 实测）**：本表原按「12 组路由」书写，
+> 与代码不符。代码现有 **15 条实路由 + 1 条兜底**（`path: '*'`）。原表已含的 13 条之外，
+> 补登记遗漏的 **`/settings/foods`（我的食物库）** 与 **`/why-numbers`（数字是怎么来的）** 两条（见下表第 13、14 行）。
+> 本表仅**补登记事实**，未改动任何需求条目、优先级或验收标准。
 
 | # | 路由 | 页面 | 关键交互要点 |
 | --- | --- | --- | --- |
@@ -394,6 +399,8 @@
 | 10 | `/report` | 周报 | 周维度摄入/缺口/体重/习惯汇总；微量营养素面板入口 |
 | 11 | `/ai` | AI 助手 | 每日总结、今日方案、自由提问；显示剩余次数（每日 50 次）；AI 未配置时明确提示不可用 |
 | 12 | `/profile` + `/settings/data` | 我的 / 数据管理 | 基础数据修改并自动重算；参考来源页；数据导出/导入；账号硬删除 |
+| 13 | `/settings/foods` | 我的食物库（回填） | 查看 / 改名 / 改营养 / 删除**本人自建**（`user_custom`）食物；官方库只读 |
+| 14 | `/why-numbers` | 数字是怎么来的（回填） | 列出各用户可见数字的来源与算法（R2.9 / NFR-11 可解释性闭环） |
 
 **通用交互约束**
 - 移动端优先，核心记录操作 ≤3 次点击；数字大、进度直观（进度环 + 颜色渐变）。
@@ -510,9 +517,13 @@
 
 ### 9.1 导出 JSON 顶层结构
 
+> ⚠️ **回填（2026-10-02，据 `apps/api/src/data/data.service.ts` 与 `packages/shared-types/src/export.ts` 实测）**：
+> `schemaVersion` 已由 **1 升到 2**（`EXPORT_SCHEMA_VERSION = 2`）：新增 **`wins` 顶层键**（R11.4）；
+> `settings` 增加 **`weightUnit`**（D-3）。读取侧对 `schemaVersion ≤ 1` 的旧备份，`wins` 按空数组处理、不得报错。
+
 ```json
 {
-  "meta": { "app": "qingshenghuo", "schemaVersion": 1, "exportedAt": "ISO8601" },
+  "meta": { "app": "qingshenghuo", "schemaVersion": 2, "exportedAt": "ISO8601" },
   "profile": { "gender": "female", "birthDate": "1995-01-01", "heightCm": 165, "activityLevel": "sedentary", "dietaryPreference": [], "conditions": [] },
   "goals": { "targetWeightKg": 55, "targetWeeks": 12, "macroRatio": { "protein": 25, "fat": 25, "carb": 50 } },
   "weights": [{ "date": "2026-09-01", "weightKg": 60.0, "note": "" }],
@@ -520,7 +531,8 @@
   "exercises": [{ "date": "2026-09-01", "type": "walking", "met": 3.5, "minutes": 40, "kcalBurned": 140 }],
   "habits": [{ "date": "2026-09-01", "habitId": "water", "done": true }],
   "water": [{ "date": "2026-09-01", "ml": 1500 }],
-  "settings": { "unit": "kcal", "darkMode": false, "fastingEnabled": false }
+  "wins": [{ "date": "2026-09-01", "text": "今天爬楼不喘了" }],
+  "settings": { "unit": "kcal", "weightUnit": "kg", "darkMode": false, "fastingEnabled": false }
 }
 ```
 
