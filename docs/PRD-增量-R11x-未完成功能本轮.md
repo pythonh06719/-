@@ -24,6 +24,12 @@
 > - **N3 的生理周期、N8 的离群值检测、N8 的静默自动备份 → 明确 Out**（§2.1）
 > - 本文发现的「候选清单状态与实现现状不一致」项，已登记在 §2.4，**必须先读**。
 
+> ✅ **交付状态回填（2026-10-02）**：本轮 PRD 的 **R11.3 / R11.4 / R11.5 / R11.6 / R11.7 与 R3.8 均已交付**。
+> ⚠️ 下表 §1 的「代码实际状态」列与 §2.4 的「❌ 未实现」是**写 PRD 前的实地清点**，**不是当前状态**。
+> 落地落点（均已 `grep` 核对）：R3.8 `PATCH /api/meals/reorder`（`meals.controller.ts:82`）、R11.3 阶段回顾 `GET /report/period`、
+> R11.4 `wins` 控制器（`wins.controller.ts` `@Controller('wins')`）、R11.5 `GET /api/foods/top`（`foods.controller.ts:118`）、
+> R11.6 `GET /api/data/overview`（`data.controller.ts:33`）+ `DataOverviewCard`、R11.7 周报 `distinctFoodCount`。
+
 ---
 
 ## 1. 现状核对（写 PRD 前的实地清点）
