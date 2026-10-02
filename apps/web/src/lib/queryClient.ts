@@ -52,6 +52,13 @@ export const queryKeys = {
    * 故即使调用方每次传入新数组引用，也不会触发无谓的重取。
    */
   foodLastPortions: (ids: readonly number[]) => ['foods', 'last-portions', [...ids]] as const,
+  /**
+   * 食物食用历史（D-5）：按**单个食物 id** 分键。
+   *
+   * 只在用户**主动展开**某一行时才发请求（`enabled` 绑展开态），故不需要批量预取 ——
+   * 一次只可能有一个食物的历史在屏上。
+   */
+  foodHistory: (id: number) => ['foods', 'history', id] as const,
   foodFavorites: ['foods', 'favorites'] as const,
   /** 我的食物库（C-4 第二步）：只列本人自建食物，供改 / 删 */
   foodMine: ['foods', 'mine'] as const,

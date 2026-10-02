@@ -233,8 +233,21 @@ describe('GAP-1 收藏可加可取消', () => {
     // 两个星号的名字不同 —— 读屏能区分「第几个 / 哪个食物」
     expect(milk.getAttribute('aria-label')).not.toBe(skim.getAttribute('aria-label'));
 
-    // 星号是行内独立控件，不与「选食物」按钮互相嵌套（同一行里是两个平级按钮）
+    // 星号是行内独立控件，不与「选食物」按钮互相嵌套。
+    //
+    // ⚠️ D-5 之后同一行有**三个**平级按钮（选食物 / 历史 / 星号），故这里的计数由 2 改为 3。
+    // 这**不是**把断言放宽 —— 数字仍是**精确相等**（不是 `>= 2`），且下面补的那条
+    // 「三者父节点相同、互不嵌套」才是这条用例真正要守的红线（嵌套 button 是非法 HTML）。
+    // 元素个数从来不是红线，红线是「谁套着谁」。
     const row = milk.closest('li') as HTMLElement;
-    expect(within(row).getAllByRole('button')).toHaveLength(2);
+    expect(within(row).getAllByRole('button')).toHaveLength(3);
+
+    // 三个按钮互为**平级兄弟**（同一个父节点），且互不嵌套
+    const selectButton = within(row).getByText('全脂牛奶').closest('button') as HTMLElement;
+    const historyButton = within(row).getByRole('button', { name: /全脂牛奶.*(什么时候吃过|的历史)/ });
+    expect(milk.parentElement).toBe(selectButton.parentElement);
+    expect(historyButton.parentElement).toBe(selectButton.parentElement);
+    expect(selectButton.contains(milk)).toBe(false);
+    expect(milk.querySelectorAll('button')).toHaveLength(0);
   });
 });

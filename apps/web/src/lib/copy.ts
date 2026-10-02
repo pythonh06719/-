@@ -242,6 +242,27 @@ export const COPY = {
   topFoodsTab: '常吃',
   topFoodsTitle: '你常吃的',
   /* ---------------------------------------------------------------------------
+   * 食物食用历史（D-5）—— 🔴 三条硬红线（QD-6 / AC-11.5.3 / AC-11.5.4）：
+   * ① **零汇总**：不出现「共 N 天 / N 次」—— 给了汇总就等于把日期明细重新包装成
+   *    频次暗示；
+   * ② **零健康暗示**：不出现「最近吃得有点频繁」「该少吃了」这类评语；
+   * ③ **零营养挂钩**：不出现 kcal / 蛋白 / 脂肪 / 碳水 / 含糖 / 高钠。
+   * 措辞一律「只陈述那一天发生了什么」，不比较、不评价、不建议。
+   * 详见本文件下方 `foodHistory*` 函数处的完整注释。
+   * ------------------------------------------------------------------------- */
+  /** 展开历史列表的按钮文案（**次级动作**，视觉刻意做轻，不与「选中这一行」抢主操作） */
+  foodHistoryToggle: '历史',
+  /** 收起历史列表的按钮文案 */
+  foodHistoryCollapse: '收起',
+  /** 加载中（与「最近 / 收藏」保持同一种提示，避免面板空白被误读成「什么都没有」） */
+  foodHistoryLoading: '读取中…',
+  /** 读取失败的软着陆：只说「没读到」，不写「加载失败」，更不暗示「没有历史」 */
+  foodHistoryError: '这次没读到',
+  /** 空态：用户**主动点了按钮**才展开的，留白会被读成「页面坏了」，故必须给一句 */
+  foodHistoryEmpty: '还没记过这道菜',
+  /** 尾部说明：告诉用户「这里只列日子」不是遗漏，从而不必去追问汇总 */
+  foodHistoryFootnote: '这里只列你记过的日子',
+  /* ---------------------------------------------------------------------------
    * 套餐新建（R3.9 / GAP-2）—— 语气规范同 §7：把「存成套餐」说成一件顺手的小事。
    * 不催用户「多存几个」，不设目标数，空态也不把「没有套餐」写成亏欠。
    * 本小节**只追加新键**，不改动相邻的 `favorite*`（GAP-1）与 `foodCategory*` 区块。
@@ -1205,6 +1226,102 @@ export function topFoodsLastLoggedLabel(monthDay: string): string {
  */
 export function favoriteToggleAria(name: string, favorited: boolean): string {
   return favorited ? `取消收藏 ${name}` : `收藏 ${name}`;
+}
+
+// ---------------------------------------------------------------------------
+// 食物食用历史（D-5）
+// 🔴 三条硬红线（QD-6 / AC-11.5.3 / AC-11.5.4），本节每一句文案都受其约束：
+// ① **零汇总**：不得出现「共 N 天 / N 次 / 一共吃过」—— 给了汇总就等于把日期明细
+//    重新包装成频次暗示，用户会拿它去推断「我吃得太频繁」，那不是我们要说的话；
+// ② **零健康暗示**：不得出现「最近吃得有点频繁」「隔了 N 天」「该少吃了」这类评语；
+// ③ **零营养挂钩**：不得出现 kcal / 蛋白 / 脂肪 / 碳水 / 含糖 / 高钠 —— 历史列表是
+//    「哪天吃了什么」，不是「吃得健不健康」。
+// 措辞一律走「**只陈述那一天发生了什么**」，不比较、不评价、不建议。
+//
+// ⚠️ 固定文案（按钮 / 标题 / 空态 / 提示）在上面的 `COPY` 对象里，与既有键同址；
+// 本节只放**需要拼装**的函数。
+// ---------------------------------------------------------------------------
+
+/**
+ * 历史按钮的读屏语句：**动作 + 食物名**（同 `favoriteToggleAria` 的理由 ——
+ * 一屏多个「历史」按钮，读屏用户要能分辨正对哪一行）。
+ *
+ * 收起态说「点下去会发生什么」（`看看 X 什么时候吃过`），展开态说「点下去会怎样」
+ * （`收起 X 的历史`），配合 `aria-expanded` 让读屏用户既知状态也知后果。
+ */
+export function foodHistoryToggleAria(name: string, expanded: boolean): string {
+  return expanded ? `收起 ${name} 的历史` : `看看 ${name} 什么时候吃过`;
+}
+
+/**
+ * 面板内那个「收起」按钮的读屏语句。
+ *
+ * ⚠️ **刻意与 `foodHistoryToggleAria(name, true)` 区分开**：行内那个开关在展开后
+ * aria-label 会变成「收起 X 的历史」，若面板里的按钮也叫同一句，展开态下读屏会念出
+ * **两个一模一样的名字**、且 `getByRole('button', { name })` 也会命中两个元素 ——
+ * 用户分不清该按哪个（这正是 aria-label 必须「一个控件一句、且彼此可区分」的由来）。
+ * 故这里用「关掉 … 这份列表」，与行内开关形成清晰的一对。
+ */
+export function foodHistoryCloseAria(name: string): string {
+  return `关掉 ${name} 的这份列表`;
+}
+
+/**
+ * 历史列表的标题：`番茄炒蛋 什么时候过了` → 实际为 `番茄炒蛋 什么时候吃过`。
+ *
+ * ⚠️ 刻意**不用**「历史记录」「过往记录」这类带「记录」二字的标题 —— 与常吃榜的
+ * 「你常吃的」保持同一套朴素口吻，且标题本身不引入任何数字。
+ */
+export function foodHistoryTitle(name: string): string {
+  return `${name} 什么时候吃过`;
+}
+
+/**
+ * 一条历史明细的读屏语句：`9月8日 午餐 150 克`。
+ *
+ * 视觉行与 aria **共用同一份**（NFR-7：读屏用户拿到的信息不得少于视觉用户）。
+ *
+ * @param dateLabel   已格式化的日期（由调用方用 `formatMonthDay()` 产出，如 `9月8日`）
+ * @param mealLabel   餐次中文名（`早餐` / `午餐` / `晚餐` / `加餐`）
+ * @param portionText 已格式化的份量（`150 克` / `1 碗`）；无份量时传 `''`，该段省略
+ */
+export function foodHistoryEntryAria(dateLabel: string, mealLabel: string, portionText: string): string {
+  const meal = mealLabel.trim();
+  const base = meal === '' ? dateLabel : `${dateLabel} ${meal}`;
+  return portionText.trim() === '' ? base : `${base} ${portionText.trim()}`;
+}
+
+/**
+ * 把一条历史明细的份量拼成一句可读的话：`150 克` / `2 碗` / `1 碗 150 克` / `''`。
+ *
+ * 🔴 **返回空串时（快加卡没记份量）整段不渲染** —— 绝不用「0 克」或「份量未知」
+ * 兜底：那会把「当时没记份量」说成「当时吃了 0 克」（前者是缺失，后者是事实，性质不同）。
+ *
+ * 判定口径刻意与 `@qsh/core` 的 `hasUsablePortion` **同向**（正克数 或 非空单位+正数量），
+ * 但这里只做**展示**、不参与任何默认份量计算，故不直接复用该函数（它的语义是
+ * 「能不能拿来当默认值」，比展示更窄）。
+ *
+ * @param grams       克数；`null` / 非有限 / ≤ 0 视为没记
+ * @param servingUnit 单位串；空白视为没记
+ * @param servingQty  数量；非有限 / ≤ 0 视为没记
+ */
+export function foodHistoryPortionText(
+  grams: number | null,
+  servingUnit: string | null,
+  servingQty: number | null,
+): string {
+  const hasGrams = typeof grams === 'number' && Number.isFinite(grams) && grams > 0;
+  const unit = typeof servingUnit === 'string' ? servingUnit.trim() : '';
+  const hasQty = typeof servingQty === 'number' && Number.isFinite(servingQty) && servingQty > 0;
+
+  const parts: string[] = [];
+  if (unit !== '' && hasQty) {
+    parts.push(`${servingQty} ${unit}`);
+  }
+  if (hasGrams) {
+    parts.push(`${grams} 克`);
+  }
+  return parts.join(' ');
 }
 
 // ---------------------------------------------------------------------------

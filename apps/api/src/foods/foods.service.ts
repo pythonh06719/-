@@ -3,21 +3,26 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import {
+  FOOD_HISTORY_DEFAULTS,
   FOOD_SEARCH_DEFAULT_PAGE_SIZE,
   FREQUENT_FOOD_DEFAULTS,
+  foodIdentity,
   pageFoodSearch,
   rankFrequentFoods,
   rankFoodSearch,
+  selectFoodHistoryEntries,
 } from '@qsh/core';
 import type { FoodSearchCandidate, FrequentFoodRow } from '@qsh/core';
 import type {
   BarcodeLookupResponse,
   ExternalFoodItem,
+  FoodHistoryResponse,
   FoodItem,
   FoodSearchHit,
   LastPortion,
   LastPortionsResponse,
   LiveSearchResponse,
+  MealType,
   TopFoodItem,
   TopFoodsResponse,
 } from '@qsh/shared-types';
@@ -44,6 +49,7 @@ import {
 } from './external/off.client';
 import type { ExternalFoodDraft } from './external/off.client';
 import {
+  FOOD_HISTORY_SCAN_LIMIT,
   FOOD_IDENTITY_PROJECTION_LIMIT,
   FOOD_SEARCH_RANK_SCAN_LIMIT,
   keywordWhere,
@@ -345,6 +351,123 @@ export class FoodsService {
     );
 
     return { portions };
+  }
+
+  /**
+   * **我什么时候吃过它**（D-5）：`GET /api/foods/:id/history?limit=`。
+   *
+   * 返回该食物在**本人**记录里的历史日期明细（日期 + 餐次 + 份量），**日期倒序**，
+   * 供搜索结果 / 最近 / 收藏里的任意一行展开查看 —— 补上「常吃榜之外无处可查」的缺口。
+   *
+   * ## ⚠️ 核心难点：快加卡记录查不到（唯一真成本点）
+   *
+   * `meals.quickAdd` 写入时 `foodItemId: null`，**只有 `customName`**。
+   * 故只按 `foodItemId` 查，**一条快加记录都查不到** —— 而快加卡恰恰是「随手记一笔」
+   * 的主力来源，漏掉它等于这个功能对相当比例的用户是空的。
+   *
+   * 解决办法是**按名称归一**匹配，且**必须复用 core 的唯一实现**（K16）：
+   * - 目标键：`foodIdentity({ foodItemId, foodName: food.name })`；
+   * - 每条候选行：`foodIdentity({ foodItemId, customName })`；
+   * - 相等即命中。
+   *
+   * 🔴 **绝不允许在这里自己写一套「去空格 + 转小写」**：那会让同一道菜在常吃榜里算 1 种、
+   * 在这里算 2 种，两个互相打架的数字正是 K16 要防的事。
+   *
+   * ## 合并口径沿用 D-4
+   *
+   * 「库内条目与同名快加条目合并为 1 种」是**既定口径、不是 bug**（见
+   * `docs/ARCHITECTURE-增量-补完三项.md` D-4，与 `rankFrequentFoods` 一致）。
+   *
+   * ## 可见性（K7 纵深防御）
+   *
+   * ① 目标食物本身走 `requireVisibleFood`（含 `visibleFoodWhere`）：他人私有自定义食物
+   *    → 404，不暴露存在性；
+   * ② `meal_logs` 一律 `where: { userId }`（`userId` 取自 JWT，**绝不接受客户端传入**）：
+   *    他人对**同一食物**的记录绝不会混进我的结果。
+   *
+   * ## 为什么用 `findMany` 而不是 `groupBy`
+   *
+   * 响应要「日期 + 餐次 + 份量」，而 `meal_logs` 的 `groupBy` 三元组
+   * （`foodItemId` / `customName` / `loggedDate`）**不含** `mealType` / `grams` /
+   * `servingUnit` —— 用了 `groupBy` 就得再查一次明细把日期补齐，纯属绕路。
+   * 故取**最小 `select`** 的 `findMany` + `take` 上限（`FOOD_HISTORY_SCAN_LIMIT`），
+   * 排序与截断交给 core 的 `selectFoodHistoryEntries`（零 IO 纯函数，可单测）。
+   *
+   * @param userId 当前登录用户 id（来自 JWT）
+   * @param foodId 被查询的食物 id
+   * @param limit 返回条数上限，1–100（越界 400）
+   */
+  async history(
+    userId: number,
+    foodId: number,
+    limit: number = FOOD_HISTORY_DEFAULTS.limit,
+  ): Promise<FoodHistoryResponse> {
+    if (!Number.isFinite(limit) || limit < 1 || limit > FOOD_HISTORY_DEFAULTS.maxLimit) {
+      throw new ApiException(
+        400,
+        ERROR_CODES.VALID_INPUT,
+        `返回条数应在 1 到 ${FOOD_HISTORY_DEFAULTS.maxLimit} 之间`,
+        { limit: `返回条数应在 1 到 ${FOOD_HISTORY_DEFAULTS.maxLimit} 之间` },
+      );
+    }
+
+    // ① 目标食物必须存在且对本人可见，否则 404（K7：不暴露存在性）。
+    const food = await this.requireVisibleFood(userId, foodId);
+
+    // ② 目标身份键 —— 走 core 唯一实现（K16）。
+    const targetKey = foodIdentity({ foodItemId: food.id, foodName: food.name });
+    if (targetKey === null) {
+      return { foodId: food.id, name: food.name, items: [] };
+    }
+
+    // ③ 候选行：库内条目命中 **或** 快加卡（`foodItemId IS NULL` 且有 `customName`）。
+    //    `where: { userId }` 是数据隔离的**唯一**来源（绝不接受客户端传入 userId）。
+    //    `take` 为纵深防御上限（见 `FOOD_HISTORY_SCAN_LIMIT` 注释）。
+    const rows = await this.prisma.mealLog.findMany({
+      where: {
+        userId,
+        OR: [{ foodItemId: food.id }, { foodItemId: null, customName: { not: null } }],
+      },
+      orderBy: [{ loggedDate: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        loggedDate: true,
+        mealType: true,
+        grams: true,
+        servingUnit: true,
+        servingQty: true,
+        foodItemId: true,
+        customName: true,
+      },
+      take: FOOD_HISTORY_SCAN_LIMIT,
+    });
+
+    // ④ 身份归一 + 排序 + 截断，全部交给 core（单一真源，K16）。
+    //    ⚠️ `foodName` **必须**按 `top()`（第 446 行）同款规则给：`foodItemId` 非空的行
+    //    要反查回显示名，否则 `foodIdentity` 会因「显示名为空」回落到 `food:<id>`，
+    //    与目标键（归一后的食物名）比不上 → **库内条目一条都命中不了**。
+    //    这里 `requireVisibleFood` 已把目标食物整行取回，名字直接可用，无需额外查询。
+    const items = selectFoodHistoryEntries(
+      rows.map((row) => ({
+        id: row.id,
+        loggedDate: row.loggedDate,
+        mealType: row.mealType,
+        grams: row.grams,
+        servingUnit: row.servingUnit,
+        servingQty: row.servingQty,
+        foodItemId: row.foodItemId,
+        customName: row.customName,
+        foodName: row.foodItemId === null ? null : food.name,
+      })),
+      targetKey,
+      { limit: Math.floor(limit) },
+    );
+
+    return {
+      foodId: food.id,
+      name: food.name,
+      items: items.map((item) => ({ ...item, mealType: item.mealType as MealType })),
+    };
   }
 
   /**

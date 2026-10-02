@@ -202,6 +202,15 @@ export {
   type RankFrequentFoodsOptions,
 } from './food/frequency';
 
+// 食物食用历史（D-5：只列日期明细，零汇总；身份归一复用 identity.ts，K16）
+export {
+  FOOD_HISTORY_DEFAULTS,
+  selectFoodHistoryEntries,
+  type FoodHistoryEntry,
+  type FoodHistoryOptions,
+  type FoodHistoryRow,
+} from './food/history';
+
 // 食物分类唯一口径（「食物库数据质量」T1：off.client / 种子脚本 / 校验共用）
 export {
   CFCD_CATEGORY_BY_PATH,

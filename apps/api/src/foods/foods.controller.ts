@@ -14,10 +14,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
+import { FOOD_HISTORY_DEFAULTS, FREQUENT_FOOD_DEFAULTS } from '@qsh/core';
 
 import type {
   BarcodeLookupResponse,
+  FoodHistoryResponse,
   FoodItem,
   LastPortionsResponse,
   LiveSearchResponse,
@@ -182,6 +183,37 @@ export class FoodsController {
   @Post()
   createCustom(@CurrentUser() userId: number, @Body() dto: CreateCustomFoodDto): Promise<FoodItem> {
     return this.foodsService.createCustom(userId, dto);
+  }
+
+  /**
+   * **我什么时候吃过它**（D-5）：`GET /api/foods/:id/history?limit=30`。
+   *
+   * 返回该食物在**本人**记录里的历史日期明细（日期 + 餐次 + 份量），**日期倒序**、
+   * 无历史返回 `items: []`。补上「常吃榜之外无处可查」的缺口 —— 用户在**搜索结果 /
+   * 最近 / 收藏**里点开任意一行都能看到「这道菜我哪天吃过」。
+   *
+   * 🔴 **只读、零汇总**（QD-6）：响应里**没有**「共 N 天 / N 次」字段，界面只列日期明细。
+   * 🔴 **零营养**：明细里没有 kcal / 三大营养素，界面无法据此做健康评判（AC-11.5.3）。
+   *
+   * ⚠️ **声明位置**：必须放在 `@Get(':id')` **之前**，与本文件顶部注释约定的
+   * 「静态 / 子路径先于动态参数路由」一致。两者虽都是两段路径（`:id/history` 不会被
+   * 单段的 `:id` 匹配走），但让带参数的子路由紧挨着它的父路由，读者一眼能看出
+   * 二者的关系；更重要的是它必须排在 `barcode/:code` **之后**，否则
+   * `/foods/barcode/history` 会被 `:id/history` 抢走、把 `'barcode'` 打成 400
+   * （改变既有路由的既有行为）。
+   *
+   * ⚠️ **路由回归**：`test/foods-last-portion.e2e.test.ts` 与
+   * `test/foods-history.e2e.test.ts` 各有一条用例钉死「本端点不被 `@Get(':id')` 吞掉」。
+   *
+   * 归属：`userId` 取自 JWT（`@CurrentUser`），**绝不接受客户端传入**。
+   */
+  @Get(':id/history')
+  history(
+    @CurrentUser() userId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit', new DefaultValuePipe(String(FOOD_HISTORY_DEFAULTS.limit)), ParseIntPipe) limit: number,
+  ): Promise<FoodHistoryResponse> {
+    return this.foodsService.history(userId, id, limit);
   }
 
   /**

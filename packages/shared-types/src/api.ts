@@ -273,6 +273,61 @@ export interface LastPortionsResponse {
 }
 
 // ---------------------------------------------------------------------------
+// 食物食用历史（D-5）
+// ---------------------------------------------------------------------------
+
+/**
+ * `GET /api/foods/:id/history` 查询参数。
+ */
+export interface FoodHistoryQuery {
+  /** 返回条数上限，默认 30，允许 1–100；越界 400（不静默截断） */
+  limit?: number;
+}
+
+/**
+ * 一条食用历史明细（**只承载日期 + 餐次 + 份量**）。
+ *
+ * 🔴 **零营养字段**（AC-11.5.3 零营养评判在此同样适用）：没有 kcal、没有三大营养素、
+ * 没有 `role="meter"` 可挂的地方 —— 界面无法从这一条推出任何「健康 / 不健康」判断。
+ *
+ * 🔴 **零汇总**：本类型**不承载**「共 N 天 / N 次」这类字段（QD-6）。UI 只可逐条列日期，
+ * 不得对 `entries` 求长度后写成频次暗示。
+ */
+export interface FoodHistoryEntry {
+  /** `YYYY-MM-DD`（本地日期键，K5） */
+  loggedDate: string;
+  /** 餐次 */
+  mealType: MealType;
+  /** 选定克数（g）；快加卡 / 未记份量为 `null`（**不是 0**） */
+  grams: number | null;
+  /** 份量单位；无则 `null` */
+  servingUnit: string | null;
+  /** 份量数量；无则 `null` */
+  servingQty: number | null;
+}
+
+/**
+ * `GET /api/foods/:id/history` 响应。
+ *
+ * - `items` 按 `loggedDate` **降序**（最新的在前），**只列明细**；
+ * - 无历史 → `items: []`（**不是 null、不是缺字段**）；
+ * - 食物不存在 / 对当前用户不可见 → 404 `E_NOTFOUND_FOOD`（K7：不暴露存在性）。
+ *
+ * ⚠️ **合并口径**：`items` 同时覆盖「按 `foodItemId` 命中」与「**快加卡按名称归一命中**」
+ * （`foodItemId: null` 但 `customName` 归一后与该食物同名）的记录 —— 与常吃榜 / D-4
+ * 「库内条目与同名快加条目合并为 1 种」完全一致（口径唯一真源：`@qsh/core` 的
+ * `foodIdentity`，K16）。故在食物库里搜「楼下麻辣烫」，也能查到此前快加卡记过的那些天。
+ */
+export interface FoodHistoryResponse {
+  /** 被查询的食物 id（回显，便于前端对账） */
+  foodId: number;
+  /** 被查询食物的展示名（取自食物库；不可见时不会走到这里） */
+  name: string;
+  /** 历史明细，最新的在前；**无「总数」字段**（QD-6） */
+  items: FoodHistoryEntry[];
+}
+
+// ---------------------------------------------------------------------------
 // 在线食物库兜底（Phase C-1）：Open Food Facts 只读代理 + 幂等导入
 // ---------------------------------------------------------------------------
 

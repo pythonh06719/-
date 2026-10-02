@@ -31,6 +31,23 @@ export const FOOD_IDENTITY_PROJECTION_LIMIT = 20_000;
  */
 export const FOOD_SEARCH_RANK_SCAN_LIMIT = 5_000;
 
+/**
+ * 「按食物反查历史」的**候选扫描上限**（D-5，`GET /api/foods/:id/history`）—— 纵深防御。
+ *
+ * ## 为什么需要上限
+ *
+ * 该查询要同时覆盖两类记录（见 `FoodsService.history` 注释）：
+ * ① `foodItemId = :id` 的库内条目记录；② `foodItemId IS NULL` 的**快加卡**记录。
+ * 第 ② 类**没有可用于 SQL 精确匹配的列** —— 归一口径（trim + 折叠空白 + 小写，见
+ * `@qsh/core` 的 `normalizeFoodName`）无法下推到 SQL，只能把候选行取回内存后逐条
+ * `foodIdentity()` 比对。若一个账号有 5 年、每天 5 条快加记录（≈9000 行），无上限的
+ * `findMany` 会把整个候选集收进内存。
+ *
+ * 取一个远超真实用量的值：正常用户远达不到；只有极端数据才会截断，且截断只影响
+ * 「极早期的那几天能不能被列出来」，**不影响日期倒序与条数上限的正确性**，更不会崩溃。
+ */
+export const FOOD_HISTORY_SCAN_LIMIT = 20_000;
+
 /** 关键词模糊匹配条件（名称 / 拼音 / 别名）。 */
 export function keywordWhere(keyword: string): Prisma.FoodItemWhereInput {
   return {
