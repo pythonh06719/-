@@ -71,21 +71,29 @@ describe('why-numbers 页 · 缺陷收尾', () => {
   it('项 5 / C-1：第 ㉓ 条存在、插在「相关页面」导航之前，且编号 ①~㉓ 连续唯一', () => {
     renderPage();
 
+    // 本页新增了顶部目录导航，其编号项的可见文本也是「㉓」等带圈数字。
+    // 因此这里必须把查询**限定在正文的 h2** 上：断言的对象是「第 ㉓ 条**条目**」，
+    // 而不是页面上任何以 ㉓ 开头的元素（否则目录一加进来就会「Found multiple elements」）。
+    const headingsInOrder = Array.from(document.querySelectorAll('h2'));
+    const headingStartsWith = (marker: string): HTMLElement | undefined =>
+      headingsInOrder.find((node) => (node.textContent ?? '').trim().startsWith(marker));
+
     // 第 ㉓ 条存在（标题以 ㉓ 开头）
-    const twentyThree = screen.getByText(/^㉓/);
+    const twentyThree = headingStartsWith('㉓');
+    expect(twentyThree).toBeDefined();
     expect(twentyThree).toBeInTheDocument();
 
     // 第 ㉒ 条仍在（回归保护：不得为加 ㉓ 而删掉既有条目）
-    expect(screen.getByText(/^㉒/)).toBeInTheDocument();
+    expect(headingStartsWith('㉒')).toBeInTheDocument();
 
     // ㉓ 必须排在「相关页面」导航**之前**（nav 跟随 ㉓）
     const nav = screen.getByRole('navigation', { name: '相关页面' });
-    expect(twentyThree.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const followsNav = (twentyThree as HTMLElement).compareDocumentPosition(nav);
+    expect(followsNav & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     // 全部 h2 的编号恰好是 ①~㉓：连续、唯一、无重复、无缺号
-    const headings = Array.from(document.querySelectorAll('h2')).map((node) => node.textContent ?? '');
-    const numbers = headings
-      .map((text) => text.trim().charAt(0))
+    const numbers = headingsInOrder
+      .map((node) => (node.textContent ?? '').trim().charAt(0))
       .filter((char) => (CIRCLED as readonly string[]).includes(char));
     expect(numbers).toEqual([...CIRCLED]);
   });
