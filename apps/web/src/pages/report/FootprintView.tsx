@@ -85,7 +85,7 @@ export default function FootprintView(): ReactElement {
       <section
         data-testid="report-footprint"
         aria-labelledby="footprint-title"
-        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
+        className="qsh-surface p-5 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
       >
       <h2 id="footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
         {COPY.footprintTitle}

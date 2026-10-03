@@ -301,7 +301,7 @@ export default function SettingsDataPage(): ReactElement {
       {/* 导出 */}
       <section
         aria-label="导出数据"
-        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+        className="qsh-surface p-5 dark:ring-slate-700"
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -325,7 +325,7 @@ export default function SettingsDataPage(): ReactElement {
       {/* 备份（C6）：服务端权威快照 → 单个 JSON 文件 */}
       <section
         aria-label="导出备份"
-        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+        className="qsh-surface p-5 dark:ring-slate-700"
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
           {COPY.dataBackupTitle}
@@ -373,7 +373,7 @@ export default function SettingsDataPage(): ReactElement {
       {/* 导入历史体重（CSV） */}
       <section
         aria-label="导入历史体重"
-        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+        className="qsh-surface p-5 dark:ring-slate-700"
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

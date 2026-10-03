@@ -136,7 +136,7 @@ export default function WinLogCard(): ReactElement {
   const today = todayKey();
 
   return (
-    <section className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700" aria-labelledby="win-log-title">
+    <section className="qsh-surface p-5 dark:ring-slate-700" aria-labelledby="win-log-title">
       <h2 id="win-log-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
         {COPY.winCardTitle}
       </h2>

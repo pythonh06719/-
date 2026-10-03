@@ -80,7 +80,7 @@ export default function BackupRestoreCard(): ReactElement {
   return (
     <section
       aria-labelledby="restore-backup-title"
-      className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+      className="qsh-surface p-5 dark:ring-slate-700"
     >
       <h2 id="restore-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
         恢复 JSON 备份

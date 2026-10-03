@@ -157,7 +157,7 @@ export default function OnboardingPage(): ReactElement {
 
         <section
           aria-label="免责声明"
-          className="qsh-surface mt-6 rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+          className="qsh-surface mt-6 p-5 dark:ring-slate-700"
         >
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">免责声明</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -207,19 +207,19 @@ export default function OnboardingPage(): ReactElement {
         </div>
 
         <dl className="mt-6 grid grid-cols-3 gap-3 text-center">
-          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+          <div className="qsh-surface p-3 dark:ring-slate-700">
             <dt className="text-xs text-slate-500 dark:text-slate-400">基础代谢</dt>
             <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.bmr}
             </dd>
           </div>
-          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+          <div className="qsh-surface p-3 dark:ring-slate-700">
             <dt className="text-xs text-slate-500 dark:text-slate-400">每日消耗</dt>
             <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.tdee}
             </dd>
           </div>
-          <div className="qsh-surface rounded-2xl p-3 dark:bg-slate-800 dark:ring-slate-700">
+          <div className="qsh-surface p-3 dark:ring-slate-700">
             <dt className="text-xs text-slate-500 dark:text-slate-400">每日缺口</dt>
             <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
               {Math.round(preview.effectiveDeficit)}
@@ -227,7 +227,7 @@ export default function OnboardingPage(): ReactElement {
           </div>
         </dl>
 
-        <section aria-label="宏量营养素建议" className="mt-4 qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+        <section aria-label="宏量营养素建议" className="mt-4 qsh-surface p-5 dark:ring-slate-700">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
           <ul className="mt-3 grid grid-cols-3 gap-3 text-center">
             <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
@@ -304,7 +304,7 @@ export default function OnboardingPage(): ReactElement {
           setStep('result');
         }}
       >
-        <fieldset className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <fieldset className="qsh-surface p-4 dark:ring-slate-700">
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">基础信息</legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -349,7 +349,7 @@ export default function OnboardingPage(): ReactElement {
           </div>
         </fieldset>
 
-        <fieldset className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <fieldset className="qsh-surface p-4 dark:ring-slate-700">
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">目标</legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -373,7 +373,7 @@ export default function OnboardingPage(): ReactElement {
           </div>
         </fieldset>
 
-        <fieldset className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <fieldset className="qsh-surface p-4 dark:ring-slate-700">
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">活动量</legend>
           <div className="mt-2 space-y-2">
             {ACTIVITY_OPTIONS.map((option) => (
@@ -397,7 +397,7 @@ export default function OnboardingPage(): ReactElement {
           </div>
         </fieldset>
 
-        <fieldset className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <fieldset className="qsh-surface p-4 dark:ring-slate-700">
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
             饮食偏好（可多选，也可不选）
           </legend>
@@ -424,7 +424,7 @@ export default function OnboardingPage(): ReactElement {
           </div>
         </fieldset>
 
-        <fieldset className="qsh-surface rounded-2xl p-4 dark:bg-slate-800 dark:ring-slate-700">
+        <fieldset className="qsh-surface p-4 dark:ring-slate-700">
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
             常见情况（可多选）
           </legend>

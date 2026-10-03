@@ -98,7 +98,7 @@ export default function MyFoodsPage(): ReactElement {
     <div className="space-y-4">
       <section
         aria-label={COPY.myFoodsTitle}
-        className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700"
+        className="qsh-surface p-5 dark:ring-slate-700"
       >
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.myFoodsTitle}</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.myFoodsDesc}</p>
@@ -114,7 +114,7 @@ export default function MyFoodsPage(): ReactElement {
         </p>
       )}
 
-      <section aria-label="我存过的食物" className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+      <section aria-label="我存过的食物" className="qsh-surface p-5 dark:ring-slate-700">
         {mineQuery.isLoading ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">{COPY.myFoodsLoading}</p>
         ) : mineQuery.isError ? (
