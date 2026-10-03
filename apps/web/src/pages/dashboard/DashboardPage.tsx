@@ -20,7 +20,6 @@ import {
   mealSummaryTag,
 } from '@/lib/copy';
 import { DEFAULT_WATER_GOAL_ML, WATER_QUICK_ADD_ML } from '@/theme/tokens';
-import ProgressRing from '@/components/common/ProgressRing';
 import Sparkline from '@/components/common/Sparkline';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 import EncouragementText from '@/components/feedback/EncouragementText';
@@ -32,7 +31,8 @@ import EncouragementText from '@/components/feedback/EncouragementText';
  *
  * ① 时段问候 + 一句生活叙事（走到哪说到哪，不评价）
  * ② 今日行动卡（主 CTA）：记一餐 / 喝一杯水 / 动一动
- * ③ 生活化摘要：把热量环降级为次要信息，配生活用语；喝水以「第几杯」表达
+ * ③ 生活化摘要：**不给百分比、不给评分**；只说生活用语 + 真实绝对值（热量）
+ *    与「第几杯」（喝水）。详见摘要卡上方那段注释。
  * ④ 这周的小变化（迷你体重趋势）+ 安全提示 + 一句鼓励
  *
  * 语气约束（PRD §7）：绝不使用红色恐吓 / 负罪感文案。
@@ -336,56 +336,53 @@ export default function DashboardPage(): ReactElement {
 
       {/* 中栏（C-6，≥1024px）：今天的记录 + 喝水。同左栏 —— 这层包裹块别删（见上方栅格注释）。 */}
       <div className="space-y-6 lg:col-start-2">
-        {/* ③ 生活化摘要：热量环降级为次要信息，配生活用语 */}
+        {/* ③ 生活化摘要。
+            ⚠️ 这里原本是「热量进度环」：一个 96px 的珊瑚色圆环，环内写「117% / 今日进度」。
+            它是全屏最大、最饱和的元素 —— 形态本身就把「超标 17%」呈现成了**一个评分**，
+            与同屏喝水「灰色小字 + 第几杯」的轻描淡写自相矛盾（同一屏两套标准）。
+            故**降级为纯文字**：进度关系由下面两行已过审文案承担 ——
+              · `summaryTag` 胶囊：「宽宽松松 / 舒服 / 刚开始」（定性，不给分数）
+              · `summaryHeadline`：「今天吃得丰富一些，明天照常就好」（生活口吻，不评判）
+              · 数字行：「已摄入 1404 kcal / 参考 1200 kcal」（**绝对值**，比百分比更精确，
+                且不像评分；未超参考时是「还能吃 XXX kcal」，更友好）
+            刻意**不再显示百分比**：一个孤零零的「117%」即使缩成小字，仍然是在给用户
+            报一个成绩。本页已有的绝对值 + 定性措辞已把「超标 / 达标 / 还差多少」讲全了，
+            没有任何信息损失。`/diary` 的「参考预算 1200 kcal · …」是同一口径的既有正解。
+            （`ProgressRing` 组件本身**未删** —— `/weight` 目标进度与 `/onboarding` 仍在复用。） */}
         <div className="qsh-surface-warm p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
             <span className="qsh-chip">{summaryTag}</span>
           </div>
 
-          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-            {/* 有记录才渲染进度环；空态日降权为「一句叙事 + 直达记早餐」，不再强调 0% */}
-            {!isEmptyToday && (
-              <ProgressRing
-                value={data.progressRatio}
-                size={96}
-                strokeWidth={9}
-                centerValue={`${Math.round(Math.min(data.progressRatio, 9.99) * 100)}%`}
-                centerLabel="今日进度"
-                ariaLabel={`今日热量进度 ${Math.round(data.progressRatio * 100)}%`}
-              />
+          {/* 主行：生活化表达（数字降权，D 修） */}
+          <p className="mt-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
+            {isEmptyToday && (
+              <span aria-hidden="true" className="mr-2 align-middle text-2xl">
+                🥗
+              </span>
             )}
-            <div className="flex-1">
-              {/* 主行：生活化表达（数字降权，D 修） */}
-              <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                {isEmptyToday && (
-                  <span aria-hidden="true" className="mr-2 align-middle text-2xl">
-                    🥗
-                  </span>
+            {summaryHeadline}
+          </p>
+          {/* 空态日：给一个直达动作；有记录日：真实数字，小字号等宽呈现 */}
+          {isEmptyToday ? (
+            <Link
+              to="/diary"
+              className="qsh-touch-target mt-2 inline-flex items-center text-sm font-medium text-brand-700 dark:text-brand-300"
+            >
+              去记早餐 →
+            </Link>
+          ) : (
+            <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
+              {data.remainingKcal < 0
+                ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
+                : (
+                  <>
+                    还能吃 <span>{remainingDisplay}</span> {energyLabel(unit)}
+                  </>
                 )}
-                {summaryHeadline}
-              </p>
-              {/* 空态日：给一个直达动作；有记录日：真实数字，小字号等宽呈现 */}
-              {isEmptyToday ? (
-                <Link
-                  to="/diary"
-                  className="qsh-touch-target mt-2 inline-flex items-center text-sm font-medium text-brand-700 dark:text-brand-300"
-                >
-                  去记早餐 →
-                </Link>
-              ) : (
-                <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
-                  {data.remainingKcal < 0
-                    ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
-                    : (
-                      <>
-                        还能吃 <span>{remainingDisplay}</span> {energyLabel(unit)}
-                      </>
-                    )}
-                </p>
-              )}
-            </div>
-          </div>
+            </p>
+          )}
 
           <Link
             to="/why-numbers"
@@ -396,7 +393,7 @@ export default function DashboardPage(): ReactElement {
         </div>
 
         {/* 喝水：改说「第几杯」，真实毫升作为次要文字 */}
-        <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+        <div className="qsh-surface p-5 dark:ring-slate-700">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
             <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
@@ -428,7 +425,7 @@ export default function DashboardPage(): ReactElement {
       {/* 右栏（C-6，≥1024px）：这周的小变化 + 安全提示与鼓励。同左栏 —— 这层包裹块别删。 */}
       <div className="space-y-6 lg:col-start-3">
         {/* 这周的小变化（迷你体重趋势） */}
-        <div className="qsh-surface rounded-2xl p-5 dark:bg-slate-800 dark:ring-slate-700">
+        <div className="qsh-surface p-5 dark:ring-slate-700">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
           <div className="mt-3">
