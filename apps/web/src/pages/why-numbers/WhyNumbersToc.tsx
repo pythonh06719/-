@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent, ReactElement } from 'react';
+import { COPY } from '@/lib/copy';
 import { WHY_SECTIONS, pickActiveIndex, sectionLabel, sectionMarker } from './why-sections';
 
 /**
@@ -7,7 +8,7 @@ import { WHY_SECTIONS, pickActiveIndex, sectionLabel, sectionMarker } from './wh
  *
  * ## 为什么是这个形态（顶部吸顶 + 编号横滑条），而不是折叠目录 / 吸顶分组标题
  *
- * 这一页实测 19683px 高 ≈ 23 屏、23 张卡，用户滚到第 20 条时不知道「我在哪、还剩多少」。
+ * 这一页实测 25048px 高 ≈ 29.7 屏（视口 390×844）、23 张卡，用户滚到第 20 条时不知道「我在哪、还剩多少」。
  * 候选形态逐一排除：
  *
  * - **`<details>` 折叠目录**：折叠起来只留一个「展开」按钮，滚动时**始终不可见** ——
@@ -176,7 +177,7 @@ export default function WhyNumbersToc(): ReactElement {
         右边是 `N / 23` 计数。都用 text-xs，把高度让给第二行的 44px 触控目标。
       */}
       <div className="flex items-baseline gap-2 text-xs leading-4">
-        <span className="shrink-0 text-slate-500 dark:text-slate-400">{TOC_COPY.navLabel}</span>
+        <span className="shrink-0 text-slate-500 dark:text-slate-400">{COPY.whyTocNavLabel}</span>
         <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
           {sectionMarker(active.title)} {sectionLabel(active.title)}
         </span>
@@ -189,7 +190,7 @@ export default function WhyNumbersToc(): ReactElement {
         第二行：23 个编号横滑。编号本身是 ①…㉓ 的单字符，实测整条 rail 只有 1100px
         （可视 350px，约 3 屏滑到头）；真正的「这是哪一条」由上面第一行的完整标题承担。
       */}
-      <nav aria-label={TOC_COPY.navAriaLabel} className="mt-0.5">
+      <nav aria-label={COPY.whyTocNavAriaLabel(WHY_SECTIONS.length)} className="mt-0.5">
         {/*
           `relative` 不是装饰，是**必需**：每个编号项里有一个 `.qsh-sr-only` 读屏文本，它是
           `position: absolute`。若这里没有定位祖先，它的包含块会一路向上找到吸顶条（sticky
@@ -222,7 +223,7 @@ export default function WhyNumbersToc(): ReactElement {
               >
                 <span aria-hidden="true">{sectionMarker(section.title)}</span>
                 <span className="qsh-sr-only">
-                  {`${TOC_COPY.itemAriaPrefix}${index + 1}${TOC_COPY.itemAriaSuffix}${sectionLabel(section.title)}`}
+                  {`${COPY.whyTocItemAriaPrefix}${index + 1}${COPY.whyTocItemAriaSuffix}${sectionLabel(section.title)}`}
                 </span>
               </a>
             );
@@ -239,12 +240,3 @@ export default function WhyNumbersToc(): ReactElement {
  * ⚠️ 按项目纪律，新增文案统一放 `src/lib/copy.ts`。该文件本轮由 team-lead 统一合并，
  *    本任务不改动它，故先在此处就地声明（值已定稿，合并时整体搬进 `copy.ts` 即可）。
  */
-const TOC_COPY = {
-  /** 目录区左侧的标签，兼作「这是一块目录」的可视锚点。 */
-  navLabel: '目录',
-  /** `<nav>` 的无障碍名，读屏进入该区域时播报。 */
-  navAriaLabel: '本页 23 条解释的目录',
-  /** 单个编号项的读屏播报前缀，最终形如「第 20 条 · 生活化工具…」（编号字符 ⑳ 本身 aria-hidden）。 */
-  itemAriaPrefix: '第 ',
-  itemAriaSuffix: ' 条 · ',
-} as const;
