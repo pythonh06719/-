@@ -41,6 +41,11 @@ html.dark .qsh-action-card:focus-visible {
 html.dark .qsh-surface {
   background-color: #16241f;
   border-color: #24443a;
+  /* 描边必须在这里覆盖，不能靠 border-color —— 本类用的是 Tailwind 的 ring（box-shadow 实现），
+     而浅色档是 `ring-brand-100`（#d9ede4，极亮）。不覆盖的话深色下会是一条亮边压在墨绿卡片上，
+     表现为「描白框」，是深色模式最刺眼的一类错。
+     取 #24443a 与上面 border-color 同值：同一个「卡片与背景的边界色」在两套机制里保持一致。 */
+  --tw-ring-color: #24443a;
 }
 
 /* 次级文字：保证在深底上仍达 AA */
