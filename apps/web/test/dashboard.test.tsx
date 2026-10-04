@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { DashboardResponse } from '@qsh/shared-types';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
+import { COPY } from '@/lib/copy';
 import { cacheClearAll } from '@/lib/local-cache';
 
 /**
@@ -99,7 +100,19 @@ describe('DashboardPage', () => {
     expect(screen.getByText('1200')).toBeInTheDocument();
   });
 
-  it('后端不可用（网络错误）时回退缓存且不白屏', async () => {
+  /**
+   * 后端不可用（网络错误）时**不白屏**，但也**绝不能**说成「去做引导问卷」。
+   *
+   * ## 这条用例此前断言的是缺陷本身
+   *
+   * 它原本断言「无缓存 + 网络错误 → 出现 `COPY.emptyToday`（= 引导问卷空态的标题）」，
+   * 也就是把「读不到」当成「没引导」写进了契约。缺陷修复后此断言必然转红 ——
+   * 这是**预期**的：红灯正是缺陷被证伪的信号，不是回归。
+   *
+   * 现在断言的是修复后的正确行为，且刻意**同时**否定引导问卷 CTA，
+   * 防止日后有人再把这两个状态合回去。
+   */
+  it('后端不可用（网络错误）且无缓存时给错误态，不说「去做引导问卷」', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -108,9 +121,11 @@ describe('DashboardPage', () => {
     );
     renderDashboard();
 
-    // 无缓存时显示生活化的引导入口（不抛错、不白屏）
-    await waitFor(() => {
-      expect(screen.getByText('今天还没记，从一杯水开始也行')).toBeInTheDocument();
-    });
+    // 错误态：复用全站既有的路由级兜底文案
+    expect(await screen.findByText(COPY.pageFallbackTitle)).toBeInTheDocument();
+    expect(screen.getByText(COPY.pageFallbackRetry)).toBeInTheDocument();
+    // 反向断言：网络故障 ≠ 未引导，引导问卷 CTA 不得出现
+    expect(screen.queryByText('去做引导问卷')).toBeNull();
+    expect(screen.queryByText(COPY.emptyToday)).toBeNull();
   });
 });

@@ -111,6 +111,51 @@ function buildFallbackDashboard(date: string): DashboardResponse | null {
   };
 }
 
+/**
+ * 「这一页暂时打不开」—— 看板**取不到数据**时的表达。
+ *
+ * ## 为什么复用现成的那一套，而不是自创
+ *
+ * `App.tsx` 的 `RouteFallback`（配 `ErrorBoundary`）已经有一套为「页面拿不到必要数据」
+ * 写好的界面：`pageFallbackTitle` / `pageFallbackDesc` / `pageFallbackRetry` / `pageFallbackHome`
+ * ——「这一页暂时打不开 / 重试 / 回到首页」。它已过 PRD §7 语气审校，且刻意把
+ * 「一页坏了」与「整个应用坏了」分开表述。因此**直接复用**（`copy.ts` 本轮未改，
+ * 也没有在组件里硬编码任何新文案）。
+ *
+ * 唯一的差别：这里给「重试」接的是 `dashboardQuery.refetch()`（重取这一页的数据），
+ * 而 `RouteFallback` 接的是错误边界的 reset。语义一致，都是「再试一次」。
+ */
+function DashboardUnavailable({ onRetry }: { onRetry: () => void }): ReactElement {
+  return (
+    <section aria-labelledby="dashboard-error-title" className="space-y-5">
+      <div
+        role="alert"
+        className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-800 lg:max-w-2xl"
+      >
+        <h1 id="dashboard-error-title" className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.pageFallbackTitle}
+        </h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{COPY.pageFallbackDesc}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="qsh-touch-target rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700"
+          >
+            {COPY.pageFallbackRetry}
+          </button>
+          <Link
+            to="/"
+            className="qsh-touch-target rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+          >
+            {COPY.pageFallbackHome}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function DashboardPage(): ReactElement {
   const date = todayKey();
   const hour = new Date().getHours();
@@ -137,6 +182,44 @@ export default function DashboardPage(): ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dashboardQuery.data, date],
   );
+
+  /**
+   * 「未完成引导问卷」的**唯一**判据：服务端明确说「既没有目标、也没有预算」。
+   *
+   * ## 为什么不能用 `data === null`
+   *
+   * `data` 是 `dashboardQuery.data ?? buildFallbackDashboard(date)`，即
+   * **「本次没拿到数据」**，而不是「这个用户没引导」。它同时成立的三种情况：
+   *
+   * | 情况 | `dashboardQuery` | `data` |
+   * |---|---|---|
+   * | 请求还在路上 | `isFetching`，`data === undefined` | `null` |
+   * | **请求失败**（500 / 断网） | `isError`，`data === undefined` | `null` |
+   * | 真的没数据 | 不可能 —— 见下 | — |
+   *
+   * ⚠️ 第三行是关键：`GET /api/dashboard`（`dashboard.service.ts:62`）**永远返回
+   * 一个完整对象**，未引导时是 `{ goal: null, budget: null, ... }` 而**不是** `null`
+   * （已用真实 HTTP 核实）。所以 `data === null` 从来不表示「未引导」——
+   * 它只表示「没取到数据」。此前把它当未引导判据，等于把**网络故障说成「你还没建过档案」**。
+   *
+   * 真正的未引导指纹在**载荷内部**：`users.service.ts:212` 在
+   * `!profile || !goal` 时返回 `{ profile: null, goal: null, budget: null }`，
+   * `dashboard.service.ts:64,70` 原样透传。故判据取 **`goal === null && budget === null`**。
+   *
+   * 为什么两个字段一起看，而不是只看 `goal`：`shared-types` 的注释把 `goal === null`
+   * 写成「前端引导去 `/onboarding`」，但**只判 `goal`** 会让「有预算、目标字段缺失」
+   * 这类残缺载荷也跳去引导问卷，**把用户已经能用的看板整页藏掉**。两个都空才是
+   * 服务端认定的「既无档案也无目标」，此时引导问卷确实是唯一出路。
+   *
+   * ⚠️ 必须要求 `isSuccess`：**不能**拿本地兜底副本（`buildFallbackDashboard` 用
+   * `CACHE_KEYS.localBudget` 伪造的 `goal: null`，见其 L100）去判未引导 ——
+   * 否则一个已建档的用户离线时会被再次要求去做引导问卷（同一个缺陷换个入口）。
+   */
+  const notOnboarded =
+    dashboardQuery.isSuccess &&
+    dashboardQuery.data != null &&
+    dashboardQuery.data.goal === null &&
+    dashboardQuery.data.budget === null;
 
   // 已记录笔数（best-effort 从日记缓存读取；刷新看板后重新计算）
   const mealCount = useMemo(
@@ -167,7 +250,14 @@ export default function DashboardPage(): ReactElement {
     });
   };
 
-  if (dashboardQuery.isLoading && data === null) {
+  /**
+   * 骨架：只在**真的正在取**且手里没有任何东西可画时出现。
+   *
+   * 用 `isFetching` 而非 `isLoading`：`isLoading` 在 react-query v5 里是
+   * `isPending && isFetching`，请求一失败就变 false —— 那样这个分支会在
+   * 「取不到」时被跳过，正好落进下面的空态。写成 `isFetching` 则三种状态各自独立。
+   */
+  if (dashboardQuery.isFetching && data === null) {
     return (
       <section aria-busy="true" className="space-y-4">
         {/* 骨架必须是真表面的同款几何（圆角 token），否则数据到位那一刻会看到一次「变形」 */}
@@ -179,7 +269,24 @@ export default function DashboardPage(): ReactElement {
     );
   }
 
-  if (data === null) {
+  /**
+   * 读取失败且**无任何本地副本**可兜底 → 这一页现在画不出来。
+   *
+   * ⚠️ 这一支**曾经不存在**：请求失败时 `data === null` 会一路掉进下面的「去做引导问卷」，
+   * 于是 500 / 断网被说成「你还没建过档案」（见 `notOnboarded` 上方的分析）。
+   * 「读不到」与「没有」是两件完全不同的事，必须各说各的。
+   */
+  if (dashboardQuery.isError && data === null) {
+    return <DashboardUnavailable onRetry={() => void dashboardQuery.refetch()} />;
+  }
+
+  /**
+   * 未完成引导问卷的空态。
+   *
+   * 判据是 `notOnboarded`（服务端说「既无目标也无预算」），**不是** `data === null`。
+   * 这样「请求失败」落到上面那支，「真的没引导」才落到这里 —— 两者不再共用一个空态。
+   */
+  if (notOnboarded) {
     return (
       <section aria-labelledby="dashboard-empty-title" className="space-y-5">
         <h1
@@ -207,6 +314,17 @@ export default function DashboardPage(): ReactElement {
         </Link>
       </section>
     );
+  }
+
+  /**
+   * 兜底防御：既没在取、没报错、也不算未引导，却仍然没有数据。
+   *
+   * 走到这里说明 `data === null` 但上面三个条件都不成立 —— 按住不放会让
+   * 后面 `data.remainingKcal` 起抛 TypeError，整页白屏（GAP-10 的边界会接住，
+   * 但那是以「整页坏了」的形式呈现，比就地说明更糟）。故复用同一条兜底说明。
+   */
+  if (data === null) {
+    return <DashboardUnavailable onRetry={() => void dashboardQuery.refetch()} />;
   }
 
   const remainingDisplay = toDisplayEnergy(data.remainingKcal, unit);
