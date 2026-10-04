@@ -209,6 +209,47 @@ describe('看板状态判别 · 有缓存时的降级表达', () => {
     // 缓存救场：看板内容在
     expect(await screen.findByText('今天的记录')).toBeInTheDocument();
     expect(screen.queryByText('去做引导问卷')).toBeNull();
+
+    // ⚠️ 必须断言说明文案真的出现：此用例原先只断言上面两条，横幅在或不在它都绿 ——
+    // 于是「500 时不告诉用户数据是缓存的」这个行为完全没有测试守着。
+    // 数字来自本机缓存（`buildFallbackDashboard`），用户无从分辨新旧。
+    //
+    // ⚠️ 必须用 `findByText`（异步）等，不能用同步的 `getByText`：横幅挂在
+    // `isError` 落定之后，而上一行的 `findByText('今天的记录')` 在缓存同步命中时
+    // **首帧就成立** —— 那刻 `isError` 仍是 false，横幅还没渲染。
+    // 这个「等待锚点早于被测行为」的坑与本文件头「wait 锚点独立于被测行为」同源。
+    expect(await screen.findByText(COPY.dashboardLoadError)).toBeInTheDocument();
+  });
+
+  it('500 与断网的措辞必须不同：别把服务端问题说成网络不稳', async () => {
+    // `offlineNotice` 说的是「网络好像不太稳定」。500 时说这句是**错误归因** ——
+    // 用户会以为该去查 WiFi，而问题在服务端。不提示只让人困惑，错误归因让人做错事。
+    cacheSet(CACHE_KEYS.localBudget, { intakeRecommended: 1500, bmr: 1320, tdee: 1584 });
+
+    // ① 业务错误（500）→ 不得复用网络口径
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({ data: null, error: { code: 'E_INTERNAL', message: '服务端在开小差' } }),
+      })),
+    );
+    const first = renderDashboard();
+    expect(await screen.findByText(COPY.dashboardLoadError)).toBeInTheDocument();
+    expect(screen.queryByText(COPY.offlineNotice)).toBeNull();
+    first.unmount();
+
+    // ② 断网 → 才用网络口径
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    renderDashboard();
+    expect(await screen.findByText(COPY.offlineNotice)).toBeInTheDocument();
+    expect(screen.queryByText(COPY.dashboardLoadError)).toBeNull();
   });
 
   it('★ 断网 + 仅本地预算缓存 → 用缓存兜底渲染，且不谎称未引导', async () => {

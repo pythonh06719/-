@@ -176,7 +176,19 @@ export default function DashboardPage(): ReactElement {
     }
   }, [dashboardQuery.data, date]);
 
+  /**
+   * 「看板数据不是刚取回来的」——**本机缓存兜底**时为真。
+   *
+   * ⚠️ 判据是 `isError` 而非 `isNetworkError`：**服务端 500 与断网对本页是同一件事**
+   * ——数字都来自 `buildFallbackDashboard()` 造的本地副本，用户无从分辨。
+   * （另一条 worker 已在体重页修过同类问题：`WeightPage` 的静默降级。）
+   *
+   * 但**归因必须分开**：断网说「网络不稳」是准确的，500 说「网络不稳」是误导 ——
+   * 用户会以为该去检查 WiFi，而实际问题在服务端。所以 `offline`（归因）
+   * 与 `showingCachedData`（事实）分成两个变量，横幅按前者选措辞，按后者决定是否出现。
+   */
   const offline = dashboardQuery.isError && isNetworkError(dashboardQuery.error);
+  const showingCachedData = dashboardQuery.isError && dashboardQuery.data === undefined;
   const data = useMemo<DashboardResponse | null>(
     () => dashboardQuery.data ?? buildFallbackDashboard(date),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -370,13 +382,13 @@ export default function DashboardPage(): ReactElement {
         <p className="text-sm text-slate-600 dark:text-slate-400">{formatDateLine(date)}</p>
       </header>
 
-      {offline && (
+      {showingCachedData && (
         <p
           role="status"
           aria-live="polite"
           className="rounded-xl bg-coral-50 px-4 py-2 text-xs text-coral-700 dark:bg-coral-900/30 dark:text-coral-200 lg:col-span-3"
         >
-          {COPY.offlineNotice}
+          {offline ? COPY.offlineNotice : COPY.dashboardLoadError}
         </p>
       )}
 
