@@ -56,7 +56,12 @@ export default function LandingPage(): ReactElement {
       <section aria-label="登录或注册" className="mt-10 qsh-surface p-6">
         {accessToken ? (
           <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-slate-600 dark:text-slate-400">已经登录，欢迎回来 👋</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              已经登录，欢迎回来
+              {/* 纯装饰：读屏会念出「waving hand」，句意已完整，用 `aria-hidden` 让它不进可访问性树。
+                  做法对齐 `BottomNav.tsx:23` 的图标 —— 纯视觉元素不进树。 */}
+              <span aria-hidden="true">👋</span>
+            </p>
             <Link
               to="/dashboard"
               className="rounded-xl bg-brand-600 px-6 py-3 text-sm font-medium text-white"
