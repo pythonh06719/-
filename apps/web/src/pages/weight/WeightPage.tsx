@@ -148,6 +148,26 @@ export default function WeightPage(): ReactElement {
     [trendQuery.data],
   );
   /**
+   * 「现在看到的是上次同步的数据」—— 请求失败且**确实渲染了旧数据**时才为真。
+   *
+   * 为什么要这个标记（数据可信度，非体验细节）：本页从上到下的每一个数字
+   * —— 曲线、7 日均线、区间最低/最高/均值/净变化、平台期斜率、近期记录 ——
+   * 全部由 `allPoints` 推出。而 `allPoints` 有两条**静默**的退路：
+   * ① `trendQuery.data === undefined` → 退到本机 `CACHE_KEYS.weightPoints`；
+   * ② react-query 的内存副本（`gcTime` 30min）→ 上次成功的结果被原样保留，
+   *    后台 refetch 失败只把 `isError` 置真、**不动 `data`**。
+   * 两条路都让「几分钟前的旧体重」和「刚同步的体重」长得一模一样，
+   * 而用户要靠这个数字决定今天吃多少、还要不要动 —— 分不出来，数字就不可信。
+   *
+   * 为什么只认 `isNetworkError`：业务错误不该被说成「网络不稳定」，
+   * 那类情况由各自的错误提示负责（`noticeFromError`）。
+   *
+   * 为什么还要 `allPoints.length > 0`：没有旧数据可显示时页面本就没有数字，
+   * 这时挂一条「这些是上次同步的数据」是在指控一个不存在的展示。
+   */
+  const showingStaleData =
+    trendQuery.isError && isNetworkError(trendQuery.error) && allPoints.length > 0;
+  /**
    * 全量 7 日均线（优先后端 `movingAverage7`，离线时本地算）。
    *
    * 必须在**全量**点集上算：窗口跨区间左边界时需要区间外的历史，先切片再算会让左端 6 天偏小。
@@ -290,6 +310,36 @@ export default function WeightPage(): ReactElement {
       <h1 id="weight-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100 lg:col-span-2">
         体重趋势
       </h1>
+
+      {/*
+        「这是上次同步的数据」标记（数据可信度）。
+        ⚠️ 刻意**不显示相对时间**（「3 分钟前的数据」）：那是一个NFR-11 意义上的新数字，
+        需要在 `/why-numbers` 有对应条目才能展示。改用「网络恢复后会自动更新」这句
+        不含任何数字的说明 + 一个显式重试入口 —— 用户要的只是「怎么拿到新的」，不是「旧多久」。
+        语气与配色：中性陈述（灰/品牌色），**不用红、不用警示色、不弹窗、不阻断记录**。
+        「出路」必须同屏可达：`重新试试` 直接重跑本查询，成功后本条自动消失。
+        `lg:col-span-2` 让它在宽屏下横跨两栏 —— 数字在两栏都有，提示也必须两栏都看得到。
+      */}
+      {showingStaleData && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="weight-stale-notice"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 lg:col-span-2"
+        >
+          <span>这些是上次同步时的数据，网络恢复后会自动更新。</span>
+          <button
+            type="button"
+            onClick={() => {
+              void trendQuery.refetch();
+            }}
+            disabled={trendQuery.isFetching}
+            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+          >
+            {trendQuery.isFetching ? '正在重新同步…' : '重新试试'}
+          </button>
+        </div>
+      )}
 
       {/* 左栏（C-6）：记录与曲线。包裹块用于消除跨栏共享行高的空档 —— 理由与「删不得」的
           警告见上方栅格注释，**别删**。移动端为中性包裹块，间距 / 顺序与改动前一致。 */}
