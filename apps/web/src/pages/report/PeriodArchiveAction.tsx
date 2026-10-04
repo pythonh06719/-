@@ -68,6 +68,25 @@ export default function PeriodArchiveAction({
     }
   }, [confirming]);
 
+  /**
+   * Esc 关闭（与另两处弹窗一致）。
+   *
+   * ⚠️ 保存中（`saving`）不响应，避免打断在途请求 —— 与 `SaveComboDialog` 的 `busy` 守卫同理。
+   * 此前本弹层**独缺**这个监听：实测按 Esc 不关，只能点「先不保存」，而另外两处都能关。
+   */
+  useEffect(() => {
+    if (!confirming) {
+      return undefined;
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !saving) {
+        setConfirming(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [confirming, saving]);
+
   const handleSave = async (): Promise<void> => {
     if (saving) {
       return;
