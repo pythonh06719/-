@@ -120,6 +120,20 @@ function resolveDailyBudget(serverBudget: DashboardResponse['budget']): number |
 }
 
 /**
+ * 预算分母降级时的数据来源说明。
+ *
+ * ⚠️ **本轮该键由团队统一并入 `lib/copy.ts`**，故暂以本文件常量承载（值已定稿，见提交说明）。
+ *
+ * 为什么不直接复用 `COPY.staleDataNotice`：那句以「这些」指代，跟在「今天一共」卡下方读得通；
+ * 而本条嵌在**预算块内部**，且同一页面上还有另一条一字不差的同句提示 —— 两句完全相同会被读成
+ * 渲染重复，且两个同名「重新试试」对读屏用户指向不明。故此处点名它说的是哪两个元素。
+ *
+ * 🔴 同样**刻意不含任何数字**（NFR-11）：「几分钟前的预算」是需要进 `/why-numbers` 的新数字，
+ * 且相对时间随秒跳动，盯着看时自己变反而更不可信。
+ */
+const STALE_BUDGET_NOTICE = '参考预算和进度条是上次同步时的数据，网络恢复后会自动更新。';
+
+/**
  * 拖拽引导条的「仅一次」本机键（Q-7）。
  *
  * 复用 `lib/plateau-visibility.ts` 的本地持久化思路（纯 UI 偏好，非用户数据），
@@ -248,6 +262,33 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   );
 
   /**
+   * 「现在看到的是上次同步的记录」—— 请求失败且**确实有旧记录在展示**时才为真。
+   *
+   * 为什么这是功能性缺陷而非体验细节（数据可信 G2）：本页的**每一个热量数字**都由 `groups` 推出 ——
+   * 顶部「今天一共」、四个餐次各自的合计、以及「参考预算」那条进度条的分子。而 `groups` 有两条
+   * **静默**退路（与体重页 `allPoints` 同形）：
+   *   ① `mealsQuery.data === undefined` → 退到本机 `CACHE_KEYS.meals(date)`；
+   *   ② react-query 的内存副本（`gcTime` 30min）→ 上次成功的结果被原样保留，
+   *      后台 refetch 失败只把 `isError` 置真、**不动 `data`。
+   * 两条路都让「几小时前的记录」和「刚同步的记录」长得一模一样，而用户拿它决定还吃不吃。
+   *
+   * 为什么只认 `isNetworkError`：业务错误（如 500）不该被说成「网络不稳定」——
+   * 那会让用户去查 WiFi，而问题在服务端。**归因不准比不提示更糟**。
+   *
+   * 为什么还要 `hasAnyLog`：没有旧记录时页面本就没有数字（只有空状态），
+   * 这时挂一条「这些是上次同步的数据」是在指控一个不存在的展示。
+   *
+   * ⚠️ 与 `AppShell` 的 `OfflineSyncBanner` **不是同一件事，不重复**：
+   * 横幅的判据是 `navigator.onLine` + 离线队列条数，说的是「网络状态 / 有几笔待送出去」；
+   * 本条的判据是**这一次请求的成败**，说的是「你正在看的这些数字是旧的」。
+   * 「请求打不通但 `navigator.onLine === true`」（服务端 502、代理挂了、DNS 慢、
+   * 中间设备断电）时横幅整块不渲染，而本页已经静默降级 —— 那正是本条唯一存在的场景。
+   */
+  const hasAnyLog = groups.some((group) => group.logs.length > 0);
+  const showingStaleMeals =
+    mealsQuery.isError && isNetworkError(mealsQuery.error) && hasAnyLog;
+
+  /**
    * D-2「重复记录温和提示」的数据来源：**这一天的全部记录**（最小投影）。
    *
    * 交给 `MealComposer` 后由 `@qsh/core` 的 `findSameMealItem` 按「同一天 + 同一餐」过滤，
@@ -297,6 +338,49 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
     () => resolveDailyBudget(budgetQuery.data?.budget ?? null),
     [budgetQuery.data],
   );
+
+  /**
+   * 「预算分母是上次同步的」—— 与 `showingStaleMeals` **刻意分成两条**，不合并。
+   *
+   * ### 为什么必须分开（这是本条存在的理由，不是排版偏好）
+   *
+   * 两处降级来自**两个互不相干的请求**（`/meals` 与 `/dashboard`），且各自的失效时刻不同：
+   * 用户在地铁里打开本页，可能 `/meals` 通了而 `/dashboard` 没通（不同后端实例 / 缓存策略）。
+   * 合并成一条的后果是**指代不明**：用户看到「这些是上次同步的数据」却不知道是
+   * 「我今天吃了多少」旧了，还是「我能吃多少」这个分母旧了 —— 而后者恰恰是
+   * 「还吃不吃」的决策依据，说不清等于没说。
+   *
+   * ### 这一处还有一个**文档落差**要一并补上
+   *
+   * `/why-numbers:292` 写着「每日建议摄入取自服务端按你的资料重算的结果（**本机缓存只在断网时兜底**）」，
+   * 即文档向用户承诺了「兜底存在、且只在断网时发生」。但页面从未在兜底发生时告知 ——
+   * 承诺了机制却没给触发信号。本条就是那个信号：只在**真的走了缓存**时才出现，
+   * 与文档措辞对齐（网络层失败才兜底；服务端正常返回预算时不出现）。
+   *
+   * ### 「有没有预算数字」这一关为什么**不在**判据里
+   *
+   * `resolveDailyBudget()` 三条退路全空时返回 `null`，此时 `daily-budget` 整块不渲染，
+   * 而本标记就**嵌在那块内部**（见 JSX）—— 「没有数字就不指控」这件事由渲染位置保证。
+   * 刻意不在判据里再写一遍 `dailyBudget !== null`：那是同一条约束的第二份拷贝，
+   * 改一处忘另一处就会漂移，而且它永远与渲染位置同真同假，**任何用例都区分不出来**
+   * （写测试时实测过：撤掉它，10 条用例仍全绿 —— 即那条断言其实没在守任何东西）。
+   *
+   * ⚠️ 若日后把这段标记挪出 `daily-budget` 块，**必须**把这一关补回判据，
+   * 否则会在「屏幕上根本没有预算」时凭空指控。
+   *
+   * ### 为什么判据里**不必**再区分「兜底」与「内存副本」
+   *
+   * 本条只认「这一次 `/dashboard` 请求在网络层失败了」。走到失败态时屏幕上的预算
+   * 只可能有两个来源，**两个都是旧的**：① `budgetQuery.data === undefined` →
+   * `readDailyBudget()` 读本机缓存（`:118`）；② react-query 的内存副本（`gcTime` 30min）
+   * → 上次成功的响应被原样保留，refetch 失败只置 `isError`、**不动 `data`**。
+   * 所以「这一次请求在网络层失败」已经完整覆盖了两条退路，再去分辨来源只是徒增分支。
+   *
+   * 🔴 不含任何数字（NFR-11）；不用红/警示色（coral 在本项目语义偏「提醒」，
+   * 这里只是「数据来源说明」）；不弹窗、不遮挡、不禁用任何操作。
+   */
+  const showingStaleBudget = budgetQuery.isError && isNetworkError(budgetQuery.error);
+
   const todayTotal = useMemo(
     () => groups.reduce((total, group) => total + group.totalKcal, 0),
     [groups],
@@ -777,6 +861,39 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         )}
       </div>
 
+      {/*
+        「这些记录是上次同步时的」标记（数据可信度G2 · 与体重页 `weight-stale-notice` 同形）。
+
+        位置在「今天一共」卡**之上**：这张卡与下面四个餐次卡的数字全部由同一份 `groups` 推出，
+        提示放在数字之前才读得通「接下来这些数字都是旧的」。
+
+        ⚠️ 刻意**不含相对时间**（「3 分钟前的记录」）：那是 NFR-11 意义上的新数字，需要
+        `/why-numbers` 有条目才能上屏，且它随秒跳动、盯着看时自己变反而更不可信。
+        语气与配色：中性陈述（灰），**不用红、不用警示色** ——coral 在本项目语义偏「提醒」，
+        这里只是「数据来源说明」。不弹窗、不遮挡、不禁用任何操作（记录流程照常可用）。
+        出路同屏可达：`重新试试` 直接重跑本查询，成功后本条自动消失。
+      */}
+      {showingStaleMeals && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="diary-stale-meals-notice"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        >
+          <span>{COPY.staleDataNotice}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void mealsQuery.refetch();
+            }}
+            disabled={mealsQuery.isFetching}
+            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+          >
+            {mealsQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+          </button>
+        </div>
+      )}
+
       <div className="qsh-surface p-5 dark:ring-slate-700">
         <p className="text-sm text-slate-500 dark:text-slate-400">{isToday ? '今天一共' : '这天一共'}</p>
         <p className="qsh-tnum mt-1 text-3xl font-bold text-brand-700 dark:text-brand-300">
@@ -798,6 +915,37 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               参考预算 {toDisplayEnergy(dailyBudget, unit)} {energyLabel(unit)}
               {progressRatio > 1 && isToday ? ' · 今天吃得丰富一些，明天照常就好' : ''}
             </p>
+            {/*
+              「预算分母是上次同步时的」标记 —— **刻意与上方记录那条分开**（理由见
+              `showingStaleBudget` 的注释：两个请求各自失效，合并会让指代不明）。
+
+              位置在 `daily-budget` 块**内部**：这一条说的是「进度条 + 参考预算」这两个元素，
+              放在块外就丢了指代对象。四条餐次卡后面的「/ 参考 N」由同一个 `dailyBudget`
+              推出，故不必在每张餐次卡上再挂一遍（那会在同屏出现四条同句提示）。
+
+              文案不引用 `COPY.staleDataNotice`（那句的「这些」在嵌套语境里指代不清），
+              且「参考预算和进度条」点明了所指 —— 见 `STALE_BUDGET_NOTICE` 的注释。
+            */}
+            {showingStaleBudget && (
+              <div
+                role="status"
+                aria-live="polite"
+                data-testid="diary-stale-budget-notice"
+                className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              >
+                <span>{STALE_BUDGET_NOTICE}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void budgetQuery.refetch();
+                  }}
+                  disabled={budgetQuery.isFetching}
+                  className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+                >
+                  {budgetQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
