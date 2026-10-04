@@ -99,11 +99,62 @@ export class HabitsService {
   }
 
   /** 创建自定义习惯（挂到当前用户名下）。 */
+  /**
+   * ## 为什么 `code` 由服务端最终裁决（而不是全靠前端传什么）
+   *
+   * ### `code` 不是给人看的，是**备份里的外键**
+   *
+   * `packages/shared-types/src/export.ts:93` 写得很明确：`ExportHabitRow.habitId ← code`。
+   * 也就是说导出时「用 `code` 冒充 habitId」，恢复时（`data.service.ts:482`）再拿 `code`
+   * 反查 `habitDefinition`。**`code` 是备份文件里识别一个习惯的唯一钥匙**。
+   *
+   * ### 重复 `code` 的真实后果（已实测，非推演）
+   *
+   * `packages/core/src/export/payload.ts:309` 对 `habits[]` 断言唯一键是
+   * **`日期|habitId`**。当自建习惯与内置习惯 `code` 同名、且同一天都打了卡，
+   * 导出文件里就会出现两行完全一样的 `date|habitId` → **用户自己的备份文件从此
+   * 再也恢复不回来**（`E_VALID_RESTORE_PAYLOAD`「这份内容与轻生活备份的格式不一致」）。
+   * 实测：
+   *   - 单条 `{date, habitId:'water'}` → 解析 OK
+   *   - 同日两条 `habitId:'water'` → 解析失败
+   * 这不是「UI 不好看」，是**用户的数字被锁在门外**。
+   *
+   * 另外恢复侧还有个次生问题：`code` 重复时 `findFirst(orderBy: userId desc)`
+   * 会把内置与自建折叠成同一个 `habitId`，两边打卡合并成一条历史。
+   *
+   * ### 为什么在**服务端**兜底，而不是靠数据库唯一索引
+   *
+   * 1. **现有索引根本拦不住**：`schema.prisma:402` 已有 `@@unique([userId, code])`，
+   *    但内置模板 `userId` 是 `NULL`，而 **SQLite 的唯一索引认为 NULL 与 NULL 互不相等**
+   *    （已实测：`(NULL,'water')` 连插两条都成功）。所以 `(NULL,'water')` 与
+   *    `(840,'water')` 是两个不同的键，索引形同虚设。要靠索引表达「内置 + 本人」
+   *    这个合并作用域，得靠 `COALESCE(userId, 0)` 之类的表达式索引 ——
+   *    那属于 **schema 改动**，需明确立项（见报告），本次不擅自做。
+   * 2. **前端拦不住**：前端已经用 `custom_${Date.now()}` 自己生成 code（`HabitsPage.tsx:97`），
+   *    但那只是**当前 UI 的做法**，不是接口契约。任何客户端（含 QA 脚本、将来的
+   *    小程序 / 第三方调用）都能直接 `POST {code:'water'}`。把正确性押在调用方自觉上，
+   *    就是本次缺陷的成因。
+   *
+   * ### 处置口径：**保留用户的 code，不报错、不拦人**（无负罪感）
+   *
+   * 命中冲突时**不抛错、不弹窗**，而是把 `code` 收敛成一个「肯定不撞」的派生值
+   * （`code + '__' + 原 id` 风格的确定性后缀），让创建照常成功。理由：
+   * - 用户在 UI 上填的是**名字**，不是 `code`（前端从不暴露 code 概念）。
+   *   为一个用户根本没填过的字段拦下他「想加个自己的喝水」的真实诉求，
+   *   是**替用户做决定**，且带一点说教感 —— 与「无负罪感、不指责」相悖。
+   * - 名字重复是**产品允许**的：内置「喝水达标」是通用模板，用户想建
+   *   「上午一杯」是完全正当的需求，不该被当成错误。
+   * - 真正的完整性风险在 `code`（数据层），所以在数据层静默收敛、
+   *   把**展示层**留给 UI 去区分（见报告方案 c），两者互不打架。
+   *
+   * 这样用户侧的结果是：创建永远成功、名字永远是他自己写的那个，
+   * 而备份文件永远恢复得回来。
+   */
   async create(userId: number, dto: CreateHabitDto): Promise<HabitWithStats> {
     const habit = await this.prisma.habitDefinition.create({
       data: {
         userId,
-        code: dto.code,
+        code: await this.resolveCode(userId, dto.code),
         name: dto.name,
         icon: dto.icon ?? null,
         targetPerDay: dto.targetPerDay ?? 1,
@@ -123,6 +174,49 @@ export class HabitsService {
       bestStreak: 0,
       recentDates: [],
     };
+  }
+
+  /**
+   * 把请求里的 `code` 收敛成一个在该作用域内**确定不冲突**的值。
+   *
+   * 作用域 = 「`userId = null` 的内置模板」∪「`userId = 当前用户` 的自建习惯」——
+   * 正是 `list()` 会同时返回、且 `data.service.ts` 备份恢复会按 `code` 相互折叠的那一组。
+   *
+   * 判定用 `findFirst({ where: { code, OR: [{ userId }, { userId: null }] } })`：
+   * - **不能**用 `findUnique({ userId_code })`：`userId=null` 在 SQLite 唯一索引里查不出来
+   *   （NULL 互不相等），会漏判内置冲突；而内置冲突恰恰是本次缺陷的主要形态。
+   * - 也**不能**只查内置：两个自建习惯撞名同样会让备份产生重复 `日期|habitId`。
+   *
+   * 后缀用**确定性**的 `__n`（n 从 2 起）而非随机串：同一个 code 反复提交得到同一个结果，
+   * 便于测试断言与问题排查；`__` 前缀与内置 code（`water` / `early_sleep` …）不可能撞。
+   *
+   * @param userId 当前登录用户 id
+   * @param requested 客户端请求的 code（原样保留，不做 trim 之外的改写）
+   * @returns 可安全落库的 code；无冲突时**原样返回**（含内置冲突但当前用户域内无同名自建的情况）
+   */
+  private async resolveCode(userId: number, requested: string): Promise<string> {
+    const taken = async (code: string): Promise<boolean> =>
+      (await this.prisma.habitDefinition.findFirst({
+        where: { code, OR: [{ userId }, { userId: null }] },
+        select: { id: true },
+      })) !== null;
+
+    if (!(await taken(requested))) {
+      return requested;
+    }
+
+    // 已冲突：加确定性后缀直到找到空位。上限足够大（远大于任何真实习惯数），
+    // 正常路径只会走 1~2 轮。
+    for (let suffix = 2; suffix <= 100; suffix += 1) {
+      const candidate = `${requested}__${suffix}`;
+      if (!(await taken(candidate))) {
+        return candidate;
+      }
+    }
+
+    // 理论上不可达（100 个后缀位都被占满）。仍给出确定性兜底，不抛错 ——
+    // 与本方法「绝不拦下用户」的处置口径一致。
+    return `${requested}__${userId}_${Date.now()}`;
   }
 
   /** 打卡 / 取消（幂等：同日同习惯唯一）。 */
