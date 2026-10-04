@@ -35,7 +35,7 @@
  */
 
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -155,7 +155,7 @@ function renderDiary(client: QueryClient): void {
 }
 
 /**
- * 等到两个查询**都真的落到终态**（成功或失败）且不再 fetch 中，再断言标记。
+ * 等到两个查询**都真的落到终态**（成功或失败），再断言标记。
  *
  * ⚠️ 两个必须守住的点（都踩过）：
  * ① 不能只等旧数据出现：降级数据在首帧就在（缓存是同步读的），
@@ -173,6 +173,51 @@ async function waitSettled(client: QueryClient): Promise<void> {
       expect(state?.status === 'error' || state?.status === 'success').toBe(true);
       expect(state?.fetchStatus).not.toBe('fetching');
     }
+  });
+}
+
+/**
+ * 断言「标记**已经**上屏」。
+ *
+ * ## 为什么需要它（不是装饰）
+ *
+ * 查询状态机落地**早于** React 把该结果 commit 到 DOM。全量跑（CPU 紧张）时这个间隙
+ * 被放大：`③a` 与真实 HTTP 那两条曾**只在全量里偶发转红、单跑必绿**。
+ * 所以「状态机已落终态」不足以支撑紧接着的同步 DOM 断言。
+ *
+ * ## 为什么这样写是安全的（不会把缺陷伪装成超时）
+ *
+ * ⚠️ 被测行为若**误渲染**（该出现时不出现），这里仍然会超时转红 —— 与直接断言的结果
+ * 相同（都是红），只是形式变成超时。所以它只解决「渲染慢」这一个方向，
+ * 不会掩盖缺陷、不构成假绿。
+ *
+ * 反过来，**否定断言**（`queryByTestId` 应为 `null`）不能用本函数：
+ * 「还没渲染」与「真的没渲染」无法区分，用它会把真缺陷放过 —— 否定断言一律
+ * 在**同一个正向断言已确认上屏之后**同步执行（见各用例）。
+ */
+async function expectNotice(testid: string): Promise<HTMLElement> {
+  // `findBy*` 内部就是「轮询 + getBy」，语义与 `waitFor(() => getBy…)` 一致，
+  // 但类型上直接给出 HTMLElement，不需要任何强制转换。
+  return screen.findByTestId(testid);
+}
+
+/**
+ * 纯否定用例（该标记**不该**出现）在 `waitSettled` 之后还需要一步：**把 React 冲干净**。
+ *
+ * ## 为什么
+ *
+ * 否定断言的陷阱是「还没渲染」与「真的没渲染」在断言那一刻长得一模一样。
+ * 上屏某个元素可以当锚点（本文件用 `expectNotice`），但**纯否定**用例没有元素可等：
+ * ⑦ 的两条标记都不出现，⑥ 同步成功时两条也不出现 —— 屏幕上没有任何东西
+ * 能证明 React 已经处理完这一轮结果。
+ *
+ * 于是这里用 `act` 显式冲掉待处理的更新与 effect。这是**唯一**正确的锚点：
+ * 它不检查任何 DOM 行为，因此不会把「缺陷导致的不出现」也一起冲掉 ——
+ * 若被测行为误渲染成「本该不出现却出现了」，`act` 之后 DOM 里确实有它，断言照样转红。
+ */
+async function flushCommit(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
   });
 }
 
@@ -242,17 +287,13 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     // 旧记录仍在（降级不打断使用）
     expect(screen.getByText('燕麦片')).toBeInTheDocument();
     expect(screen.getByText(/今天一共/)).toBeInTheDocument();
-    // 标记出现
-    expect(screen.getByTestId('diary-stale-meals-notice')).toBeInTheDocument();
+    // 标记出现（用 `expectNotice` 等它上屏：见该函数注释里「为什么需要它」）
+    const notice = await expectNotice('diary-stale-meals-notice');
     expect(screen.getByText(STALE_TEXT)).toBeInTheDocument();
     // 出路必须同屏可达
-    expect(
-      within(screen.getByTestId('diary-stale-meals-notice')).getByRole('button', { name: '重新试试' }),
-    ).toBeInTheDocument();
+    expect(within(notice).getByRole('button', { name: '重新试试' })).toBeInTheDocument();
     // 不该出现任何新数字（NFR-11：这轮不引入需要解释的数字）
-    expect(screen.getByTestId('diary-stale-meals-notice').textContent).not.toMatch(
-      /\d+\s*(分钟|小时|天)前/,
-    );
+    expect(notice.textContent).not.toMatch(/\d+\s*(分钟|小时|天)前/);
   });
 
   it('② /meals 网络失败但本机没有任何旧记录 → 不挂标记（没有数字展示，就不凭空指控）', async () => {
@@ -265,6 +306,8 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
+    // 纯否定：先冲干净 React，否则「还没渲染」会被当成「没渲染」而假绿
+    await flushCommit();
     expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
   });
 
@@ -280,9 +323,12 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
-    expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
-    expect(screen.getByTestId('diary-stale-budget-notice')).toBeInTheDocument();
+    // ⚠️ 顺序要紧：先确认预算那条**已上屏**，再同步断言记录那条不存在。
+    // 反过来写（先断不存在）会把「记录标记只是渲染得慢」误判成通过 —— 那正是
+    // 本用例在负载下偶发失败的原因（查询已落终态、commit 还没跟上）。
+    const budgetNotice = await expectNotice('diary-stale-budget-notice');
     expect(screen.getByText(STALE_BUDGET_TEXT)).toBeInTheDocument();
+    expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
   });
 
   it('③b 两条标记**互不牵连**：看板侧正常、记录侧失败 → 只出现记录那一条', async () => {
@@ -296,7 +342,10 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
-    expect(screen.getByTestId('diary-stale-meals-notice')).toBeInTheDocument();
+    // 记录那条在（等它上屏）
+    const mealsNotice = await expectNotice('diary-stale-meals-notice');
+    expect(mealsNotice).toBeInTheDocument();
+    // 预算那条不在
     expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
   });
 
@@ -315,13 +364,9 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     expect(screen.getByTestId('daily-budget')).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`参考预算 ${DAILY_BUDGET}`))).toBeInTheDocument();
     // 但必须告诉用户它是旧的
-    expect(screen.getByTestId('diary-stale-budget-notice')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('diary-stale-budget-notice')).getByRole('button', { name: '重新试试' }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('diary-stale-budget-notice').textContent).not.toMatch(
-      /\d+\s*(分钟|小时|天)前/,
-    );
+    const budgetNotice = await expectNotice('diary-stale-budget-notice');
+    expect(within(budgetNotice).getByRole('button', { name: '重新试试' })).toBeInTheDocument();
+    expect(budgetNotice.textContent).not.toMatch(/\d+\s*(分钟|小时|天)前/);
   });
 
   it('⑤ /dashboard 网络失败且**缓存里也没有预算** → 不渲染预算段，预算标记也不出现（不凭空指控）', async () => {
@@ -340,6 +385,8 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
+    // 纯否定：先冲干净 React（见 `flushCommit` 注释）
+    await flushCommit();
     expect(screen.queryByTestId('daily-budget')).toBeNull();
     expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
     // 顺带钉住：预算那一句确实一个字符都没上屏
@@ -353,6 +400,8 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
+    // 先冲干净 React，纯否定断言才成立（见 `flushCommit` 注释）
+    await flushCommit();
     expect(screen.getByText('燕麦片')).toBeInTheDocument();
     expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
     expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
@@ -378,6 +427,7 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     renderDiary(client);
     await waitSettled(client);
 
+    await flushCommit();
     expect(screen.getByText('燕麦片')).toBeInTheDocument();
     expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
     expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
@@ -394,13 +444,11 @@ describe('饮食记录旧数据标记 · mock 网络层失败', () => {
     const client = newClient();
     renderDiary(client);
     await waitSettled(client);
-    expect(screen.getByTestId('diary-stale-meals-notice')).toBeInTheDocument();
+    const notice = await expectNotice('diary-stale-meals-notice');
 
     // 恢复：把桩换成成功，再点同屏那个「重新试试」
     mealsOk = true;
-    await userEvent.click(
-      within(screen.getByTestId('diary-stale-meals-notice')).getByRole('button', { name: '重新试试' }),
-    );
+    await userEvent.click(within(notice).getByRole('button', { name: '重新试试' }));
     await waitFor(() => {
       expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
     });
@@ -487,6 +535,8 @@ async function startServer(mealsKcal: number): Promise<string> {
     await waitSettled(client);
 
     // 第一段：真实 HTTP 成功 → 两条标记都不该在
+    // 先冲干净 React，第一段的纯否定断言才成立
+    await flushCommit();
     expect(screen.getByText('燕麦片')).toBeInTheDocument();
     expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
     expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
@@ -498,21 +548,19 @@ async function startServer(mealsKcal: number): Promise<string> {
     await refetchAndSettle(client, MEALS_KEY);
     await refetchAndSettle(client, DASHBOARD_KEY);
 
-    // 旧记录 + 旧预算都还在，且两条标记都出现
+    // 旧记录 + 旧预算都还在，且两条标记都出现（各等其上屏，见 `expectNotice`）
     expect(screen.getByText('燕麦片')).toBeInTheDocument();
-    expect(screen.getByTestId('diary-stale-meals-notice')).toBeInTheDocument();
-    expect(screen.getByText(STALE_TEXT)).toBeInTheDocument();
     expect(screen.getByTestId('daily-budget')).toBeInTheDocument();
-    expect(screen.getByTestId('diary-stale-budget-notice')).toBeInTheDocument();
+    const mealsNotice = await expectNotice('diary-stale-meals-notice');
+    expect(screen.getByText(STALE_TEXT)).toBeInTheDocument();
+    const budgetNotice = await expectNotice('diary-stale-budget-notice');
     expect(screen.getByText(STALE_BUDGET_TEXT)).toBeInTheDocument();
 
     // 出路验证：重新起一个真实服务 → 各点各的「重新试试」→ 对应标记消失
     const secondUrl = await startServer(450);
     routeFetchTo(secondUrl);
 
-    await userEvent.click(
-      within(screen.getByTestId('diary-stale-meals-notice')).getByRole('button', { name: '重新试试' }),
-    );
+    await userEvent.click(within(mealsNotice).getByRole('button', { name: '重新试试' }));
     await waitFor(() => {
       expect(screen.queryByTestId('diary-stale-meals-notice')).toBeNull();
     });
@@ -520,9 +568,7 @@ async function startServer(mealsKcal: number): Promise<string> {
     expect(screen.getAllByText(/450/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/300/)).toBeNull();
 
-    await userEvent.click(
-      within(screen.getByTestId('diary-stale-budget-notice')).getByRole('button', { name: '重新试试' }),
-    );
+    await userEvent.click(within(budgetNotice).getByRole('button', { name: '重新试试' }));
     await waitFor(() => {
       expect(screen.queryByTestId('diary-stale-budget-notice')).toBeNull();
     });
