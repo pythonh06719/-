@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { COPY } from '@/lib/copy';
 import { MEAL_TYPE_LABELS } from './meal-utils';
 
@@ -94,12 +95,38 @@ export default function SaveComboDialog({
   /** 就地错误提示（父组件传入）；与本地 hint 不同时出现，优先展示父级错误。 */
   const notice = errorText ?? hint;
 
-  return (
+  /**
+   * 遮罩 + 容器。
+   *
+   * ## 为什么必须 `createPortal` 到 `document.body`（390×844 实测根因）
+   *
+   * `AppShell` 的 `<main>` 带 `animate-fade-in`，其 keyframes 含 `transform`。
+   * CSS 规定：祖先只要 `transform` 计算值**不为 `none`**（哪怕动画已停在 `translateY(0)`），
+   * 就成为 `position: fixed` 后代的**包含块**。于是这层 `fixed inset-0` 不再相对**视口**，
+   * 而是相对 `<main>` 定位 —— 实测 `<main>` 高 `1516`（页面已滚动，`top=-752`），
+   * 弹层被算成 `t=-732 h=1496`。
+   *
+   * 改动前的实测后果（浅色，深色同构）：
+   * - 弹层底边 `b=764`，**视口底部 764–844 的 80px 完全裸露**，背景内容直接透出且可点；
+   * - 点 (195,60) 命中的不是 `role=dialog`，而是原页面的 `<header>`（sticky，`z-30`）
+   *   —— 因为 header 是 `<main>` 的**兄弟**，而 `<main>` 的 transform 造出的层叠上下文
+   *   把弹层的 `z-50` 困在了自己内部（`mainStackingContext=true`，实测 headerZ=30 / dialogZ=50
+   *   却仍被 header 盖住）→ **点击穿透**。
+   *
+   * `createPortal` 把弹层挂到 `body`，同时脱离 `<main>` 的包含块与层叠上下文：
+   * `fixed` 恢复「相对视口」、`z-50` 恢复能与 header 的 `z-30` 比较。**这是根因修复，不是视觉微调。**
+   *
+   * ## 遮罩两套取值（沿用 `47f59ad` 实测口径，不是凭感觉）
+   *
+   * 浅色 `slate-900/50`、深色 `slate-950/65`。深色必须**另给一套且更深**：深色底本身已暗，
+   * 用浅色那套压不出浮起感（实测浅色那套在深色下只压 13.3%）。
+   */
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
         <div className="flex items-center justify-between">
@@ -186,4 +213,7 @@ export default function SaveComboDialog({
       </div>
     </div>
   );
+
+  // 挂到 body：脱离 <main> 的 transform 包含块与层叠上下文（详见 dialog 注释）
+  return createPortal(dialog, document.body);
 }

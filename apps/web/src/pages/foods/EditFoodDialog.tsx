@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { FOOD_CATEGORIES, foodCategoryLabel } from '@qsh/core';
 import type { FoodItem } from '@qsh/shared-types';
 import { COPY } from '@/lib/copy';
@@ -101,13 +102,37 @@ export default function EditFoodDialog({
   /** 就地提示（父级错误优先，其次本地提示）。 */
   const notice = errorText ?? hint;
 
-  return (
+  /**
+   * 遮罩 + 容器。
+   *
+   * ## 为什么必须 `createPortal` 到 `document.body`（390×844 实测根因）
+   *
+   * `AppShell` 的 `<main>` 带 `animate-fade-in`，keyframes 含 `transform`。
+   * 祖先只要 `transform` 计算值不为 `none`（哪怕停在 `translateY(0)`），就是
+   * `position: fixed` 后代的**包含块**；同时它还造出一个**层叠上下文**，把弹层的
+   * `z-50` 困在 `<main>` 内部 —— `<main>` 的兄弟 `<header>`（sticky，`z-30`）
+   * 于是反压过弹层。
+   *
+   * 本页实测（`/settings/foods`，`<main>` 高仅 288，因为内容短）：
+   * - 弹层被算成 `t=89 h=272`，**视口 844px 里只盖住 272px**；
+   * - 面板被 `items-end` 推到 `t=-37`，**顶部 37px 在视口外**，标题行看不见；
+   * - 弹层底边 `b=361`，**361–844 的 483px 背景裸露**（面板反而铺满弹层，
+   *   视口内连一行遮罩都没有，压暗百分比无从采样）；
+   * - 点 (195,60) 命中原页面 `<header>`，**不是** `role=dialog` → 点击穿透。
+   *
+   * `createPortal` 到 `body` 同时解决两件事：`fixed` 恢复相对视口、`z-50` 恢复可与
+   * header 的 `z-30` 比较。**这是根因修复，不是视觉微调。**
+   *
+   * 遮罩两套取值沿用 `47f59ad` 实测口径：浅 `slate-900/50`、深 `slate-950/65`
+   * （深色底本身已暗，必须另给一套且更深，否则压不出浮起感）。
+   */
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       data-testid="edit-food-dialog"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
         <div className="flex items-center justify-between">
@@ -227,4 +252,7 @@ export default function EditFoodDialog({
       </div>
     </div>
   );
+
+  // 挂到 body：脱离 <main> 的 transform 包含块与层叠上下文（详见 dialog 注释）
+  return createPortal(dialog, document.body);
 }
