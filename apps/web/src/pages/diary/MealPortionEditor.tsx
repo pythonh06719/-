@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { scaleFoodNutrients } from '@qsh/core';
 import type { FoodItem, MealLog, UpdateMealLogRequest } from '@qsh/shared-types';
@@ -184,12 +185,12 @@ export default function MealPortionEditor({
     }
   };
 
-  return (
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={isLibrary ? COPY.portionEditTitle : COPY.portionEditKcalTitle}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
         <div className="flex items-center justify-between">
@@ -306,4 +307,13 @@ export default function MealPortionEditor({
       </div>
     </div>
   );
+
+  /**
+   * 挂到 `body`：`AppShell` 的 `<main>` 带 `animate-fade-in`（keyframes 含 `transform`），
+   * 祖先有 transform 时会成为 `position: fixed` 后代的**包含块** —— 这层 `fixed inset-0`
+   * 于是相对 `<main>`（高 1156px）而非视口（844px）定位，390×844 实测面板被推到
+   * `t=863`，**整块落在折线以下**，且顶部 93px 原页面不被遮罩覆盖（可点击穿透）。
+   * 详见 `MealComposer.tsx` 中同名 `dialog` 变量的完整注释。
+   */
+  return createPortal(dialog, document.body);
 }

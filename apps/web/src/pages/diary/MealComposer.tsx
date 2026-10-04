@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FOOD_CATEGORIES,
@@ -114,6 +115,40 @@ const TOP_IN_EMPTY_STATE = 5;
  * 让「分类查询的键」与「搜索查询的键」从**键本身**就区分开（见 `categoryQuery` 注释）。
  */
 const CATEGORY_QUERY_KEYWORD_SENTINEL = '\u0000category';
+
+/**
+ * 勾选框的形态：**圆形**，与全站胶囊/圆形语言一致（`docs/VISUAL-SYSTEM.md` §2）。
+ *
+ * ## 为什么不用浏览器默认方块
+ *
+ * 全站没有第二处原生 checkbox 可参照，故形态依据取自**同一份设计语言里最接近的两个角色**：
+ * ① 记录方式 tab 与分类 chip —— `rounded-full` 胶囊；② 提醒开关（`pages/profile/
+ * ReminderSettings.tsx`）—— `rounded-full` 胶囊 + 品牌色实心为「开」。两者都指向
+ * 「圆」而不是「方」。故未选中态做成**描边圆**，选中态做成**品牌色实心圆 + 白色对勾**。
+ *
+ * ## 实现要点
+ *
+ * - `appearance-none` 去掉浏览器原生绘制（否则 `rounded-*` / `bg-*` 会被原生外观覆盖，
+ *   这正是此前「加了圆角仍是灰方块」的原因）；
+ * - 选中态**只加强不弱化**：实心品牌色 + 白色对勾，对比度高于未选中的描边圆；
+ * - 对勾是**白色**描边 SVG，无红/黄等警示色（产品红线）；
+ * - 触控目标由外层 `<label>` 承担（整行可点），圆点本身 `h-5 w-5` 只作视觉锚点。
+ */
+const CHECKBOX_CLASS =
+  'h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-full border-2 border-slate-300 bg-white bg-[length:0.625rem] bg-center bg-no-repeat transition duration-qsh-fast ease-qsh-out checked:border-brand-600 checked:bg-brand-600 dark:border-slate-500 dark:bg-slate-900 dark:checked:border-brand-500 dark:checked:bg-brand-500';
+
+/**
+ * 选中态叠加的**白色对勾**。
+ *
+ * 走内联 `style` 而非 Tailwind 任意值 `bg-[url(...)]`：data URI 里的 `%22` / `%27` 会被
+ * Tailwind 当成字面量，方括号被剥掉后浏览器把整串当成**相对 URL** 去请求
+ * （实测 `background-image` 变成了 `url("http://…/%22data:image/svg+xml,…")`），
+ * 对勾静默不显示。内联 style 没有这层转义。
+ */
+const CHECK_MARK_STYLE = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6l2.5 2.5L10 3.5'/%3E%3C/svg%3E\")",
+} as const;
 
 /**
  * 常吃榜「上次食用日期」的**已格式化**月日（「9月8日」）—— 行内小字与 aria **共用**同一份，
@@ -1062,12 +1097,36 @@ export default function MealComposer({
     </ul>
   );
 
-  return (
+  /**
+   * 记录面板的遮罩 + 容器。
+   *
+   * ## 为什么必须 `createPortal` 到 `document.body`（390×844 实测根因）
+   *
+   * `AppShell` 的 `<main>` 带 `animate-fade-in`，其 keyframes 含 `transform`。
+   * CSS 规定：祖先只要有 `transform`（哪怕动画已停在 `translateY(0)`、`transform` 计算值
+   * **不为 `none`**），就会成为 `position: fixed` 后代的**包含块**。于是这层
+   * `fixed inset-0` 不再相对**视口**，而是相对 `<main>` 定位：
+   *
+   * - 改动前实测：`<main>` 顶边 `t=73`、高 `1156` → 遮罩 `t=93 h=1136`（视口只有 844）；
+   * - 面板被 `items-end` 推到 `t=863 b=1229`，**完全落在折线以下**（`panelVisibleInViewport = 0`），
+   *   顶部 93px 的原页面（含 sticky 顶栏）**未被遮罩覆盖** → 那里仍可点击，**点击穿透**；
+   * - 浅色下遮罩把背景亮度压低 36.3%（勉强可见），深色下只压 17.9%（几乎看不出）。
+   *
+   * `createPortal` 把弹层挂到 `body`，脱离 `<main>` 的包含块，`fixed` 恢复「相对视口」，
+   * 遮罩铺满、面板贴底、顶栏不可点。**这是根因修复，不是视觉微调。**
+   *
+   * ## 遮罩两套取值（按实测像素亮度定，不是凭感觉）
+   *
+   * 实测同区域平均亮度下降：浅色 `slate-900/50` 约 45%、深色 `slate-950/65` 约 55%。
+   * 深色需要**更深**（`slate-950` + 更高不透明度）：深色底本身已经很暗，用浅色那套
+   * `slate-900/40` 压下去几乎不产生「浮起」感。
+   */
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`记录${MEAL_TYPE_LABELS[mealType]}`}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
       {/* 底部抽屉/弹窗 → elevation-3（原 shadow-xl 是硬边大阴影，与「柔和」气质冲突） */}
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
@@ -1086,8 +1145,19 @@ export default function MealComposer({
         </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{date}</p>
 
-        {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2） */}
-        <div role="tablist" aria-label="记录方式" className="mt-4 flex gap-1.5 overflow-x-auto">
+        {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2）
+
+            P0 窄屏裁切（390px 实测）：改动前 6 个 tab 合计 390px、容器净宽仅 350px
+            （面板 `p-5` 左右各 20px），`scrollWidth 390 > clientWidth 350` → 末项「套餐」
+            `right = 410`，被视口右缘切掉半个字。两处一起改：
+            ① `px-4 → px-3`：单 tab 60px → 52px，6 项合计 342px ≤ 350px，**默认 6 项免横滑**；
+            ② 容器补 `pr-2`：**「常吃」出现时是 7 项**（合计 400px，必然溢出），
+               右侧留 8px 安全内边距，末项才能被完整横滑出来而不是贴着裁剪边缘。 */}
+        <div
+          role="tablist"
+          aria-label="记录方式"
+          className="mt-4 flex gap-1.5 overflow-x-auto pr-2"
+        >
           {/* tab 显隐与面板渲染**同源**（都用过滤后的 `topItems`）：BUG-QA-01 ——
               榜单里只有快加条目（food 为 null）时，旧写法用未过滤的 items.length
               会让 tab 出现、点进去却是空白面板，违反 AC-11.5.2「不留空卡」。 */}
@@ -1103,7 +1173,7 @@ export default function MealComposer({
                 setSelectedSource('search');
               }}
               className={[
-                'qsh-touch-target shrink-0 rounded-full px-4 text-sm transition',
+                'qsh-touch-target shrink-0 rounded-full px-3 text-sm transition',
                 tab === item.key
                   ? 'bg-brand-600 text-white'
                   : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -1132,7 +1202,8 @@ export default function MealComposer({
                 setSelected(null);
                 setNote(null);
               }}
-              className="h-4 w-4 shrink-0 rounded border-brand-200 text-brand-600 dark:border-slate-600"
+              className={CHECKBOX_CLASS}
+              style={multiSelect ? CHECK_MARK_STYLE : undefined}
             />
             {COPY.multiSelectToggle}
           </label>
@@ -1483,7 +1554,8 @@ export default function MealComposer({
                 checked={quickSaveToLibrary}
                 onChange={(event) => setQuickSaveToLibrary(event.target.checked)}
                 aria-describedby="quick-save-to-library-hint"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-brand-200 text-brand-600 dark:border-slate-600"
+                className={`mt-0.5 ${CHECKBOX_CLASS}`}
+                style={quickSaveToLibrary ? CHECK_MARK_STYLE : undefined}
               />
               <span>
                 <span className="block">{COPY.quickSaveToLibraryLabel}</span>
@@ -1746,4 +1818,7 @@ export default function MealComposer({
       )}
     </div>
   );
+
+  // 挂到 body：脱离 <main> 的 transform 包含块，`fixed inset-0` 才真的相对视口（详见 dialog 注释）
+  return createPortal(dialog, document.body);
 }
