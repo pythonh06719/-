@@ -327,7 +327,7 @@ export default function WeightPage(): ReactElement {
           data-testid="weight-stale-notice"
           className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 lg:col-span-2"
         >
-          <span>这些是上次同步时的数据，网络恢复后会自动更新。</span>
+          <span>{COPY.staleDataNotice}</span>
           <button
             type="button"
             onClick={() => {
@@ -336,7 +336,7 @@ export default function WeightPage(): ReactElement {
             disabled={trendQuery.isFetching}
             className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
           >
-            {trendQuery.isFetching ? '正在重新同步…' : '重新试试'}
+            {trendQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
           </button>
         </div>
       )}
