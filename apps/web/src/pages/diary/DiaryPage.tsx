@@ -120,20 +120,6 @@ function resolveDailyBudget(serverBudget: DashboardResponse['budget']): number |
 }
 
 /**
- * 预算分母降级时的数据来源说明。
- *
- * ⚠️ **本轮该键由团队统一并入 `lib/copy.ts`**，故暂以本文件常量承载（值已定稿，见提交说明）。
- *
- * 为什么不直接复用 `COPY.staleDataNotice`：那句以「这些」指代，跟在「今天一共」卡下方读得通；
- * 而本条嵌在**预算块内部**，且同一页面上还有另一条一字不差的同句提示 —— 两句完全相同会被读成
- * 渲染重复，且两个同名「重新试试」对读屏用户指向不明。故此处点名它说的是哪两个元素。
- *
- * 🔴 同样**刻意不含任何数字**（NFR-11）：「几分钟前的预算」是需要进 `/why-numbers` 的新数字，
- * 且相对时间随秒跳动，盯着看时自己变反而更不可信。
- */
-const STALE_BUDGET_NOTICE = '参考预算和进度条是上次同步时的数据，网络恢复后会自动更新。';
-
-/**
  * 拖拽引导条的「仅一次」本机键（Q-7）。
  *
  * 复用 `lib/plateau-visibility.ts` 的本地持久化思路（纯 UI 偏好，非用户数据），
@@ -924,7 +910,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               推出，故不必在每张餐次卡上再挂一遍（那会在同屏出现四条同句提示）。
 
               文案不引用 `COPY.staleDataNotice`（那句的「这些」在嵌套语境里指代不清），
-              且「参考预算和进度条」点明了所指 —— 见 `STALE_BUDGET_NOTICE` 的注释。
+              且「参考预算和进度条」点明了所指 —— 见 `COPY.staleBudgetNotice` 的注释。
             */}
             {showingStaleBudget && (
               <div
@@ -933,7 +919,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                 data-testid="diary-stale-budget-notice"
                 className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
               >
-                <span>{STALE_BUDGET_NOTICE}</span>
+                <span>{COPY.staleBudgetNotice}</span>
                 <button
                   type="button"
                   onClick={() => {
