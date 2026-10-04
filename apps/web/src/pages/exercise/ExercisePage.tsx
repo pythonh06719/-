@@ -367,9 +367,11 @@ export default function ExercisePage(): ReactElement {
 
       <section className="qsh-surface p-5">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
-        {/* 快捷方式直达反馈：事实陈述，不报杯数（硬约束 2 / NFR-11） */}
+        {/* 快捷方式直达反馈：事实陈述，不报杯数（硬约束 2 / NFR-11）
+            颜色接品牌色 brand（实测 on 白底 6.50:1 / 深色面 8.47:1，均过 AA）；
+            改前用的是冷蓝（Tailwind 内置色，全站仅饮水模块一处），与看板的绿色对不上。 */}
         {shortcutNotice ? (
-          <p role="status" className="mt-1 text-sm text-sky-700 dark:text-sky-300">
+          <p role="status" className="mt-1 text-sm text-brand-700 dark:text-brand-300">
             {shortcutNotice}
           </p>
         ) : null}
@@ -384,12 +386,15 @@ export default function ExercisePage(): ReactElement {
           aria-valuemax={100}
           aria-label="今日饮水进度"
         >
-          <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: `${waterPercent}%` }} />
+          {/* 进度填充用 brand-500：与 `DiaryPage` 预算条 / `WeeklyReportView` 迷你柱同一档位，
+              实测 vs 轨道 3.05:1（浅）/ 3.10:1（深），均过 1.4.11 的 3:1 ——
+              改前的冷蓝填充只有 1.96:1（浅色轨道上几乎看不出填充到哪）。 */}
+          <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${waterPercent}%` }} />
         </div>
         <div className="mt-4 flex gap-3">
           <button
             type="button"
-            className="flex-1 rounded-xl bg-sky-500 px-4 py-3 font-medium text-white"
+            className="flex-1 rounded-xl bg-brand-600 px-4 py-3 font-medium text-white transition hover:bg-brand-700"
             onClick={addWaterLocal}
           >
             +{WATER_QUICK_ADD_ML}ml

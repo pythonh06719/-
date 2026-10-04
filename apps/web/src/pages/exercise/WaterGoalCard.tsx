@@ -109,7 +109,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
         </label>
         <button
           type="submit"
-          className="qsh-touch-target rounded-xl bg-sky-500 px-4 py-3 font-medium text-white transition hover:bg-sky-600"
+          className="qsh-touch-target rounded-xl bg-brand-600 px-4 py-3 font-medium text-white transition hover:bg-brand-700"
         >
           {COPY.waterGoalButton}
         </button>
