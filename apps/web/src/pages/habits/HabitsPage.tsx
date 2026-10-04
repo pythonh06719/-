@@ -34,7 +34,11 @@ interface HabitItem {
   /**
    * 是否内置全局模板（后端派生 = `userId === null`）。
    *
-   * 内置模板不可停用（会影响所有用户，后端返回 404），故**不显示**停用按钮。
+   * 三个用途（同一个字段，别的地方也依赖它）：
+   * 1. 内置模板不可停用（停用会 404，影响所有用户）→ 不显示停用按钮；
+   * 2. 名字旁显示中性「内置」标注，让用户分得清哪个是自己建的（code 唯一性缺陷的展示层补丁）；
+   * 3. 并入打卡按钮的 `aria-label`（因 `aria-label` 覆盖后代文本，读屏用户只靠这里获取该信息）。
+   *
    * 兼容旧响应：缺失时按「自建」（`false`）处理（`!habit.isBuiltin` 为真）。
    */
   isBuiltin: boolean;
@@ -134,13 +138,52 @@ export default function HabitsPage(): ReactElement {
             className="flex w-full items-center gap-4 text-left"
             onClick={() => toggle.mutate(habit)}
             aria-pressed={habit.doneToday}
-            aria-label={`${habit.name}，${habit.doneToday ? '今天已打卡' : '今天还没打卡'}`}
+            /**
+             * 打卡按钮的可访问名。**必须显式写出「内置」**，因为 `aria-label`
+             * 会覆盖全部后代文本 —— 名字旁边那个可见的「内置」小字在按钮自身的
+             * 朗读里是听不到的。不写进这里 ⇒ 读屏用户永远拿不到「这条是内置的」，
+             * 而这正是本页要解决的核心困惑（分不清哪个是自己建的）。
+             * 故与可见 span 共用同一个 `COPY.habitBuiltinTag`，保证两处口径一致。
+             */
+            aria-label={`${habit.name}${habit.isBuiltin ? `，${COPY.habitBuiltinTag}` : ''}，${
+              habit.doneToday ? '今天已打卡' : '今天还没打卡'
+            }`}
           >
             <span className="text-2xl" aria-hidden="true">
               {habit.icon ?? '✅'}
             </span>
             <span className="flex-1">
-              <span className="block font-medium text-slate-800 dark:text-slate-100">{habit.name}</span>
+              {/*
+                「内置」元信息标注（code 唯一性缺陷的展示层补丁）：
+
+                ## 为什么需要它
+                `code` 唯一只保证了**数据正确**（备份可恢复），但用户仍会看到
+                内置的「喝水达标」与自己建的「喝水达标」两张长得几乎一样的卡，
+                分不清哪个是自己建的。这个标注就是补上这条信息。
+
+                ## 为什么是「中性小字」而不是「徽章」
+                它是**元信息说明**，不是可操作项。若做成带底色/边框/圆角胶囊的徽章，
+                视觉权重会与旁边的「先停一停」操作按钮争夺注意力 ——
+                而**操作按钮的优先级必须高于「这条是内置的」这个事实说明**。
+                故只用 `text-xs` + 中性灰，不引入新的圆角/边框 token
+                （全站形态语言是「胶囊」与「卡片」两类，不为此加第三类）。
+
+                ## 无障碍：为什么是 `aria-hidden`（详见 report）
+                打卡 `<button>` 在 :137 已有显式 `aria-label`，按 accname 规范
+                **`aria-label` 会覆盖全部后代文本** —— 所以按钮本身朗读时
+                「内置」不会被读出来。为了让读屏用户**真的拿到这条信息**，
+                已把 `COPY.habitBuiltinTag` 并入该 `aria-label`；
+                这里的可见 span 因此是**同一信息的视觉重复**，
+                必须 `aria-hidden` 以免浏览模式下被重复朗读成噪音。
+              */}
+              <span className="flex items-baseline gap-1.5">
+                <span className="font-medium text-slate-800 dark:text-slate-100">{habit.name}</span>
+                {habit.isBuiltin && (
+                  <span aria-hidden="true" className="text-xs text-slate-500 dark:text-slate-400">
+                    {COPY.habitBuiltinTag}
+                  </span>
+                )}
+              </span>
               <span className="block text-xs text-slate-500 dark:text-slate-400">
                 当前连续 {habit.currentStreak} 天 · 历史最佳 {habit.bestStreak} 天
               </span>
