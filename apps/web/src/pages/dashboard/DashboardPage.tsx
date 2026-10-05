@@ -9,6 +9,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { formatDateLine, todayKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, toDisplayWeight, useUnitStore, weightLabel } from '@/lib/units';
+import { resolveWaterGoalMl } from '@/lib/water-goal';
 import {
   COPY,
   cupProgress,
@@ -342,7 +343,21 @@ export default function DashboardPage(): ReactElement {
   const remainingDisplay = toDisplayEnergy(data.remainingKcal, unit);
   const intakeDisplay = toDisplayEnergy(data.intakeKcal, unit);
   const budgetDisplay = toDisplayEnergy(data.budget?.intakeRecommended ?? 0, unit);
-  const waterGoal = data.waterGoalMl > 0 ? data.waterGoalMl : DEFAULT_WATER_GOAL_ML;
+  /**
+   * 饮水目标走 `resolveWaterGoalMl()`（**本机值优先**），不直接吃看板返回的 `waterGoalMl`。
+   *
+   * ⚠️ 这里曾经是 `data.waterGoalMl > 0 ? data.waterGoalMl : DEFAULT_WATER_GOAL_ML` ——
+   * 只判了「服务端给没给数」，没判「本机有没有更新的数」。离线把目标改成 2600 ml →
+   * `pushSettings` 失败、该字段被标 dirty（`settings-sync` 的 P0-2）→ 看板的分母与杯数
+   * 仍按服务端的 2000 算，而同屏 `/exercise` 的 `WaterGoalCard` 输入框显示 2600，
+   * 用户能在两屏之间撞见自相矛盾的分母。
+   *
+   * 「> 0 才算有效」的语义**没有丢**：改由 `@qsh/core` 的 `isValidWaterGoalMl()`
+   * （500–8000 ml 有效区间）承担 —— 它比 `> 0` 更严，且是 helper 内部的既有判据。
+   * 本页其余行为（`DEFAULT_WATER_GOAL_ML` 在本地缓存兜底 `readCachedDashboard`
+   * 里的用法、`cupProgress` / `cupText` 的入参）一律不动。
+   */
+  const waterGoal = resolveWaterGoalMl(data.waterGoalMl);
   const { cups, goalCups } = cupProgress(water.totalMl, waterGoal);
   const cupLabel = cups > 0 ? `第 ${cups} 杯 / 目标 ${goalCups} 杯` : goalCups > 0 ? `还没喝 / 目标 ${goalCups} 杯` : '还没喝';
 

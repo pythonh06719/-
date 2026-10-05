@@ -11,6 +11,7 @@ import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { COPY, exerciseDeleteAria } from '@/lib/copy';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
+import { resolveWaterGoalMl } from '@/lib/water-goal';
 import { enqueueRequest } from '@/pwa/offline-queue';
 import { WATER_QUICK_ADD_ML } from '@/theme/tokens';
 import BrandDecor from '@/components/common/BrandDecor';
@@ -348,7 +349,19 @@ export default function ExercisePage(): ReactElement {
   }, [searchParams, setSearchParams]);
 
   const waterTotal = waterQuery.data?.totalMl ?? localWater.totalMl;
-  const waterGoal = waterQuery.data?.goalMl ?? 2000;
+  /**
+   * 进度分母走 `resolveWaterGoalMl()`（**本机值优先**），不直接吃 `GET /water` 的 `goalMl`。
+   *
+   * ⚠️ 这里曾经硬写 `waterQuery.data?.goalMl ?? 2000` —— 同一屏的 `WaterGoalCard`
+   * 输入框走的是本机优先，两处分母口径不一致会「自己打架」：离线把目标改成 2600 ml
+   * → `pushSettings` 失败、该字段被标 dirty（`settings-sync` 的 P0-2）→ 进度条分母仍是
+   * 服务端的 2000（百分比按错的基数算），而输入框里显示 2600。
+   * 现在两处都走同一个 helper，`/why-numbers` ㉖「本机有效偏好 > 服务端 goalMl >
+   * 默认 2000 ml」在代码里真正成立（本机值未推送成功前必须胜出）。
+   *
+   * `undefined`（未加载 / 离线）由 helper 内部回退，不需要页面另写判据。
+   */
+  const waterGoal = resolveWaterGoalMl(waterQuery.data?.goalMl);
   const waterPercent = Math.min(100, Math.round((waterTotal / Math.max(1, waterGoal)) * 100));
 
   const dayLogs = dayQuery.data?.logs ?? [];
