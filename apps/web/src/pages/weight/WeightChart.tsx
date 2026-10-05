@@ -51,13 +51,30 @@ const PAD = { left: 40, right: 16, top: 24, bottom: 56 } as const;
 /** 容器尺寸尚未测出（首次渲染 / 测试环境无 ResizeObserver）时的兜底画布。 */
 const FALLBACK = { width: 600, height: 256 } as const;
 
-/** 视觉令牌：取自设计令牌，与原 ECharts 版逐值一致。 */
-const AXIS_COLOR = '#7d9489';
-const GRID_COLOR = 'rgba(125,148,137,0.18)';
-const WEIGHT_COLOR = TOKENS.brand[300];
+/**
+ * 视觉令牌：取自设计令牌。
+ *
+ * ⭐ **全部改走 CSS 变量**（`styles/index.css :root` + `theme/dark.css html.dark` 覆盖），
+ * 原因：SVG 的 `stroke` / `fill` 是 presentation attribute，**不吃 Tailwind 的 `dark:` 变体**
+ * （那套机制是在元素上切 class）。此前这里是硬编码字面量，于是：
+ *   ① 轴色 `#7d9489` 对白底 3.5:1，而轴标签只有 10px → 远低于 AA 的 4.5:1；
+ *   ② 悬浮点用 `stroke="#ffffff"` 硬编码纯白，在深色下变成一个**亮白圈**；
+ *   ③ 最严重的是**深色下主次反转**：`WEIGHT_COLOR` = brand-300（对 `#16241f` 9.33:1）
+ *      比 `AVG_COLOR` = brand-600（3.79:1）亮 2.5 倍，而浅色下恰恰是 7 日均线（更粗、
+ *      更深）才是主角 —— 「均线是主角」的设计意图在深色模式下完全失效。
+ * 变量让同一个 `stroke` 在两套主题里各自成立，不需要为深色再写一套几何。
+ */
+const AXIS_COLOR = 'rgb(var(--qsh-axis))';
+const GRID_COLOR = 'rgb(var(--qsh-grid))';
+/** 实际体重线：浅色用 brand-300（最淡，让均线更重）；深色用 brand-400 —— 见下方 dark 分支 */
+const WEIGHT_COLOR_LIGHT = TOKENS.brand[300];
+const WEIGHT_COLOR_DARK = TOKENS.brand[400];
+/** 7 日均线：主角。深浅两套都用较重的一档，线宽也最大（3） */
 const AVG_COLOR = TOKENS.brand[600];
-/** 目标预测线：中性灰（不抢实际数据的视觉权重）。 */
-const FORECAST_COLOR = '#94a3b8';
+/** 目标预测线：中性灰（不抢实际数据的视觉权重）。走 CSS 变量 —— 它不属于品牌色板，
+ *  浅档 slate-400 `#94a3b8`（对白底 2.6:1，WCAG 对非文本线要求 ≥3:1，此处是「刻意最淡」，
+ *  与文件原注释「不抢权重」一致）；深档提亮到 `#b6c4c0` 级别，深底上仍 ≥3:1。 */
+const FORECAST_COLOR = 'rgb(var(--qsh-hairline))';
 
 /** y 轴分段数（含两端共 5 条网格线）。 */
 const Y_SEGMENTS = 4;
@@ -171,6 +188,21 @@ export default function WeightChart({
   const count = dates.length;
   const plotWidth = Math.max(size.width - PAD.left - PAD.right, 1);
   const plotHeight = Math.max(size.height - PAD.top - PAD.bottom, 1);
+
+  /**
+   * 深浅两套线色在此分叉（其余色值走 CSS 变量，无需分叉）。
+   *
+   * 分叉的原因只有一个：**深色下不能让「实际线」比「均线」更亮**。
+   * 浅色下均线（brand-600，线宽 3）是主角、实际线（brand-300，线宽 2）是配角；
+   * 照搬到深色后 brand-300 对卡片底 `#16241f` 有 9.33:1，而 brand-600 只有 3.79:1 ——
+   * 主次直接反转，读者第一眼看到的是原始抖动数据，而不是被平滑过的趋势。
+   * 深色下把两档对调：均线用最亮的 brand-300、实际线降到 brand-400，与浅色的意图一致。
+   *
+   * 读 `<html class>` 而非 `useTheme()`：要的是屏幕上此刻真实的 class（`applyTheme` 维护），
+   * 天然包含「跟随系统」的情形，无需本组件订阅媒体查询。
+   */
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const WEIGHT_COLOR = isDark ? WEIGHT_COLOR_DARK : WEIGHT_COLOR_LIGHT;
 
   const geometry = useMemo(() => {
     // 只保留可解析日期 + 有效体重的预测点
@@ -431,7 +463,7 @@ export default function WeightChart({
           return (
             <g key={`y-${tickIndex}`}>
               <line x1={PAD.left} y1={y} x2={size.width - PAD.right} y2={y} stroke={GRID_COLOR} strokeWidth={1} />
-              <text x={PAD.left - 6} y={y} textAnchor="end" dominantBaseline="middle" fontSize={10} fill={AXIS_COLOR}>
+              <text x={PAD.left - 6} y={y} textAnchor="end" dominantBaseline="middle" fontSize={11} fill={AXIS_COLOR}>
                 {toDisplayWeight(tick, unit).toFixed(1)}
               </text>
             </g>
@@ -448,7 +480,7 @@ export default function WeightChart({
               x={geometry.xAt(index)}
               y={size.height - PAD.bottom + 16}
               textAnchor="middle"
-              fontSize={10}
+              fontSize={11}
               fill={AXIS_COLOR}
             >
               {shortDate(label)}
@@ -499,7 +531,7 @@ export default function WeightChart({
                 cy={geometry.weightPoints[hoverIndex].y}
                 r={4}
                 fill={WEIGHT_COLOR}
-                stroke="#ffffff"
+                stroke="rgb(var(--qsh-surface-ring))"
                 strokeWidth={1.5}
               />
             )}

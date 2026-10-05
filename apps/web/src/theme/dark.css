@@ -20,6 +20,22 @@ html.dark {
   --qsh-shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 26px -12px rgba(0, 0, 0, 0.66);
   --qsh-shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 16px 38px -14px rgba(0, 0, 0, 0.72);
   --qsh-shadow-3: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 28px 64px -18px rgba(0, 0, 0, 0.78);
+
+  /**
+   * 数据可视化令牌（深色档）—— 与 `styles/index.css` 的 `:root` 同名覆盖。
+   *
+   * ⭐ 这组值修掉的是**真实的深色缺陷**，不是审美偏好：
+   * 体重折线图此前三条线在深色下主次反转 —— 实际线 `brand-300`（9.33:1）
+   * 比 7 日均线 `brand-600`（3.79:1）亮 2.5 倍，而浅色下恰恰是均线更重。
+   * 「均线是主角」的设计意图在深色模式下完全失效。
+   */
+  --qsh-axis: #9db3a9; /* = 本文件下方 .qsh-text-muted 同一值，轴与次级文字同族 */
+  --qsh-grid: rgba(157, 179, 169, 0.16);
+  --qsh-ring-track: #24443a; /* = .qsh-surface 的描边色，底环与卡片边界同源 */
+  --qsh-spark: #8cc9ab; /* 提亮到 brand-300：深色下 brand-600 只有 3.79:1 */
+  --qsh-hairline: #3f5a50;
+  --qsh-surface-ring: #16241f; /* 悬浮点镂空 = 卡片底色 */
+  --qsh-chrome-bg: #0f1a16; /* = body 底色，吸顶条与页面同源 */
 }
 
 /* 应用外壳：深色下的基底与文字色 */

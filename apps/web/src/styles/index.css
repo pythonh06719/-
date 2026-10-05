@@ -19,6 +19,33 @@
   --qsh-shadow-1: 0 4px 14px -6px rgba(31, 41, 55, 0.13), 0 1px 3px -1px rgba(31, 41, 55, 0.08);
   --qsh-shadow-2: 0 14px 36px -12px rgba(31, 41, 55, 0.18), 0 5px 14px -6px rgba(31, 41, 55, 0.1);
   --qsh-shadow-3: 0 26px 60px -16px rgba(31, 41, 55, 0.26), 0 10px 24px -10px rgba(31, 41, 55, 0.14);
+
+  /**
+   * 数据可视化令牌（浅色档）。
+   *
+   * 为什么用 CSS 变量而不是 Tailwind 类：**SVG 的 `stroke` / `fill` 属性不吃
+   * `dark:` 变体**（那是 Tailwind 在元素上切 class 的机制，SVG 属性名走的是
+   * 自己的 presentation attribute）。此前 `WeightChart` / `Sparkline` / `ProgressRing`
+   * 的线色只能硬编码字面量，于是深色模式要么过暗、要么过亮 —— 三处都在同一类毛病上。
+   *
+   * 变量让同一个 `stroke="rgb(var(--qsh-axis))"` 在两套主题里各自成立，
+   * 与 `--qsh-shadow-*` 是同一个机制。深色档在 `theme/dark.css` 的 `html.dark` 覆盖。
+   */
+  /* 坐标轴文字 / 刻度标签：AXIS。之前是 `#7d9489`（对白底 3.5:1），标签字号 10~11px
+     时不达 WCAG AA 的 4.5:1；这里提到 slate-600（对白底 6.4:1）。 */
+  --qsh-axis: #475569;
+  /* 网格线：只需与背景可辨、不抢数据线，故保持低透明度 */
+  --qsh-grid: rgba(71, 85, 105, 0.14);
+  /* 图表基线 / 进度环底环：与卡片描边同源（浅色即 brand-100） */
+  --qsh-ring-track: #d9ede4;
+  /* 趋势线：取 brand-600 而非 brand-500 —— 后者对白底仅 3.34:1，VISUAL-SYSTEM §4 已判为偏弱档 */
+  --qsh-spark: #248263;
+  /* 图表内的细分割线（如运动量柱的基线） */
+  --qsh-hairline: #cbd5e1;
+  /* 悬浮点的镂空心：与所在卡片同色，看起来是「挖空」而不是「贴了个白点」 */
+  --qsh-surface-ring: #ffffff;
+  /* 吸顶条 / 固定栏的底色：与页面基底同源，避免深色下出现第三种卡底色相 */
+  --qsh-chrome-bg: #fdfaf5;
 }
 
 html,

@@ -88,7 +88,17 @@ export default function Sparkline({
         role="img"
         aria-label={`${ariaLabel}，最新 ${latest === undefined ? '—' : formatWeightNumber(latest.weightKg, weightUnit)} ${weightSpokenLabel(weightUnit)}`}
       >
-        <path d={path} fill="none" stroke="#2f9e78" strokeWidth={2.5} strokeLinecap="round" />
+        {/* 趋势线走 CSS 变量（浅 `--qsh-spark` = brand-600 / 深 = brand-300）。
+            此前硬编码 `#2f9e78` = brand-500，**对白底只有 3.34:1** —— VISUAL-SYSTEM §4
+            已把它判为偏弱档（焦点环用的 brand-600 是 4.72:1）。SVG 的 stroke 不吃 `dark:`
+            变体，变量是让它在两套主题里各自成立的唯一机制。 */}
+        <path
+          d={path}
+          fill="none"
+          stroke="rgb(var(--qsh-spark))"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
         {numeric.map((point) => {
           const coordinate = coordinates.get(point.date);
           if (coordinate === undefined) {
@@ -100,7 +110,7 @@ export default function Sparkline({
               cx={coordinate.x}
               cy={coordinate.y}
               r={2.8}
-              fill="#248263"
+              fill="rgb(var(--qsh-spark))"
             />
           );
         })}
