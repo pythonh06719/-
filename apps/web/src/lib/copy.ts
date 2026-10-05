@@ -920,17 +920,6 @@ export function welcomeBack(daysSinceLastLog: number): string {
   return COPY.streakReturn;
 }
 
-/** 饮水进度文案（不设惩罚）。 */
-export function waterProgress(currentMl: number, goalMl: number): string {
-  if (goalMl <= 0) {
-    return `今天喝了 ${Math.round(currentMl)} ml`;
-  }
-  if (currentMl >= goalMl) {
-    return '今天的水已经喝够啦，做得很好';
-  }
-  return `今天已经喝了 ${Math.round(currentMl)} ml，慢慢来`;
-}
-
 /** 剩余热量文案（超出时中性表达，不做恐吓，PRD §7）。 */
 export function remainingLabel(remainingKcal: number): string {
   if (remainingKcal < 0) {

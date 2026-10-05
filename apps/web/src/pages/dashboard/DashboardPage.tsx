@@ -354,7 +354,7 @@ export default function DashboardPage(): ReactElement {
    *
    * 「> 0 才算有效」的语义**没有丢**：改由 `@qsh/core` 的 `isValidWaterGoalMl()`
    * （500–8000 ml 有效区间）承担 —— 它比 `> 0` 更严，且是 helper 内部的既有判据。
-   * 本页其余行为（`DEFAULT_WATER_GOAL_ML` 在本地缓存兜底 `readCachedDashboard`
+   * 本页其余行为（`DEFAULT_WATER_GOAL_ML` 在本地缓存兜底 `buildFallbackDashboard`
    * 里的用法、`cupProgress` / `cupText` 的入参）一律不动。
    */
   const waterGoal = resolveWaterGoalMl(data.waterGoalMl);
