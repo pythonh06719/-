@@ -230,11 +230,12 @@ export default function AppShell({ children, title = '轻生活', wide = false }
       </a>
 
       {/* `sticky top-0` 的 header 之前完全无视安全区：iPhone 灵动岛/刘海机型上状态栏会压住标题
-          与三个切换按钮。安全区内边距挂在**header 自身**而不是内层容器上：内层容器的类名
-          被 `wide-layout.test.tsx` 逐字钉死（它验证「移动端类名不变」），把 padding 加在内层
-          会让那条断言失败，而 padding 的视觉效果与挂在哪一层等价。
-          用 `calc()` 而不是裸 `env()` —— 后者在无刘海机型上解析为 0px，多一层继承关系下更易误读；
-          这里的 0.875rem 是原本 `py-3.5` 的上内边距，保持视觉节奏不变。 */}
+          与三个切换按钮。安全区内边距挂在 **header 自身**而不是内层容器上：内层容器的类名被
+          `wide-layout.test.tsx` 逐字钉死（它验证「移动端类名不变」），把 padding 加在内层会让
+          那条断言失败，而 padding 的视觉效果与挂在哪一层等价。
+          这里是裸 `env()` 而非 `calc()`：因为它**叠加**在子容器原有的 `py-3.5` 之上，
+          不存在「env() 解析为 0 把原有内边距吃掉」的问题；0.875rem 的基准仍由 `py-3.5` 提供，
+          视觉节奏不变。 */}
       <header className="sticky top-0 z-30 border-b border-brand-100 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
         <div className={`mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5${wideWidth}`}>
           {/* 标题用 `text-title`（20px）而非正文号：页头是全站层级的地基，
