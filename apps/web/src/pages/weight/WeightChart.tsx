@@ -68,6 +68,15 @@ const AXIS_COLOR = 'rgb(var(--qsh-axis))';
 const GRID_COLOR = 'rgb(var(--qsh-grid))';
 /** 实际体重线：浅色用 brand-300（最淡，让均线更重）；深色用 brand-400 —— 见下方 dark 分支 */
 const WEIGHT_COLOR_LIGHT = TOKENS.brand[300];
+/**
+ * 深色档取 brand-400（`#4fbf94`）而非 brand-300（`#8cc9ab`）。
+ *
+ * ⚠️ 这是 2026-10-05 实测后的二次调整：第一版按「对调两档」的思路取了 brand-300，
+ * 截图出来**两线仍然糊在一起** —— 因为 brand-300 是全色板最亮的一档，
+ * 与同样明亮的均线（brand-300）之间几乎没有亮度差。
+ * 现在深色下均线 = brand-300（最亮，主角）、实际线 = brand-400（暗一档，配角），
+ * 「主角更亮 + 线更粗」两个维度同时成立，浅色深色才对得上。
+ */
 const WEIGHT_COLOR_DARK = TOKENS.brand[400];
 /** 7 日均线：主角。深浅两套都用较重的一档，线宽也最大（3） */
 const AVG_COLOR = TOKENS.brand[600];
@@ -532,16 +541,29 @@ export default function WeightChart({
           />
         )}
 
-        {/* 7 日均线（更粗、更深的线压在下面） */}
+        {/*
+         * 7 日均线：主角。**画在实际线之下**，线宽 3 且颜色最深 ——
+         * 「主角更粗 + 颜色更深 + 位置在下层」三个维度同时成立，
+         * 局部交叉时也不会被实际线盖掉。
+         */}
         <path d={geometry.averagePath} fill="none" stroke={AVG_COLOR} strokeWidth={3} strokeLinecap="round" />
 
-        {/* 体重曲线 */}
+        {/* 实际体重线：配角。线宽 2（比均线细一档） */}
         <path d={geometry.weightPath} fill="none" stroke={WEIGHT_COLOR} strokeWidth={2} strokeLinecap="round" />
 
-        {/* 体重记录点（直径 5，与原 `symbolSize: 5` 对齐） */}
+        {/*
+         * 体重记录点：**半径从 2.5 收到 1.6**。
+         *
+         * ⚠️ 这是 2026-10-05 截图实测发现的：原 r=2.5（直径 5，与当年 ECharts
+         * `symbolSize: 5` 对齐）的圆点**比均线的半宽 1.5 还大**，等于把配角画成了主角 ——
+         * 一屏 90 个圆点密密麻麻压着均线，两线在局部糊成一片，主次彻底读不出来。
+         * 圆点的作用只是「标出记录位置」，不需要抢视觉重量；1.4 已足够看清
+         * （比均线半宽 1.5 小，且与 2px 线宽比例协调），一屏 90 个点也不再糊成一片。
+         * 视觉上现在是：均线最粗最深在下层，实际线次之，数据点最轻。
+         */}
         {geometry.weightPoints.map((point, index) =>
           point === null ? null : (
-            <circle key={`p-${index}`} cx={point.x} cy={point.y} r={2.5} fill={WEIGHT_COLOR} />
+            <circle key={`p-${index}`} cx={point.x} cy={point.y} r={1.4} fill={WEIGHT_COLOR} />
           ),
         )}
 

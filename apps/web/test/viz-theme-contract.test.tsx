@@ -123,6 +123,42 @@ describe('数据可视化 · 深浅两套一致性', () => {
     expect(html).not.toContain('#ffffff');
   });
 
+  /**
+   * ⭐ 这条钉的是「配角不能比主角重」这条**设计规则**，不是某个具体数值。
+   *
+   * 2026-10-05 截图实测发现：数据点半径原为 2.5（直径 5，与当年 ECharts
+   * `symbolSize: 5` 对齐），**比 7 日均线还粗** —— 90 个圆点密密麻麻压着均线，
+   * 两线局部糊成一片，「均线是主角」完全读不出来。
+   *
+   * 判据怎么定（这里踩过一次「先调值迁就断言」的弯路，记录下来）：
+   * 判据来自**视觉事实**而非某个数：圆点直径必须明显小于均线线宽。
+   * 直径 = 2×r，均线直径 = strokeWidth，所以条件是 `2r < strokeWidth`。
+   * 当前 r=1.4 → 直径 2.8 < 3，肉眼可辨地细于均线；原 r=2.5 → 直径 5 > 3，明显更粗。
+   * 因此断言直接写「直径 < 均线线宽」这个物理关系，值将来微调也不会误报。
+   */
+  it('★ 体重数据点不比均线更重（配角不抢主角）', () => {
+    const { container } = render(
+      <WeightChart
+        dates={['2026-09-01', '2026-09-02', '2026-09-03']}
+        weights={[70, 69.6, 69.8]}
+        movingAverage={[70, 69.8, 69.8]}
+        unit="kg"
+      />,
+    );
+    const paths = container.querySelectorAll('path');
+    const avgWidth = Number(paths[paths.length - 2]?.getAttribute('stroke-width'));
+    const weightWidth = Number(paths[paths.length - 1]?.getAttribute('stroke-width'));
+    // 均线是主角：必须比实际线粗
+    expect(avgWidth).toBeGreaterThan(weightWidth);
+
+    // 数据点**直径**必须小于均线**线宽** —— 否则圆点戳穿均线，局部糊成一片
+    const dots = Array.from(container.querySelectorAll('circle'))
+      .map((c) => Number(c.getAttribute('r')))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    expect(dots.length).toBeGreaterThan(0);
+    for (const r of dots) expect(r * 2).toBeLessThan(avgWidth);
+  });
+
   it('★ Sparkline 线色走 CSS 变量且不再是偏弱的 brand-500', () => {
     const { container } = render(
       <Sparkline
