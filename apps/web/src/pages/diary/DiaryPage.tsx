@@ -1104,8 +1104,10 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             aria-label={MEAL_TYPE_LABELS[group.mealType]}
             className={[
               'qsh-surface p-5 transition duration-qsh-fast ease-qsh-out',
-              // 落区高亮：环色需 ≥3:1（WCAG 1.4.11）—— 白底用 brand-500（3.34:1）、深底用 brand-400（6.42:1）
-              reorder.targetMealType === group.mealType ? 'ring-2 ring-brand-500 dark:ring-brand-400' : '',
+              // 落区高亮：必须用卡面的状态修饰符，不能写 ring 工具类 —— `.qsh-surface`
+              // 会盖掉任何 ring 的颜色与宽度（详见 styles/index.css 里 `.qsh-surface-drop` 的注释）。
+              // 环色 ≥3:1（WCAG 1.4.11）：白底 brand-500 3.34:1、深底 brand-400 6.42:1。
+              reorder.targetMealType === group.mealType ? 'qsh-surface-drop' : '',
             ].join(' ')}
           >
             <div className="flex items-center justify-between">

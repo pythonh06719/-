@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import type { WeightUnit } from '@qsh/shared-types';
 import { formatWeightNumber, weightSpokenLabel } from '@/lib/units';
 
@@ -46,14 +46,23 @@ export default function Sparkline({
   ariaLabel = '最近体重趋势',
   weightUnit = 'kg',
 }: SparklineProps): ReactElement {
-  const boxRef = useRef<HTMLElement | null>(null);
+  /**
+   * 被测量的容器节点，用 **callback ref 存进 state**（不是 `useRef`）。
+   *
+   * ⚠️ 为什么不能用 `useRef`：`numeric.length < 2` 时走的是下面的占位分支，
+   * 那时**根本没有 `<figure>`** —— `ref.current` 是 null，effect 直接返回。
+   * 而看板冷启动恰好是这条路径（`DashboardPage` 的兜底 dashboard `miniTrend: []`），
+   * 数据到达后 `<figure>` 才挂载，可 effect 的依赖是 `[]`、**再也不会重跑** →
+   * `viewWidth` 永久停在兜底的 260px（实测桌面端卡片内宽约 187px，会溢出约 73px）。
+   * callback ref 让「节点挂载」本身成为依赖，分支切换后能重新 observe。
+   */
+  const [box, setBox] = useState<HTMLElement | null>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number>(fallbackWidth);
 
   // 容器实测宽度：SVG 一律按像素坐标绘制（viewBox 与渲染尺寸同值），
   // 圆才是正圆、描边才等粗。无 ResizeObserver 的环境（如 jsdom 测试）保持兜底宽度。
   useEffect(() => {
-    const node = boxRef.current;
-    if (node === null || typeof ResizeObserver === 'undefined') {
+    if (box === null || typeof ResizeObserver === 'undefined') {
       return undefined;
     }
     const observer = new ResizeObserver((entries) => {
@@ -61,9 +70,9 @@ export default function Sparkline({
       if (rect === undefined || rect.width <= 0) return;
       setMeasuredWidth(rect.width);
     });
-    observer.observe(node);
+    observer.observe(box);
     return () => observer.disconnect();
-  }, []);
+  }, [box]);
 
   const numeric = data.filter(
     (point): point is { date: string; weightKg: number } => point.weightKg !== null,
@@ -115,7 +124,7 @@ export default function Sparkline({
   const latest = numeric[numeric.length - 1];
 
   return (
-    <figure className="w-full" ref={boxRef}>
+    <figure className="w-full" ref={(node) => setBox(node)}>
       <svg
         width={viewWidth}
         height={height}

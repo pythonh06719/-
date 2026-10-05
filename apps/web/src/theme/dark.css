@@ -64,6 +64,13 @@ html.dark .qsh-surface {
   --tw-ring-color: #24443a;
 }
 
+/* 落区高亮的深色档：提亮到 brand-400（对 #16241f 6.42:1）。
+   选择器必须是 `.qsh-surface.qsh-surface-drop`（(0,3,1)）才能压过上面
+   `html.dark .qsh-surface` 的 (0,2,1) —— 只写 `.qsh-surface-drop` 会输。 */
+html.dark .qsh-surface.qsh-surface-drop {
+  --tw-ring-color: #4fbf94;
+}
+
 /* 次级文字：保证在深底上仍达 AA */
 html.dark .qsh-text-muted {
   color: #9db3a9;

@@ -11,11 +11,16 @@
  *
  * ⚠️ **本测试的能力边界（重要，别高估）**：
  * jsdom **不做布局**（`getBoundingClientRect` / `contentRect` 恒为 0），所以这里**算不出真实
- * 的 scaleX**，也无法在断言里证明「圆是正圆」。本文件能钉住的只有三件事：
+ * 的 scaleX**，也无法在断言里证明「圆是正圆」。本文件能钉住的只有四件事：
  *   1. 不再使用非等比缩放（`preserveAspectRatio="none"`）—— 这是「圆不变形」的**前提条件**；
  *   2. `viewBox` 的宽**等于** `<svg>` 的渲染宽 —— 此时 scaleX 恒为 1（与容器多宽无关）；
- *   3. 实测宽度真的流进了 `viewBox`（用假 ResizeObserver 喂一个非兜底宽度验证）。
- * 「圆是正圆、描边等粗」是这三条推出来的结论，不是断言本身 —— 真机/视觉回归仍需人眼确认。
+ *   3. 实测宽度真的流进了 `viewBox`（用假 ResizeObserver 喂一个非兜底宽度验证）；
+ *   4. 占位态 → 有数据态的切换后**仍然会测量**（冷启动路径）。
+ * 「圆是正圆、描边等粗」是这四条推出来的结论，不是断言本身 —— 真机/视觉回归仍需人眼确认。
+ *
+ * ⚠️ 早先这里有一条「圆半径仍是常量 2.8」的断言，是**恒真的**：撤掉被测行为它也不会转红
+ * （变形来自 scaleX，不是 `r`；旧代码的 `r` 同样是 2.8）。恒真断言比没有断言更糟 ——
+ * 它让人以为「半径」这条也被守住了。已删，换成上面第 4 条。
  */
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -35,6 +40,9 @@ const DATA = [
   { date: '2026-09-06', weightKg: null },
   { date: '2026-09-07', weightKg: 58.2 },
 ];
+
+/** 不足 2 个有效点 → 走占位分支（没有 `<figure>`，也就是冷启动首帧的形态）。 */
+const ONE_POINT = [{ date: '2026-09-01', weightKg: 60 }];
 
 /** 取唯一的 `<svg>` 元素。 */
 function svgOf(container: HTMLElement): SVGSVGElement {
@@ -128,13 +136,29 @@ describe('Sparkline · 等比缩放（圆是正圆、描边等粗）', () => {
     }
   });
 
-  it('圆半径仍是常量 2.8（不随容器宽度缩放）', () => {
-    const { container } = render(<Sparkline data={DATA} />);
-    const radii = Array.from(container.querySelectorAll('circle')).map((node) =>
-      node.getAttribute('r'),
+  it('★ 先渲染占位态、数据到达后再渲染，也必须重新测量（不能永久停在兜底宽度）', () => {
+    // 这条钉的是冷启动路径：`DashboardPage` 的兜底 dashboard 给的是 `miniTrend: []`，
+    // 首帧走占位分支（那时没有 `<figure>`）。若用 `useRef` + `useEffect(..., [])`，
+    // effect 在占位分支拿到 null 就返回、之后**再也不重跑** —— 数据到达后 `<figure>`
+    // 挂载了却没人 observe，宽度永久停在 260（实测桌面端卡片内宽约 187 → 溢出约 73px）。
+    vi.stubGlobal(
+      'ResizeObserver',
+      class extends FixedWidthResizeObserver {
+        constructor(callback: ResizeObserverCallback) {
+          super(callback, 328);
+        }
+      },
     );
 
-    expect(radii.length).toBe(5);
-    expect(new Set(radii)).toEqual(new Set(['2.8']));
+    const { container, rerender } = render(<Sparkline data={ONE_POINT} />);
+    // 占位分支：只有一句说明文字，没有 svg
+    expect(container.querySelector('svg')).toBeNull();
+
+    rerender(<Sparkline data={DATA} />);
+    const svg = svgOf(container);
+    const [, , vbWidth] = viewBoxOf(svg);
+
+    expect(vbWidth).toBe(328);
+    expect(svg.getAttribute('width')).toBe('328');
   });
 });

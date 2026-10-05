@@ -1,69 +1,67 @@
 /**
- * 卡片描边守卫：`qsh-surface` 卡面上不许再叠 `dark:ring-*`。
+ * 卡片描边守卫：卡面上不许再叠任何 `ring-*` 工具类。
  *
  * ## 被钉住的约定
  *
- * `src/styles/index.css` 的 `.qsh-surface` 是全站唯一的卡片表面类，深色档的**描边真源**是
- * `src/theme/dark.css` 里的：
+ * `src/styles/index.css` 里 `.qsh-surface` / `.qsh-surface-warm` / `.qsh-action-card`
+ * 是全站唯一的三种卡面类，描边的**真源**在它们自身（以及 `theme/dark.css` 的深色覆盖）：
  *
  * ```css
- * html.dark .qsh-surface {
- *   background-color: #16241f;
- *   border-color: #24443a;
- *   --tw-ring-color: #24443a;    ← 深色卡片描边在这里，且只在这里
- * }
+ * .qsh-surface        { @apply … ring-1 ring-brand-100; }   ← 排在 @tailwind utilities 之后
+ * html.dark .qsh-surface { --tw-ring-color: #24443a; }
  * ```
  *
- * 历史上有 60 处在卡面的 className 里额外写了 `dark:ring-slate-700`
- * （形如 `className="qsh-surface p-5 dark:ring-slate-700"`）。它们是**不起作用却会误导人**的死声明：
- * Tailwind 为它生成的选择器是 `.dark\:ring-slate-700:is(.dark *)`，特异度 (0,2,0)；
- * 而 `html.dark .qsh-surface` 是 (0,2,1)。后者更高，且在打包产物里位置也靠后，
- * 两条路都赢 —— 实测（headless Chromium 读 `getComputedStyle`）深色下
- * `--tw-ring-color` 为 `#24443a` 而非 slate 的 `#334155`。
+ * ⚠️ **关键的坑**：这三个类是**排在 `@tailwind utilities` 之后的普通 CSS 规则**。
+ * 同特异性下后写的赢，所以它们会盖掉**任何** ring 工具类 —— 而且不止颜色
+ * （`--tw-ring-color`），`@apply ring-1` 还把宽度（`--tw-ring-shadow` 里的 `1px`）一起锁死。
+ * 也就是说：在卡面上写 `ring-2 ring-brand-500 dark:ring-brand-400` 是**完全无效**的，
+ * 连「变粗」都不会发生。
  *
- * 留着它们的真实代价不是「多一个无用字符」，而是**看起来像是生效的**：
- * 下一个改深色卡片的人会以为描边写在 JSX 里，改完发现不生效，或反过来删掉 `dark.css` 的覆盖。
- * 真源必须只有一个，重复的第二处即使是死代码也要删掉。
+ * 真实代价：`DiaryPage` 拖拽排序餐次的**落区高亮**就是这么写的，于是深浅两套模式下
+ * 都从未显示过（注释里还算了 3.34:1 / 6.42:1，全是空谈）。
+ * `HabitsPage.tsx:190` 已打卡态早就踩过同一条坑 —— 当时的解法是绕开卡面类手写一套。
+ * 本轮给卡面补了正式的状态修饰符 `.qsh-surface-drop`，别再各绕各的。
+ *
+ * 历史上还有 60 处在卡面上写 `dark:ring-slate-700`（形如 `className="qsh-surface p-5
+ * dark:ring-slate-700"`），同样是死声明：Tailwind 生成的选择器是
+ * `.dark\:ring-slate-700:is(.dark *)`（(0,2,0)），低于 `html.dark .qsh-surface`（(0,2,1)）。
  *
  * ## 为什么「只能是静态扫描」
  *
  * **不能写成运行时断言**（渲染组件后检查 `getComputedStyle(...).boxShadow` 之类）：
- * jsdom **不做 CSS 层叠计算**。它不实现 `@media` 之外的属性层叠，
- * `vitest.config.ts` 里更是 `css: false`（连样式表都不加载），
+ * jsdom **不做 CSS 层叠计算**，`vitest.config.ts` 里更是 `css: false`（连样式表都不加载），
  * 自定义属性（`--tw-ring-color`）在 jsdom 里读出来一律是空串。
  * 也就是说：运行时根本测不出「谁覆盖了谁」—— 测出来的一定是假绿。
  *
- * 这条守卫要钉的恰恰是**层叠里的胜负关系**（同一张卡上不许存在第二个会挑战 `dark.css` 的深色描边），
- * 它只存在于源码文本与 CSS 产物中，因此只能用 `readFileSync` + 正则扫源码。
+ * 这条守卫要钉的恰恰是**层叠里的胜负关系**，它只存在于源码文本与 CSS 产物中，
+ * 因此只能扫源码。
  *
- * ## 为什么不断言反向（保留的那些 chip 描边必须还在）
+ * ## 扫描器的形状（为什么既按行扫、又按 className 块扫）
  *
- * 全站另有若干处非卡面的 `ring-1 ring-brand-100 ... dark:ring-slate-700`
- * （周报 Tab、已打卡习惯条、日历格等 chip / 次级按钮），它们**不带** `qsh-surface`，
- * 拿不到 `dark.css` 的深色覆盖，只能靠自己的 `dark:ring-slate-700` —— 删了会在墨绿底上
- * 出现一条浅色亮边。反向断言换句说话就是把「这几十处具体行号」钉进测试：
- * 将来任何一次正常的组件改名 / 抽取都会让它误报，守卫就变成了负担而非保护。
- * 因此这里只钉「卡面不许叠」这一条。
+ * - **按行扫**：吃单行的 `className="…"`。
+ * - **按块扫**：`className={[ … ].join(' ')}` 这种**跨行数组**写法，按行扫不到 ——
+ *   上面那个落区高亮正是这么漏掉的。块扫描覆盖它。
+ * - 两者取并集：块扫描遇到 `className={`…${x}…`}`（内含 `{}`）会在第一个 `}` 截断，
+ *   按行扫可以补上；按行扫漏掉的跨行数组则由块扫描补上。漏报比误报危险得多。
+ *
+ * ## 不断言什么
+ *
+ * 不反向断言「那 29 处 chip 描边必须还在」。它们**不带**卡面类，拿不到卡面的深色覆盖，
+ * 只能靠自己的 `dark:ring-slate-700` —— 但把几十处具体行号钉进测试，
+ * 将来任何一次组件改名 / 抽取都会误报，守卫就变成负担而非保护。
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** 单个待检查文件的扫描结果。 */
-interface FileScan {
-  /** 相对 `src/` 的路径，用于失败信息里定位。 */
-  readonly relPath: string;
-  /** 违规行：`行号 -> 该行原文`。 */
-  readonly violations: ReadonlyArray<{ readonly line: number; readonly text: string }>;
-  /** 该文件里 `qsh-surface` 出现的行数，用于自证扫描器真的读到了内容。 */
-  readonly surfaceLines: number;
-}
-
-/** `qsh-surface` / `qsh-surface-warm` —— 唯一受 `dark.css` 深色描边覆盖的卡面类。 */
-const SURFACE_CLASS = /qsh-surface/;
-/** 任何写在 JSX 上的深色描边类。 */
-const DARK_RING_CLASS = /dark:ring-/;
+/** 三种卡面类（都会锁死 ring 的宽度与颜色）。 */
+const CARD_CLASS = /qsh-surface|qsh-action-card/;
+/**
+ * 任何 ring 工具类。
+ * `ring-offset-*` **不算** —— 卡面类没有声明 `--tw-ring-offset-width`，它不会被盖掉。
+ */
+const RING_UTILITY = /\bring-(?!offset-)/;
 
 const SRC_ROOT = resolve(process.cwd(), 'src');
 
@@ -81,50 +79,76 @@ function collectTsx(dir: string): string[] {
   return found;
 }
 
-/** 扫一个文件，返回违规行清单。 */
-function scanFile(absPath: string, relPath: string): FileScan {
-  const lines = readFileSync(absPath, 'utf8').split('\n');
-  const violations: Array<{ line: number; text: string }> = [];
-  let surfaceLines = 0;
+interface Offender {
+  readonly relPath: string;
+  readonly line: number;
+  readonly text: string;
+}
 
-  lines.forEach((text, index) => {
-    if (SURFACE_CLASS.test(text)) surfaceLines += 1;
-    // 同一行同时出现「卡面类」与「深色描边」= 在自己的卡上叠了第二个真源。
-    if (SURFACE_CLASS.test(text) && DARK_RING_CLASS.test(text)) {
-      violations.push({ line: index + 1, text: text.trim() });
+/** 取 `className` 表达式块：`"…"` / `'…'` / `{…}`（不跨嵌套 `{}`）。 */
+function classBlocks(source: string): Array<{ text: string; line: number }> {
+  const blocks: Array<{ text: string; line: number }> = [];
+  for (const match of source.matchAll(/className=(?:"[^"]*"|'[^']*'|\{[^{}]*\})/g)) {
+    const line = source.slice(0, match.index).split('\n').length;
+    blocks.push({ text: match[0], line });
+  }
+  return blocks;
+}
+
+/** 扫一个文件：行扫描 + 块扫描取并集。 */
+function scanFile(absPath: string, relPath: string): { offenders: Offender[]; cardLines: number; blocks: number } {
+  const source = readFileSync(absPath, 'utf8');
+  const offenders: Offender[] = [];
+  let cardLines = 0;
+
+  source.split('\n').forEach((text, index) => {
+    if (CARD_CLASS.test(text)) cardLines += 1;
+    if (CARD_CLASS.test(text) && RING_UTILITY.test(text)) {
+      offenders.push({ relPath, line: index + 1, text: text.trim() });
     }
   });
 
-  return { relPath, violations, surfaceLines };
+  for (const block of classBlocks(source)) {
+    if (CARD_CLASS.test(block.text) && RING_UTILITY.test(block.text)) {
+      const text = block.text.replace(/\s+/g, ' ').trim();
+      // 行扫描可能已记过同一处（单行形态），去重
+      if (!offenders.some((o) => o.line === block.line && o.text === text)) {
+        offenders.push({ relPath, line: block.line, text });
+      }
+    }
+  }
+
+  return { offenders, cardLines, blocks: classBlocks(source).length };
 }
 
-describe('卡片描边：深色描边的真源只有 theme/dark.css，卡面不许再叠 dark:ring-*', () => {
+describe('卡片描边：描边真源只在卡面类自身 / theme/dark.css，卡面不许再叠 ring-*', () => {
   const files = collectTsx(SRC_ROOT);
-  const scans: FileScan[] = files.map((abs) =>
+  const scans = files.map((abs) =>
     scanFile(abs, abs.slice(SRC_ROOT.length + 1).replace(/\\/g, '/')),
   );
 
-  it('★ 自证：扫描器真的扫到了 .tsx 与 qsh-surface 用法（否则下面全是假绿）', () => {
+  it('★ 自证：扫描器真的扫到了 .tsx、卡面用法与 className 块（否则下面全是假绿）', () => {
     // 这条不是业务断言，是**守卫自身的健康检查**：
     // 若 cwd 不对（忘记从 apps/web 跑）或遍历逻辑坏了，files 会是空数组，
-    // 下一条 `toEqual([])` 会永远通过 —— 用一句断言把「假绿」这条路堵死。
-    // 阈值刻意取得宽松（当前实测 59 个文件 / 117 行 qsh-surface）：这里要挡的是
-    // 「一个都没扫到」的假绿，不是要给文件数量设下限 —— 卡太紧会在正常增删文件后误报。
+    // 下一条 `toEqual([])` 会永远通过 —— 用几句断言把「假绿」这条路堵死。
+    // 阈值刻意取得宽松（当前实测 59 文件 / 117 行卡面类 / 数百个 className 块）：
+    // 这里要挡的是「一个都没扫到」的假绿，不是要给数量设下限。
     expect(files.length).toBeGreaterThan(20);
-
-    const totalSurfaceLines = scans.reduce((sum, s) => sum + s.surfaceLines, 0);
-    expect(totalSurfaceLines).toBeGreaterThan(50);
+    expect(scans.reduce((sum, s) => sum + s.cardLines, 0)).toBeGreaterThan(50);
+    expect(scans.reduce((sum, s) => sum + s.blocks, 0)).toBeGreaterThan(50);
   });
 
-  it('★ 不存在「同一行同时出现 qsh-surface 与 dark:ring-」的写法', () => {
+  it('★ 不存在「同一 className 表达式里同时出现卡面类与 ring-*」的写法', () => {
     const offenders = scans.flatMap((scan) =>
-      scan.violations.map((v) => `${scan.relPath}:${v.line}  ${v.text}`),
+      scan.offenders.map((o) => `${o.relPath}:${o.line}  ${o.text}`),
     );
 
     const hint = offenders.length
-      ? `\n\n以下位置在自己的 qsh-surface 卡上又叠了一层深色描边：\n${offenders.join('\n')}\n\n` +
-        '深色卡面描边请在 src/theme/dark.css 的 `html.dark .qsh-surface` 里改，' +
-        '不要在 JSX 上再声明一层 —— 它的特异度低于 dark.css，是看起来生效、其实无效的死声明。'
+      ? `\n\n以下位置在卡面上又叠了 ring 工具类：\n${offenders.join('\n')}\n\n` +
+        '卡面类是排在 `@tailwind utilities` 之后的普通 CSS 规则，会把 ring 的**颜色和宽度**\n' +
+        '一起盖掉 —— 写在卡面上的 ring 工具类完全无效。\n' +
+        '要表达卡面的某个状态（如拖放落区高亮），请在 styles/index.css 里加\n' +
+        '`.qsh-surface.<修饰符>` 这样的状态类（深色档同步写进 theme/dark.css）。'
       : '';
 
     expect(offenders, hint).toEqual([]);

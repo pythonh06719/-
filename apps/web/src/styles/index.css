@@ -105,6 +105,28 @@ body {
   }
 }
 
+/**
+ * 卡片的状态修饰符：**拖放落区高亮**（`/diary` 拖拽排序餐次时给目标餐次加环）。
+ *
+ * ⚠️ 为什么必须做成修饰符，而不能在 JSX 上写 `ring-2 ring-brand-500`：
+ * `.qsh-surface` 是**排在 `@tailwind utilities` 之后的普通 CSS 规则**，同特异性下
+ * 它会盖掉**任何** ring 工具类 —— 而且不止颜色（`--tw-ring-color`），
+ * `@apply ring-1` 还把宽度（`--tw-ring-shadow` 里的 `1px`）一起锁死。
+ * 也就是说在卡面上写 `ring-2 ring-brand-500 dark:ring-brand-400` 是**完全无效**的，
+ * 落区高亮从来没显示过（`HabitsPage.tsx:190` 已打卡态早就踩过同一条坑，
+ * 当时的解法是绕开卡面类手写一套；这里给卡面一个正式的状态修饰符，别再各绕各的）。
+ *
+ * 用 `.qsh-surface.qsh-surface-drop`（(0,2,0)）压过 `.qsh-surface`（(0,1,0)）；
+ * 深色档见 `theme/dark.css` 的同名覆盖。
+ */
+.qsh-surface.qsh-surface-drop {
+  /* 2px 环（= `ring-2`）：必须重写整条 `--tw-ring-shadow`，只改颜色不够 */
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0
+    calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  /* brand-500，对白底 3.34:1 —— WCAG 1.4.11 对非文本装饰要求 ≥3:1 */
+  --tw-ring-color: #2f9e78;
+}
+
 /* ------------------------------------------------------------------ *
  * 生活化气质：暖色卡片 / 胶囊标签 / 行动卡
  * 深色覆盖统一在 `theme/dark.css`，浅色与深色都必须好看。

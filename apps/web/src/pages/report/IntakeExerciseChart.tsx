@@ -61,6 +61,12 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
         width="100%"
         height={VIEW_H}
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        // ⚠️ 这里的非等比横向拉伸（scaleX = 容器宽 / 340、scaleY = 1）**目前无害**，
+        // 因为图元只有 `<rect>`（柱子横向变宽正是期望行为）和一条水平 `<line>`
+        // （scaleY = 1，描边不受影响），日期标签也刻意用 HTML 渲染绕开变形。
+        // 但它是 `Sparkline.tsx` 同一个缺陷的活化石：谁往这里加一个 `<circle>` 或斜线
+        // —— 圆会被拉成椭圆、斜线描边粗细会随走向变化。要加，请改成实测容器宽度、
+        // viewBox 与渲染尺寸同值（照 `WeightChart.tsx` 的 ResizeObserver 模式）。
         preserveAspectRatio="none"
         role="img"
         aria-label={reportTrendAria(intakeTotal, exerciseTotal)}
