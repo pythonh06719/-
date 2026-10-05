@@ -21,7 +21,9 @@ export function buildEncouragement(progressRatio: number, hasGoal: boolean): str
     return '今天的分量刚刚好，放松一点也没关系';
   }
   if (progressRatio >= 0.4) {
-    return '节奏刚刚好，继续保持';
+    // 中性陈述：只说「按自己的节奏」，不评价用户吃得好不好，也不劝「继续保持」。
+    // 句式对齐本文件另外几条的「…就好」收尾（如「明天照常就好」）。
+    return '今天就按自己的节奏来就好';
   }
   return '慢慢来，今天也照顾好自己';
 }

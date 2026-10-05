@@ -1680,7 +1680,10 @@ export function cupText(currentMl: number, goalMl: number): string {
     return goalCups > 0 ? `今天还没喝水，随手一杯就好（目标 ${goalCups} 杯）` : '今天还没喝水，随手一杯就好';
   }
   if (goalCups > 0 && cups >= goalCups) {
-    return `今天第 ${cups} 杯水，已经很充足啦`;
+    // 中性陈述 + 给出路，不评价用户喝得够不够（红线：不指责、不焦虑、无评分等级）。
+    // 句式对齐同函数另外两个分支：都用「…就好」收尾（比照 `随手一杯就好`），
+    // 也都只陈述现状、不给评价。
+    return `今天第 ${cups} 杯水，按需要接着喝就好`;
   }
   return goalCups > 0
     ? `今天第 ${cups} 杯水，离 ${goalCups} 杯又近了一步`
