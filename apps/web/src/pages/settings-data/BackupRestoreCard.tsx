@@ -3,6 +3,7 @@ import type { ChangeEvent, ReactElement } from 'react';
 import type { RestorePreviewResponse, RestoreRecordCounts, RestoreResult } from '@qsh/shared-types';
 
 import { api, noticeFromError } from '@/lib/api';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { readTextFile } from '@/lib/download';
 
 /** 恢复预览的 6 类记录标签；顺序与服务端统计一致。 */
@@ -65,6 +66,22 @@ export default function BackupRestoreCard(): ReactElement {
       setResult(response);
       setPhase('done');
       setNotice('备份内容已经合并完成，原来其他日期的记录仍然保留。');
+      // 恢复会**整体改写**档案、目标、设置与全部记录 —— 本卡上方文案已向用户承诺
+      // 「档案、目标和设置会采用备份内容」。若这里不失效，看板 / 体重 / 我的页在
+      // 30 秒 `staleTime` 内继续显示恢复**之前**的旧值，承诺与屏幕对不上（要手动刷新才看得到）。
+      // 覆盖导出结构里的全部顶层键（profile / goals / weights / meals / exercises /
+      // habits / water / wins / settings）—— 设置里的断食开关也一并重取。
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.habits });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fastingSettings });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fastingCurrent });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['weights'] });
+      void queryClient.invalidateQueries({ queryKey: ['meals'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['water'] });
+      void queryClient.invalidateQueries({ queryKey: ['wins'] });
+      void queryClient.invalidateQueries({ queryKey: ['report'] });
     } catch (error) {
       setPhase('idle');
       setPreview(null);

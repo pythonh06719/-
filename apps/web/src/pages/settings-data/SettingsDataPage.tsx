@@ -12,6 +12,7 @@ import type {
   WeightTrendResponse,
 } from '@qsh/shared-types';
 import { api } from '@/lib/api';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { DEFAULT_WATER_GOAL_ML } from '@qsh/core';
 import { CACHE_KEYS, cacheClearAll, cacheGet } from '@/lib/local-cache';
 import { toExportWeightRows } from '@/lib/csv';
@@ -269,6 +270,14 @@ export default function SettingsDataPage(): ReactElement {
       // `errors` 形状两端一致，都是 `{ row, reason }[]`；防御性兜一层，响应异常时按空明细处理。
       errors: Array.isArray(result.errors) ? result.errors : [],
     });
+
+    // 批量导入会**整体改写体重序列** → 体重曲线、看板（当前体重 / 目标进度）、
+    // 回看类卡片（`report.*`）都是它的派生视图，必须重取；否则导入 50 条历史体重后
+    // 曲线一条不变，用户只能手动刷新页面才看得到。
+    void queryClient.invalidateQueries({ queryKey: queryKeys.weightTrend });
+    void queryClient.invalidateQueries({ queryKey: ['weights'] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    void queryClient.invalidateQueries({ queryKey: ['report'] });
   };
 
   const handleDelete = async (): Promise<void> => {
@@ -280,6 +289,10 @@ export default function SettingsDataPage(): ReactElement {
     }
     await clearQueuedRequests();
     cacheClearAll();
+    // 与登出 / 401（`App.tsx`）同一条纪律：`cacheClearAll()` 清的是 localStorage 那一层，
+    // react-query 的内存缓存是**第二层**。一键清数据后内存里若还留着旧档案 / 看板，
+    // 用户回到首页会看到「刚删掉」的内容 —— 必须一并清掉。
+    queryClient.clear();
     clearLastBackupAt();
     // AC-11.1.6：平台期卡的本地频控状态也一并清掉（与备份时间戳同理，属「本机记录」）
     clearPlateauVisibility();

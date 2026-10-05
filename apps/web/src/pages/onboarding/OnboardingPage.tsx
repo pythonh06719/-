@@ -6,6 +6,7 @@ import type { ActivityLevel, Gender, OnboardingRequest, OnboardingResponse } fro
 import { ACTIVITY_FACTORS, ageFromBirthDate, safeCalcCalorieBudget } from '@qsh/core';
 import type { CalorieInput, CalorieResult } from '@qsh/core';
 import { api, ApiClientError } from '@/lib/api';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { COPY } from '@/lib/copy';
@@ -111,6 +112,13 @@ export default function OnboardingPage(): ReactElement {
     onSuccess: (data) => {
       cacheSet(CACHE_KEYS.localBudget, data.budget);
       setNotice('预算已经算好啦，我们去今日看板看看');
+      // ★ 建档后要让看板**真的**重取：看板的「去做引导问卷」空态判据读的是
+      // `['dashboard', date]` 里缓存的 `goal === null && budget === null`。
+      // 不失效的话，做完引导跳到看板仍停在空态（缓存 30 秒内不重取），只能手动刷新。
+      // 档案（`/profile` 的显示源）与体重进度同样刚被改写，一并失效。
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['weights'] });
       navigate('/dashboard');
     },
     onError: (error: unknown) => {

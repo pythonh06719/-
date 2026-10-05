@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { routes } from '@/router/routes';
 import { UNAUTHORIZED_EVENT } from '@/lib/api';
+import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/lib/auth.store';
 import { hydrateUnitFromServer, useUnitStore } from '@/lib/units';
 import { currentStoredMode, hydrateThemeFromServer } from '@/theme/useTheme';
@@ -15,12 +16,27 @@ import UpdatePrompt from '@/pwa/UpdatePrompt';
 /**
  * 401 监听器：登录态过期时清理本地会话并回到「我的」页重新登录。
  * 放在 Router 内部以使用 `useNavigate`（ARCHITECTURE §1.7）。
+ *
+ * ⚠️ **本机数据是两层，必须两层都清**：
+ *
+ * | 层 | 存放 | 清除者 |
+ * |---|---|---|
+ * | localStorage 副本（`qsh:cache:*` + 偏好键） | 浏览器 | `useAuthStore.clear()` |
+ * | **react-query 内存缓存**（档案 / 体重 / 看板 / 预算） | 内存 | **本组件的 `queryClient.clear()`** |
+ *
+ * 只清第一层的后果：内存里的旧账号数据仍在（`gcTime` 30 分钟内不会重取），
+ * 同浏览器换账号后屏上显示的还是上一个账号的数字 —— 这是一条跨账号泄漏。
+ *
+ * 用的是模块级单例 `queryClient`（`main.tsx` 传给 `QueryClientProvider` 的正是同一个实例），
+ * 因此此处与页面里的 `useQueryClient()` 指向同一份缓存。
  */
 function UnauthorizedListener(): null {
   const navigate = useNavigate();
   useEffect(() => {
     const onUnauthorized = (): void => {
       useAuthStore.getState().clear();
+      // 第二层：react-query 的内存缓存（见上方表格）
+      queryClient.clear();
       navigate('/profile', { replace: true });
     };
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);

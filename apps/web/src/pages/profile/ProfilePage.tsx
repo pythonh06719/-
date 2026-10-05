@@ -10,7 +10,7 @@ import type {
 } from '@qsh/shared-types';
 import { ACTIVITY_FACTORS, ageFromBirthDate, safeCalcCalorieBudget } from '@qsh/core';
 import { api, ApiClientError } from '@/lib/api';
-import { queryKeys } from '@/lib/queryClient';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { CACHE_KEYS, cacheGet, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { COPY } from '@/lib/copy';
@@ -100,6 +100,15 @@ export default function ProfilePage(): ReactElement {
     onSuccess: (data) => {
       cacheSet(CACHE_KEYS.localBudget, data.budget);
       setNotice('基础数据已更新，预算已经重新算好');
+      // ★ 改完基础数据必须让**派生自重算预算的那几个数字真的重取**，否则
+      // 「预算已经重新算好」是一句**失真承诺**：本页的显示源是 `profileQuery.data`
+      // （下面 `budget = remote?.budget ?? …`），看板的「建议摄入」走 `['dashboard', date]`，
+      // 二者都在 30 秒 `staleTime` 内不重取 —— 改身高 165→180 后屏上一个数字都不会变。
+      // 失效集合与同页 `GoalSettingsCard`（改目标）保持一致：档案 / 看板 / 体重进度。
+      // 用模块级单例 `queryClient`（与 `main.tsx` 注入 provider 的是同一个实例）。
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['weights'] });
     },
     onError: (error: unknown) =>
       setNotice(error instanceof ApiClientError ? error.message : '这次没有保存成功，稍后再试一次'),
@@ -398,6 +407,10 @@ export default function ProfilePage(): ReactElement {
             type="button"
             onClick={() => {
               clear();
+              // 与 401 那条路（`App.tsx` 的 `UnauthorizedListener`）同一条纪律：
+              // `clear()` 清的是 localStorage 那一层，react-query 的内存缓存是**第二层**，
+              // 不清的话换账号登录后屏上仍显示上一个账号的档案 / 体重 / 预算。
+              queryClient.clear();
               setNotice('已经退出登录，随时可以再回来');
             }}
             className="qsh-touch-target mt-3 w-full rounded-xl py-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
