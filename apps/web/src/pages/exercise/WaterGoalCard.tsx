@@ -82,7 +82,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
   return (
     <section
       aria-labelledby="water-goal-title"
-      className="qsh-surface p-5 dark:ring-slate-700"
+      className="qsh-surface p-5"
     >
       <h2 id="water-goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.waterGoalTitle}

@@ -81,7 +81,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
   return (
     <section
       aria-label="邮箱登录"
-      className="qsh-surface p-5 dark:ring-slate-700"
+      className="qsh-surface p-5"
     >
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">登录后同步你的记录</h2>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

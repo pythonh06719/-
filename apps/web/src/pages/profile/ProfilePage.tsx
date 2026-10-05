@@ -166,7 +166,7 @@ export default function ProfilePage(): ReactElement {
       )}
 
       {budget !== null && (
-        <div className="qsh-surface p-5 dark:ring-slate-700">
+        <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
           <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
@@ -211,7 +211,7 @@ export default function ProfilePage(): ReactElement {
 
       {/* 基础数据修改 */}
       <form
-        className="qsh-surface space-y-3 p-5 dark:ring-slate-700"
+        className="qsh-surface space-y-3 p-5"
         onSubmit={(event) => {
           event.preventDefault();
           const heightCm = Number(edit.heightCm);
@@ -293,7 +293,7 @@ export default function ProfilePage(): ReactElement {
       {/* 参考来源（R2.9 / TC-14） */}
       <section
         aria-label="参考来源"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
@@ -347,7 +347,7 @@ export default function ProfilePage(): ReactElement {
           ⚠️ 断食计时列在最前 —— 它是断食功能的唯一开关入口，此前全站不可达。 */}
       <section
         aria-label={COPY.profileMoreTitle}
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.profileMoreTitle}
@@ -381,7 +381,7 @@ export default function ProfilePage(): ReactElement {
           「这台设备怎么用」这类问题。 */}
       <section
         aria-label={COPY.installHintTitle}
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.installHintTitle}
@@ -397,7 +397,7 @@ export default function ProfilePage(): ReactElement {
       ) : (
         <section
           aria-label="账号"
-          className="qsh-surface p-5 dark:ring-slate-700"
+          className="qsh-surface p-5"
         >
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">账号</h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">

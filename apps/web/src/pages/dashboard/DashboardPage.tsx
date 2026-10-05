@@ -540,7 +540,7 @@ export default function DashboardPage(): ReactElement {
         </div>
 
         {/* 喝水：改说「第几杯」，真实毫升作为次要文字 */}
-        <div className="qsh-surface p-5 dark:ring-slate-700">
+        <div className="qsh-surface p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
             <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
@@ -572,7 +572,7 @@ export default function DashboardPage(): ReactElement {
       {/* 右栏（C-6，≥1024px）：这周的小变化 + 安全提示与鼓励。同左栏 —— 这层包裹块别删。 */}
       <div className="space-y-6 lg:col-start-3">
         {/* 这周的小变化（迷你体重趋势） */}
-        <div className="qsh-surface p-5 dark:ring-slate-700">
+        <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
           <div className="mt-3">

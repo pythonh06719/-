@@ -141,7 +141,7 @@ export default function GoalSettingsCard(): ReactElement | null {
     return (
       <section
         aria-labelledby="goal-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.goalCardTitle}
@@ -205,7 +205,7 @@ export default function GoalSettingsCard(): ReactElement | null {
   return (
     <section
       aria-labelledby="goal-title"
-      className="qsh-surface space-y-3 p-5 dark:ring-slate-700"
+      className="qsh-surface space-y-3 p-5"
     >
       <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.goalCardTitle}

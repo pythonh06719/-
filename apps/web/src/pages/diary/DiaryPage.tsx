@@ -942,7 +942,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         </div>
       )}
 
-      <div className="qsh-surface p-5 dark:ring-slate-700">
+      <div className="qsh-surface p-5">
         <p className="text-sm text-slate-500 dark:text-slate-400">{isToday ? '今天一共' : '这天一共'}</p>
         <p className="qsh-tnum mt-1 text-display font-bold text-brand-700 dark:text-brand-300">
           {toDisplayEnergy(todayTotal, unit)}
@@ -1000,7 +1000,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
 
       {/* 一日档案（N2）：这一天的体重。
           有记录就展示；没有给一句中性提示 —— 不留空档，也不催你去称。 */}
-      <div className="qsh-surface p-5 dark:ring-slate-700">
+      <div className="qsh-surface p-5">
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这一天的体重</h2>
         {weightOfDay === null ? (
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -1103,7 +1103,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             data-meal-type={group.mealType}
             aria-label={MEAL_TYPE_LABELS[group.mealType]}
             className={[
-              'qsh-surface p-5 transition duration-qsh-fast ease-qsh-out dark:ring-slate-700',
+              'qsh-surface p-5 transition duration-qsh-fast ease-qsh-out',
               // 落区高亮：环色需 ≥3:1（WCAG 1.4.11）—— 白底用 brand-500（3.34:1）、深底用 brand-400（6.42:1）
               reorder.targetMealType === group.mealType ? 'ring-2 ring-brand-500 dark:ring-brand-400' : '',
             ].join(' ')}

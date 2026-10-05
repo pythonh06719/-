@@ -200,7 +200,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ① 热量预算怎么算 */}
       <section
         aria-labelledby="why-budget-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-budget-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ① 热量预算怎么算
@@ -344,7 +344,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ② 运动消耗怎么算 */}
       <section
         aria-labelledby="why-exercise-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-exercise-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ② 运动消耗怎么算
@@ -386,7 +386,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ③ 数据来源与许可 */}
       <section
         aria-labelledby="why-data-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-data-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ③ 数据来源与许可
@@ -444,7 +444,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ④ 我们的取舍 */}
       <section
         aria-labelledby="why-choice-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-choice-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ④ 我们的取舍
@@ -480,7 +480,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑤ 目标进度与维持模式（R2.7） */}
       <section
         aria-labelledby="why-goal-progress-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-goal-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑤ 目标进度与维持模式怎么判断
@@ -521,7 +521,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑥ 平台期怎么看（R2.7） */}
       <section
         aria-labelledby="why-plateau-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-plateau-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑥ 平台期是怎么判断的
@@ -582,7 +582,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑦ 体重区间怎么统计（C4） */}
       <section
         aria-labelledby="why-weight-range-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-weight-range-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑦ 体重区间（近 7 / 30 / 90 天）怎么统计
@@ -626,7 +626,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑧ 周报里的对比与达成率怎么读（C2） */}
       <section
         aria-labelledby="why-weekly-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-weekly-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑧ 周报里的对比与达成率怎么读
@@ -670,7 +670,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑨ taper（R2.7）：新增的「速度自动放慢」必须可解释（NFR-11） */}
       <section
         aria-labelledby="why-taper-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-taper-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑨ 快到目标时，为什么建议会自动变宽松
@@ -728,7 +728,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑩ 餐次顺序（R3.8）：新增的「顺序」必须可解释（NFR-11） */}
       <section
         aria-labelledby="why-meal-order-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-meal-order-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑩ 餐次里的顺序是怎么定的
@@ -793,7 +793,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑪ 常吃榜（R11.5） */}
       <section
         aria-labelledby="why-top-foods-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-top-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑪ 常吃榜是怎么排出来的
@@ -842,7 +842,7 @@ export default function WhyNumbersPage(): ReactElement {
       {/* ⑫ 备份提醒与记录概览（R11.6） */}
       <section
         aria-labelledby="why-backup-title"
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 id="why-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑫ 备份提醒与记录概览
@@ -1319,7 +1319,7 @@ export default function WhyNumbersPage(): ReactElement {
       </section>
 
       {/* ㉓ 记录足迹日历的颜色深浅是怎么定的（C-1，NFR-11 硬约束） */}
-      <section aria-labelledby="why-footprint-title" className="qsh-surface p-5 dark:ring-slate-700">
+      <section aria-labelledby="why-footprint-title" className="qsh-surface p-5">
         <h2 id="why-footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉓ 足迹日历里颜色的深浅是怎么定的
         </h2>
@@ -1376,7 +1376,7 @@ export default function WhyNumbersPage(): ReactElement {
       </section>
 
       {/* ㉔ 断食计时里的小时数（NFR-11：目标、已过与剩余必须可解释） */}
-      <section aria-labelledby="why-fasting-title" className="qsh-surface p-5 dark:ring-slate-700">
+      <section aria-labelledby="why-fasting-title" className="qsh-surface p-5">
         <h2 id="why-fasting-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉔ 断食计时里的小时数怎么算
         </h2>
@@ -1418,7 +1418,7 @@ export default function WhyNumbersPage(): ReactElement {
       </section>
 
       {/* ㉕ 习惯连续天数与历史最佳（NFR-11：streak 口径） */}
-      <section aria-labelledby="why-habit-streak-title" className="qsh-surface p-5 dark:ring-slate-700">
+      <section aria-labelledby="why-habit-streak-title" className="qsh-surface p-5">
         <h2 id="why-habit-streak-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉕ 习惯的当前连续与历史最佳怎么算
         </h2>
@@ -1459,7 +1459,7 @@ export default function WhyNumbersPage(): ReactElement {
       </section>
 
       {/* ㉖ 饮水目标与百分比（NFR-11：来源优先级与取整） */}
-      <section aria-labelledby="why-water-progress-title" className="qsh-surface p-5 dark:ring-slate-700">
+      <section aria-labelledby="why-water-progress-title" className="qsh-surface p-5">
         <h2 id="why-water-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉖ 饮水目标与百分比怎么算
         </h2>

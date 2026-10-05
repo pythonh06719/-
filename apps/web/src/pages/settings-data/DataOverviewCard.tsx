@@ -68,7 +68,7 @@ export default function DataOverviewCard(): ReactElement | null {
   return (
     <section
       aria-label={COPY.dataOverviewTitle}
-      className="qsh-surface p-5 dark:ring-slate-700"
+      className="qsh-surface p-5"
     >
       <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.dataOverviewTitle}

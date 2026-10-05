@@ -36,7 +36,7 @@ export default function PlateauCard({
   return (
     <section
       aria-labelledby="plateau-title"
-      className="qsh-surface p-5 dark:ring-slate-700"
+      className="qsh-surface p-5"
     >
       <h2 id="plateau-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.plateauTitle}

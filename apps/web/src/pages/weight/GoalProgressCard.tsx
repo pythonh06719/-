@@ -54,7 +54,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
   return (
     <section
       aria-labelledby="goal-progress-title"
-      className="qsh-surface p-5 dark:ring-slate-700"
+      className="qsh-surface p-5"
     >
       <h2 id="goal-progress-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {title}

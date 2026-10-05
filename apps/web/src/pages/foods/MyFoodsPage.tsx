@@ -101,7 +101,7 @@ export default function MyFoodsPage(): ReactElement {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4">
       <section
         aria-label={COPY.myFoodsTitle}
-        className="qsh-surface p-5 dark:ring-slate-700"
+        className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.myFoodsTitle}</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.myFoodsDesc}</p>
@@ -117,7 +117,7 @@ export default function MyFoodsPage(): ReactElement {
         </p>
       )}
 
-      <section aria-label="我存过的食物" className="qsh-surface p-5 dark:ring-slate-700">
+      <section aria-label="我存过的食物" className="qsh-surface p-5">
         {mineQuery.isLoading ? (
           /* 骨架而非灰字：此前「还在拿」与「拿不到」是同一行灰字，用户分不清。
              骨架块用 `h-12` + `rounded-control`，与下方真实列表项（`:132`）同几何，

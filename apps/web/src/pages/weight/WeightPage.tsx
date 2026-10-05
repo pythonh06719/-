@@ -387,7 +387,7 @@ export default function WeightPage(): ReactElement {
           警告见上方栅格注释，**别删**。移动端为中性包裹块，间距 / 顺序与改动前一致。 */}
       <div className="space-y-5 lg:col-start-1">
         <form
-          className="qsh-surface space-y-3 p-5 dark:ring-slate-700"
+          className="qsh-surface space-y-3 p-5"
           onSubmit={(event) => {
             event.preventDefault();
             handleSubmit();
@@ -467,7 +467,7 @@ export default function WeightPage(): ReactElement {
           </section>
         )}
 
-        <div className="qsh-surface p-5 dark:ring-slate-700">
+        <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
 
           {/* 区间切换（C4）：近 7 / 30 / 90 天。分段控件语义用 role=group + aria-pressed。
@@ -577,25 +577,25 @@ export default function WeightPage(): ReactElement {
         )}
 
         <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-          <div className="qsh-surface p-3 dark:ring-slate-700">
+          <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
             <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.minKg, weightUnit)}
             </dd>
           </div>
-          <div className="qsh-surface p-3 dark:ring-slate-700">
+          <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
             <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.maxKg, weightUnit)}
             </dd>
           </div>
-          <div className="qsh-surface p-3 dark:ring-slate-700">
+          <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
             <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.meanKg, weightUnit)}
             </dd>
           </div>
-          <div className="qsh-surface p-3 dark:ring-slate-700">
+          <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
             <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
               {formatSignedWeight(stats.changeKg, weightUnit)}
@@ -615,7 +615,7 @@ export default function WeightPage(): ReactElement {
           {COPY.weightRangeOlderHint}
         </p>
 
-        <div className="qsh-surface p-5 dark:ring-slate-700">
+        <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
           {points.length === 0 ? (
             <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
