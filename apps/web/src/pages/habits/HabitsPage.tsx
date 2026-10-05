@@ -22,7 +22,38 @@ import HabitCalendar from './HabitCalendar';
  * - 后端 `GET /habits` **不过滤** `isActive`（返回全部，含停用项），由本页分区显示；
  * - 只有**自建**习惯（`isBuiltin === false`）才显示停用入口 —— 内置模板停用会 404；
  * - 停用 / 重新开始按钮是打卡按钮的**平级兄弟**（绝不嵌套 `<button>`，见下方注释）。
+ *
+ * **三态表达（本页对 `GET /habits` 的唯一判据口径）**：列表区的状态是
+ * 「加载中 / 取数失败 / 真的没有习惯」**三者互斥**，判据取自查询本身
+ * （`isLoading` / `isError`），**不取自 `habits.length`** —— 见下方三分支处的注释。
  */
+
+/**
+ * 本页私有文案（不进 `lib/copy.ts`）。
+ *
+ * 为什么不并到 `COPY`：这几句只在**本文件这一处**用到，`COPY` 的定位是跨页面共享
+ * 口径的文案表（见该文件头说明）；单独入表反而会让「这一页为什么这么说」的理由
+ * 离使用点更远。跨页面复用时再迁过去。
+ */
+
+/** 首次取数中的占位文案（不留裸白屏，也不把「还没取到」说成「你没有」） */
+const HABITS_LOADING = '正在取回你的习惯…';
+/**
+ * 取数失败时的中性说明。
+ *
+ * ⚠️ 刻意**不归因**（不说「网络不稳」/「服务端出错」）：本页无法可靠区分一个 500
+ * 与一次断网，归因不准会把用户引去查 WiFi —— 而问题可能在别处。只陈述现象 + 给一条出路。
+ * ⚠️ 刻意**不含任何数字**：本页没有新数字要上屏（当前连续 / 历史最佳的口径已在
+ * `/why-numbers` ㉕ 解释），失败态更不该凭空出现计数。
+ */
+const HABITS_LOAD_ERROR = '这一页暂时读不到你的习惯，稍后再来看看就好';
+/** 失败态里唯一的人工出路：直接重跑本查询，取到数据后本条自动消失 */
+const HABITS_LOAD_RETRY = '重新试试';
+/** 真·空状态：**请求成功**且确实一条习惯都没有（与「失败」严格区分，见下方三分支） */
+const HABITS_EMPTY = '还没有习惯，从下面加一个开始吧';
+/** 打卡状态的读屏措辞（与可见样式无关，只进 `aria-label`） */
+const HABIT_DONE_TODAY = '今天已打卡';
+const HABIT_NOT_DONE_TODAY = '今天还没打卡';
 
 interface HabitItem {
   id: number;
@@ -53,6 +84,34 @@ interface HabitItem {
 interface SetActiveVars {
   id: number;
   isActive: boolean;
+}
+
+/**
+ * 打卡按钮的**完整可访问名**。
+ *
+ * ⚠️ 为什么连项都要逐一拼进来：`<button>` 显式写了 `aria-label` 时，按 accname 规范
+ * **`aria-label` 会覆盖全部后代文本** —— 名字、「内置」、以及下面那行「当前连续 / 历史最佳」
+ * 统统听不到。而这两个数字正是**本页唯一有信息量的数值**（R7.3），缺了它们，
+ * 读屏用户点的是一张只报「名字 + 有没有打卡」的按钮，等于把习惯打卡的全部反馈都丢掉了。
+ *
+ * 按本仓判据，`aria-hidden` 有**两种正当理由且不可混用**：
+ * 「不承载信息」→ 直接 `aria-hidden`；「信息已在别处」→ **必须先把信息并进 `aria-label`**，
+ * 可见副本才能 `aria-hidden`。这里走的是第二种（与「内置」span 同一思路）。
+ *
+ * 拼法是逐段相连、读出来是一句自然的话（不是堆成一长串术语）：
+ * 「喝水达标，内置，今天已打卡，当前连续 3 天，历史最佳 7 天」。
+ * 数字口径与可见那一行**逐字一致**（同一个 `${habit.currentStreak}`），
+ * 避免读屏与肉眼两个版本打架。
+ */
+function buildHabitCheckAria(habit: HabitItem): string {
+  const parts: string[] = [habit.name];
+  if (habit.isBuiltin) {
+    parts.push(COPY.habitBuiltinTag);
+  }
+  parts.push(habit.doneToday ? HABIT_DONE_TODAY : HABIT_NOT_DONE_TODAY);
+  parts.push(`当前连续 ${habit.currentStreak} 天`);
+  parts.push(`历史最佳 ${habit.bestStreak} 天`);
+  return parts.join('，');
 }
 
 export default function HabitsPage(): ReactElement {
@@ -139,15 +198,18 @@ export default function HabitsPage(): ReactElement {
             onClick={() => toggle.mutate(habit)}
             aria-pressed={habit.doneToday}
             /**
-             * 打卡按钮的可访问名。**必须显式写出「内置」**，因为 `aria-label`
-             * 会覆盖全部后代文本 —— 名字旁边那个可见的「内置」小字在按钮自身的
-             * 朗读里是听不到的。不写进这里 ⇒ 读屏用户永远拿不到「这条是内置的」，
-             * 而这正是本页要解决的核心困惑（分不清哪个是自己建的）。
-             * 故与可见 span 共用同一个 `COPY.habitBuiltinTag`，保证两处口径一致。
+             * 打卡按钮的可访问名 —— 由 `buildHabitCheckAria` 统一拼装，理由见该函数的注释。
+             *
+             * 一句话版：**凡是被这个 `aria-label` 覆盖掉的后代信息，都必须在这里出现**。
+             * 目前被它覆盖、因而**必须**并入这条 label 的三项：
+             * ① 「内置」（`COPY.habitBuiltinTag`）—— 不写进这里 ⇒ 读屏用户永远分不清
+             *    哪条是自己建的，而这正是本页要解决的核心困惑；
+             * ② 「今天（没）打卡」；
+             * ③ 「当前连续 / 历史最佳」—— 本页唯一的数值反馈。
+             * 对应的可见元素因此都是**同一信息的视觉重复**，全部标 `aria-hidden`，
+             * 以免浏览模式下被重复朗读成噪音。
              */
-            aria-label={`${habit.name}${habit.isBuiltin ? `，${COPY.habitBuiltinTag}` : ''}，${
-              habit.doneToday ? '今天已打卡' : '今天还没打卡'
-            }`}
+            aria-label={buildHabitCheckAria(habit)}
           >
             <span className="text-2xl" aria-hidden="true">
               {habit.icon ?? '✅'}
@@ -169,7 +231,7 @@ export default function HabitsPage(): ReactElement {
                 （全站形态语言是「胶囊」与「卡片」两类，不为此加第三类）。
 
                 ## 无障碍：为什么是 `aria-hidden`（详见 report）
-                打卡 `<button>` 在 :137 已有显式 `aria-label`，按 accname 规范
+                打卡 `<button>` 已有显式 `aria-label`（由 `buildHabitCheckAria` 拼装），
                 **`aria-label` 会覆盖全部后代文本** —— 所以按钮本身朗读时
                 「内置」不会被读出来。为了让读屏用户**真的拿到这条信息**，
                 已把 `COPY.habitBuiltinTag` 并入该 `aria-label`；
@@ -184,7 +246,13 @@ export default function HabitsPage(): ReactElement {
                   </span>
                 )}
               </span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">
+              {/*
+                当前连续 / 历史最佳 —— 与本 span 对应的信息已由 `buildHabitCheckAria`
+                并进上方 `<button>` 的 `aria-label`，所以这里是**同一信息的视觉重复**，
+                必须 `aria-hidden`（否则浏览模式下会被念两遍：先整钮念一遍 label，走到
+                这个 span 再念一遍数字）。这是本仓「信息已在别处」的第二种 aria-hidden 用法。
+              */}
+              <span aria-hidden="true" className="block text-xs text-slate-500 dark:text-slate-400">
                 当前连续 {habit.currentStreak} 天 · 历史最佳 {habit.bestStreak} 天
               </span>
             </span>
@@ -230,21 +298,58 @@ export default function HabitsPage(): ReactElement {
       ))}
 
       {/*
-        ⚠️ 正常路径下本分支**不可达**：`GET /api/habits` 对所有账号都返回同一批种子习惯
-        （water / early_sleep / steps…），`habits.length` 恒 > 0。
-        实际只有**请求失败**时（`data` 为 undefined → `habits` 退回 `[]`）才会渲染到这里 ——
-        而那时显示「还没有习惯」其实并不准确（是出错，不是空）。
-        保留 `EmptyState` 是把它当**防御性展示**：真有一天出现「零习惯」的账号，
-        这里至少不是一句裸文案。若将来后端改成按用户返回，本处会自然生效。
-        真正可达的空状态见 exercise / weight / diary 三处。
+        列表区的**三态**表达：加载中 / 取数失败 / 真的没有习惯 —— **三者互斥**。
+
+        ## 为什么不能用 `habits.length` 当判据
+        `habits` 是 `data?.habits ?? []`：请求失败时 `data` 为 undefined，`habits` 退回 `[]`，
+        于是「失败」与「真空」在这一个数字上**完全无法区分**。合并成一个判据的后果是：
+        一次 500 或一次断网，页面就对用户说「还没有习惯，从下面加一个开始吧」——
+        那是**把「我没把数据取回来」说成「你还没开始」**。用户会以为自己记错了、
+        跑到下面表单去重键一个同名习惯，而真实的习惯列表其实一直好好的。
+        判据因此必须取自查询本身（`isLoading` / `isError`），长度只在最内层充当「列不列得出东西」。
+
+        ## 为什么外层仍要 `habits.length === 0`
+        已经有习惯可以列的时候（上一次成功的响应还在，`data` 未被清掉），
+        下面再叠一条「读不到你的习惯」就与屏幕内容自相矛盾了 —— 那时本区块什么都不渲染。
+
+        ## 为什么是「读不到」而不是「出错了」
+        PRD §7：不指责、不焦虑 —— 说明文案刻意避开「错误 / 失败 / 异常」这类词，
+        只陈述现象、不给**归因**（不说「网络不稳」也说「服务端出错」）：本页无法可靠
+        区分一个 500 与一次断网，归因不准会把用户引去查 WiFi，而问题可能在别处。
+
+        配色同 `[diary] stale-meals-notice`：`bg-slate-100 text-slate-600`，
+        深色 `bg-slate-800 text-slate-300` —— 中性陈述，**不弹窗、不遮挡、不用红/警示色**。
+
+        ## 出路同屏可达
+        「重新试试」直接 `habitsQuery.refetch()`：取到数据后习惯列表自然出现、本条自动消失，
+        不需要额外的成功/失败状态机（重取失败也只是停回本分支，不会退化成空状态）。
       */}
       {habits.length === 0 ? (
         habitsQuery.isLoading ? (
           <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
-            正在取回你的习惯…
+            {HABITS_LOADING}
           </p>
+        ) : habitsQuery.isError ? (
+          <div
+            role="status"
+            data-testid="habits-load-error"
+            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <span>{HABITS_LOAD_ERROR}</span>
+            <button
+              type="button"
+              data-testid="habits-load-retry"
+              className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+              disabled={habitsQuery.isFetching}
+              onClick={() => {
+                void habitsQuery.refetch();
+              }}
+            >
+              {HABITS_LOAD_RETRY}
+            </button>
+          </div>
         ) : (
-          <EmptyState title="还没有习惯，从下面加一个开始吧" />
+          <EmptyState title={HABITS_EMPTY} />
         )
       ) : null}
 
