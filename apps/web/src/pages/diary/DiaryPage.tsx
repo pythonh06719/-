@@ -192,6 +192,30 @@ function normalizeGroups(response: ListMealsResponse | undefined): MealGroup[] {
   });
 }
 
+/**
+ * 本页新增的文案 —— **刻意放在文件局部常量**，本轮不改 `lib/copy.ts`。
+ *
+ * 语气沿用 PRD §7：只陈述当前发生了什么 + 给一条同屏可达的出路，
+ * 不用「失败 / 错误 / 崩溃」这类词，不含任何数字（NFR-11），也不用红 / 警示色。
+ */
+/** 「还在取」—— 首次进入且本机没有任何旧记录时的占位。 */
+const DIARY_MEALS_LOADING = '正在取出这一天的记录…';
+/** 「取不到」—— 请求没通且本机也没有旧记录时的占位（详见 JSX 处的三分支注释）。 */
+const DIARY_MEALS_LOAD_ERROR = '这一天的记录暂时取不到，稍后再看看就好';
+
+/**
+ * 报表族的**前缀**查询键（`['report']`）：周报、阶段回顾、记录足迹日历都在这段前缀下。
+ *
+ * 为什么从 `queryKeys` 的工厂**取首段**而不是手写 `['report']`：
+ * `weeklyReport` / `periodReport` / `reportCalendar` 三个键都以同一段前缀开头，
+ * 取工厂产物的第一段即可命中全部 —— 将来 `lib/queryClient.ts` 改键名，这里会跟着改，
+ * 不会悄悄失配（失效漏掉表现为「别的页面数字不更新」，用户无从归因）。
+ * 传占位入参是必要的：这三个工厂都要求日期 / 月份参数，而前缀本身与参数无关。
+ */
+const REPORT_KEY_PREFIX: readonly string[] = queryKeys.reportCalendar('').slice(0, 1);
+/** 食物族的前缀查询键（`['foods']`）：常吃榜 / 上次份量 / 食用历史都在这段前缀下。 */
+const FOODS_KEY_PREFIX: readonly string[] = queryKeys.foodRecent.slice(0, 1);
+
 export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement {
   const unit = useUnitStore((state) => state.unit);
   /** 全局体重单位（D-3）：一日档案里的体重按此换算展示（存储仍为 kg）。 */
@@ -273,6 +297,23 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   const hasAnyLog = groups.some((group) => group.logs.length > 0);
   const showingStaleMeals =
     mealsQuery.isError && isNetworkError(mealsQuery.error) && hasAnyLog;
+
+  /**
+   * 「还在取」与「取不到」—— 两个此前**完全缺失**的中间态（P0 状态混淆）。
+   *
+   * 修复前，`groups` 为空时无条件渲染 `COPY.emptyTodayDiary`（「今天还没记，从一顿早餐开始也行」）。
+   * 而 `groups` 为空有两种截然不同的成因，页面把它们画成了同一句话：
+   *   ① **请求还没回来**（首次进入 / 弱网）：此时「今天还没记」是一个**尚未知道**的结论；
+   *   ② **请求失败且本机没有旧记录**（新用户、刚清缓存、换设备）：
+   *      此时「今天还没记」更糟 —— 它把「没能读出来」说成「你还没记」，
+   *      用户如果今天确实记过，会以为记录丢了（一个不存在的损失）。
+   * 只有 ③ 请求成功且当天真的没有记录，才是那句话成立的场景。
+   *
+   * 两个判据都要求 `!hasAnyLog`：一旦屏幕上有记录可看，就该走 `showingStaleMeals`
+   * 那条「这些是上次同步时的数据」—— 有东西可展示时不说「取不到」。
+   */
+  const mealsLoadingEmpty = mealsQuery.isLoading && !hasAnyLog;
+  const mealsFailedEmpty = mealsQuery.isError && !hasAnyLog;
 
   /**
    * D-2「重复记录温和提示」的数据来源：**这一天的全部记录**（最小投影）。
@@ -372,9 +413,30 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
     [groups],
   );
 
+  /**
+   * 记录侧所有写操作共用的一次「失效广播」。
+   *
+   * **本页六处调用点**（删一条 / 排序 / 批量记 / 单条记 / 套餐饮用 / 改份量）全部走这里 ——
+   * 新增失效键只需要改这一处，不会出现「记餐刷新了、删餐没刷新」的口径漂移。
+   *
+   * 为什么要失效这四族键（P1 派生统计口径）：
+   * - `meals(date)` / `dashboard(date)`：本页本身的数字；
+   * - `['report']`：周报摄入、阶段回顾（多样食物数 / 记录天数 / 记录条数）、记录足迹日历，
+   *   都是按同一批餐次记录的**服务端聚合**，链路里看不到「刚刚多了一条」；
+   * - `['foods']`：常吃榜（`foodTop`）、上次份量（`foodLastPortions`）、食用历史（`foodHistory`）
+   *   同理 —— 它们的输入是「某段时间的全部记录」，而不是本页传出去的那一条。
+   * 少了这两族的表现：记完一餐去周报 / 回顾 / 足迹日历 / 搜索面板的「常吃」tab，
+   * 看到的还是记之前的旧值，要手动刷新才对得上。
+   *
+   * ⚠️ 只失效**前缀**：报表与食物族的键都带日期 / 月份 / id 等参数，逐个枚举迟早会漏
+   * （每新增一个统计入口就要回来补一行），而漏掉的那一处正是用户看不出来、只会觉得
+   * 「数字好像不太对」的地方。前缀失效对调用方更省事：这里不需要知道具体有哪些键。
+   */
   const invalidate = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.meals(date) });
     await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(date) });
+    await queryClient.invalidateQueries({ queryKey: REPORT_KEY_PREFIX });
+    await queryClient.invalidateQueries({ queryKey: FOODS_KEY_PREFIX });
   };
 
   const remove = useMutation({
@@ -975,9 +1037,50 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         </div>
       )}
 
-      {/* 空状态（共用组件第一处接入）：品牌花替代原先的 emoji 插画位，
-          文案保持原样不动（语气规范由 copy.ts 统一把关） */}
-      {isEmptyDay && <EmptyState title={COPY.emptyTodayDiary} />}
+      {/*
+        整日为空时的三分支：**正在取 / 取不到 / 真的没记**（见 `mealsLoadingEmpty` 处注释）。
+
+        三者在此**互斥且穷尽**，`hasAnyLog` 为真时这里整块不渲染 —— 有记录可看的降级场景
+        由上方 `diary-stale-meals-notice` 负责，两条路不重叠、也不互相替代。
+
+        为什么**不复用**页内 `notice` 当错误出口：那块是**动作反馈槽**（记录成功 / 删除未成），
+        把「本次拉取没成功」塞进去会让两种语义混在一条文案里 —— 用户分不清
+        「刚才那笔没存上」和「这一页没读出来」，而两者的下一步完全不同。
+
+        配色与文案：中性灰底 + 品牌色动作（`diary-stale-meals-notice` 同一样式），
+        不用红 / 警示色；文案不含任何数字（NFR-11），出路**同屏可达**。
+      */}
+      {mealsLoadingEmpty ? (
+        <p
+          role="status"
+          data-testid="diary-meals-loading"
+          className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        >
+          {DIARY_MEALS_LOADING}
+        </p>
+      ) : mealsFailedEmpty ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="diary-meals-error"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        >
+          <span>{DIARY_MEALS_LOAD_ERROR}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void mealsQuery.refetch();
+            }}
+            disabled={mealsQuery.isFetching}
+            data-testid="diary-meals-retry"
+            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+          >
+            {mealsQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+          </button>
+        </div>
+      ) : isEmptyDay ? (
+        <EmptyState title={COPY.emptyTodayDiary} />
+      ) : null}
 
       {/* 屏幕阅读器播报记录结果（TC-48） */}
       <p className="qsh-sr-only" role="status" aria-live="polite">

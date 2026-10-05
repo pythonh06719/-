@@ -114,6 +114,28 @@ function resolveGoalProgress(
   return null;
 }
 
+/**
+ * 本页新增的文案 —— **刻意放在文件局部常量**，本轮不改 `lib/copy.ts`。
+ *
+ * 语气沿用 PRD §7：陈述当前发生了什么 + 给一条同屏可达的出路，
+ * 不用「失败 / 错误 / 崩溃」这类词，不含任何数字（NFR-11），也不用红 / 警示色。
+ */
+/** 「还在取」—— 首次进入且本机没有任何旧记录时的占位。 */
+const TREND_LOADING = '正在取出这段时间的记录…';
+/** 「取不到」—— 请求没通且本机也没有旧记录时的占位（详见 JSX 处的三分支注释）。 */
+const TREND_LOAD_ERROR = '这段时间的记录暂时取不到，稍后再看看就好';
+
+/**
+ * 报表族的**前缀**查询键（`['report']`）：周报的体重变化、阶段回顾的起止体重、
+ * 记录足迹日历的体重维度都在这段前缀下。
+ *
+ * 为什么从 `queryKeys` 的工厂**取首段**而不是手写 `['report']`：
+ * `weeklyReport` / `periodReport` / `reportCalendar` 三个键都以同一段前缀开头，
+ * 取工厂产物的第一段即可命中全部 —— 将来 `lib/queryClient.ts` 改键名，这里会跟着改，
+ * 不会悄悄失配。传占位入参是必要的：这三个工厂都要求日期 / 月份参数，而前缀与参数无关。
+ */
+const REPORT_KEY_PREFIX: readonly string[] = queryKeys.reportCalendar('').slice(0, 1);
+
 export default function WeightPage(): ReactElement {
   const queryClient = useQueryClient();
   const [date, setDate] = useState<string>(todayKey());
@@ -167,6 +189,22 @@ export default function WeightPage(): ReactElement {
    */
   const showingStaleData =
     trendQuery.isError && isNetworkError(trendQuery.error) && allPoints.length > 0;
+
+  /**
+   * 「还在取」与「取不到」—— 两个此前**完全缺失**的中间态（P1 状态混淆）。
+   *
+   * 修复前，`points` 为空时一律按 `allPoints.length === 0` 渲染 `COPY.emptyWeight`
+   * （「记录第一笔体重，之后就交给趋势吧」）。但「一个点都没有」有三种成因：
+   *   ① **请求还没回来**（首次进入 / 弱网）→ 尚未知道有没有记录；
+   *   ② **请求失败且本机没有旧记录** → 「还没取到」被说成「你一笔都还没记」，
+   *      老用户会以为以前称的那些都没了 —— 一个不存在的损失；
+   *   ③ 请求成功且真的没有记录 → 只有这时那句引导才成立。
+   *
+   * 判据统一带 `allPoints.length === 0`：`showingStaleData` 要求的正是它的反面，
+   * 故两条路互斥 —— 有旧点可看时走「这是上次同步的数据」，一个点都没有时才谈「取不到」。
+   */
+  const trendLoadingEmpty = trendQuery.isLoading && allPoints.length === 0;
+  const trendFailedEmpty = trendQuery.isError && allPoints.length === 0;
   /**
    * 全量 7 日均线（优先后端 `movingAverage7`，离线时本地算）。
    *
@@ -247,6 +285,10 @@ export default function WeightPage(): ReactElement {
       setNotice('已经记下今天的体重啦');
       await queryClient.invalidateQueries({ queryKey: queryKeys.weightTrend });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(todayKey()) });
+      // 报表的派生统计：周报「体重变化」、阶段回顾的起止体重与差值、记录足迹日历的
+      // 体重维度，都是按全部体重日记聚合出来的（不是这一条传出去的），
+      // 不失效就停在记这笔之前的旧值上。
+      await queryClient.invalidateQueries({ queryKey: REPORT_KEY_PREFIX });
     },
     onError: async (error, variables) => {
       if (isNetworkError(error)) {
@@ -451,7 +493,47 @@ export default function WeightPage(): ReactElement {
             })}
           </div>
 
-          {points.length === 0 ? (
+          {/*
+            曲线区为空时的三分支：**正在取 / 取不到 / 真的还没记**（理由见 `trendLoadingEmpty`）。
+
+            三者在此互斥且穷尽：`allPoints.length > 0` 时的降级由页面顶部
+            `weight-stale-notice` 负责，两条路不重叠、不互相替代。
+
+            为什么不复用表单内那条 `notice`：它是**动作反馈槽**（「已经记下今天的体重啦」/
+            范围提示 / 离线入队），把「这一页面压根没读出来」混进去会让两种下一步冲突。
+
+            配色与文案：中性灰底 + 品牌色动作（与 `weight-stale-notice` 同一样式），
+            不用红 / 警示色；文案不含任何数字（NFR-11）；出路**同屏可达**。
+          */}
+          {trendLoadingEmpty ? (
+            <p
+              role="status"
+              data-testid="weight-trend-loading"
+              className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400"
+            >
+              {TREND_LOADING}
+            </p>
+          ) : trendFailedEmpty ? (
+            <div
+              role="status"
+              aria-live="polite"
+              data-testid="weight-trend-error"
+              className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <span>{TREND_LOAD_ERROR}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  void trendQuery.refetch();
+                }}
+                disabled={trendQuery.isFetching}
+                data-testid="weight-trend-retry"
+                className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+              >
+                {trendQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+              </button>
+            </div>
+          ) : points.length === 0 ? (
             <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">
               {allPoints.length === 0 ? COPY.emptyWeight : COPY.weightRangeEmpty}
             </p>
