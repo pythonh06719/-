@@ -53,10 +53,14 @@ import DashboardPage from '@/pages/dashboard/DashboardPage';
 import { cacheClearAll, cacheSet } from '@/lib/local-cache';
 import { todayKey } from '@/lib/format';
 import { WATER_GOAL_STORAGE_KEY } from '@/lib/water-goal';
+// 护栏要比的是**生产实现自己算出来的数**，所以直接引入 `cupProgress` ——
+// 它是 `Math.round(goal / ML_PER_CUP)` 的唯一真源。护栏自带一份公式副本的话，
+// 哪天 `cupProgress` 改了取整方式，护栏会跟着一起错，就又变成假绿了。
+import { cupProgress } from '@/lib/copy';
 // 兜底层的真源。刻意从 `theme/tokens` 导入而不是写死 2000 ——
 // 写死的话，改了默认值这条断言不会跟着动，就又变成一个「看着在断言、实际没断言」的值。
 // 同时它天然保证「服务端取值 ≠ 兜底取值」这个前提被显式表达出来。
-import { DEFAULT_WATER_GOAL_ML } from '@/theme/tokens';
+import { DEFAULT_WATER_GOAL_ML, WATER_ML_PER_CUP } from '@/theme/tokens';
 
 /**
  * 三层取值必须**两两不同**，否则断言区分不了它们（QA 证伪的 P1）。
@@ -110,8 +114,12 @@ const GOAL_CUPS_BY_SERVER = 9;
 /** `Math.round(2000 / 250)` 杯 —— 「目标 8 杯」。 */
 const GOAL_CUPS_BY_DEFAULT = 8;
 
-/** 一杯 = 250 ml（与 `lib/copy.ts` 的 `ML_PER_CUP` 同口径，杯数由此派生）。 */
-const ML_PER_CUP = 250;
+/**
+ * 一杯 = 250 ml。**不写死**：从 `theme/tokens` 的 `WATER_ML_PER_CUP` 导入 ——
+ * 它是 `lib/copy.ts` 里 `ML_PER_CUP` 的同一份真源（`copy.ts:1544` 直接引用它）。
+ * 写死 250 的话，哪天改了一杯的容量，护栏会拿旧容量算出一个仍然「两两不同」的假结论。
+ */
+const ML_PER_CUP = WATER_ML_PER_CUP;
 
 /**
  * 三层的取值与派生值必须两两不同 —— 否则断言会「看着在区分、实际没区分」。
@@ -119,6 +127,10 @@ const ML_PER_CUP = 250;
  * 这条断言本身就是为了**防止本文件再次退化成假绿**：将来谁把 `SERVER_GOAL_ML` 改回
  * 2000（= `DEFAULT_WATER_GOAL_ML`），或挑了个在杯数上与本机层撞车的值，这里立刻转红，
  * 而不是等到「helper 不读服务端了也没人发现」。
+ *
+ * ⚠️ `percent` / `cups` 两个字段是给**渲染断言**当期望值用的，以及给下面那条
+ * 「派生值与常量一致」当被检查对象用的。**可区分性护栏一律不读它们** ——
+ * 一律从 `goal` 现算。理由见 `assertDistinct` 上方的说明。
  */
 const LAYERS = [
   { name: '本机层', goal: LOCAL_GOAL_ML, percent: PERCENT_BY_LOCAL, cups: GOAL_CUPS_BY_LOCAL },
@@ -126,20 +138,125 @@ const LAYERS = [
   { name: '默认兜底层', goal: DEFAULT_WATER_GOAL_ML, percent: PERCENT_BY_DEFAULT, cups: GOAL_CUPS_BY_DEFAULT },
 ] as const;
 
+/** 派生值 + 它是哪一层的，供 `assertDistinct` 出错时点名。 */
+interface Derived {
+  /** 层的名字（出错信息里点名用）。 */
+  name: string;
+  /** 现算出来的数值。 */
+  value: number;
+  /** 给人看的写法，如 `10 杯`。 */
+  text: string;
+}
+
+/**
+ * 断言某个维度上三层**两两不同**，且出错时指名**是哪个维度、哪两层撞了**。
+ *
+ * ## 为什么不直接比 `LAYERS[i].cups`（独立 QA 证伪的 P1）
+ *
+ * 原来那两条护栏比的是 `LAYERS` 里**写死的常量**（`GOAL_CUPS_BY_DEFAULT = 8` 这种）。
+ * 常量是上一轮人肉算好抄进去的，它跟 `goal` 之间没有任何因果关系 ——
+ * 于是「常量两两不同」压根不能推出「派生值两两不同」。QA 实测的盲区窗口：
+ *
+ * | 注入 | 真实派生杯数 | 旧护栏读的常量 | 旧护栏 | 真相 |
+ * |---|---|---|---|---|
+ * | `DEFAULT_WATER_GOAL_ML` → 2500 | `2600→10` / `2200→9` / `2500→10` | `10 / 9 / 8` | **绿** | 10 与 10 已撞车 |
+ *
+ * 「三层的杯数两两不同」那条没红（它比的是三个写死常量，`Set.size === 3`），
+ * 只有另一条「派生值与常量一致」误打误撞兜住了。
+ *
+ * 而那个兜底**不是防线**：将来有人改默认值时，最自然的动作就是顺手把常量也对齐
+ * （`8 → 10`，这正是「派生值与常量不符」这条报错的建议修法）→ 两条一起转绿，
+ * 而此时真撞车已经发生了。**两条护栏同时绿 ≠ 安全**，因为它们读的是同一个不变量。
+ *
+ * 所以这里改成从 `goal` 现算：撞了就一定红，与有没有人同步改常量无关。
+ */
+function assertDistinct(dimension: string, derived: readonly Derived[]): void {
+  // 同一数值都出现在哪些层 —— 用来在失败信息里点名「哪两层撞了」。
+  const namesByValue = new Map<number, string[]>();
+  for (const item of derived) {
+    namesByValue.set(item.value, [...(namesByValue.get(item.value) ?? []), item.name]);
+  }
+  const collisions = [...namesByValue.entries()].filter(([, names]) => names.length > 1);
+
+  const all = derived.map((item) => `${item.name} ${item.text}`).join(' / ');
+  const detail = collisions
+    .map(([value, names]) => `${names.join(' 与 ')} 都算出「${value}」`)
+    .join('；');
+
+  expect(collisions.length, `${dimension}出现重复：${detail}。三层取值与派生值：${all}`).toBe(0);
+}
+
 describe('三层取值的可区分性（本文件自身的护栏）', () => {
   it('三层的目标值两两不同（否则「服务端层」与「默认层」无法区分）', () => {
     const goals = LAYERS.map((layer) => layer.goal);
     expect(new Set(goals).size, `目标值出现重复：${goals.join(' / ')}`).toBe(LAYERS.length);
   });
 
-  it('三层的百分比两两不同', () => {
-    const percents = LAYERS.map((layer) => layer.percent);
-    expect(new Set(percents).size, `百分比出现重复：${percents.join('% / ')}%`).toBe(LAYERS.length);
+  it('三层的百分比两两不同（现算，不读写死常量）', () => {
+    assertDistinct(
+      '百分比',
+      LAYERS.map((layer) => {
+        const value = Math.round((TOTAL_ML / layer.goal) * 100);
+        return { name: layer.name, value, text: `${value}%` };
+      }),
+    );
   });
 
-  it('三层的杯数两两不同（2400 就会在这里撞上 2600）', () => {
-    const cups = LAYERS.map((layer) => layer.cups);
-    expect(new Set(cups).size, `杯数出现重复：${cups.join(' / ')} 杯`).toBe(LAYERS.length);
+  it('三层的杯数两两不同（现算，不读写死常量；2400 就会在这里撞上 2600）', () => {
+    assertDistinct(
+      '杯数',
+      LAYERS.map((layer) => {
+        // 取整口径与生产实现同源：`cupProgress` 的 `goalCups` 就是
+        // `Math.round(goalMl / ML_PER_CUP)`（`copy.ts:1666`）。直接调它而不是
+        // 在测试里重抄一遍公式 —— 公式改一处，两边一起动，不会各算各的。
+        const value = cupProgress(layer.goal, layer.goal).goalCups;
+        return { name: layer.name, value, text: `${value} 杯` };
+      }),
+    );
+  });
+
+  /**
+   * `Math.floor` 维度：**证明它不适用**，而不是补一条永远绿的断言。
+   *
+   * 杯数在生产实现里有两个**互不相干**的维度，只有一个是「按目标算」的：
+   *
+   * | 字段 | 公式（`copy.ts:1661`） | 输入 | 会随三层变化吗 |
+   * |---|---|---|---|
+   * | `cups`（已喝） | `Math.floor(currentMl / 250)` | `currentMl` | ❌ 与 `goalMl` 无关 |
+   * | `goalCups`（目标） | `Math.round(goalMl / 250)` | `goalMl` | ✅ 就是上面那条护栏 |
+   *
+   * `Math.floor` 只出现在 `cups` 上，输入是**已喝量**而不是 `goalMl`。QA 算出的
+   * `floor(2200/250) === floor(2000/250) === 8` 确实是撞车，但**这个撞车当前没有任何
+   * 消费者**：没有任何代码对 `goalMl` 取 floor，所以用户永远看不到这个数。
+   *
+   * 那要不要为它加一条护栏？**不加**。给一个生产代码里不存在的派生值写「两两不同」
+   * 断言，等于把一条恒真断言钉进文件 —— 那正是本文件注释里一直在反感的「看着在断言、
+   * 实际没断言」。真正该防的不是「floor 撞车」，而是**将来有人把目标杯数改成 floor**：
+   * 那一刻 `floor(2200/250) === floor(2000/250) === 8` 才会真的咬到「目标 N 杯」那两条
+   * 渲染断言。下一条就是防这个的。
+   *
+   * 这条断言顺带把上表的「与 `goalMl` 无关」**变成可执行的**：若哪天有人把 `goalMl`
+   * 误接进 `cups`，本条立刻转红，注释与代码就不会各说各话。
+   */
+  it('已喝杯数走 floor，且只由 currentMl 决定（故不参与三层可区分性）', () => {
+    const byLayer = LAYERS.map((layer) => cupProgress(TOTAL_ML, layer.goal).cups);
+    expect(
+      new Set(byLayer).size,
+      `已喝杯数不该随目标层变化（它只吃 currentMl）：${LAYERS.map((l, i) => `${l.name} ${byLayer[i]} 杯`).join(' / ')}`,
+    ).toBe(1);
+    // floor 口径本身也钉住：已喝 1000ml = 4 整杯（`floor(1000/250)`，不足一整杯不算）。
+    expect(byLayer[0]).toBe(Math.floor(TOTAL_ML / ML_PER_CUP));
+  });
+
+  it('目标杯数走 round 而非 floor（若哪天改成 floor，2200 与 2000 会撞成 8 杯）', () => {
+    for (const layer of LAYERS) {
+      const { goalCups } = cupProgress(layer.goal, layer.goal);
+      expect(
+        goalCups,
+        `${layer.name} 目标杯数应等于 round(${layer.goal}/${ML_PER_CUP})；` +
+          `若实现改成了 floor，${LAYERS.map((l) => `floor(${l.goal}/${ML_PER_CUP})=${Math.floor(l.goal / ML_PER_CUP)}`).join(' / ')} 会撞车`,
+      ).toBe(Math.round(layer.goal / ML_PER_CUP));
+    }
   });
 
   it('派生值与常量一致（改 TOTAL_ML / ML_PER_CUP 时不会留下过期的硬编码期望）', () => {
