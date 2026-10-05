@@ -157,7 +157,7 @@ export default function FootprintView(): ReactElement {
               <span
                 key={`weekday-${index}`}
                 aria-hidden="true"
-                className="text-center text-[10px] text-slate-400 dark:text-slate-500"
+                className="text-center text-[10px] text-slate-500 dark:text-slate-400"
               >
                 {label}
               </span>

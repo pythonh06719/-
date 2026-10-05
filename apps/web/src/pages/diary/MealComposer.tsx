@@ -1075,7 +1075,11 @@ export default function MealComposer({
               >
                 <span
                   aria-hidden="true"
-                  className={favorited ? 'text-amber-400' : 'text-slate-300 dark:text-slate-500'}
+                  // ☆ 是**可点控件**的状态指示（不是装饰），WCAG 1.4.11 要 ≥3:1：
+                  // 原来的 `text-slate-300` 对白底只有 1.48:1，等于看不见「还能收藏」这个入口。
+                  // 深色档原来的 slate-500 对 slate-800 是 3.07:1，也仅勉强过线，一并提到
+                  // slate-400（5.71:1）。★ 的 amber-400 是「已收藏」的既有语义，不动。
+                  className={favorited ? 'text-amber-400' : 'text-slate-500 dark:text-slate-400'}
                 >
                   {favorited ? '★' : '☆'}
                 </span>
@@ -1342,7 +1346,10 @@ export default function MealComposer({
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                      {/* 次级文字对比度：slate-400 对白底只有 2.56:1、slate-500 对
+                          dark:bg-slate-800 只有 3.08:1，两套主题都不达 AA；署名是本
+                          该看清的内容（ODbL 归属），故取深浅各自达标的一档。 */}
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                         数据来自 Open Food Facts（ODbL 1.0），加入后会存到你的食物库。
                       </p>
                     </>
