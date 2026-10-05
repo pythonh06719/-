@@ -56,7 +56,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
       aria-labelledby="goal-progress-title"
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 id="goal-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="goal-progress-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {title}
       </h2>
 
@@ -74,9 +74,9 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
         </div>
 
         <div className="min-w-0 flex-1 space-y-1 text-center text-sm text-slate-600 sm:text-left dark:text-slate-300">
-          <p className="font-medium text-slate-800 dark:text-slate-100">{primaryLine}</p>
-          {secondaryLine !== null && <p>{secondaryLine}</p>}
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="qsh-tnum font-medium text-slate-800 dark:text-slate-100">{primaryLine}</p>
+          {secondaryLine !== null && <p className="qsh-tnum">{secondaryLine}</p>}
+          <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
             {goalBaselineLine(progress.baselineKg, progress.targetWeightKg, weightUnit)}
           </p>
         </div>

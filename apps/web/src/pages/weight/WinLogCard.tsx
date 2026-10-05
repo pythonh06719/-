@@ -137,7 +137,7 @@ export default function WinLogCard(): ReactElement {
 
   return (
     <section className="qsh-surface p-5 dark:ring-slate-700" aria-labelledby="win-log-title">
-      <h2 id="win-log-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="win-log-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.winCardTitle}
       </h2>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.winCardDesc}</p>
@@ -152,7 +152,7 @@ export default function WinLogCard(): ReactElement {
           onChange={(event) => setText(event.target.value)}
           onBlur={handleBlur}
           data-testid="win-input"
-          className="w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
         />
       </label>
       {overLimit && (
@@ -166,7 +166,7 @@ export default function WinLogCard(): ReactElement {
         onClick={handleSubmit}
         disabled={createMutation.isPending}
         data-testid="win-submit"
-        className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+        className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
       >
         {COPY.winCardSubmit}
       </button>
@@ -178,7 +178,7 @@ export default function WinLogCard(): ReactElement {
       )}
 
       <div className="mt-4">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{COPY.winCardListTitle}</h3>
+        <h3 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.winCardListTitle}</h3>
         {winsQuery.isLoading ? (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">读取中…</p>
         ) : winsQuery.isError && wins.length === 0 ? (

@@ -38,22 +38,22 @@ export default function PlateauCard({
       aria-labelledby="plateau-title"
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 id="plateau-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="plateau-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.plateauTitle}
       </h2>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{COPY.plateauBody}</p>
 
-      <dl className="mt-3 space-y-2 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+      <dl className="mt-3 space-y-2 rounded-card bg-brand-50 p-4 dark:bg-brand-900/40">
         <div>
           <dt className="text-xs text-slate-500 dark:text-slate-400">这几周发生了什么</dt>
-          <dd className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
+          <dd className="qsh-tnum mt-0.5 text-sm text-slate-700 dark:text-slate-200">
             {plateauStalledLine(stalledDays, weightUnit)}
           </dd>
         </div>
         {slope4wKgPerWeek !== null && (
           <div>
             <dt className="text-xs text-slate-500 dark:text-slate-400">换个尺度看</dt>
-            <dd className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
+            <dd className="qsh-tnum mt-0.5 text-sm text-slate-700 dark:text-slate-200">
               <span className="block">{plateauSlopeLine(slope4wKgPerWeek, weightUnit)}</span>
               <span className="block">{plateauSlopeHint(slope4wKgPerWeek)}</span>
             </dd>
@@ -72,7 +72,7 @@ export default function PlateauCard({
           type="button"
           onClick={onDismiss}
           aria-label={COPY.plateauDismissAria}
-          className="qsh-touch-target inline-flex items-center rounded-xl px-3 py-2 text-xs font-medium text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-300"
+          className="qsh-touch-target inline-flex items-center rounded-control px-3 py-2 text-xs font-medium text-slate-500 underline decoration-dotted underline-offset-4 transition duration-qsh-base ease-qsh-out hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-300"
         >
           {COPY.plateauDismiss}
         </button>

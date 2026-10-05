@@ -131,9 +131,9 @@ function DashboardUnavailable({ onRetry }: { onRetry: () => void }): ReactElemen
     <section aria-labelledby="dashboard-error-title" className="space-y-5">
       <div
         role="alert"
-        className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-800 lg:max-w-2xl"
+        className="qsh-surface p-5 lg:max-w-2xl"
       >
-        <h1 id="dashboard-error-title" className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+        <h1 id="dashboard-error-title" className="text-title font-semibold text-slate-800 dark:text-slate-100">
           {COPY.pageFallbackTitle}
         </h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{COPY.pageFallbackDesc}</p>
@@ -141,13 +141,13 @@ function DashboardUnavailable({ onRetry }: { onRetry: () => void }): ReactElemen
           <button
             type="button"
             onClick={onRetry}
-            className="qsh-touch-target rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700"
+            className="qsh-touch-target rounded-control border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700"
           >
             {COPY.pageFallbackRetry}
           </button>
           <Link
             to="/"
-            className="qsh-touch-target rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+            className="qsh-touch-target rounded-control bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-600"
           >
             {COPY.pageFallbackHome}
           </Link>
@@ -276,7 +276,9 @@ export default function DashboardPage(): ReactElement {
         {/* 骨架必须是真表面的同款几何（圆角 token），否则数据到位那一刻会看到一次「变形」 */}
         <div className="h-28 animate-pulse rounded-card bg-cream-200 dark:bg-slate-800" />
         <div className="h-24 animate-pulse rounded-card bg-cream-200 dark:bg-slate-800" />
-        <div className="h-40 animate-pulse rounded-2xl bg-brand-100 dark:bg-slate-800" />
+        {/* ⚠️ 此处原有第三块骨架（h-40，对应已被删除的 96px 热量进度环）：进度环已降级为
+            纯文字摘要（见下方「今天的记录」卡），它**没有任何真实对应物**。留着骨架会在
+            数据到位那一刻「塌」掉 160px，是一处肉眼可见的布局跳动，故随进度环一并删除。 */}
         <p className="qsh-sr-only">正在读取今天的数据</p>
       </section>
     );
@@ -304,7 +306,7 @@ export default function DashboardPage(): ReactElement {
       <section aria-labelledby="dashboard-empty-title" className="space-y-5">
         <h1
           id="dashboard-empty-title"
-          className="text-xl font-semibold text-slate-900 dark:text-slate-100"
+          className="text-title font-semibold text-slate-900 dark:text-slate-100"
         >
           {COPY.emptyToday}
         </h1>
@@ -321,7 +323,7 @@ export default function DashboardPage(): ReactElement {
         </div>
         <Link
           to="/onboarding"
-          className="qsh-touch-target inline-flex rounded-xl bg-brand-600 px-5 py-3 font-medium text-white"
+          className="qsh-touch-target inline-flex rounded-control bg-brand-600 px-5 py-3 font-medium text-white"
         >
           去做引导问卷
         </Link>
@@ -391,7 +393,7 @@ export default function DashboardPage(): ReactElement {
       className="space-y-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-6 lg:space-y-0"
     >
       <header className="flex items-baseline justify-between gap-3 lg:col-span-3">
-        <h1 id="dashboard-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+        <h1 id="dashboard-title" className="text-title font-semibold text-slate-900 dark:text-slate-100">
           今天
         </h1>
         <p className="text-sm text-slate-600 dark:text-slate-400">{formatDateLine(date)}</p>
@@ -401,7 +403,7 @@ export default function DashboardPage(): ReactElement {
         <p
           role="status"
           aria-live="polite"
-          className="rounded-xl bg-coral-50 px-4 py-2 text-xs text-coral-700 dark:bg-coral-900/30 dark:text-coral-200 lg:col-span-3"
+          className="rounded-card bg-coral-50 px-4 py-2 text-xs text-coral-700 dark:bg-coral-900/30 dark:text-coral-200 lg:col-span-3"
         >
           {offline ? COPY.offlineNotice : COPY.dashboardLoadError}
         </p>
@@ -413,7 +415,7 @@ export default function DashboardPage(): ReactElement {
       <div className="space-y-6 lg:col-start-1">
         {/* ① 时段问候 + 一句生活叙事 */}
         <div className="qsh-surface-warm p-5">
-          <p className="text-xl font-semibold text-warm-900 dark:text-warm-200">{greeting}</p>
+          <p className="text-title font-semibold text-warm-900 dark:text-warm-200">{greeting}</p>
           <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{narrative}</p>
         </div>
 
@@ -496,12 +498,12 @@ export default function DashboardPage(): ReactElement {
             （`ProgressRing` 组件本身**未删** —— `/weight` 目标进度与 `/onboarding` 仍在复用。） */}
         <div className="qsh-surface-warm p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
+            <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">今天的记录</h2>
             <span className="qsh-chip">{summaryTag}</span>
           </div>
 
           {/* 主行：生活化表达（数字降权，D 修） */}
-          <p className="mt-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
+          <p className="mt-4 text-display font-semibold text-slate-800 dark:text-slate-100">
             {isEmptyToday && (
               <span aria-hidden="true" className="mr-2 align-middle text-2xl">
                 🥗
@@ -540,7 +542,7 @@ export default function DashboardPage(): ReactElement {
         {/* 喝水：改说「第几杯」，真实毫升作为次要文字 */}
         <div className="qsh-surface p-5 dark:ring-slate-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
+            <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
             <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
           </div>
           <p
@@ -558,7 +560,7 @@ export default function DashboardPage(): ReactElement {
               type="button"
               onClick={undoWater}
               disabled={water.history.length === 0}
-              className="qsh-touch-target rounded-xl px-4 text-sm text-slate-600 ring-1 ring-brand-100 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700"
+              className="qsh-touch-target rounded-control px-4 text-sm text-slate-600 ring-1 ring-brand-100 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700"
               aria-label="撤销上一次喝水记录"
             >
               撤销上一条
@@ -571,7 +573,7 @@ export default function DashboardPage(): ReactElement {
       <div className="space-y-6 lg:col-start-3">
         {/* 这周的小变化（迷你体重趋势） */}
         <div className="qsh-surface p-5 dark:ring-slate-700">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
           <div className="mt-3">
             <Sparkline data={data.miniTrend} weightUnit={weightUnit} />

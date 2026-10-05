@@ -856,14 +856,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
   return (
     <section aria-labelledby="diary-title" className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 id="diary-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+        <h1 id="diary-title" className="text-title font-semibold text-slate-900 dark:text-slate-100">
           饮食记录
         </h1>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setDate((current) => addDays(current, -1))}
-            className="qsh-touch-target rounded-lg px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
             aria-label="前一天"
           >
             ‹
@@ -872,7 +872,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           <button
             type="button"
             onClick={() => setDate((current) => addDays(current, 1))}
-            className="qsh-touch-target rounded-lg px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
             aria-label="后一天"
           >
             ›
@@ -895,14 +895,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               const next = event.target.value;
               if (next !== '') setDate(next);
             }}
-            className="ml-1.5 rounded-lg border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="ml-1.5 rounded-control border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
         {!isToday && (
           <button
             type="button"
             onClick={() => setDate(todayKey())}
-            className="qsh-touch-target rounded-lg px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 dark:text-brand-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 dark:text-brand-300 dark:ring-slate-700"
           >
             回到今天
           </button>
@@ -926,7 +926,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           role="status"
           aria-live="polite"
           data-testid="diary-stale-meals-notice"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
         >
           <span>{COPY.staleDataNotice}</span>
           <button
@@ -935,7 +935,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               void mealsQuery.refetch();
             }}
             disabled={mealsQuery.isFetching}
-            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+            className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
           >
             {mealsQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
           </button>
@@ -944,7 +944,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
 
       <div className="qsh-surface p-5 dark:ring-slate-700">
         <p className="text-sm text-slate-500 dark:text-slate-400">{isToday ? '今天一共' : '这天一共'}</p>
-        <p className="qsh-tnum mt-1 text-3xl font-bold text-brand-700 dark:text-brand-300">
+        <p className="qsh-tnum mt-1 text-display font-bold text-brand-700 dark:text-brand-300">
           {toDisplayEnergy(todayTotal, unit)}
           <span className="ml-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">
             {energyLabel(unit)}
@@ -979,7 +979,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                 role="status"
                 aria-live="polite"
                 data-testid="diary-stale-budget-notice"
-                className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-3 py-1.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
               >
                 <span>{COPY.staleBudgetNotice}</span>
                 <button
@@ -988,7 +988,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                     void budgetQuery.refetch();
                   }}
                   disabled={budgetQuery.isFetching}
-                  className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+                  className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
                 >
                   {budgetQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
                 </button>
@@ -1000,8 +1000,8 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
 
       {/* 一日档案（N2）：这一天的体重。
           有记录就展示；没有给一句中性提示 —— 不留空档，也不催你去称。 */}
-      <div className="qsh-surface p-4 dark:ring-slate-700">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">这一天的体重</h2>
+      <div className="qsh-surface p-5 dark:ring-slate-700">
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这一天的体重</h2>
         {weightOfDay === null ? (
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             这天没有称体重的记录。想补的话去「变化」页加一条就好。
@@ -1020,7 +1020,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         <div
           role="note"
           data-testid="reorder-guide"
-          className="flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+          className="flex items-center justify-between gap-3 rounded-card bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
         >
           <span>{COPY.reorderGuide}</span>
           <button
@@ -1030,7 +1030,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               setGuideDismissed(true);
             }}
             aria-label={COPY.reorderGuideAriaClose}
-            className="qsh-touch-target shrink-0 rounded-lg px-2 text-xs text-brand-700 dark:text-brand-200"
+            className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-brand-700 dark:text-brand-200"
           >
             知道了
           </button>
@@ -1054,7 +1054,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         <p
           role="status"
           data-testid="diary-meals-loading"
-          className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          className="rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
         >
           {DIARY_MEALS_LOADING}
         </p>
@@ -1063,7 +1063,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
           role="status"
           aria-live="polite"
           data-testid="diary-meals-error"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
         >
           <span>{DIARY_MEALS_LOAD_ERROR}</span>
           <button
@@ -1073,7 +1073,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             }}
             disabled={mealsQuery.isFetching}
             data-testid="diary-meals-retry"
-            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+            className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
           >
             {mealsQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
           </button>
@@ -1088,7 +1088,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       </p>
 
       {notice !== null && (
-        <p role="status" className="rounded-xl bg-brand-50 px-4 py-2 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+        <p role="status" className="rounded-card bg-brand-50 px-4 py-2 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
           {notice}
         </p>
       )}
@@ -1103,13 +1103,13 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             data-meal-type={group.mealType}
             aria-label={MEAL_TYPE_LABELS[group.mealType]}
             className={[
-              'qsh-surface p-5 transition dark:ring-slate-700',
+              'qsh-surface p-5 transition duration-qsh-fast ease-qsh-out dark:ring-slate-700',
               // 落区高亮：环色需 ≥3:1（WCAG 1.4.11）—— 白底用 brand-500（3.34:1）、深底用 brand-400（6.42:1）
               reorder.targetMealType === group.mealType ? 'ring-2 ring-brand-500 dark:ring-brand-400' : '',
             ].join(' ')}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
                 {MEAL_TYPE_LABELS[group.mealType]}
               </h2>
               <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
@@ -1167,7 +1167,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                   setComboError(null);
                   setSavingComboMeal(group.mealType);
                 }}
-                className="qsh-touch-target mt-3 w-full rounded-xl py-2.5 text-sm font-medium text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+                className="qsh-touch-target mt-3 w-full rounded-control py-2.5 text-sm font-medium text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
               >
                 {COPY.comboSaveEntry}
               </button>
@@ -1176,7 +1176,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             <button
               type="button"
               onClick={() => setComposerMeal(group.mealType)}
-              className="qsh-touch-target mt-3 w-full rounded-xl bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
+              className="qsh-touch-target mt-3 w-full rounded-control bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
             >
               + 记录{MEAL_TYPE_LABELS[group.mealType]}
             </button>

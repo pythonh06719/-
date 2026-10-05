@@ -349,7 +349,7 @@ export default function WeightPage(): ReactElement {
       aria-labelledby="weight-title"
       className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0"
     >
-      <h1 id="weight-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100 lg:col-span-2">
+      <h1 id="weight-title" className="text-title font-semibold text-slate-900 dark:text-slate-100 lg:col-span-2">
         体重趋势
       </h1>
 
@@ -367,7 +367,7 @@ export default function WeightPage(): ReactElement {
           role="status"
           aria-live="polite"
           data-testid="weight-stale-notice"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 lg:col-span-2"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 lg:col-span-2"
         >
           <span>{COPY.staleDataNotice}</span>
           <button
@@ -376,7 +376,7 @@ export default function WeightPage(): ReactElement {
               void trendQuery.refetch();
             }}
             disabled={trendQuery.isFetching}
-            className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+            className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
           >
             {trendQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
           </button>
@@ -404,7 +404,7 @@ export default function WeightPage(): ReactElement {
                 max={todayKey()}
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -414,7 +414,7 @@ export default function WeightPage(): ReactElement {
                 value={weight}
                 onChange={(event) => setWeight(event.target.value)}
                 placeholder={weightUnit === 'jin' ? '如：120' : '如：59.8'}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
               />
             </label>
           </div>
@@ -425,13 +425,13 @@ export default function WeightPage(): ReactElement {
               maxLength={200}
               onChange={(event) => setNote(event.target.value)}
               placeholder="如：昨天聚餐，睡得比较晚"
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
             />
           </label>
           <button
             type="submit"
             disabled={addWeight.isPending}
-            className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="qsh-touch-target w-full rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
           >
             {addWeight.isPending ? '正在保存…' : '记录今天的体重'}
           </button>
@@ -449,7 +449,7 @@ export default function WeightPage(): ReactElement {
         {rising && (
           <section
             aria-labelledby="weight-rise-title"
-            className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+            className="rounded-card bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
           >
             <h2 id="weight-rise-title" className="font-semibold">
               {COPY.weightRiseTitle}
@@ -467,12 +467,15 @@ export default function WeightPage(): ReactElement {
           </section>
         )}
 
-        <div className="qsh-surface p-4 dark:ring-slate-700">
-          <h2 className="px-1 text-base font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
+        <div className="qsh-surface p-5 dark:ring-slate-700">
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">体重曲线与 7 日均线</h2>
 
           {/* 区间切换（C4）：近 7 / 30 / 90 天。分段控件语义用 role=group + aria-pressed。
-              只切换「看哪一段」，不触发新请求；默认 90 天，尽量贴近改动前的观感。 */}
-          <div role="group" aria-label={COPY.weightRangeLabel} className="mt-2 flex flex-wrap gap-1.5 px-1">
+              只切换「看哪一段」，不触发新请求；默认 90 天，尽量贴近改动前的观感。
+              ⚠️ 原先这里（与上方 h2）各写了一个 `px-1`，用来抵消容器 `p-4` 与卡内
+              其他 `p-5` 卡片不一致的观感 —— 那是用局部内边距补容器内边距的典型症状，
+              容器统一到 `p-5` 后两处 `px-1` 均已删除。 */}
+          <div role="group" aria-label={COPY.weightRangeLabel} className="mt-2 flex flex-wrap gap-1.5">
             {WEIGHT_RANGE_DAYS_OPTIONS.map((days) => {
               const active = days === rangeDays;
               return (
@@ -481,7 +484,7 @@ export default function WeightPage(): ReactElement {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setRangeDays(days)}
-                  className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition ${
+                  className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition duration-qsh-fast ease-qsh-out ${
                     active
                       ? 'bg-brand-600 text-white'
                       : 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
@@ -518,7 +521,7 @@ export default function WeightPage(): ReactElement {
               role="status"
               aria-live="polite"
               data-testid="weight-trend-error"
-              className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
               <span>{TREND_LOAD_ERROR}</span>
               <button
@@ -528,7 +531,7 @@ export default function WeightPage(): ReactElement {
                 }}
                 disabled={trendQuery.isFetching}
                 data-testid="weight-trend-retry"
-                className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+                className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
               >
                 {trendQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
               </button>
@@ -613,7 +616,7 @@ export default function WeightPage(): ReactElement {
         </p>
 
         <div className="qsh-surface p-5 dark:ring-slate-700">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">近期记录</h2>
           {points.length === 0 ? (
             <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
               <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />

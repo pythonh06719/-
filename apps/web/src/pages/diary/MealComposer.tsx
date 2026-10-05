@@ -748,7 +748,7 @@ export default function MealComposer({
                 }
               }}
               aria-label={topFoodsAria(item.name, item.dayCount, days, lastLoggedMonthDay)}
-              className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+              className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
@@ -1019,7 +1019,7 @@ export default function MealComposer({
         return (
           <li
             key={food.id}
-            className="rounded-xl ring-1 ring-brand-100 transition hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
+            className="rounded-control ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
           >
             <div className="flex items-stretch gap-1">
               <button
@@ -1129,7 +1129,7 @@ export default function MealComposer({
       className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
       {/* 底部抽屉/弹窗 → elevation-3（原 shadow-xl 是硬边大阴影，与「柔和」气质冲突） */}
-      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
+      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-sheet">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
             记录{MEAL_TYPE_LABELS[mealType]}
@@ -1137,7 +1137,7 @@ export default function MealComposer({
           <button
             type="button"
             onClick={onClose}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-500 dark:text-slate-400"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-500 dark:text-slate-400"
             aria-label="关闭记录面板"
           >
             关闭
@@ -1173,7 +1173,7 @@ export default function MealComposer({
                 setSelectedSource('search');
               }}
               className={[
-                'qsh-touch-target shrink-0 rounded-full px-3 text-sm transition',
+                'qsh-touch-target shrink-0 rounded-full px-3 text-sm transition duration-qsh-fast ease-qsh-out',
                 tab === item.key
                   ? 'bg-brand-600 text-white'
                   : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -1213,7 +1213,7 @@ export default function MealComposer({
         </div>
 
         {note !== null && (
-          <p role="status" className="mt-3 rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          <p role="status" className="mt-3 rounded-card bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
             {note}
           </p>
         )}
@@ -1230,7 +1230,7 @@ export default function MealComposer({
                   setOnlineRequested(false);
                 }}
                 placeholder="如：番茄、米饭、拿铁"
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
 
@@ -1300,7 +1300,7 @@ export default function MealComposer({
                 )}
 
                 {onlineDegraded && (
-                  <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                  <p className="rounded-card bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
                     在线食物库暂时连不上，先用本地结果或「快加」记下也没问题。
                   </p>
                 )}
@@ -1319,7 +1319,7 @@ export default function MealComposer({
                         {liveQuery.data.items.map((item) => (
                           <li
                             key={item.externalId}
-                            className="rounded-xl px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700"
+                            className="rounded-control px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700"
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
@@ -1334,7 +1334,7 @@ export default function MealComposer({
                                 type="button"
                                 disabled={onlineBusyId !== null}
                                 onClick={() => void addOnlineFood(item)}
-                                className="qsh-touch-target shrink-0 rounded-lg bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
+                                className="qsh-touch-target shrink-0 rounded-control bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
                               >
                                 {onlineBusyId === item.externalId ? '加入中…' : '加入并记录'}
                               </button>
@@ -1386,7 +1386,7 @@ export default function MealComposer({
                       setSelectedCategory((current) => (current === category ? null : category))
                     }
                     className={[
-                      'qsh-touch-target shrink-0 rounded-full px-4 text-sm transition',
+                      'qsh-touch-target shrink-0 rounded-full px-4 text-sm transition duration-qsh-fast ease-qsh-out',
                       selectedCategory === category
                         ? 'bg-brand-600 text-white'
                         : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -1509,7 +1509,7 @@ export default function MealComposer({
                   setQuickSkippedSameName(false);
                 }}
                 placeholder="如：楼下麻辣烫"
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="block text-sm text-slate-600 dark:text-slate-300">
@@ -1519,7 +1519,7 @@ export default function MealComposer({
                 value={quickKcal}
                 onChange={(event) => setQuickKcal(event.target.value)}
                 placeholder="如：600"
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
@@ -1575,7 +1575,7 @@ export default function MealComposer({
             {sameNameFood !== null && !quickSkippedSameName && (
               <div
                 data-testid="quick-same-name-notice"
-                className="rounded-xl bg-brand-50 px-3 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                className="rounded-card bg-brand-50 px-3 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
               >
                 <p>
                   库里已经有「{sameNameFood.name}」了，用它吗？也可以继续用你填的。
@@ -1583,7 +1583,7 @@ export default function MealComposer({
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="qsh-touch-target rounded-lg bg-brand-100 px-3 py-1 font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200"
+                    className="qsh-touch-target rounded-control bg-brand-100 px-3 py-1 font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200"
                     onClick={() => {
                       setQuickName(sameNameFood.name);
                       setQuickKcal(String(Math.round(sameNameFood.kcalPer100g)));
@@ -1594,7 +1594,7 @@ export default function MealComposer({
                   </button>
                   <button
                     type="button"
-                    className="qsh-touch-target rounded-lg px-3 py-1 text-brand-600 underline dark:text-brand-300"
+                    className="qsh-touch-target rounded-control px-3 py-1 text-brand-600 underline dark:text-brand-300"
                     onClick={() => setQuickSkippedSameName(true)}
                   >
                     继续用我填的
@@ -1619,13 +1619,13 @@ export default function MealComposer({
             )}
             <ul className="space-y-2">
               {(comboQuery.data ?? []).map((combo) => (
-                <li key={combo.id} className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700">
+                <li key={combo.id} className="flex items-center justify-between gap-3 rounded-control px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700">
                   <span className="text-sm text-slate-800 dark:text-slate-100">{combo.name}</span>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void run({ kind: 'combo', comboId: combo.id })}
-                    className="qsh-touch-target rounded-lg bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
+                    className="qsh-touch-target rounded-control bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
                   >
                     一键添加
                   </button>
@@ -1639,7 +1639,7 @@ export default function MealComposer({
         {selected !== null && (
           <section
             aria-label="选择份量"
-            className="mt-5 rounded-2xl bg-brand-50 p-4 dark:bg-slate-900"
+            className="mt-5 rounded-card bg-brand-50 p-5 dark:bg-brand-900/40"
           >
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{selected.name}</h3>
             {/* D-1：这次默认份量用了「上次记的量」时，给一句中性小字说明 ——
@@ -1674,7 +1674,7 @@ export default function MealComposer({
                     setGrams(String(item.grams));
                   }}
                   className={[
-                    'qsh-touch-target rounded-full px-3 text-sm transition',
+                    'qsh-touch-target rounded-full px-3 text-sm transition duration-qsh-fast ease-qsh-out',
                     servingUnit === item.unit
                       ? 'bg-brand-600 text-white'
                       : 'bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -1690,7 +1690,7 @@ export default function MealComposer({
                 inputMode="decimal"
                 value={grams}
                 onChange={(event) => setGrams(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <p className="qsh-tnum mt-2 text-sm text-brand-700 dark:text-brand-200" aria-live="polite">
@@ -1702,7 +1702,7 @@ export default function MealComposer({
         {/* C-3 待记清单（多选模式）：显示已加入项 + 每项可调份量 + 可逐项移除 + 可整体放弃。
             🔴 红线①：这里**不展示任何合计热量 / 超标提示**，不出现「合计 / 超出」等字样。 */}
         {multiSelect && pendingItems.length > 0 && (
-          <section aria-label="待记清单" className="mt-5 rounded-2xl bg-brand-50 p-4 dark:bg-slate-900">
+          <section aria-label="待记清单" className="mt-5 rounded-card bg-brand-50 p-5 dark:bg-brand-900/40">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {COPY.pendingListTitle(pendingItems.length)}
@@ -1710,7 +1710,7 @@ export default function MealComposer({
               <button
                 type="button"
                 onClick={discardPending}
-                className="qsh-touch-target rounded-lg px-3 text-sm text-slate-500 dark:text-slate-400"
+                className="qsh-touch-target rounded-control px-3 text-sm text-slate-500 dark:text-slate-400"
               >
                 {COPY.pendingListDiscard}
               </button>
@@ -1719,7 +1719,7 @@ export default function MealComposer({
               {pendingItems.map((entry) => (
                 <li
                   key={entry.foodId}
-                  className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 dark:bg-slate-800"
+                  className="flex items-center gap-2 rounded-control bg-white px-3 py-2 dark:bg-slate-800"
                 >
                   <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
                     {entry.name}
@@ -1729,14 +1729,14 @@ export default function MealComposer({
                     value={entry.gramsText}
                     onChange={(event) => changePendingGrams(entry.foodId, event.target.value)}
                     aria-label={COPY.pendingGramsAria(entry.name)}
-                    className="qsh-tnum w-16 rounded-lg border border-brand-100 px-2 py-1 text-right text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                    className="qsh-tnum w-16 rounded-control border border-brand-100 px-2 py-1 text-right text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                   />
                   <span className="text-xs text-slate-500 dark:text-slate-400">g</span>
                   <button
                     type="button"
                     aria-label={COPY.pendingListRemoveAria(entry.name)}
                     onClick={() => removeFromPending(entry.foodId)}
-                    className="qsh-touch-target shrink-0 rounded-lg px-2 text-sm text-slate-500 dark:text-slate-400"
+                    className="qsh-touch-target shrink-0 rounded-control px-2 text-sm text-slate-500 dark:text-slate-400"
                   >
                     移除
                   </button>
@@ -1764,7 +1764,7 @@ export default function MealComposer({
                 type="button"
                 disabled={busy}
                 onClick={() => void submitBatch()}
-                className="qsh-touch-target flex-1 rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+                className="qsh-touch-target flex-1 rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
               >
                 {busy ? '正在记录…' : COPY.pendingConfirm(pendingItems.length)}
               </button>
@@ -1798,7 +1798,7 @@ export default function MealComposer({
                 }
                 void run({ kind: 'food', food: selected, grams: gramsValue, servingUnit, source: selectedSource });
               }}
-              className="qsh-touch-target flex-1 rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+              className="qsh-touch-target flex-1 rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
             >
               {busy ? '正在记录…' : '确认记录'}
             </button>
