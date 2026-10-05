@@ -39,9 +39,9 @@ import WhyNumbersToc from './WhyNumbersToc';
  * 目的：把「这些数字是怎么算出来的」做成 App 内可查 —— 与「可溯源、无负罪感」定位一致。
  *
  * ⚠️ 早期版本是四个内容块（热量预算 / 运动消耗 / 数据来源 / 取舍），此后随功能上线陆续补到
- *    **23 条（①…㉓）**，这里已不再按「四块」组织，也**没有天然的分组层级** ——
- *    23 条是平铺的同级 `<section>`。目录导航因此做成平铺的编号横滑条，而不是吸顶分组标题。
- *    23 条的编号/标题/锚点清单是唯一真源，见同目录 `why-sections.ts`。
+ *    **26 条（①…㉖）**，这里已不再按「四块」组织，也**没有天然的分组层级** ——
+ *    26 条是平铺的同级 `<section>`。目录导航因此做成平铺的编号横滑条，而不是吸顶分组标题。
+ *    26 条的编号/标题/锚点清单是唯一真源，见同目录 `why-sections.ts`。
  *
  * **同源真源**：所有公式与活动系数均来自 `@qsh/core`（前后端唯一真源），
  * 页面用用户档案数据实时算出 BMR/TDEE 并展示分解（只读 `/profile` 接口，取数不可用时优雅降级为纯说明）。
@@ -191,7 +191,7 @@ export default function WhyNumbersPage(): ReactElement {
       </header>
 
       {/*
-        目录导航：23 张卡、实测 19683px 高 ≈ 23 屏，没有目录用户滚到第 20 条不知道自己在哪。
+        目录导航：26 张卡，条目随功能增加后页面会继续变长，没有目录用户滚到靠后条目时不知道自己在哪。
         必须在 `<header>` 之后、正文之前 —— 目录要出现在首屏，且吸顶后不与 AppShell 顶栏重叠。
         放在 header 之前会让它先占掉首屏空间、并与 `aria-labelledby` 的标题顺序颠倒。
       */}
@@ -1372,6 +1372,122 @@ export default function WhyNumbersPage(): ReactElement {
           档位封顶值 <span className="font-mono">CALENDAR_DEPTH_MAX_LEVEL</span> 与分档函数{' '}
           <span className="font-mono">calendarDepthLevel</span> 都来自 @qsh/core：月历配色与这一页解释用的是同一份，
           不会各说各话。
+        </p>
+      </section>
+
+      {/* ㉔ 断食计时里的小时数（NFR-11：目标、已过与剩余必须可解释） */}
+      <section aria-labelledby="why-fasting-title" className="qsh-surface p-5 dark:ring-slate-700">
+        <h2 id="why-fasting-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉔ 断食计时里的小时数怎么算
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          断食页显示的目标、已过时长和剩余时长都由服务端给出。页面只把小时数显示到 1 位小数，
+          不会在浏览器里另算一套。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="目标时长从哪来"
+            value="明确提交的 targetFastHours > 常见方案模板 > 原有目标"
+            hint="模板为 16:8 → 16、18:6 → 18、20:4 → 20 小时；自定义没填新值时沿用原值"
+          />
+          <DerivationRow
+            term="开始以后"
+            value="把当时的方案与目标写入本次会话"
+            hint="本次使用 session.targetHours，不跟随后续设置变化"
+          />
+          <DerivationRow
+            term="已断食"
+            value="(服务端当前时间 − startedAt) ÷ 3,600,000"
+            hint="startedAt 是 UTC 时间戳；服务端保留 2 位小数"
+          />
+          <DerivationRow term="页面上的已断食" value="服务端 elapsedHours，再显示 1 位小数" />
+          <DerivationRow
+            term="还有多久到目标"
+            value="本次 targetHours − 同一次计算的未取整已过时长"
+            hint="服务端保留 2 位小数，页面显示 1 位"
+          />
+          <DerivationRow
+            term="达到或超过目标"
+            value="remainingHours ≤ 0 时显示「已经达到目标啦」"
+            hint="不把负的剩余小时数摆到页面上"
+          />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          这些数字只说明一次计时走到了哪里，不构成健康建议；你随时可以结束计时。
+        </p>
+      </section>
+
+      {/* ㉕ 习惯连续天数与历史最佳（NFR-11：streak 口径） */}
+      <section aria-labelledby="why-habit-streak-title" className="qsh-surface p-5 dark:ring-slate-700">
+        <h2 id="why-habit-streak-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉕ 习惯的当前连续与历史最佳怎么算
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          连续天数按打卡的本地日历日期来数，不按相隔了多少小时来数。一天打过卡就算这一天，
+          同一天不会重复增加。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow
+            term="计入哪些日期"
+            value="该习惯所有 done=true 的 loggedDate"
+            hint="用 YYYY-MM-DD 日期去重"
+          />
+          <DerivationRow
+            term="跨天怎么判断"
+            value="相邻两个本地日历日期正好相差 1 天"
+            hint="跨月、跨年也按日历连续处理"
+          />
+          <DerivationRow
+            term="当前连续从哪天数"
+            value="今天已打卡就从今天开始；否则从昨天开始"
+            hint="今天还没打卡不会立刻把昨天以前的连续变成 0"
+          />
+          <DerivationRow
+            term="断一天会怎样"
+            value="向前遇到第一个没打卡的日期就停止"
+            hint="今天和昨天都没打卡时，当前连续为 0"
+          />
+          <DerivationRow
+            term="历史最佳"
+            value="全部历史打卡日期里最长的连续段"
+            hint="不只看近 35 天；35 天窗口只用于旁边的连续日历"
+          />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          连续与最佳只是在回看日期，不是分数。中间留白后，之后的打卡仍会形成一段新的连续记录。
+        </p>
+      </section>
+
+      {/* ㉖ 饮水目标与百分比（NFR-11：来源优先级与取整） */}
+      <section aria-labelledby="why-water-progress-title" className="qsh-surface p-5 dark:ring-slate-700">
+        <h2 id="why-water-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          ㉖ 饮水目标与百分比怎么算
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          饮水页的「已记录 / 目标 ml（百分比）」把今天的记录与当前目标放在一起展示。
+          默认 2000 ml 是产品的缺省值，不是根据体重、性别或天气推算的医学建议。
+        </p>
+        <dl className="mt-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/40">
+          <DerivationRow term="今天已记录" value="今天每笔饮水 amountMl 的合计" />
+          <DerivationRow
+            term="饮水目标优先级"
+            value="本机有效偏好 > 服务端 goalMl > 默认 2000 ml"
+            hint="本机值优先，是为了保留尚未同步成功的最新修改"
+          />
+          <DerivationRow
+            term="什么是有效目标"
+            value="500–8000 ml 之间的整数"
+            hint="缺失或不合规就继续取下一层"
+          />
+          <DerivationRow term="百分比" value="今天已记录 ÷ 饮水目标 × 100%" />
+          <DerivationRow
+            term="取整与封顶"
+            value="Math.round 四舍五入到整数，最高显示 100%"
+            hint="超过目标仍显示 100%，原始毫升数照常显示"
+          />
+        </dl>
+        <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          饮水目标是你给自己留的参考，可以修改；百分比只描述今天记录到哪里，不评价是否喝得够。
         </p>
       </section>
 

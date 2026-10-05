@@ -11,12 +11,12 @@
  *    父行必须允许换行（`flex-wrap`）、术语必须有宽度下限（避免被压成一字一行的竖排）。
  *    这几条一旦被撤掉，用例转红。
  *
- * ② **23 条编号连续且唯一**（`checkNumbering()` 返回空数组）—— 本项目出过编号重复的坑。
+ * ② **26 条编号连续且唯一**（`checkNumbering()` 返回空数组）—— 本项目出过编号重复的坑。
  *
- * ③ **目录与正文逐条对拍**：把 `WHY_SECTIONS` 的 23 条与页面**实际渲染**出来的 23 个 `<h2>`
+ * ③ **目录与正文逐条对拍**：把 `WHY_SECTIONS` 的 26 条与页面**实际渲染**出来的 26 个 `<h2>`
  *    比对 id / 全文 / 顺序。任何人改了正文标题却没同步 `why-sections.ts`，这里就红。
  *
- * ④ **目录可用性**：渲染 23 个真链接（`href` 指向存在的锚点）、首项 `aria-current`、
+ * ④ **目录可用性**：渲染 26 个真链接（`href` 指向存在的锚点）、首项 `aria-current`、
  *    高亮随滚动位置推进（用 `pickActiveIndex` 的纯函数单测覆盖）。
  */
 
@@ -114,16 +114,16 @@ describe('BMR 公式完整可读（P0：值被容器裁切）', () => {
 });
 
 // ---------------------------------------------------------------------------
-// ② 23 条编号连续且唯一
+// ② 26 条编号连续且唯一
 // ---------------------------------------------------------------------------
 
-describe('23 条解释条目编号', () => {
+describe('26 条解释条目编号', () => {
   it('编号连续且唯一，无重复（本项目历史上出过重复编号的坑）', () => {
     expect(checkNumbering()).toEqual([]);
   });
 
-  it('恰好 23 条，编号覆盖 ①…㉓ 且顺序正确', () => {
-    expect(WHY_SECTIONS).toHaveLength(23);
+  it('恰好 26 条，编号覆盖 ①…㉖ 且顺序正确', () => {
+    expect(WHY_SECTIONS).toHaveLength(26);
     expect(WHY_SECTIONS.map((section) => sectionMarker(section.title))).toEqual(
       CIRCLED_NUMERALS.split(''),
     );
@@ -147,8 +147,9 @@ describe('23 条解释条目编号', () => {
     ];
     const problems = checkNumbering(broken as never);
     expect(problems.length).toBeGreaterThan(0);
-    // 条目数不是 23 + 编号重复 + 第 2 条编号错位，都应被报出来。
-    expect(problems.join('；')).toContain('条目数应为 23');
+    // 断言的是「当前条目数」（随元数据扩到 26 而变），故不写死字面量，避免又一处硬编码漂移。
+    expect(problems.join('；')).toContain(`条目数应为 ${WHY_SECTIONS.length}`);
+    // 条目数不对 + 编号重复 + 第 2 条编号错位，都应被报出来。
     expect(problems.join('；')).toContain('重复');
   });
 });
@@ -158,10 +159,10 @@ describe('23 条解释条目编号', () => {
 // ---------------------------------------------------------------------------
 
 describe('目录元数据与页面实际渲染一致', () => {
-  it('页面渲染出 23 个 h2，id / 全文 / 顺序与 WHY_SECTIONS 逐条相同', () => {
+  it('页面渲染出 26 个 h2，id / 全文 / 顺序与 WHY_SECTIONS 逐条相同', () => {
     const { container } = renderPage();
     const headings = renderedHeadings(container);
-    expect(headings).toHaveLength(23);
+    expect(headings).toHaveLength(26);
     headings.forEach((heading, index) => {
       const section = WHY_SECTIONS[index];
       expect(section).toBeDefined();
@@ -177,10 +178,10 @@ describe('目录元数据与页面实际渲染一致', () => {
 // ---------------------------------------------------------------------------
 
 describe('目录导航', () => {
-  it('渲染 23 个链接，href 指向页面上真实存在的锚点', () => {
+  it('渲染 26 个链接，href 指向页面上真实存在的锚点', () => {
     const toc = renderToc();
     const links = Array.from(toc.container.querySelectorAll('nav a'));
-    expect(links).toHaveLength(23);
+    expect(links).toHaveLength(26);
     links.forEach((link, index) => {
       const href = link.getAttribute('href') ?? '';
       expect(href).toBe(`#${WHY_SECTIONS[index]?.id}`);
@@ -202,7 +203,7 @@ describe('目录导航', () => {
   it('编号字符本身对读屏隐藏，另给完整语义（含序号 + 标题）', () => {
     const toc = renderToc();
     const first = toc.container.querySelector('nav a');
-    // 可见文本只有编号（390px 下一行放得下 23 个编号的前提）。
+    // 可见文本只有编号（390px 下一行放得下 26 个编号的前提）。
     expect((first?.textContent ?? '').replace(/\s+/g, ' ').trim()).toContain('①');
     // 完整语义在 sr-only 里，序号用阿拉伯数字而非带圈数字（读屏念「①」体验差）。
     expect(first?.textContent ?? '').toContain('第 1 条 · 热量预算怎么算');

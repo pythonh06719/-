@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api, isNetworkError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY } from '@/lib/copy';
@@ -191,6 +192,12 @@ export default function FastingPage(): ReactElement {
         )}
         {notice ? <p className="mt-3 text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
+        <Link
+          to="/why-numbers#why-fasting-title"
+          className="mt-3 inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
+        >
+          这些数字是怎么来的 →
+        </Link>
       </section>
     </div>
   );

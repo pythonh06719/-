@@ -1,16 +1,16 @@
 /**
- * `/why-numbers` 的 23 条解释条目元数据（`pages/why-numbers/why-sections.ts`）。
+ * `/why-numbers` 的 26 条解释条目元数据（`pages/why-numbers/why-sections.ts`）。
  *
  * ## 为什么单独抽一个数组
  *
- * 目录导航要「按顺序列出这 23 条」，而正文里 23 个 `<section>` 是手写的 JSX。若目录另写一份
+ * 目录导航要「按顺序列出这 26 条」，而正文里 26 个 `<section>` 是手写的 JSX。若目录另写一份
  * 条目表，两者必然漂移 —— 而**编号漂移正是本项目踩过的坑**（曾出现重复编号，用户在页面上
  * 找不到「第 20 条」到底说的是哪一条）。
  *
  * 所以这里把「编号 + 标题 + 锚点 id」定为**唯一真源**：
  *   - `title` 存的是 `<h2>` 的**完整渲染原文**（含 ① 这类编号字符）；
  *   - 目录从它切出编号（首字符）与短标题（去编号），不去正文里另抄一份；
- *   - 测试 `test/why-numbers-toc.test.tsx` 会把本数组与页面实际渲染出的 23 个 `<h2>`
+ *   - 测试 `test/why-numbers-toc.test.tsx` 会把本数组与页面实际渲染出的 26 个 `<h2>`
  *     **逐条对拍**（id / 全文 / 顺序 / 编号连续唯一）。谁改了正文标题而没同步这里，用例转红。
  */
 
@@ -25,11 +25,11 @@ export interface WhySection {
   readonly title: string;
 }
 
-/** 23 个带圈数字（① … ㉓），顺序即页面上的编号顺序。 */
+/** 26 个带圈数字（① … ㉖），顺序即页面上的编号顺序。 */
 export const CIRCLED_NUMERALS =
-  '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓';
+  '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖';
 
-/** 全部 23 条，顺序 = 页面自上而下的顺序。 */
+/** 全部 26 条，顺序 = 页面自上而下的顺序。 */
 export const WHY_SECTIONS: readonly WhySection[] = [
   { id: 'why-budget-title', title: '① 热量预算怎么算' },
   { id: 'why-exercise-title', title: '② 运动消耗怎么算' },
@@ -54,6 +54,9 @@ export const WHY_SECTIONS: readonly WhySection[] = [
   { id: 'why-pending-sync-title', title: '㉑ 顶部那个「还有 N 笔在排队」是怎么来的' },
   { id: 'why-daily-avg-title', title: '㉒ 周报里两处「日均」用的是同一个分母' },
   { id: 'why-footprint-title', title: '㉓ 足迹日历里颜色的深浅是怎么定的' },
+  { id: 'why-fasting-title', title: '㉔ 断食计时里的小时数怎么算' },
+  { id: 'why-habit-streak-title', title: '㉕ 习惯的当前连续与历史最佳怎么算' },
+  { id: 'why-water-progress-title', title: '㉖ 饮水目标与百分比怎么算' },
 ];
 
 /** 条目的编号字符（`①` … `㉓`）—— 即标题的首字符。 */
@@ -95,20 +98,20 @@ export function pickActiveIndex(tops: readonly number[], readingLine: number): n
 }
 
 /**
- * 校验 23 条编号**连续且唯一**（本项目历史上出过重复编号的坑，这里做成可测的纯函数）。
+ * 校验 26 条编号**连续且唯一**（本项目历史上出过重复编号的坑，这里做成可测的纯函数）。
  *
  * @returns 问题描述数组；空数组代表通过。
  */
 export function checkNumbering(sections: readonly WhySection[] = WHY_SECTIONS): string[] {
   const problems: string[] = [];
-  if (sections.length !== 23) {
-    problems.push(`条目数应为 23，实际 ${sections.length}`);
+  if (sections.length !== 26) {
+    problems.push(`条目数应为 26，实际 ${sections.length}`);
   }
   const seen = new Set<string>();
   sections.forEach((section, index) => {
     const marker = sectionMarker(section.title);
     if (CIRCLED_NUMERALS.indexOf(marker) === -1) {
-      problems.push(`第 ${index + 1} 条编号「${marker}」不在 ①…㉓ 之内`);
+      problems.push(`第 ${index + 1} 条编号「${marker}」不在 ①…㉖ 之内`);
     }
     if (seen.has(marker)) {
       problems.push(`编号重复：「${marker}」出现在第 ${index + 1} 条`);

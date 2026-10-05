@@ -5,8 +5,14 @@
  * - **项 3（JSX 泄漏 Markdown）**：页面**渲染出的文本**里不得出现 `**` ——
  *   `**` 写在 JSX 文本 / 属性里不会被 Markdown 解析，会原样显示给用户（排版垃圾）。
  *   本页是「透明度」这个差异化卖点的门面，必须干净；
- * - **项 5 / C-1（NFR-11）**：周报「日均」同分母（㉒）与「足迹日历深浅口径」（㉓）都必须在页内有条目，
- *   且编号 ①~㉓ 连续、唯一（该页单文件硬编码、无注册表，编号重复是历史坑）。
+ * - **项 5 / C-1（NFR-11）**：周报「日均」同分母（㉒）与「足迹日历深浅口径」（㉓）都必须在页内有条目。
+ *
+ * ## 本用例与 `why-numbers-toc.test.tsx` 的分工
+ *
+ * 这里核对的是**第 1~㉓ 条的编号序列本身连续唯一**（即既有 23 条的编号顺序没有被后来新增的
+ * ㉔㉕㉖ 打乱），以及第 ㉓ 条排在「相关页面」导航之前。
+ * **总条数**与「目录元数据 vs 正文 h2 条条对拍」由 `why-numbers-toc.test.tsx` 负责
+ * —— 那边的 `WHY_SECTIONS`（26 条）与页面渲染结果严格相等，新增条目后必须同步改那里，不必在这里重复。
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,7 +21,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import WhyNumbersPage from '@/pages/why-numbers/WhyNumbersPage';
 
-/** 该页 23 个编号（顺序即展示顺序，硬编码，无注册表）。 */
+/** 前 23 条的编号（顺序即展示顺序，硬编码，无注册表）；总数与目录对拍不在本用例内。 */
 const CIRCLED = [
   '①',
   '②',
@@ -68,7 +74,7 @@ describe('why-numbers 页 · 缺陷收尾', () => {
     expect(document.body.textContent ?? '').not.toContain('**');
   });
 
-  it('项 5 / C-1：第 ㉓ 条存在、插在「相关页面」导航之前，且编号 ①~㉓ 连续唯一', () => {
+  it('项 5 / C-1：第 ㉓ 条存在、插在「相关页面」导航之前，且 ①~㉓ 的顺序未被后面的新条目打乱', () => {
     renderPage();
 
     // 本页新增了顶部目录导航，其编号项的可见文本也是「㉓」等带圈数字。
@@ -91,10 +97,11 @@ describe('why-numbers 页 · 缺陷收尾', () => {
     const followsNav = (twentyThree as HTMLElement).compareDocumentPosition(nav);
     expect(followsNav & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    // 全部 h2 的编号恰好是 ①~㉓：连续、唯一、无重复、无缺号
+    // 前 23 个编号恰好是 ①~㉓：顺序正确、无重复、无缺号（断言原文未改，只取前 23 个）。
+    // ㉔㉕㉖ 落在 ㉓ 之后，不参与本次比对（它们的存在由 toc 用例按 26 条总数对拍）。
     const numbers = headingsInOrder
       .map((node) => (node.textContent ?? '').trim().charAt(0))
       .filter((char) => (CIRCLED as readonly string[]).includes(char));
-    expect(numbers).toEqual([...CIRCLED]);
+    expect(numbers.slice(0, CIRCLED.length)).toEqual([...CIRCLED]);
   });
 });
