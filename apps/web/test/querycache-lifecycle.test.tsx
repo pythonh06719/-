@@ -18,9 +18,19 @@
  * ③ `/settings/data` 一键清除数据 → 内存缓存被清空；
  * ④ ★ 改基础资料 → `profile` / `['dashboard']` / `['weights']` 被**真的重取**
  *    （「预算已经重新算好」这句承诺在屏幕上兑现）；
- * ⑤ 恢复 JSON 备份 → 档案 / 记录类查询被失效（承诺「档案、目标和设置会采用备份内容」）；
+ * ⑤ ★ 恢复 JSON 备份 → **导出结构里全部 11 个顶层键**都被真的重取
+ *    （承诺「档案、目标和设置会采用备份内容」）；每条失效各有一个指名道姓的探针；
  * ⑥ CSV 导入历史体重 → 体重趋势被失效；
  * ⑦ 完成引导 → `profile` / `['dashboard']` 被失效（跳到看板不停在「去做引导问卷」空态）。
+ *
+ * ## ⑤ 为什么是「11 个键各一个探针」而不是「断言调用了 11 次 invalidateQueries」
+ *
+ * `BackupRestoreCard` 的恢复成功后逐条失效查询，覆盖导出结构里的全部顶层键。此前本文件
+ * 只给 `profile` 与 `['dashboard']` 挂了探针，**其余 9 条零护栏** —— QA 实测把它们全删掉，
+ * 用例依然全绿：这正是「测试看起来在管这件事、实际上一行代码改了它也不知道」的典型。
+ * 故这里把 `diary-weight-state.test.tsx` 的 `REPORT_PROBES` 探针模式复用过来：
+ * 每个键一个探针（探针**真的发一次业务请求**），断言落在「该路径的请求次数 1 → 2」上，
+ * 转红信息指名是哪个键（`探针 habits（GET /api/habits）没有被失效重取：1 → 1`）。
  *
  * ## 测试工装上的两条纪律
  *
@@ -45,7 +55,7 @@ import ProfilePage from '@/pages/profile/ProfilePage';
 import SettingsDataPage from '@/pages/settings-data/SettingsDataPage';
 import BackupRestoreCard from '@/pages/settings-data/BackupRestoreCard';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
-import { UNAUTHORIZED_EVENT } from '@/lib/api';
+import { UNAUTHORIZED_EVENT, api } from '@/lib/api';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { useAuthStore } from '@/lib/auth.store';
 import { cacheClearAll } from '@/lib/local-cache';
@@ -116,8 +126,8 @@ function installFetch(resolver: Resolver): Call[] {
   return calls;
 }
 
-/** 计数某个方法的请求（按 URL 片段过滤）。 */
-function countCalls(calls: Call[], method: string, urlFragment: string): number {
+/** 计数某个方法的请求（按 URL 片段过滤）。接受只读数组 —— 探针只读它、不改它。 */
+function countCalls(calls: readonly Call[], method: string, urlFragment: string): number {
   return calls.filter((call) => call.method === method && call.url.includes(urlFragment)).length;
 }
 
@@ -213,6 +223,152 @@ const RESTORE_RESULT = {
   dateRange: { from: '2026-08-01', to: '2026-09-12' },
   mergeStrategy: 'same-day-replace',
 };
+
+// ---------------------------------------------------------------------------
+// 恢复备份的失效探针（复刻 diary-weight-state.test.tsx 的 REPORT_PROBES 模式）
+// ---------------------------------------------------------------------------
+
+interface RestoreProbeSpec {
+  /** 转红信息里指名的键（人读的短名） */
+  readonly label: string;
+  /** 业务请求路径（不含 `/api`），探针真的按它发一次请求，用请求次数验失效 */
+  readonly path: string;
+  /** 探针挂载的查询键 —— 必须是 `BackupRestoreCard` 那条 `invalidateQueries` 能前缀命中的那一个 */
+  readonly queryKey: readonly unknown[];
+  /** 该路径的合法响应体 */
+  readonly data: unknown;
+}
+
+/**
+ * `BackupRestoreCard` 恢复成功后失效的**全部 11 个键**，逐条挂探针。
+ *
+ * ## 键与路径必须与业务页**逐字一致**
+ *
+ * 探针挂的 `queryKey` 要被 `invalidateQueries({ queryKey })` 前缀命中，`path` 要与
+ * 业务页真正用的那个一致 —— 否则就变成「断言了一个没人用的键」（恒真）。
+ * 故这里刻意抄业务页的键工厂与端点：
+ *
+ * | label | 键 | 端点（抄自） |
+ * |---|---|---|
+ * | profile | `queryKeys.profile` | `GET /profile`（`ProfilePage`） |
+ * | habits | `queryKeys.habits` | `GET /habits`（`HabitsPage:125`） |
+ * | fasting-settings | `queryKeys.fastingSettings` | `GET /fasting/settings`（`FastingPage:48`） |
+ * | fasting-current | `queryKeys.fastingCurrent` | `GET /fasting/current`（`FastingPage:54`） |
+ * | dashboard | `queryKeys.dashboard(date)` | `GET /dashboard`（`DashboardPage:168`） |
+ * | weights | `queryKeys.weightTrend` | `GET /weights`（`WeightPage:152`） |
+ * | meals | `queryKeys.meals(date)` | `GET /meals`（`DiaryPage:238`） |
+ * | exercises | `queryKeys.exerciseDay(date)` | `GET /exercises`（`ExercisePage:170`） |
+ * | water | `queryKeys.waterDay(date)` | `GET /water`（`ExercisePage:176`） |
+ * | wins | `queryKeys.wins(90)` | `GET /wins?days=90`（`WinLogCard:32`，窗口常量 90） |
+ * | report | `queryKeys.weeklyReport(endDate)` | `GET /report/weekly`（`WeeklyReportView:78`） |
+ *
+ * ⚠️ `wins` 的天数必须用业务页真实的 `WINS_WINDOW_DAYS = 90`：查询键是
+ * `['wins', 90]`，换成别的天数就**前缀也命中不了** `['wins']`（react-query 对数组
+ * 逐元素比对），那条 invalidate 会被判成「没生效」——一个自己造的假红。
+ */
+const RESTORE_PROBES: readonly RestoreProbeSpec[] = [
+  { label: 'profile', path: '/profile', queryKey: queryKeys.profile, data: PROFILE_OLD },
+  { label: 'habits', path: '/habits', queryKey: queryKeys.habits, data: { today: TODAY, habits: [] } },
+  {
+    label: 'fasting-settings',
+    path: '/fasting/settings',
+    queryKey: queryKeys.fastingSettings,
+    data: { enabled: false },
+  },
+  { label: 'fasting-current', path: '/fasting/current', queryKey: queryKeys.fastingCurrent, data: null },
+  { label: 'dashboard', path: '/dashboard', queryKey: queryKeys.dashboard(TODAY), data: DASHBOARD_EMPTY },
+  { label: 'weights', path: '/weights', queryKey: queryKeys.weightTrend, data: { points: [] } },
+  { label: 'meals', path: '/meals', queryKey: queryKeys.meals(TODAY), data: { groups: [] } },
+  {
+    label: 'exercises',
+    path: '/exercises',
+    queryKey: queryKeys.exerciseDay(TODAY),
+    data: { date: TODAY, logs: [], totalKcal: 0 },
+  },
+  {
+    label: 'water',
+    path: '/water',
+    queryKey: queryKeys.waterDay(TODAY),
+    data: { date: TODAY, totalMl: 0, goalMl: 2000, logs: [] },
+  },
+  { label: 'wins', path: '/wins', queryKey: queryKeys.wins(90), data: [] },
+  { label: 'report', path: '/report/weekly', queryKey: queryKeys.weeklyReport(TODAY), data: { days: [] } },
+];
+
+/** 探针行：按 spec 真的发一次业务请求（`api.get`），并把成败暴露到 DOM 上。 */
+function RestoreProbeRow({ spec }: { spec: RestoreProbeSpec }): ReactElement {
+  const query = useQuery({
+    queryKey: [...spec.queryKey],
+    queryFn: () => api.get<unknown>(spec.path),
+    retry: false,
+  });
+  return (
+    <span data-testid={`restore-probe-${spec.label}`}>{query.isSuccess ? 'ready' : 'pending'}</span>
+  );
+}
+
+/**
+ * 把探针**挂载**成 active —— `invalidateQueries` 默认只重取 active 查询。
+ *
+ * 未挂载的键即使被标记失效也观察不到重取，用它写断言就是恒为真的假绿（见文件头纪律）。
+ */
+function RestoreProbeGroup({ specs }: { specs: readonly RestoreProbeSpec[] }): ReactElement {
+  return (
+    <div aria-hidden="true">
+      {specs.map((spec) => (
+        <RestoreProbeRow key={spec.label} spec={spec} />
+      ))}
+    </div>
+  );
+}
+
+/** 等所有探针挂载完成（首次取数成功）——确保基线是从「已被订阅」开始记的。 */
+async function waitRestoreProbesReady(specs: readonly RestoreProbeSpec[]): Promise<void> {
+  for (const spec of specs) {
+    const node = await screen.findByTestId(`restore-probe-${spec.label}`);
+    await waitFor(() => {
+      expect(node.textContent).toBe('ready');
+    });
+  }
+}
+
+/** 记下每个探针当前的请求次数，作为「失效是否发生」的基线。 */
+function restoreProbeBaseline(
+  calls: readonly Call[],
+  specs: readonly RestoreProbeSpec[],
+): Map<string, number> {
+  const base = new Map<string, number>();
+  for (const spec of specs) {
+    base.set(spec.label, countCalls(calls, 'GET', `/api${spec.path}`));
+  }
+  return base;
+}
+
+/**
+ * 等**每一条**探针都再取了一次 —— 缺哪一条就指名哪一条。
+ *
+ * 逐条独立断言（而不是「至少有一条重取了」）：后者在只剩一条有护栏时依然绿，
+ * 正是本文件要修的那个洞。
+ */
+async function expectRestoreProbesRefetched(
+  calls: readonly Call[],
+  specs: readonly RestoreProbeSpec[],
+  baseline: ReadonlyMap<string, number>,
+): Promise<void> {
+  const notRefetched: string[] = [];
+  for (const spec of specs) {
+    const before = baseline.get(spec.label) ?? 0;
+    const after = countCalls(calls, 'GET', `/api${spec.path}`);
+    if (after <= before) {
+      notRefetched.push(`探针 ${spec.label}（GET /api${spec.path}）没有被失效重取：${before} → ${after}`);
+    }
+  }
+  // 一次性报全部缺失项：修的时候能一次看全，不必一轮只暴露一条。
+  expect(
+    notRefetched,
+    `恢复后应有 ${specs.length} 条失效生效，实际缺 ${notRefetched.length} 条：\n${notRefetched.join('\n')}`,
+  ).toEqual([]);
+}
 
 // ---------------------------------------------------------------------------
 // 渲染助手
@@ -401,27 +557,36 @@ describe('改基础资料 · 预算派生数据重取', () => {
 // ---------------------------------------------------------------------------
 
 describe('恢复 JSON 备份 · 失效集合', () => {
-  it('★ 合并成功后档案与看板被重取（不用手动刷新才看得到）', async () => {
-    installFetch((url) => {
+  it('★ 合并成功后导出结构里全部 11 个顶层键都被重取（不用手动刷新才看得到）', async () => {
+    const calls = installFetch((url) => {
       if (url.includes('/data/restore/preview')) return RESTORE_PREVIEW;
       if (url.includes('/data/restore')) return RESTORE_RESULT;
+      // 探针各自的取数（见 `RESTORE_PROBES`）—— 缺了会走 undefined，
+      // 探针因而被判失败、基线记成 0，掩盖真正的失效问题。
+      for (const spec of RESTORE_PROBES) {
+        if (url.includes(`/api${spec.path}`)) return spec.data;
+      }
       return undefined;
     });
     mockedReadTextFile.mockResolvedValue('{"meta":{}}');
 
-    queryClient.setQueryData(queryKeys.profile as QueryKey, PROFILE_OLD);
-    queryClient.setQueryData(queryKeys.dashboard(TODAY) as QueryKey, DASHBOARD_EMPTY);
-
-    const profileRefetch = newCounter();
-    const dashboardRefetch = newCounter();
-
+    // ⚠️ 这里**刻意不** `setQueryData` 预填：探针挂载时会自己取一次数（基线 = 1），
+    // 预填反而会让 `staleTime`（30s）判定为新鲜、挂载那次不发出请求，基线变 0 ——
+    // 那时「失效后重取」与「首次取数」就分不开了。基线的意义就是「订阅之后、失效之前」。
     renderWithClient(
       <>
         <BackupRestoreCard />
-        <CacheProbe queryKey={queryKeys.profile} counter={profileRefetch} />
-        <CacheProbe queryKey={queryKeys.dashboard(TODAY)} counter={dashboardRefetch} />
+        <RestoreProbeGroup specs={RESTORE_PROBES} />
       </>,
     );
+
+    // 基线必须从「每个探针都已被订阅并成功取过一次数」开始记 ——
+    // 否则首帧那次取数会被误当成失效的结果（假绿）。
+    await waitRestoreProbesReady(RESTORE_PROBES);
+    const baseline = restoreProbeBaseline(calls, RESTORE_PROBES);
+    for (const spec of RESTORE_PROBES) {
+      expect(baseline.get(spec.label)).toBe(1);
+    }
 
     fireEvent.change(screen.getByLabelText('选择 JSON 备份文件'), {
       target: { files: [new File(['{}'], 'backup.json', { type: 'application/json' })] },
@@ -431,10 +596,10 @@ describe('恢复 JSON 备份 · 失效集合', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '确认合并这份备份' }));
     });
+    // 正向锚点：恢复确实成功（否则后面的失效断言无从谈起）
     await screen.findByTestId('restore-result');
 
-    await expectRefetched(profileRefetch, 'profile');
-    await expectRefetched(dashboardRefetch, "['dashboard']");
+    await expectRestoreProbesRefetched(calls, RESTORE_PROBES, baseline);
   });
 });
 
