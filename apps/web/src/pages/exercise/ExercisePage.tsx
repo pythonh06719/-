@@ -33,10 +33,34 @@ interface WaterDay {
   logs: Array<{ id: number; amountMl: number }>;
 }
 
+/**
+ * `GET /exercises` 的返回形态：整日汇总（列表 + 合计）。
+ *
+ * ⚠️ 与下面的 `ExerciseLogDto` **刻意分成两个类型**：`POST /exercises` 返回的是单条记录，
+ * 曾有人把它断言成 `ExerciseDay` 塞进当日汇总缓存 —— 假断言让编译器也帮着说谎
+ * （详见 `logExercise` 处的注释）。分成两个类型后，两者不可再互相当用。
+ */
 interface ExerciseDay {
   date: string;
   logs: Array<{ id: number; activityName: string; minutes: number; kcalBurned: number }>;
   totalKcal: number;
+}
+
+/**
+ * `POST /exercises` 的返回形态（后端 `ExerciseLogDto`）—— **单条记录**，不是整日汇总。
+ *
+ * 字段只有 `id / loggedDate / activityCode / activityName / met / minutes / kcalBurned / note`：
+ * **没有 `logs`、没有 `totalKcal`**。后端契约不改（miniprogram 也在用同一端点），前端只能适配。
+ */
+interface ExerciseLogDto {
+  id: number;
+  loggedDate: string;
+  activityCode: string;
+  activityName: string;
+  met: number;
+  minutes: number;
+  kcalBurned: number;
+  note: string | null;
 }
 
 interface WaterState {
@@ -54,6 +78,37 @@ const EMPTY_WATER: WaterState = { totalMl: 0, history: [] };
  * 只有在读不到档案时才会退到这里 —— 与服务端此刻的口径也一致，不会出现「预览一个数、落库另一个数」。
  */
 const FALLBACK_WEIGHT_KG = 60;
+
+/* --------------------------------------------------------------------------- *
+ * 本页新增文案的**临时**落点。
+ *
+ * ⚠️ `lib/copy.ts` 本轮被多个任务共用，为避开写冲突，新增文案先放在本文件内；
+ * 下一轮统一归位到 `COPY` 时，只需改这三个常量的定义处，调用点一行不动。
+ * ------------------------------------------------------------------------- */
+
+/**
+ * 离线删除运动记录的反馈：**排队态**措辞，不是完成态。
+ *
+ * 为什么不能用 `COPY.exerciseDeleted`（「已经删掉了」）：离线删除走的是
+ * `enqueueRequest()` 入队 —— 而离线队列重放 3 次失败后是**静默丢弃**的
+ * （`pwa/offline-queue.ts` 的 `flush()`），也就是说这条删除**可能在服务端永远没发生**。
+ * UI 若宣告「已删除」，用户下次联网会看到那条记录又回来了，且没有任何解释 ——
+ * 一句完成态的话把不确定的结果说成了既成事实。
+ * 故这里只说「先记下、待同步」，**不承诺结果**（不出现「一定 / 保证」）；
+ * 乐观移除缓存保留（用户当下确实需要它从眼前消失）。
+ */
+export const EXERCISE_DELETE_QUEUED = '这次删除先记下了，等网络恢复后同步';
+
+/**
+ * 运动列表降级时的来源说明。
+ *
+ * 点名「运动记录」与「今日合计」这两个元素，而不是「这些」—— 同屏还有饮水那条提示，
+ * 两句一字不差会被读成重复渲染，且对读屏用户指代不明。
+ */
+export const EXERCISE_STALE_NOTICE = '这些运动记录和今日合计是上次同步时的，网络恢复后会自动更新。';
+
+/** 饮水降级时的来源说明（点名「饮水进度」，与上面那条不重字）。 */
+export const WATER_STALE_NOTICE = '饮水进度是上次同步时的数据，网络恢复后会自动更新。';
 
 /** 与看板共用同一本地缓存键（离线兜底的一致性来源）。 */
 function readLocalWater(date: string): WaterState {
@@ -126,10 +181,27 @@ export default function ExercisePage(): ReactElement {
 
   const localWater = readLocalWater(today);
 
+  /**
+   * 记一条运动。
+   *
+   * ⚠️ `mutationFn` 的泛型是 `ExerciseLogDto`（单条），**不是** `ExerciseDay`（整日汇总）。
+   *
+   * 此前这里断言成 `ExerciseDay` 并把返回值直接 `setQueryData` 进当日汇总缓存 ——
+   * 于是缓存里的 `logs` / `totalKcal` 双双为 `undefined`，被下游的 `?? []` / `?? 0`
+   * 静默吞掉：用户点完「记下这次运动」看到「记上啦」的提示，下面的列表却变空、
+   * 今日合计变 0，必须手动刷新才恢复。**假的类型断言比没有断言更危险** ——
+   * 它让类型检查也帮着说谎，而 `??` 又把谎言包装成了「没有数据」这种合法状态。
+   *
+   * 治根做法：**不猜返回形态**，成功后让真查询自己去取（`invalidateQueries`）。
+   * 顺带失效报表（`reportQueryFilter()`）：新增运动同样会改变周报的 `exerciseKcal` /
+   * `totalExerciseKcal`、阶段回顾的 `exercise` 与足迹日历，此前只有删除路径失效了它们，
+   * 报表在 30 秒 `staleTime` 内仍是旧数字。
+   */
   const logExercise = useMutation({
-    mutationFn: () => api.post<ExerciseDay>('/exercises', { activityCode, minutes, loggedDate: today }),
-    onSuccess: (day) => {
-      void queryClient.setQueryData(queryKeys.exerciseDay(today), day);
+    mutationFn: () => api.post<ExerciseLogDto>('/exercises', { activityCode, minutes, loggedDate: today }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.exerciseDay(today) });
+      void queryClient.invalidateQueries(reportQueryFilter());
       setFeedback(COPY.movementLogged);
     },
     onError: (error: unknown) => {
@@ -172,7 +244,9 @@ export default function ExercisePage(): ReactElement {
         // 离线删除：入队 + 本地先移除（无二次确认，与 WinLogCard 的 DELETE 惯例一致）
         void enqueueRequest({ path: `/exercises/${id}`, method: 'DELETE' });
         removeLogFromCache(id);
-        setFeedback(COPY.exerciseDeleted);
+        // ⚠️ 这里**不能**用 `COPY.exerciseDeleted`（「已经删掉了」）：入队不等于删除成功，
+        // 队列重放 3 次失败后是静默丢弃的。排队态措辞，不承诺结果（详见常量处注释）。
+        setFeedback(EXERCISE_DELETE_QUEUED);
         return;
       }
       // 业务错误（如记录已被删 / 不存在）：中性陈述，不用「失败 / 错误」（PRD §7）
@@ -280,6 +354,43 @@ export default function ExercisePage(): ReactElement {
   const dayLogs = dayQuery.data?.logs ?? [];
   const dayTotal = dayQuery.data?.totalKcal ?? 0;
 
+  /**
+   * 「现在看到的是上次同步的数据」—— **两个查询各判一次，刻意不合并**。
+   *
+   * ## 为什么必须有这个标记（数字可信度，不是视觉细节）
+   *
+   * `dayQuery` / `waterQuery` 失败时，react-query 会**原样保留**上一次成功的 `data`
+   * （只把 `isError` 置真，不动 `data`）；饮水还另有一条退路 —— 退到本机缓存 `localWater`。
+   * 于是「0 / 2000 ml（0%）」和「1500 / 2000 ml（75%）」在屏幕上长得一模一样，用户
+   * 分不出哪个是刚取回来的。看到「今天一口水没喝」就会连点 +250ml —— 这是数字不可信，
+   * 不是配色或排版问题。
+   *
+   * ## 为什么只认 `isNetworkError`
+   *
+   * **业务错误（500）不挂这条提示**：「网络好像不太稳」会把用户引去查 WiFi，而问题在服务端 ——
+   * 归因不准比不提示更糟（不提示只让人困惑，错误归因让人做错事）。
+   * 业务错误由各自既有的中性提示负责（如 `COPY.waterAddMissed`）。
+   *
+   * ## 为什么还要「有兜底值」这一半判据
+   *
+   * 只有屏幕上**确实**渲染了旧数字时才说这句话。否则（首次进入就断网、本机也没缓存）
+   * 页面本来就没东西可展示，挂一条「这些是上次同步的」是在指控一个不存在的展示 ——
+   * 与 `WeightPage` 的 `allPoints.length > 0`、`DiaryPage` 的 `hasAnyLog` 同一口径。
+   *
+   * ## 为什么分成两条而不是合并
+   *
+   * `GET /exercises` 与 `GET /water` 是两个**互不相干**的请求，失效时刻可以一个通一个不通。
+   * 合并成一句就说不清是「运动的数字」旧了还是「喝水的数字」旧了 —— **说不清等于没说**。
+   * 两条各有自己的 `refetch()`，点哪条修哪条。
+   */
+  const showingStaleExercise =
+    dayQuery.isError && isNetworkError(dayQuery.error) && (dayQuery.data?.logs.length ?? 0) > 0;
+  /** 饮水的兜底值有两条来源：react-query 的上次成功结果，或本机缓存（离线时点 +250ml 写的那份）。 */
+  const showingStaleWater =
+    waterQuery.isError &&
+    isNetworkError(waterQuery.error) &&
+    (waterQuery.data !== undefined || localWater.totalMl > 0);
+
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-24 pt-4" aria-live="polite">
       <section className="qsh-surface p-5">
@@ -333,6 +444,39 @@ export default function ExercisePage(): ReactElement {
         {feedback ? <p className="mt-2 text-sm text-brand-700 dark:text-brand-400">{feedback}</p> : null}
 
         <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
+          {/*
+            「这些是上次同步时的」标记（数据可信度 · 与体重页 `weight-stale-notice` 同形）。
+
+            位置在「今日运动消耗合计」**之上**：这一行与下面的列表是同一份 `dayQuery.data`
+            推出的两个数字，提示放在数字之前才读得通「接下来这些数字都是旧的」。
+
+            语气与配色：中性陈述（灰底 + 品牌色重试按钮），**不用红、不用警示色、不弹窗、
+            不遮挡、不禁用任何操作**（照抄 `WeightPage` / `DiaryPage` 已定型的做法）。
+            出路同屏可达：`重新试试` 直接重跑本查询，成功后本条自动消失。
+          */}
+          {showingStaleExercise && (
+            <div
+              role="status"
+              aria-live="polite"
+              data-testid="exercise-stale-notice"
+              className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <span>{EXERCISE_STALE_NOTICE}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  void dayQuery.refetch();
+                }}
+                disabled={dayQuery.isFetching}
+                // 可及名以可见文案开头（WCAG 2.5.3 Label in Name），并补上「同步运动记录」
+                // —— 同屏还有饮水那个同名按钮，不点名会让读屏用户分不清点的是哪一个。
+                aria-label={`${COPY.staleDataRetry}同步运动记录`}
+                className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+              >
+                {dayQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+              </button>
+            </div>
+          )}
           <p className="text-sm text-slate-600 dark:text-slate-300">
             今日运动消耗合计 <span className="font-bold">{toDisplayEnergy(dayTotal, unit)}</span> {energyLabel(unit)}
           </p>
@@ -375,6 +519,34 @@ export default function ExercisePage(): ReactElement {
             {shortcutNotice}
           </p>
         ) : null}
+        {/*
+          「饮水进度是上次同步时的」标记 —— **刻意与运动那条分开**（理由见
+          `showingStaleWater` 的注释：两个请求各自失效，合并会让指代不明）。
+
+          位置在 `{waterTotal} / {waterGoal}` 那行**之上**：本条说的就是这一行与它下面的进度条。
+          文案点名「饮水进度」，与运动那条不重字 —— 同屏两句一字不差的提示会被读成重复渲染。
+        */}
+        {showingStaleWater && (
+          <div
+            role="status"
+            aria-live="polite"
+            data-testid="water-stale-notice"
+            className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <span>{WATER_STALE_NOTICE}</span>
+            <button
+              type="button"
+              onClick={() => {
+                void waterQuery.refetch();
+              }}
+              disabled={waterQuery.isFetching}
+              aria-label={`${COPY.staleDataRetry}同步饮水记录`}
+              className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+            >
+              {waterQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
+            </button>
+          </div>
+        )}
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {waterTotal} / {waterGoal} ml（{waterPercent}%）
         </p>

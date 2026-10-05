@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import ExercisePage from '@/pages/exercise/ExercisePage';
+import ExercisePage, { EXERCISE_DELETE_QUEUED } from '@/pages/exercise/ExercisePage';
 import { COPY } from '@/lib/copy';
 import { __resetMemoryQueueForTest, listQueuedRequests } from '@/pwa/offline-queue';
 
@@ -190,8 +190,10 @@ describe('运动记录删除（GAP-5）', () => {
 
     fireEvent.click(await waitFor(() => screen.getByTestId('exercise-delete-11')));
 
+    // ⚠️ 离线删除的反馈是**排队态**（`EXERCISE_DELETE_QUEUED`），不是 `COPY.exerciseDeleted`
+    // （「已经删掉了」）—— 入队不等于删除成功：队列重放 3 次失败后是静默丢弃的。
     await waitFor(() => {
-      expect(screen.getByText(COPY.exerciseDeleted)).toBeDefined();
+      expect(screen.getByText(EXERCISE_DELETE_QUEUED)).toBeDefined();
     });
     expect(screen.queryByTestId('exercise-delete-11')).toBeNull();
     // 离线乐观移除同样要重算合计
