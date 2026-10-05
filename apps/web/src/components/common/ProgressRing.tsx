@@ -1,6 +1,33 @@
-import { useId } from 'react';
+import { useId, useSyncExternalStore } from 'react';
 import type { ReactElement } from 'react';
 import { TOKENS } from '@/theme/tokens';
+
+/**
+ * 深色态订阅：进度环的**渐变**要按主题换（`progressGradient` / `progressGradientDark`），
+ * 而 SVG 的 `stop-color` 是 presentation attribute，**不吃 Tailwind 的 `dark:` 变体**，
+ * 也没法写成 CSS 变量（渐变停靠点要具体色值）—— 所以只能在 JS 里分叉。
+ *
+ * ⭐ 关键点：必须**订阅**而非「渲染时读一次」（2026-10-05 实测踩到）。
+ * 原实现是 `document.documentElement.classList.contains('dark')` 直接在渲染体里读 ——
+ * 那是**渲染那一刻的快照**。用户在顶栏点「深色」，`applyTheme()` 改了 class，
+ * 而本组件不会重渲染 → 渐变停在旧主题。
+ * 「删掉 dark prop」只解决了「调用方漏传」，没解决「主题切换后不重绘」——
+ * 两个是独立的缺陷，缺一个都会让深色失效。
+ *
+ * 用 `useSyncExternalStore` 订阅 `dark` class 的增删：观察点挂在 `<html>` 的 class 属性上。
+ * 之所以用 `MutationObserver` 而不等主题层派发事件：`applyTheme()`（`theme/useTheme.ts`）
+ * 是纯 DOM 操作，不派发事件、也没有可订阅的 store —— 观察 class 本身最直接。
+ */
+function isDarkMode(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+}
+
+function subscribeThemeClass(onChange: () => void): () => void {
+  if (typeof document === 'undefined') return () => undefined;
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+}
 
 /**
  * 进度环（components/common/ProgressRing.tsx）—— 看板核心可视化（US-05 / R3.10）。
@@ -59,17 +86,10 @@ export default function ProgressRing({
   const overBudget = safeValue > 1;
 
   /**
-   * 深色态直接读 `<html class>`。
-   *
-   * 为什么不用 `useTheme()`：那个 hook 读的是 localStorage 的**用户选择**（`mode`），
-   * `mode === 'system'` 时 resolved 要靠 `prefers-color-scheme` 媒体查询二次判定；
-   * 而这里要的是**屏幕上此刻真实的 class**（`applyTheme()` 已把它算好了）。
-   * 读 class 也天然处理了「system 跟随系统变化」—— 无需本组件订阅媒体查询。
-   *
-   * SSR / 测试环境无 `document` 时按浅色处理（本项目是纯客户端 PWA，无 SSR 路径）。
+   * 深色态：**订阅**而来（理由见文件头）。`serverSnapshot` 给 `false` ——
+   * 本项目是纯客户端 PWA，无 SSR 路径，这个值只在测试的初次渲染里用到。
    */
-  const dark =
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const dark = useSyncExternalStore(subscribeThemeClass, isDarkMode, () => false);
 
   const gradientStops = dark ? TOKENS.progressGradientDark : TOKENS.progressGradient;
   /**

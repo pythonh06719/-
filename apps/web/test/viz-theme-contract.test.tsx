@@ -15,7 +15,7 @@
  *
  * 全部改为 CSS 变量（SVG 的 stroke/fill 是 presentation attribute，不吃 `dark:` 变体）。
  */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
@@ -138,5 +138,61 @@ describe('数据可视化 · 深浅两套一致性', () => {
     expect(path?.getAttribute('stroke')).toBe('rgb(var(--qsh-spark))');
     // 修复前是 '#2f9e78'（brand-500，对白底 3.34:1）
     expect(container.innerHTML).not.toContain('#2f9e78');
+  });
+
+  /**
+   * ⭐ 这条钉的是「**切换主题后必须重绘**」，不是某个色值。
+   *
+   * 缺陷是怎么发现的（2026-10-05 实测）：修完「深色线色不对」后跑取证脚本，
+   * 深浅两套读出的 stroke **完全相同**。根因是组件在**渲染那一刻**读了一次
+   * `document.documentElement.classList` —— 那是快照。用户点「深色」后
+   * `applyTheme()` 改了 class，但组件不重渲染，于是渐变/线色停在旧主题。
+   *
+   * 「删掉 dark prop」只解决了「调用方漏传」，**没解决「切换后不重绘」**——
+   * 两个是独立缺陷，缺一个深色就失效。所以必须有这条测试单独盯住后者。
+   */
+  it('★ 切换深色后 ProgressRing 的渐变真的换掉（订阅而非快照）', async () => {
+    const { container } = render(<ProgressRing value={0.5} />);
+    const stop = () => container.querySelector('linearGradient stop')?.getAttribute('stop-color');
+    const before = stop();
+
+    // 模拟用户点顶栏「深色」：applyTheme() 只做 classList.toggle，不派发事件
+    document.documentElement.classList.add('dark');
+    // MutationObserver 是异步回调，等一个微任务批次让它触发 + React 重渲染
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const after = stop();
+    expect(after).not.toBe(before);
+    // 浅色首档 #4fbf94 → 深色首档 #8cc9ab（progressGradientDark）
+    expect(before).toBe('#4fbf94');
+    expect(after).toBe('#8cc9ab');
+  });
+
+  it('★ 切换深色后 WeightChart 的实际线换色（浅 brand-300 → 深 brand-400）', async () => {
+    const props = {
+      dates: ['2026-09-01', '2026-09-02', '2026-09-03'],
+      weights: [70, 69.6, 69.8],
+      movingAverage: [null, null, null],
+      unit: 'kg' as const,
+    };
+    const { container } = render(<WeightChart {...props} />);
+    // 未传 forecast 时不画预测线 → 只有均线与实际线两条 path，实际线是最后一条
+    const paths = container.querySelectorAll('path');
+    expect(paths.length).toBeGreaterThanOrEqual(2);
+    const weightStroke = () => paths[paths.length - 1]?.getAttribute('stroke') ?? '';
+    const before = weightStroke();
+
+    document.documentElement.classList.add('dark');
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const after = weightStroke();
+    expect(after).not.toBe(before);
+    // 修复前两套都是 '#8cc9ab'（WEIGHT_COLOR 是模块级常量，不看深浅）
+    expect(before).toBe('#8cc9ab'); // brand-300
+    expect(after).toBe('#4fbf94'); // brand-400
   });
 });

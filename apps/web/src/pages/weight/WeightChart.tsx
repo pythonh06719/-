@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactElement } from 'react';
 import type { GoalForecastPoint, WeightUnit } from '@qsh/shared-types';
 import { TOKENS } from '@/theme/tokens';
@@ -75,6 +75,32 @@ const AVG_COLOR = TOKENS.brand[600];
  *  浅档 slate-400 `#94a3b8`（对白底 2.6:1，WCAG 对非文本线要求 ≥3:1，此处是「刻意最淡」，
  *  与文件原注释「不抢权重」一致）；深档提亮到 `#b6c4c0` 级别，深底上仍 ≥3:1。 */
 const FORECAST_COLOR = 'rgb(var(--qsh-hairline))';
+
+// --------------------------------------------------------------------------
+// 深色态订阅（`useSyncExternalStore` 的 store）
+// --------------------------------------------------------------------------
+
+/** 读一次：`<html>` 上有没有 `dark` class。`applyTheme()`（`theme/useTheme.ts`）维护它。 */
+function isDarkMode(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+}
+
+/**
+ * 订阅 `dark` class 的增删。
+ *
+ * 为什么用 `MutationObserver` 而不是主题层派发事件：
+ * `applyTheme()` 是纯 DOM 操作（`classList.toggle`），**不派发任何事件**，
+ * 也没有可订阅的 store。要让「渲染时读一次 class」的组件在切换时重渲染，
+ * 观察那个 class 本身是最直接、且不要求主题层配合改动的做法。
+ * 观察点挂在 `<html>` 的 `class` 属性上（`attributeFilter: ['class']`），
+ * 避免为无关的 class 变动反复触发。
+ */
+function subscribeThemeClass(onChange: () => void): () => void {
+  if (typeof document === 'undefined') return () => undefined;
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+}
 
 /** y 轴分段数（含两端共 5 条网格线）。 */
 const Y_SEGMENTS = 4;
@@ -198,10 +224,16 @@ export default function WeightChart({
    * 主次直接反转，读者第一眼看到的是原始抖动数据，而不是被平滑过的趋势。
    * 深色下把两档对调：均线用最亮的 brand-300、实际线降到 brand-400，与浅色的意图一致。
    *
-   * 读 `<html class>` 而非 `useTheme()`：要的是屏幕上此刻真实的 class（`applyTheme` 维护），
-   * 天然包含「跟随系统」的情形，无需本组件订阅媒体查询。
+   * ⭐ 为什么必须**订阅**而不是读一次（2026-10-05 实测踩到）：
+   * 最初写成「渲染时读一次 `document.documentElement.classList`」，看起来能用 ——
+   * 但那只是**渲染那一刻的快照**。用户在顶栏点「深色」，`applyTheme()` 改了 class，
+   * 而本组件不会重渲染，图表线色**停在旧主题**。
+   * 同样的坑本轮取证脚本也踩了一次（截图全浅色却没报错）。
+   * → 用 `useSyncExternalStore` 订阅 class 变化，它正是「外部 store 变了就重渲染」的正解。
+   *   三个 SVG 组件里只有本组件需要分叉线色，另两个（ProgressRing / Sparkline）
+   *   全部走 CSS 变量，深浅自动成立，不需要订阅。
    */
-  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const isDark = useSyncExternalStore(subscribeThemeClass, () => isDarkMode(), () => false);
   const WEIGHT_COLOR = isDark ? WEIGHT_COLOR_DARK : WEIGHT_COLOR_LIGHT;
 
   const geometry = useMemo(() => {
