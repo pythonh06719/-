@@ -152,7 +152,7 @@ export default function ProfilePage(): ReactElement {
 
   return (
     <section aria-labelledby="profile-title" className="space-y-5">
-      <h1 id="profile-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+      <h1 id="profile-title" className="text-display font-semibold text-slate-900 dark:text-slate-100">
         我的
       </h1>
 
@@ -160,28 +160,28 @@ export default function ProfilePage(): ReactElement {
       <ReminderSettings />
 
       {offline && (
-        <p role="status" className="rounded-xl bg-coral-50 px-4 py-2 text-xs text-coral-700 dark:bg-coral-900/30 dark:text-coral-200">
+        <p role="status" className="rounded-control bg-coral-50 px-4 py-2 text-caption text-coral-700 dark:bg-coral-900/30 dark:text-coral-200">
           {COPY.offlineNotice}
         </p>
       )}
 
       {budget !== null && (
         <div className="qsh-surface p-5 dark:ring-slate-700">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
           <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">建议摄入</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {toDisplayEnergy(budget.intakeRecommended, unit)} {energyLabel(unit)}
               </dd>
             </div>
-            <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">BMR</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.bmr, unit)}
               </dd>
             </div>
-            <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">TDEE</dt>
               <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.tdee, unit)}
@@ -227,14 +227,14 @@ export default function ProfilePage(): ReactElement {
           });
         }}
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">基础数据</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">基础数据</h2>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm text-slate-600 dark:text-slate-300">
             性别
             <select
               value={edit.gender}
               onChange={(event) => setEdit((prev) => ({ ...prev, gender: event.target.value as Gender }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="female">女</option>
               <option value="male">男</option>
@@ -247,7 +247,7 @@ export default function ProfilePage(): ReactElement {
               max={todayKey()}
               value={edit.birthDate}
               onChange={(event) => setEdit((prev) => ({ ...prev, birthDate: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -256,7 +256,7 @@ export default function ProfilePage(): ReactElement {
               inputMode="decimal"
               value={edit.heightCm}
               onChange={(event) => setEdit((prev) => ({ ...prev, heightCm: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -266,7 +266,7 @@ export default function ProfilePage(): ReactElement {
               onChange={(event) =>
                 setEdit((prev) => ({ ...prev, activityLevel: event.target.value as ActivityLevel }))
               }
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {ACTIVITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -279,7 +279,7 @@ export default function ProfilePage(): ReactElement {
         <button
           type="submit"
           disabled={updateProfile.isPending}
-          className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+          className="qsh-touch-target w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
         >
           {updateProfile.isPending ? '正在重算…' : '保存并重新计算'}
         </button>
@@ -295,7 +295,7 @@ export default function ProfilePage(): ReactElement {
         aria-label="参考来源"
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
         <ul className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
           <li>
@@ -325,7 +325,7 @@ export default function ProfilePage(): ReactElement {
       {/* 数据管理入口 */}
       <Link
         to="/settings/data"
-        className="qsh-touch-target block rounded-2xl bg-brand-600 px-5 py-3 text-center font-medium text-white"
+        className="qsh-touch-target block rounded-control bg-brand-600 px-5 py-3 text-center font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
       >
         数据导出 / 导入 / 删除
       </Link>
@@ -335,7 +335,7 @@ export default function ProfilePage(): ReactElement {
           用次级样式（brand-50/brand-700）与上面的主行动作区分层级。 */}
       <Link
         to="/settings/foods"
-        className="qsh-touch-target block rounded-2xl bg-brand-50 px-5 py-3 text-center font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+        className="qsh-touch-target block rounded-control bg-brand-50 px-5 py-3 text-center font-medium text-brand-700 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
       >
         我的食物库
       </Link>
@@ -349,7 +349,7 @@ export default function ProfilePage(): ReactElement {
         aria-label={COPY.profileMoreTitle}
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.profileMoreTitle}
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.profileMoreDesc}</p>
@@ -383,7 +383,7 @@ export default function ProfilePage(): ReactElement {
         aria-label={COPY.installHintTitle}
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.installHintTitle}
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -399,7 +399,7 @@ export default function ProfilePage(): ReactElement {
           aria-label="账号"
           className="qsh-surface p-5 dark:ring-slate-700"
         >
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">账号</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">账号</h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             已登录：{user?.email ?? '当前账号'}
           </p>
@@ -413,7 +413,7 @@ export default function ProfilePage(): ReactElement {
               queryClient.clear();
               setNotice('已经退出登录，随时可以再回来');
             }}
-            className="qsh-touch-target mt-3 w-full rounded-xl py-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target mt-3 w-full rounded-control py-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
           >
             退出登录
           </button>

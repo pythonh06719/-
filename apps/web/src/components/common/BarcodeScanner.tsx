@@ -181,16 +181,18 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
       role="dialog"
       aria-modal="true"
       aria-label="扫描商品条码"
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
-      {/* 扫码弹窗 → elevation-3（原 shadow-xl 是硬边大阴影，与「柔和」气质冲突） */}
-      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-3xl">
+      {/* 扫码弹窗 → elevation-3（原 shadow-xl 是硬边大阴影，与「柔和」气质冲突）。
+          圆角 `rounded-t-sheet` = 底部弹层角色（比卡片更饱满，视觉上「浮在最上层」）；
+          `animate-fade-in` + `motion-reduce:transition-none` 让进出场有统一动效且尊重减弱动效偏好。 */}
+      <div className="max-h-[88vh] w-full max-w-lg animate-fade-in overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 motion-reduce:transition-none dark:bg-slate-800 sm:rounded-sheet">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">扫描条码</h2>
           <button
             type="button"
             onClick={onClose}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-500 dark:text-slate-400"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-500 dark:text-slate-400"
             aria-label="关闭扫码"
           >
             关闭
@@ -203,7 +205,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
         </p>
 
         {showVideo && (
-          <div className="mt-3 overflow-hidden rounded-2xl bg-slate-900">
+          <div className="mt-3 overflow-hidden rounded-card bg-slate-900">
             <video
               ref={videoRef}
               className="h-56 w-full object-cover"
@@ -226,7 +228,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
                 setManualError(null);
               }}
               placeholder="如：6901234567890"
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           {manualError !== null && (
@@ -236,7 +238,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
           )}
           <button
             type="submit"
-            className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700"
+            className="qsh-touch-target w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
           >
             查询这个条码
           </button>

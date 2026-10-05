@@ -73,15 +73,26 @@ interface ErrorBoundaryState {
 /** 错误边界的默认兜底容器类名（与全站页面容器 / 背景约定一致）。 */
 const FALLBACK_SHELL_CLASS =
   'min-h-screen bg-brand-50 px-5 py-8 dark:bg-slate-900';
-/** 错误边界的默认兜底卡片类名（沿用 `PeriodReportView` / `WeeklyReportView` 的既有错误态写法）。 */
-const FALLBACK_CARD_CLASS =
-  'mx-auto max-w-3xl rounded-2xl bg-white p-6 text-center shadow-sm dark:bg-slate-800';
+/**
+ * 错误边界的默认兜底卡片类名。
+ *
+ * 走 `.qsh-surface`（elevation-1 + 描边 + 深色自动成立），不再手写 `bg-white shadow-sm`：
+ * 错误态是用户最需要「页面还站得住」的时刻，不该用全站最弱的一档 elevation。
+ * `p-6` 保留 —— 兜底页只有一个居中块，宽松一些更稳。
+ */
+const FALLBACK_CARD_CLASS = 'qsh-surface mx-auto max-w-3xl p-6 text-center';
 /** 主按钮（回到首页 / 重试）—— 品牌绿，不用红色。 */
 const FALLBACK_PRIMARY_BUTTON_CLASS =
-  'rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2';
-/** 次按钮（重试）—— 中性描边，视觉权重低于主按钮。 */
+  'rounded-control bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-600';
+/**
+ * 次按钮（重试）—— 中性描边，视觉权重低于主按钮。
+ *
+ * 焦点环刻意**不写** `focus-visible:outline-none` / `ring-*`：原来的 `ring-brand-400`
+ * 对白底只有 2.6:1（`theme/a11y.css` 的全局规则用 `brand-600`，4.72:1），
+ * 局部写死等于绕过一个更严的全局约定。删掉后交给全局规则接管。
+ */
 const FALLBACK_SECONDARY_BUTTON_CLASS =
-  'rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700';
+  'rounded-control border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700';
 
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   /** 当前已捕获的错误状态（初始为正常）。 */

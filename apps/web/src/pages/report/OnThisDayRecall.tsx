@@ -156,7 +156,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       aria-labelledby="on-this-day-title"
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 id="on-this-day-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="on-this-day-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.onThisDayTitle}
       </h2>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{scaleLabel}</p>
@@ -190,7 +190,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
         to={`/diary?date=${target.dateKey}`}
         data-testid="on-this-day-link"
         aria-label={onThisDayOpenFullAria(dateLabel)}
-        className="qsh-touch-target mt-3 inline-block rounded-xl bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
+        className="qsh-touch-target mt-3 inline-block rounded-control bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
       >
         {COPY.onThisDayOpenFull}
       </Link>

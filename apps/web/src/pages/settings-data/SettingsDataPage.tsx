@@ -304,7 +304,7 @@ export default function SettingsDataPage(): ReactElement {
 
   return (
     <section aria-labelledby="data-title" className="space-y-5">
-      <h1 id="data-title" className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+      <h1 id="data-title" className="text-display font-semibold text-slate-900 dark:text-slate-100">
         数据管理
       </h1>
       <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -316,7 +316,7 @@ export default function SettingsDataPage(): ReactElement {
         aria-label="导出数据"
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           JSON 可完整恢复你的资料、目标、记录与设置（单位、体重单位、深色、断食开关、饮水目标）；
           CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
@@ -324,7 +324,7 @@ export default function SettingsDataPage(): ReactElement {
         <button
           type="button"
           onClick={() => void handleExport()}
-          className="qsh-touch-target mt-3 w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700"
+          className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           一键导出 JSON + CSV
         </button>
@@ -340,14 +340,14 @@ export default function SettingsDataPage(): ReactElement {
         aria-label="导出备份"
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.dataBackupTitle}
         </h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.dataBackupDesc}</p>
         <button
           type="button"
           onClick={() => void handleBackup()}
-          className="qsh-touch-target mt-3 w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700"
+          className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           {COPY.dataBackupButton}
         </button>
@@ -388,7 +388,7 @@ export default function SettingsDataPage(): ReactElement {
         aria-label="导入历史体重"
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           模板列：<code>date</code>（YYYY-MM-DD）、<code>weightKg</code>、<code>note</code>（可选）。
           同日期以导入值覆盖，未能识别的行会跳过并汇总。
@@ -405,11 +405,11 @@ export default function SettingsDataPage(): ReactElement {
               }
               event.target.value = '';
             }}
-            className="block w-full rounded-xl border border-brand-100 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="block w-full rounded-control border border-brand-100 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
         {importState !== null && (
-          <div role="status" aria-live="polite" className="mt-3 rounded-xl bg-brand-50 px-3 py-2 dark:bg-brand-900/40">
+          <div role="status" aria-live="polite" className="mt-3 rounded-control bg-brand-50 px-3 py-2 dark:bg-brand-900/40">
             <p className="text-sm text-brand-700 dark:text-brand-200">
               导入完成：成功 {importState.imported} 条，跳过 {importState.skipped} 行。
             </p>
@@ -429,9 +429,9 @@ export default function SettingsDataPage(): ReactElement {
       {/* 删除 */}
       <section
         aria-label="删除我的全部数据"
-        className="rounded-2xl border border-coral-200 bg-coral-50 p-5 dark:border-coral-700 dark:bg-coral-900/30"
+        className="rounded-card border border-coral-200 bg-coral-50 p-5 dark:border-coral-700 dark:bg-coral-900/30"
       >
-        <h2 className="text-sm font-semibold text-coral-700 dark:text-coral-200">删除我的全部数据</h2>
+        <h2 className="text-subtitle font-semibold text-coral-700 dark:text-coral-200">删除我的全部数据</h2>
         <p className="mt-1 text-xs leading-relaxed text-coral-700 dark:text-coral-100">
           这是<strong className="font-semibold">硬删除</strong>：账号、体重、饮食、设置等全部记录都会从服务器真实移除，无法恢复。
           建议先「导出我的数据」留一份备份。
@@ -441,7 +441,7 @@ export default function SettingsDataPage(): ReactElement {
           <button
             type="button"
             onClick={() => setConfirmStep('confirm')}
-            className="qsh-touch-target mt-3 w-full rounded-xl bg-coral-500 py-3 font-medium text-white transition hover:bg-coral-600"
+            className="qsh-touch-target mt-3 w-full rounded-control bg-coral-500 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-coral-600"
           >
             删除我的全部数据
           </button>
@@ -456,14 +456,14 @@ export default function SettingsDataPage(): ReactElement {
               <button
                 type="button"
                 onClick={() => void handleDelete()}
-                className="qsh-touch-target flex-1 rounded-xl bg-coral-500 py-3 font-medium text-white"
+                className="qsh-touch-target flex-1 rounded-control bg-coral-500 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-coral-600"
               >
                 确认删除
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmStep('idle')}
-                className="qsh-touch-target flex-1 rounded-xl bg-white py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                className="qsh-touch-target flex-1 rounded-control bg-white py-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
               >
                 我再想想
               </button>

@@ -38,7 +38,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
 
   return (
     <figure className="mt-3">
-      <figcaption className="text-xs font-medium text-slate-500 dark:text-slate-400">
+      <figcaption className="text-caption font-medium text-slate-600 dark:text-slate-300">
         {COPY.habitCalendarTitle}
       </figcaption>
       <div
@@ -50,7 +50,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
           <span
             key={`weekday-${column}`}
             aria-hidden="true"
-            className="text-center text-[10px] text-slate-400 dark:text-slate-500"
+            className="text-center text-caption text-slate-500 dark:text-slate-400"
           >
             {label}
           </span>
@@ -63,7 +63,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
               data-date={date}
               data-checked={isChecked ? 'true' : 'false'}
               aria-hidden="true"
-              className={`aspect-square rounded-[5px] ${
+              className={`aspect-square rounded-cell ${
                 isChecked
                   ? 'bg-brand-500 dark:bg-brand-400'
                   : 'border border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700/40'
@@ -72,7 +72,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
           );
         })}
       </div>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-2 text-caption text-slate-600 dark:text-slate-300">
         {checkedCount > 0 ? COPY.habitCalendarHint : COPY.habitCalendarEmpty}
       </p>
     </figure>

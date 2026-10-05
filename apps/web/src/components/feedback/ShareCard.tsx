@@ -197,7 +197,7 @@ export default function ShareCard(props: ShareCardProps): ReactElement {
       <button
         type="button"
         onClick={handleDownload}
-        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+        className="qsh-touch-target rounded-control border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
       >
         生成分享卡片
       </button>

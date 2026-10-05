@@ -65,7 +65,7 @@ export default function BottomNav(): ReactElement {
   return (
     <nav
       aria-label="主导航"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 md:static md:mx-auto md:mt-8 md:max-w-3xl md:rounded-2xl md:border"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 md:static md:mx-auto md:mt-8 md:max-w-3xl md:rounded-card md:border md:shadow-qsh-1"
     >
       <ul className="mx-auto flex max-w-3xl items-stretch justify-between px-2">
         {NAV_ITEMS.map((item) => (
@@ -74,10 +74,10 @@ export default function BottomNav(): ReactElement {
               to={item.to}
               className={({ isActive }) =>
                 [
-                  'qsh-touch-target flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition',
+                  'qsh-touch-target flex flex-col items-center gap-1 rounded-control py-2.5 text-xs transition-colors duration-qsh-base ease-qsh-out',
                   isActive
-                    ? 'font-semibold text-brand-700 dark:text-brand-300'
-                    : 'text-slate-500 hover:text-brand-600 dark:text-slate-400',
+                    ? 'bg-brand-50 font-semibold text-brand-700 dark:bg-slate-800 dark:text-brand-300'
+                    : 'text-slate-500 dark:text-slate-400',
                 ].join(' ')
               }
             >

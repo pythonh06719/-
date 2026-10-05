@@ -33,10 +33,12 @@ export default function ReportTabs({ value, onChange }: ReportTabsProps): ReactE
           aria-selected={value === tab.key}
           onClick={() => onChange(tab.key)}
           className={[
-            'qsh-touch-target shrink-0 rounded-pill px-4 text-sm transition',
+            'qsh-touch-target shrink-0 rounded-pill px-4 text-sm transition-colors duration-qsh-fast ease-qsh-out',
             value === tab.key
               ? 'bg-brand-600 text-white'
-              : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
+              : // 未选中态此前是 `bg-brand-50`，与页底 `bg-brand-50` 完全同色（1.00:1）→ tab 直接融进背景。
+                // 改「白底 + brand 描边」：仍是浅色系，但边界立得住。
+                'bg-white text-slate-600 ring-1 ring-brand-100 dark:bg-slate-800 dark:text-slate-300',
           ].join(' ')}
         >
           {tab.label}

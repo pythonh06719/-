@@ -96,7 +96,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             placeholder="you@example.com"
           />
         </label>
@@ -109,14 +109,14 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
               autoComplete="one-time-code"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              className="w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               placeholder="6 位数字"
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={sendCode.isPending}
-              className="qsh-touch-target shrink-0 rounded-lg bg-brand-100 px-3 text-sm font-medium text-brand-700 disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
+              className="qsh-touch-target shrink-0 rounded-control bg-brand-100 px-3 text-sm font-medium text-brand-700 transition-colors duration-qsh-fast ease-qsh-out disabled:opacity-60 dark:bg-brand-900 dark:text-brand-200"
             >
               {sendCode.isPending ? '发送中' : '获取验证码'}
             </button>
@@ -126,7 +126,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
         <button
           type="submit"
           disabled={verify.isPending}
-          className="qsh-touch-target w-full rounded-lg bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+          className="qsh-touch-target w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
         >
           {verify.isPending ? '核对中…' : '登录'}
         </button>
@@ -136,7 +136,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
         <p
           role="status"
           aria-live="polite"
-          className="mt-3 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+          className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-body text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
         >
           {notice}
         </p>

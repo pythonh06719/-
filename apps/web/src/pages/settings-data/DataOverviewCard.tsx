@@ -4,6 +4,7 @@ import type { DataOverviewResponse, RecordOverviewRow } from '@qsh/shared-types'
 import { api } from '@/lib/api';
 import { COPY, OVERVIEW_KEY_LABELS, dataOverviewDetail } from '@/lib/copy';
 import { formatMonthDay, todayKey } from '@/lib/format';
+import EmptyState from '@/components/common/EmptyState';
 
 /**
  * 记录概览卡（pages/settings-data/DataOverviewCard.tsx，R11.6 / AC-11.6.6）。
@@ -69,11 +70,16 @@ export default function DataOverviewCard(): ReactElement | null {
       aria-label={COPY.dataOverviewTitle}
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.dataOverviewTitle}
       </h2>
       {visible.length === 0 ? (
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{COPY.dataOverviewEmpty}</p>
+        <div className="mt-3 [&_.qsh-surface-warm]:p-4">
+          {/* `EmptyState` 自带 `p-5` 与自己的表面，而本卡外层已是 `qsh-surface p-5` ——
+              直接嵌套会变成「卡中卡」双层内边距。上面那个任意值选择器把它的 `p-5`
+              收进卡片内容区，视觉上仍是卡片内的一个凹陷区块。 */}
+          <EmptyState title={COPY.dataOverviewEmpty} />
+        </div>
       ) : (
         <>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{COPY.dataOverviewDesc}</p>

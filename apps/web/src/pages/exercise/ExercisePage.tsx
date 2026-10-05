@@ -407,7 +407,7 @@ export default function ExercisePage(): ReactElement {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-24 pt-4" aria-live="polite">
       <section className="qsh-surface p-5">
-        <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100">动一动</h1>
+        <h1 className="text-title font-semibold text-slate-800 dark:text-slate-100">动一动</h1>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           消耗 = MET × 体重 × 时长（估算值，来源见「参考来源」页）
         </p>
@@ -417,7 +417,7 @@ export default function ExercisePage(): ReactElement {
         </label>
         <select
           id="exercise-type"
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="mt-1 w-full rounded-control border border-slate-200 bg-white px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
           value={activityCode}
           onChange={(event) => setActivityCode(event.target.value)}
         >
@@ -436,7 +436,7 @@ export default function ExercisePage(): ReactElement {
           type="number"
           min={1}
           max={480}
-          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
           value={minutes}
           onChange={(event) => setMinutes(Math.max(1, Math.min(480, Number(event.target.value) || 1)))}
         />
@@ -448,7 +448,7 @@ export default function ExercisePage(): ReactElement {
 
         <button
           type="button"
-          className="mt-4 w-full rounded-xl bg-brand-600 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out disabled:opacity-50"
           disabled={logExercise.isPending}
           onClick={() => logExercise.mutate()}
         >
@@ -456,7 +456,7 @@ export default function ExercisePage(): ReactElement {
         </button>
         {feedback ? <p className="mt-2 text-sm text-brand-700 dark:text-brand-400">{feedback}</p> : null}
 
-        <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
+        <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
           {/*
             「这些是上次同步时的」标记（数据可信度 · 与体重页 `weight-stale-notice` 同形）。
 
@@ -472,7 +472,7 @@ export default function ExercisePage(): ReactElement {
               role="status"
               aria-live="polite"
               data-testid="exercise-stale-notice"
-              className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
               <span>{EXERCISE_STALE_NOTICE}</span>
               <button
@@ -484,7 +484,7 @@ export default function ExercisePage(): ReactElement {
                 // 可及名以可见文案开头（WCAG 2.5.3 Label in Name），并补上「同步运动记录」
                 // —— 同屏还有饮水那个同名按钮，不点名会让读屏用户分不清点的是哪一个。
                 aria-label={`${COPY.staleDataRetry}同步运动记录`}
-                className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+                className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
               >
                 {dayQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
               </button>
@@ -493,7 +493,7 @@ export default function ExercisePage(): ReactElement {
           <p className="text-sm text-slate-600 dark:text-slate-300">
             今日运动消耗合计 <span className="font-bold">{toDisplayEnergy(dayTotal, unit)}</span> {energyLabel(unit)}
           </p>
-          <ul className="mt-2 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+          <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
             {dayLogs.length === 0 ? (
               <li className="flex items-center gap-1.5">
                 <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
@@ -523,7 +523,7 @@ export default function ExercisePage(): ReactElement {
       </section>
 
       <section className="qsh-surface p-5">
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">喝水</h2>
         {/* 快捷方式直达反馈：事实陈述，不报杯数（硬约束 2 / NFR-11）
             颜色接品牌色 brand（实测 on 白底 6.50:1 / 深色面 8.47:1，均过 AA）；
             改前用的是冷蓝（Tailwind 内置色，全站仅饮水模块一处），与看板的绿色对不上。 */}
@@ -544,7 +544,7 @@ export default function ExercisePage(): ReactElement {
             role="status"
             aria-live="polite"
             data-testid="water-stale-notice"
-            className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             <span>{WATER_STALE_NOTICE}</span>
             <button
@@ -554,7 +554,7 @@ export default function ExercisePage(): ReactElement {
               }}
               disabled={waterQuery.isFetching}
               aria-label={`${COPY.staleDataRetry}同步饮水记录`}
-              className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+              className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
             >
               {waterQuery.isFetching ? COPY.staleDataRetrying : COPY.staleDataRetry}
             </button>
@@ -574,19 +574,19 @@ export default function ExercisePage(): ReactElement {
           {/* 进度填充用 brand-500：与 `DiaryPage` 预算条 / `WeeklyReportView` 迷你柱同一档位，
               实测 vs 轨道 3.05:1（浅）/ 3.10:1（深），均过 1.4.11 的 3:1 ——
               改前的冷蓝填充只有 1.96:1（浅色轨道上几乎看不出填充到哪）。 */}
-          <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${waterPercent}%` }} />
+          <div className="h-full rounded-full bg-brand-500 transition-[width] duration-qsh-slow ease-qsh-out" style={{ width: `${waterPercent}%` }} />
         </div>
         <div className="mt-4 flex gap-3">
           <button
             type="button"
-            className="flex-1 rounded-xl bg-brand-600 px-4 py-3 font-medium text-white transition hover:bg-brand-700"
+            className="flex-1 rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
             onClick={addWaterLocal}
           >
             +{WATER_QUICK_ADD_ML}ml
           </button>
           <button
             type="button"
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-slate-600 dark:border-slate-600 dark:text-slate-300"
+            className="flex-1 rounded-control border border-slate-200 px-4 py-3 text-slate-600 dark:border-slate-600 dark:text-slate-300"
             onClick={undoWaterLocal}
           >
             撤销上一条

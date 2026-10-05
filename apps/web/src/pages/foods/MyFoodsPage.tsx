@@ -7,6 +7,7 @@ import { api, noticeFromError } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
 import { COPY, myFoodDeleteAria } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
+import EmptyState from '@/components/common/EmptyState';
 import EditFoodDialog from './EditFoodDialog';
 import type { EditFoodSubmit } from './EditFoodDialog';
 
@@ -95,12 +96,14 @@ export default function MyFoodsPage(): ReactElement {
   const items = mineQuery.data ?? [];
 
   return (
-    <div className="space-y-4">
+    // 容器边距与其余 5 页对齐（`mx-auto max-w-xl px-4 pb-24 pt-4`）：本页此前完全依赖
+    // AppShell 提供边距，是全站唯一一个左右留白与别页不一致的页面。
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4">
       <section
         aria-label={COPY.myFoodsTitle}
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.myFoodsTitle}</h2>
+        <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.myFoodsTitle}</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.myFoodsDesc}</p>
       </section>
 
@@ -116,13 +119,24 @@ export default function MyFoodsPage(): ReactElement {
 
       <section aria-label="我存过的食物" className="qsh-surface p-5 dark:ring-slate-700">
         {mineQuery.isLoading ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{COPY.myFoodsLoading}</p>
+          /* 骨架而非灰字：此前「还在拿」与「拿不到」是同一行灰字，用户分不清。
+             骨架块用 `h-12` + `rounded-control`，与下方真实列表项（`:132`）同几何，
+             数据到位那一刻不形变。文案对读屏仍有价值，用 `qsh-sr-only` 保留。 */
+          <div className="min-h-[72px]" role="status" aria-live="polite">
+            <span className="qsh-sr-only">{COPY.myFoodsLoading}</span>
+            <div className="h-12 w-full animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
+            <div className="mt-2 h-12 w-full animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
+          </div>
         ) : mineQuery.isError ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{COPY.myFoodsLoadError}</p>
-        ) : items.length === 0 ? (
-          <p data-testid="my-foods-empty" className="text-sm text-slate-500 dark:text-slate-400">
-            {COPY.myFoodsEmpty}
+          <p role="status" className="text-body text-slate-600 dark:text-slate-300">
+            {COPY.myFoodsLoadError}
           </p>
+        ) : items.length === 0 ? (
+          /* `EmptyState` 自带 `p-5`，外层 section 已是 `p-5` → 用任意值选择器收进内容区，
+             避免双层内边距；`data-testid` 按契约必须保留，故挂在 title 元素上。 */
+          <div className="[&_.qsh-surface-warm]:p-4">
+            <EmptyState title={<span data-testid="my-foods-empty">{COPY.myFoodsEmpty}</span>} />
+          </div>
         ) : (
           <ul className="space-y-2">
             {items.map((food) => (
@@ -145,7 +159,7 @@ export default function MyFoodsPage(): ReactElement {
                       setEditing(food);
                     }}
                     data-testid={`my-food-edit-${food.id}`}
-                    className="qsh-touch-target rounded-control px-2 text-xs text-slate-600 hover:text-coral-600 dark:text-slate-300"
+                    className="qsh-touch-target rounded-control px-2 text-caption text-slate-600 transition-colors duration-qsh-base ease-qsh-out hover:text-coral-600 dark:text-slate-300"
                     aria-label={`${COPY.myFoodsEdit}：${food.name}`}
                   >
                     {COPY.myFoodsEdit}
@@ -155,7 +169,7 @@ export default function MyFoodsPage(): ReactElement {
                     onClick={() => deleteMutation.mutate(food.id)}
                     disabled={deleteMutation.isPending && deleteMutation.variables === food.id}
                     data-testid={`my-food-delete-${food.id}`}
-                    className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-slate-600 hover:text-coral-600 disabled:opacity-40 dark:text-slate-300"
+                    className="qsh-touch-target shrink-0 rounded-control px-2 text-caption text-slate-600 transition-colors duration-qsh-base ease-qsh-out hover:text-coral-600 disabled:opacity-40 dark:text-slate-300"
                     aria-label={myFoodDeleteAria(food.name)}
                   >
                     {COPY.myFoodsDelete}

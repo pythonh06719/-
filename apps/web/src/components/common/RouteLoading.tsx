@@ -20,7 +20,7 @@ export default function RouteLoading(): ReactElement {
       aria-label="页面加载中"
       className="flex min-h-[60vh] flex-col items-center justify-center gap-3"
     >
-      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white motion-safe:animate-pulse">
+      <span className="flex h-11 w-11 items-center justify-center rounded-control bg-brand-600 text-caption font-semibold text-white motion-safe:animate-pulse">
         轻
       </span>
       <span className="text-sm text-brand-700 dark:text-brand-200">加载中…</span>

@@ -99,7 +99,7 @@ export default function BackupRestoreCard(): ReactElement {
       aria-labelledby="restore-backup-title"
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 id="restore-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="restore-backup-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         恢复 JSON 备份
       </h2>
       <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
@@ -116,7 +116,7 @@ export default function BackupRestoreCard(): ReactElement {
           accept=".json,application/json"
           disabled={phase === 'previewing' || phase === 'restoring'}
           onChange={(event) => void handleFile(event)}
-          className="block w-full rounded-xl border border-brand-100 px-3 py-2 text-sm disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="block w-full rounded-control border border-brand-100 px-3 py-2 text-sm disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
         />
       </label>
 
@@ -145,7 +145,7 @@ export default function BackupRestoreCard(): ReactElement {
               <button
                 type="button"
                 onClick={() => void handleRestore()}
-                className="qsh-touch-target flex-1 rounded-xl bg-brand-600 px-3 py-3 font-medium text-white transition hover:bg-brand-700"
+                className="qsh-touch-target flex-1 rounded-control bg-brand-600 px-3 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
               >
                 确认合并这份备份
               </button>
@@ -156,7 +156,7 @@ export default function BackupRestoreCard(): ReactElement {
                   setNotice(null);
                   setPhase('idle');
                 }}
-                className="qsh-touch-target rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                className="qsh-touch-target rounded-control bg-slate-100 px-4 py-3 text-sm text-slate-700 transition-colors duration-qsh-fast ease-qsh-out hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
               >
                 先不合并
               </button>

@@ -143,7 +143,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         aria-labelledby="goal-title"
         className="qsh-surface p-5 dark:ring-slate-700"
       >
-        <h2 id="goal-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.goalCardTitle}
         </h2>
         <p role="status" className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -207,7 +207,7 @@ export default function GoalSettingsCard(): ReactElement | null {
       aria-labelledby="goal-title"
       className="qsh-surface space-y-3 p-5 dark:ring-slate-700"
     >
-      <h2 id="goal-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.goalCardTitle}
       </h2>
       <p className="text-sm text-slate-600 dark:text-slate-300">{COPY.goalCardDesc}</p>
@@ -218,7 +218,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         data-testid="goal-current"
         className="grid grid-cols-3 gap-3 text-center"
       >
-        <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+        <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {goalCurrentWeightLabel(weightUnit)}
           </dt>
@@ -226,7 +226,7 @@ export default function GoalSettingsCard(): ReactElement | null {
             {formatWeight(goal.startWeightKg, weightUnit)}
           </dd>
         </div>
-        <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+        <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {goalTargetWeightLabel(weightUnit)}
           </dt>
@@ -234,7 +234,7 @@ export default function GoalSettingsCard(): ReactElement | null {
             {formatWeight(goal.targetWeightKg, weightUnit)}
           </dd>
         </div>
-        <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+        <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {COPY.goalTargetWeeksLabel}
           </dt>
@@ -258,7 +258,7 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="decimal"
               value={edit.currentWeightKg}
               onChange={(event) => setEdit((prev) => ({ ...prev, currentWeightKg: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -268,7 +268,7 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="decimal"
               value={edit.targetWeightKg}
               onChange={(event) => setEdit((prev) => ({ ...prev, targetWeightKg: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -278,14 +278,14 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="numeric"
               value={edit.targetWeeks}
               onChange={(event) => setEdit((prev) => ({ ...prev, targetWeeks: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
         </div>
         <button
           type="submit"
           disabled={updateGoal.isPending}
-          className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+          className="qsh-touch-target w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700 disabled:opacity-60"
         >
           {updateGoal.isPending ? COPY.goalSaving : COPY.goalSaveButton}
         </button>

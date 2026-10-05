@@ -127,7 +127,7 @@ export default function ToolsPage(): ReactElement {
             type="button"
             role="tab"
             aria-selected={tab === item.key}
-            className={`rounded-xl px-2 py-2 text-xs font-medium transition-colors ${
+            className={`rounded-control px-2 py-2 text-caption font-medium transition-colors duration-qsh-fast ease-qsh-out ${
               tab === item.key ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'
             }`}
             onClick={() => setTab(item.key)}
@@ -139,13 +139,13 @@ export default function ToolsPage(): ReactElement {
 
       {tab === 'takeout' ? (
         <section className="qsh-surface p-5">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">外卖换算器</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">外卖换算器</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="takeout-kind">
             常点的品类
           </label>
           <select
             id="takeout-kind"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={takeoutKind}
             onChange={(event) => {
               const kind = event.target.value;
@@ -162,7 +162,7 @@ export default function ToolsPage(): ReactElement {
           </select>
           {/* 预选说明（中性）：被预选的档位与记忆一致时才提示，换掉了就不再说 */}
           {rememberedTakeout !== null && takeoutKind === rememberedTakeout.kind && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-caption text-slate-600 dark:text-slate-300">
               按你常点的先选好了，换一个也随时可以
             </p>
           )}
@@ -175,7 +175,7 @@ export default function ToolsPage(): ReactElement {
                 </span>{' '}
                 {energyLabel(unit)}
               </p>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{takeout.assumption}</p>
+              <p className="mt-2 text-caption text-slate-600 dark:text-slate-300">估算口径：{takeout.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">这样点更轻松</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {takeout.swaps.map((swap) => (
@@ -189,13 +189,13 @@ export default function ToolsPage(): ReactElement {
 
       {tab === 'snack' ? (
         <section className="qsh-surface p-5">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">零食救赎</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">零食救赎</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="snack-name">
             想吃的零食
           </label>
           <input
             id="snack-name"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={snackName}
             onChange={(event) => setSnackName(event.target.value)}
           />
@@ -208,7 +208,7 @@ export default function ToolsPage(): ReactElement {
                 id="snack-kcal"
                 type="number"
                 min={0}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={snackKcalText}
                 onChange={(event) => {
                   const raw = event.target.value;
@@ -228,7 +228,7 @@ export default function ToolsPage(): ReactElement {
                 type="number"
                 min={Math.round(toDisplayWeight(20, weightUnit))}
                 max={Math.round(toDisplayWeight(400, weightUnit))}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={weightText}
                 onChange={(event) => {
                   const raw = event.target.value;
@@ -258,19 +258,19 @@ export default function ToolsPage(): ReactElement {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">想吃了就吃一点，不用有负担 —— 知道它换算成什么就好。</p>
+          <p className="mt-2 text-caption text-slate-600 dark:text-slate-300">想吃了就吃一点，不用有负担 —— 知道它换算成什么就好。</p>
         </section>
       ) : null}
 
       {tab === 'feast' ? (
         <section className="qsh-surface p-5">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">聚餐模式</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">聚餐模式</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="feast-kind">
             聚餐类型
           </label>
           <select
             id="feast-kind"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={feastKind}
             onChange={(event) => setFeastKind(event.target.value)}
           >
@@ -287,7 +287,7 @@ export default function ToolsPage(): ReactElement {
                 </span>{' '}
                 {energyLabel(unit)}（不含酒水）
               </p>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">估算口径：{feast.assumption}</p>
+              <p className="mt-2 text-caption text-slate-600 dark:text-slate-300">估算口径：{feast.assumption}</p>
               <h3 className="mt-3 text-sm font-semibold text-brand-700 dark:text-brand-400">当天可以这样安排</h3>
               <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
                 {feast.adjustTips.map((tip) => (
@@ -301,13 +301,13 @@ export default function ToolsPage(): ReactElement {
 
       {tab === 'drink' ? (
         <section className="qsh-surface p-5">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">饮品计算器</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">饮品计算器</h2>
           <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300" htmlFor="drink-kind">
             饮品
           </label>
           <select
             id="drink-kind"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={drinkKind}
             onChange={(event) => {
               const kind = event.target.value;
@@ -332,7 +332,7 @@ export default function ToolsPage(): ReactElement {
                 type="number"
                 min={100}
                 max={2000}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={drinkSize}
                 onChange={(event) => {
                   const size = Math.max(100, Number(event.target.value) || 500);
@@ -347,7 +347,7 @@ export default function ToolsPage(): ReactElement {
               </label>
               <select
                 id="drink-sugar"
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
                 value={sugarLevel}
                 onChange={(event) => {
                   const sugar = event.target.value;
@@ -367,7 +367,7 @@ export default function ToolsPage(): ReactElement {
           {rememberedDrink !== null &&
             drinkKind === rememberedDrink.kind &&
             sugarLevel === rememberedDrink.sugar && (
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-caption text-slate-600 dark:text-slate-300">
                 按你常点的先选好了，换一个也随时可以
               </p>
             )}

@@ -130,7 +130,7 @@ export default function PeriodArchiveAction({
           setNotice(null);
           setConfirming(true);
         }}
-        className="qsh-touch-target w-full rounded-control bg-brand-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+        className="qsh-touch-target w-full rounded-control bg-brand-600 px-4 py-3 text-sm font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
       >
         {topFoodsLoading ? '正在准备存档…' : '保存这一份'}
       </button>
@@ -176,7 +176,7 @@ export default function PeriodArchiveAction({
             aria-describedby="period-archive-confirm-description"
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 dark:bg-slate-950/65"
           >
-            <div className="w-full max-w-md rounded-card bg-white p-6 shadow-xl dark:bg-slate-800">
+            <div className="w-full max-w-md rounded-card bg-white p-6 shadow-qsh-3 dark:bg-slate-800">
               <h3 id="period-archive-confirm-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 保存前请留意
               </h3>

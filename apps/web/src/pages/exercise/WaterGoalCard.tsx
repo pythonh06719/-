@@ -84,7 +84,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
       aria-labelledby="water-goal-title"
       className="qsh-surface p-5 dark:ring-slate-700"
     >
-      <h2 id="water-goal-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="water-goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.waterGoalTitle}
       </h2>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.waterGoalDesc}</p>
@@ -104,12 +104,12 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
             inputMode="numeric"
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
         <button
           type="submit"
-          className="qsh-touch-target rounded-xl bg-brand-600 px-4 py-3 font-medium text-white transition hover:bg-brand-700"
+          className="qsh-touch-target rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           {COPY.waterGoalButton}
         </button>

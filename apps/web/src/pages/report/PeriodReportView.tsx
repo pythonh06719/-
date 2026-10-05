@@ -23,6 +23,7 @@ import {
   topFoodsAria,
 } from '@/lib/copy';
 import { useUnitStore } from '@/lib/units';
+import StateBlock from '@/components/common/StateBlock';
 import PeriodArchiveAction from './PeriodArchiveAction';
 
 /** 回顾页常吃 Top 条数（D-4：复用 `GET /foods/top`，不进 `PeriodReport` 白名单）。 */
@@ -138,17 +139,15 @@ export default function PeriodReportView(): ReactElement {
       </div>
 
       {!hasReport ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
+        <StateBlock className="lg:col-span-2">
           {reportQuery.isLoading ? '正在整理这段时间…' : '暂时拿不到回顾，稍后再看看'}
-        </p>
+        </StateBlock>
       ) : !report.hasAnyData ? (
         /* 整屏空态：不渲染任何指标卡（AC-11.3.5） */
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
-          {COPY.periodEmpty}
-        </p>
+        <StateBlock className="lg:col-span-2">{COPY.periodEmpty}</StateBlock>
       ) : (
         <section className="qsh-surface p-5 lg:col-start-1" aria-labelledby="period-metrics-title">
-          <h2 id="period-metrics-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <h2 id="period-metrics-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.reportTabPeriod}
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400" data-testid="period-range">
@@ -192,7 +191,7 @@ export default function PeriodReportView(): ReactElement {
       {/* 常吃 Top5（复用 `GET /foods/top`，D-4）：不足门槛 → 整块隐藏（AC-11.5.2 同规则） */}
       {hasReport && report.hasAnyData && topItems.length > 0 && (
         <section className="qsh-surface p-5 lg:col-start-2" aria-labelledby="period-top-title">
-          <h2 id="period-top-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <h2 id="period-top-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.periodTopTitle}
           </h2>
           <ul className="mt-3 space-y-2">

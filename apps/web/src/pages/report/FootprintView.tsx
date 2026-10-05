@@ -17,6 +17,7 @@ import {
   footprintMonthTitle,
 } from '@/lib/copy';
 import { WEEKDAY_HEADERS, addMonths, buildMonthCells, currentMonthKey } from '@/lib/month-grid';
+import StateBlock from '@/components/common/StateBlock';
 import OnThisDayRecall from './OnThisDayRecall';
 
 /**
@@ -87,7 +88,7 @@ export default function FootprintView(): ReactElement {
         aria-labelledby="footprint-title"
         className="qsh-surface p-5 dark:ring-slate-700 lg:mx-auto lg:max-w-lg"
       >
-      <h2 id="footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 id="footprint-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.footprintTitle}
       </h2>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.footprintDesc}</p>
@@ -98,7 +99,7 @@ export default function FootprintView(): ReactElement {
           type="button"
           onClick={() => setMonth((current) => addMonths(current, -1))}
           aria-label={COPY.footprintPrevMonthAria}
-          className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+          className="qsh-touch-target rounded-control px-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
         >
           {COPY.footprintPrevMonth}
         </button>
@@ -110,7 +111,7 @@ export default function FootprintView(): ReactElement {
             type="button"
             disabled
             aria-label={COPY.footprintNextMonthAria}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-300 ring-1 ring-brand-100 dark:text-slate-600 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-300 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out dark:text-slate-600 dark:ring-slate-700"
           >
             {COPY.footprintNextMonth}
           </button>
@@ -119,7 +120,7 @@ export default function FootprintView(): ReactElement {
             type="button"
             onClick={() => setMonth((current) => addMonths(current, 1))}
             aria-label={COPY.footprintNextMonthAria}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
           >
             {COPY.footprintNextMonth}
           </button>
@@ -134,7 +135,7 @@ export default function FootprintView(): ReactElement {
       )}
 
       {calendarQuery.isLoading && (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{COPY.footprintLoading}</p>
+        <StateBlock className="mt-3">{COPY.footprintLoading}</StateBlock>
       )}
 
       {/* 读取不顺：软着陆，**不渲染空网格**（否则会把「读不到」误说成「一天没记」） */}
@@ -179,7 +180,7 @@ export default function FootprintView(): ReactElement {
                     data-date={date}
                     data-blank="true"
                     aria-hidden="true"
-                    className="flex aspect-square items-center justify-center rounded-[5px] text-xs text-slate-300 dark:text-slate-600"
+                    className="flex aspect-square items-center justify-center rounded-cell text-xs text-slate-300 dark:text-slate-600"
                   >
                     {dayNumber}
                   </span>
@@ -194,7 +195,7 @@ export default function FootprintView(): ReactElement {
                   data-date={date}
                   data-level={level}
                   aria-label={footprintDayAria(formatMonthDay(date), kinds?.length ?? 0)}
-                  className={`flex aspect-square items-center justify-center rounded-[5px] text-xs font-medium transition ${SHADE_BY_LEVEL[level] ?? ''}`}
+                  className={`flex aspect-square items-center justify-center rounded-cell text-xs font-medium transition-colors duration-qsh-base ease-qsh-out ${SHADE_BY_LEVEL[level] ?? ''}`}
                 >
                   {dayNumber}
                 </Link>
@@ -210,7 +211,7 @@ export default function FootprintView(): ReactElement {
                 <span key={level} className="flex items-center gap-1">
                   <span
                     aria-hidden="true"
-                    className={`inline-block h-3 w-3 rounded-[4px] ${SHADE_BY_LEVEL[level] ?? ''}`}
+                    className={`inline-block h-3 w-3 rounded-cell ${SHADE_BY_LEVEL[level] ?? ''}`}
                   />
                   <span>{footprintLegendLevel(level)}</span>
                 </span>

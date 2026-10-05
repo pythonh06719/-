@@ -37,7 +37,7 @@ export default function WeeklyDiversityRow({ report }: { report: WeeklyReport })
         onClick={() => setExpanded((value) => !value)}
         aria-expanded={expanded}
         aria-label={diversityAria(count, expanded)}
-        className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control text-left"
+        className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control text-left transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:hover:bg-slate-700"
       >
         <span className="text-sm text-slate-700 dark:text-slate-200">{diversityCountLine(count)}</span>
         <span className="shrink-0 text-xs font-medium text-brand-700 dark:text-brand-300">

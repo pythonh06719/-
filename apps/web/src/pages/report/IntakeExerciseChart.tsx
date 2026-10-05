@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { TOKENS } from '@/theme/tokens';
 import { COPY, reportTrendAria } from '@/lib/copy';
+import StateBlock from '@/components/common/StateBlock';
 
 /**
  * 「摄入 vs 运动」迷你柱状对比（pages/report/IntakeExerciseChart.tsx，C2）。
@@ -39,9 +40,7 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
 
   if (days.length === 0) {
     return (
-      <p className="flex h-[96px] items-center justify-center rounded-xl bg-brand-50 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-        {COPY.reportTrendEmpty}
-      </p>
+      <StateBlock className="lg:col-span-2">{COPY.reportTrendEmpty}</StateBlock>
     );
   }
 

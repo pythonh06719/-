@@ -34,7 +34,7 @@ const INITIAL_FORM: FormState = {
 
 /** 表单控件共用样式（含深色变体；`dark:bg-slate-900` 沿用「我的」页输入框惯例）。 */
 const FIELD_CLASS =
-  'mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+  'mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
 
 /** 将字符串安全转为数字（空串 / 非法 → NaN，交由引擎校验）。 */
 function toNumber(value: string): number {
@@ -97,9 +97,9 @@ export default function CalorieCalculator(): ReactElement {
   return (
     <section
       aria-label="免注册热量计算器"
-      className="mx-auto w-full max-w-xl qsh-surface p-6"
+      className="w-full qsh-surface p-5"
     >
-      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+      <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         先算一算，再决定要不要用
       </h2>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -186,18 +186,18 @@ export default function CalorieCalculator(): ReactElement {
 
         <button
           type="submit"
-          className="col-span-2 mt-1 rounded-lg bg-brand-600 px-4 py-3 font-medium text-white transition hover:bg-brand-700"
+          className="col-span-2 mt-1 rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           计算我的每日预算
         </button>
       </form>
 
       {outcome !== null && !outcome.ok && (
-        <div className="mt-5 rounded-xl bg-amber-50 p-4 dark:bg-amber-900/30" role="status">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+        <div className="mt-5 rounded-control bg-coral-50 p-4 dark:bg-coral-900/30" role="status">
+          <p className="text-body font-medium text-coral-700 dark:text-coral-200">
             马上就能算了，帮我们看看：
           </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-700 dark:text-amber-100">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-body text-coral-700 dark:text-coral-100">
             {outcome.errors.map((error) => (
               <li key={`${error.field}-${error.code}`}>{error.message}</li>
             ))}
@@ -208,22 +208,22 @@ export default function CalorieCalculator(): ReactElement {
       {result !== null && (
         <div className="mt-6" aria-live="polite">
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-slate-600 dark:text-slate-400">基础代谢 BMR</p>
-              <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.bmr}</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">kcal</p>
+            <div className="rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+              <p className="text-caption text-slate-600 dark:text-slate-400">基础代谢 BMR</p>
+              <p className="qsh-tnum mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.bmr}</p>
+              <p className="text-caption text-slate-600 dark:text-slate-400">kcal</p>
             </div>
-            <div className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-slate-600 dark:text-slate-400">每日消耗 TDEE</p>
-              <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.tdee}</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">kcal</p>
+            <div className="rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+              <p className="text-caption text-slate-600 dark:text-slate-400">每日消耗 TDEE</p>
+              <p className="qsh-tnum mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.tdee}</p>
+              <p className="text-caption text-slate-600 dark:text-slate-400">kcal</p>
             </div>
-            <div className="rounded-xl bg-brand-100 p-3 dark:bg-brand-900/40">
-              <p className="text-xs text-brand-700 dark:text-brand-200">建议摄入</p>
-              <p className="mt-1 text-xl font-semibold text-brand-700 dark:text-brand-200">
+            <div className="rounded-control bg-brand-100 p-4 dark:bg-brand-900/40">
+              <p className="text-caption text-brand-700 dark:text-brand-200">建议摄入</p>
+              <p className="qsh-tnum mt-1 text-display font-semibold text-brand-700 dark:text-brand-200">
                 {result.intakeRecommended}
               </p>
-              <p className="text-xs text-brand-600 dark:text-brand-300">kcal</p>
+              <p className="text-caption text-brand-600 dark:text-brand-300">kcal</p>
             </div>
           </div>
 
@@ -232,7 +232,7 @@ export default function CalorieCalculator(): ReactElement {
               {notices.map((message) => (
                 <li
                   key={message}
-                  className="rounded-xl border border-brand-100 bg-white px-4 py-2 text-sm text-brand-700 dark:border-slate-700 dark:bg-slate-800 dark:text-brand-200"
+                  className="qsh-surface px-4 py-2 text-body text-brand-700 dark:text-brand-200"
                 >
                   {message}
                 </li>

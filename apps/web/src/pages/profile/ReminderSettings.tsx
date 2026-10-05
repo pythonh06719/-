@@ -55,7 +55,7 @@ export default function ReminderSettings(): ReactElement {
     <section className="qsh-surface p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.reminderToggleTitle}</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.reminderToggleTitle}</h2>
           <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{COPY.reminderToggleDesc}</p>
         </div>
         <button

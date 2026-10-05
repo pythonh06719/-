@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { COPY, habitRestartAria, habitStopAria } from '@/lib/copy';
 import { todayKey } from '@/lib/format';
 import EmptyState from '@/components/common/EmptyState';
+import StateBlock from '@/components/common/StateBlock';
 import HabitCalendar from './HabitCalendar';
 
 /**
@@ -185,10 +186,14 @@ export default function HabitsPage(): ReactElement {
       {activeHabits.map((habit) => (
         <div
           key={habit.id}
-          className={`rounded-2xl p-5 shadow-sm transition-all ${
+          className={`p-5 transition-colors duration-qsh-base ease-qsh-out ${
+            // ⚠️ 已打卡态**刻意不用** `.qsh-surface`：该类是普通 CSS 规则且排在
+            // `@tailwind utilities` 之后，同特异性下会盖掉 `bg-brand-50` / `ring-2`，
+            // 「今天已打卡」的绿底与双线环就都没了。这里手写等价的一套（含 elevation token），
+            // 未打卡态才用 `.qsh-surface`（深色底色由 dark.css 统一接管）。
             habit.doneToday
-              ? 'bg-brand-50 ring-2 ring-brand-300 dark:bg-brand-900/40'
-              : 'bg-white dark:bg-slate-800'
+              ? 'rounded-card bg-brand-50 shadow-qsh-1 ring-2 ring-brand-300 dark:bg-brand-900/40'
+              : 'qsh-surface'
           }`}
         >
           <button
@@ -326,20 +331,20 @@ export default function HabitsPage(): ReactElement {
       */}
       {habits.length === 0 ? (
         habitsQuery.isLoading ? (
-          <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+          <StateBlock>
             {HABITS_LOADING}
-          </p>
+          </StateBlock>
         ) : habitsQuery.isError ? (
           <div
             role="status"
             data-testid="habits-load-error"
-            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-slate-100 px-4 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             <span>{HABITS_LOAD_ERROR}</span>
             <button
               type="button"
               data-testid="habits-load-retry"
-              className="qsh-touch-target rounded-lg px-2 py-1 font-medium text-brand-700 underline underline-offset-2 disabled:opacity-60 dark:text-brand-300"
+              className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 transition-colors duration-qsh-base ease-qsh-out disabled:opacity-60 dark:text-brand-300"
               disabled={habitsQuery.isFetching}
               onClick={() => {
                 void habitsQuery.refetch();
@@ -419,7 +424,7 @@ export default function HabitsPage(): ReactElement {
         <div className="mt-2 flex gap-2">
           <input
             id="new-habit"
-            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            className="flex-1 rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             value={newName}
             maxLength={30}
             onChange={(event) => setNewName(event.target.value)}
@@ -427,7 +432,7 @@ export default function HabitsPage(): ReactElement {
           />
           <button
             type="submit"
-            className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+            className="rounded-control bg-brand-600 px-4 py-2 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out disabled:opacity-50"
             disabled={createHabit.isPending}
           >
             添加

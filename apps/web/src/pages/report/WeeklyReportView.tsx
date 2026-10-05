@@ -21,6 +21,7 @@ import {
   weeklyWeightReading,
 } from '@/lib/copy';
 import ShareCard from '@/components/feedback/ShareCard';
+import StateBlock from '@/components/common/StateBlock';
 import IntakeExerciseChart from './IntakeExerciseChart';
 import WeeklyDiversityRow from './WeeklyDiversityRow';
 
@@ -148,13 +149,13 @@ export default function WeeklyReportView(): ReactElement {
     // DOM 顺序 == 视觉「先左栏再右栏」，焦点顺序不变。
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
       {/* B2：周选择器（常驻渲染 —— 切周时控件不消失，避免闪烁） */}
-      <section className="qsh-surface p-4 lg:col-span-2" aria-label={COPY.weekSwitchTitle}>
+      <section className="qsh-surface p-5 lg:col-span-2" aria-label={COPY.weekSwitchTitle}>
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={goPrevWeek}
             aria-label={COPY.weekPrevAria}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-600 ring-1 ring-brand-100 dark:text-slate-300 dark:ring-slate-700"
           >
             {COPY.weekPrev}
           </button>
@@ -163,7 +164,7 @@ export default function WeeklyReportView(): ReactElement {
             onClick={goNextWeek}
             disabled={!canGoForward}
             aria-label={COPY.weekNextAria}
-            className="qsh-touch-target rounded-lg px-3 text-sm text-slate-600 ring-1 ring-brand-100 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700"
+            className="qsh-touch-target rounded-control px-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 disabled:opacity-40 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
           >
             {COPY.weekNext}
           </button>
@@ -183,14 +184,14 @@ export default function WeeklyReportView(): ReactElement {
                   jumpToDate(next);
                 }
               }}
-              className="ml-1.5 rounded-lg border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="ml-1.5 rounded-control border border-brand-100 px-2 py-1 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           {endDate !== today && (
             <button
               type="button"
               onClick={() => setEndDate(today)}
-              className="qsh-touch-target rounded-lg px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 dark:text-brand-300 dark:ring-slate-700"
+              className="qsh-touch-target rounded-control px-3 text-sm font-medium text-brand-700 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-brand-300 dark:ring-slate-700 dark:hover:bg-slate-800"
             >
               {COPY.weekBackToCurrent}
             </button>
@@ -205,14 +206,14 @@ export default function WeeklyReportView(): ReactElement {
       </section>
 
       {report === undefined ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400 lg:col-span-2">
+        <StateBlock className="lg:col-span-2">
           {reportQuery.isLoading ? weeklyLoadingLine(windowLabel) : '暂时拿不到周报，稍后再看看'}
-        </p>
+        </StateBlock>
       ) : !hasRecords ? (
         /* B2 空态：这一周一条记录都没有 —— 只说「哪一周 + 一句中性话」，不渲染任何 0 值指标。
            标题沿用 `report.from ~ report.to`：空态也要让用户看清自己在看哪一周（NFR-11）。 */
         <section className="qsh-surface p-5 lg:col-span-2" data-testid="weekly-empty">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             近 7 天（{rangeText}）
           </h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{COPY.weeklyEmptyTitle}</p>
@@ -235,22 +236,22 @@ export default function WeeklyReportView(): ReactElement {
             />
 
             <section className="qsh-surface p-5">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
                 近 7 天（{rangeText}）
               </h2>
               <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                  <p className="text-xs text-slate-500 dark:text-slate-300">日均摄入</p>
+                <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">日均摄入</p>
                   <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                  <p className="text-xs text-slate-500 dark:text-slate-300">运动消耗</p>
+                <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">运动消耗</p>
                   <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700">
-                  <p className="text-xs text-slate-500 dark:text-slate-300">体重变化</p>
+                <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">体重变化</p>
                   <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
                     {formatSignedWeight(report.weightChangeKg, weightUnit)}
                   </p>
@@ -294,7 +295,7 @@ export default function WeeklyReportView(): ReactElement {
             <WeeklyDiversityRow report={report} />
 
             <section className="qsh-surface p-5">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
                 {COPY.reportHabitTitle}
               </h2>
               {habitRate === null ? (
@@ -321,7 +322,7 @@ export default function WeeklyReportView(): ReactElement {
             </section>
 
             <section className="qsh-surface p-5">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
+              <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
               <ul className="mt-3 space-y-3">
                 {micronutrients.map((item) => {

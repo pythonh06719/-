@@ -101,11 +101,11 @@ export default function FastingPage(): ReactElement {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 pb-24 pt-4" aria-live="polite">
       {showWarning ? (
-        <section className="rounded-2xl bg-amber-50 p-5 ring-2 ring-amber-300 dark:bg-amber-900/30" role="alertdialog" aria-labelledby="fasting-warning-title">
-          <h2 id="fasting-warning-title" className="text-base font-bold text-amber-900 dark:text-amber-200">
+        <section className="rounded-card bg-coral-50 p-5 ring-2 ring-coral-200 dark:bg-coral-900/30 dark:ring-coral-700" role="alertdialog" aria-labelledby="fasting-warning-title">
+          <h2 id="fasting-warning-title" className="text-subtitle font-bold text-coral-800 dark:text-coral-200">
             {COPY.fastingWarningTitle}
           </h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900/90 dark:text-amber-100/90">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-body text-coral-700 dark:text-coral-100">
             {CONTENT_WARNING.map((line) => (
               <li key={line}>{line}</li>
             ))}
@@ -113,14 +113,14 @@ export default function FastingPage(): ReactElement {
           <div className="mt-4 flex flex-col gap-2">
             <button
               type="button"
-              className="rounded-xl border-2 border-amber-500 px-4 py-3 font-semibold text-amber-800 dark:text-amber-200"
+              className="rounded-control border-2 border-coral-500 px-4 py-3 font-semibold text-coral-800 transition-colors duration-qsh-fast ease-qsh-out dark:text-coral-200"
               onClick={() => setShowWarning(false)}
             >
               这不适合我
             </button>
             <button
               type="button"
-              className="rounded-xl bg-amber-500 px-4 py-3 font-medium text-white"
+              className="rounded-control bg-coral-500 px-4 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-coral-600"
               onClick={confirmEnable}
               disabled={saveSettings.isPending}
             >
@@ -131,17 +131,24 @@ export default function FastingPage(): ReactElement {
       ) : null}
 
       <section className="qsh-surface p-5">
-        <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100">断食计时</h1>
+        <h1 className="text-title font-semibold text-slate-800 dark:text-slate-100">断食计时</h1>
 
         {!settings ? (
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">正在读取设置…</p>
+          /* 骨架而非裸文案：给 `min-h-[88px]` 与真实内容块同量级的高度，
+             设置到位那一刻不再「跳一下」。骨架块用 `rounded-control`，与下方内嵌数据块对齐。
+             `正在读取设置…` 对读屏仍有价值，故保留（`aria-live` 由父容器提供）。 */
+          <div className="mt-2 min-h-[88px]" role="status" aria-live="polite">
+            <span className="qsh-sr-only">正在读取设置…</span>
+            <div className="h-12 w-full animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
+            <div className="mt-2 h-8 w-2/3 animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
+          </div>
         ) : settings.enabled ? (
           <>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               当前方案 <span className="font-bold">{settings.plan}</span>（目标 {settings.targetFastHours} 小时）
             </p>
             {session && !session.endedAt ? (
-              <div className="mt-4 rounded-2xl bg-slate-50 p-5 text-center dark:bg-slate-700">
+              <div className="mt-4 rounded-control bg-slate-50 p-3 text-center dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">已断食</p>
                 <p className="mt-1 text-4xl font-bold text-slate-800 dark:text-slate-100" aria-live="off">
                   {session.elapsedHours.toFixed(1)}

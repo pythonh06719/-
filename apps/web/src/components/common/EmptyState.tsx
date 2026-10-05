@@ -15,8 +15,14 @@ import BrandDecor from './BrandDecor';
  */
 
 export interface EmptyStateProps {
-  /** 主文案（一句话，尽量给「下一步」而不是结论） */
-  title: string;
+  /**
+   * 主文案（一句话，尽量给「下一步」而不是结论）。
+   *
+   * 类型是 `ReactNode` 而非 `string`：调用点有时需要在主文案里挂一个
+   * `data-testid` 锚点（既有测试按testid 定位空状态），写成 JSX 更直接。
+   * 绝大多数调用点仍传字符串。
+   */
+  title: ReactNode;
   /** 补充说明（可选） */
   description?: string;
   /** 可选动作（按钮 / 链接） */
