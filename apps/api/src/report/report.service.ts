@@ -161,14 +161,19 @@ export class ReportService {
       avgIntakeKcal: this.round1(loggedDays.reduce((sum, day) => sum + day.intakeKcal, 0) / loggedDayCount),
       totalExerciseKcal: this.round1(days.reduce((sum, day) => sum + day.exerciseKcal, 0)),
       weightChangeKg,
-      micronutrients: DRI_REFERENCES.map((reference) => ({
-        key: reference.key,
-        name: reference.name,
-        unit: reference.unit,
-        dailyAvg: this.round2(this.sumMicronutrient(micronutrientRows, reference.key) / loggedDayCount),
-        reference: reference.reference,
-        direction: reference.direction,
-      })),
+      micronutrients: DRI_REFERENCES.map((reference) => {
+        // 🔴 缺失（窗口内无记录 / 有记录但该项无数据）→ `dailyAvg: null`，前端显示「暂无数据」。
+        // 绝不能兜成 0：那会让 5 项 `atMost` 恒判「达标 ✓」，把「没查到」报成「吃得很健康」。
+        const sum = this.sumMicronutrient(micronutrientRows, reference.key);
+        return {
+          key: reference.key,
+          name: reference.name,
+          unit: reference.unit,
+          dailyAvg: sum === null ? null : this.round2(sum / loggedDayCount),
+          reference: reference.reference,
+          direction: reference.direction,
+        };
+      }),
       referenceNote: '微量营养素参考值默认采用《中国居民膳食营养素参考摄入量》成人一般人群口径；公式与数据来源见「参考来源」页。',
       // ---- R11.7 向后兼容扩展（纯加字段，老客户端忽略未知字段，AC-11.7.6）----
       distinctFoodCount: distinct.count,
@@ -396,17 +401,36 @@ export class ReportService {
     return { projection, dates: grouped.map((row) => row.loggedDate) };
   }
 
-  /** 微量营养素：按 `grams/100` 折算食物条目的每 100g 营养素并汇总（快速加卡无微量数据，跳过）。 */
+  /**
+   * 微量营养素：按 `grams/100` 折算食物条目的每 100g 营养素并汇总（快速加卡无微量数据，跳过）。
+   *
+   * 🔴 **缺失值必须是 `null`，不能是 0**（`/why-numbers` ⑯ 的承诺，NFR-11 红线）。
+   *
+   * 此前写成 `(per100g ?? 0) * factor` —— 把「没查到」静默折叠成 0，照常求和、照常除分母、
+   * 照常渲染。于是 10 项里 5 项 `atMost`（建议不超过）的 `0 ≤ 参考` 恒成立，
+   * 用户看到「达标 ✓」：**把数据缺失误报成「吃得很健康」**。
+   *
+   * 实测本仓库 dev.db（1789 条食物）的缺失率：
+   *   糖 80.0% ｜ 纤维 72.8% ｜ 饱和脂肪 65.7% ｜ 镁 34.1% ｜ 钾 32.9%
+   *   维生素 D **100%** ｜ B12 **100%**  ← 这两项恒为 0，即恒显示「0 µg 达标 ✓」
+   *
+   * 口径：
+   * - `null` = 这条记录对该项**无数据**（原样透传，不折算）；
+   * - `0` = 有数据且确实是 0（保留，0 是合法测量值，不是缺失）；
+   * - 汇总时**只要窗口内有一条缺失，整项返回 `null`** —— 半个窗口的数字会让用户
+   *   误以为「这就是全部」，比留空更危险（宁可少说，不可说错）。
+   */
   private async micronutrientRows(
     userId: number,
     from: string,
     to: string,
-  ): Promise<Array<Record<MicronutrientKey, number>>> {
+  ): Promise<Array<Record<MicronutrientKey, number | null>>> {
     const rows = await this.prisma.mealLog.findMany({
       where: { userId, loggedDate: { gte: from, lte: to }, foodItemId: { not: null } },
       include: {
         foodItem: {
           select: {
+            fatGPer100g: true,
             fiberGPer100g: true,
             sodiumMgPer100g: true,
             sugarGPer100g: true,
@@ -425,24 +449,68 @@ export class ReportService {
     return rows.map((row) => {
       const factor = (row.grams ?? 0) / 100;
       const food = row.foodItem;
-      const value = (per100g: number | null): number => (food ? (per100g ?? 0) * factor : 0);
+      /**
+       * 缺失即 `null`（不折算、不兜 0）。
+       *
+       * ⚠️ 饱和脂肪额外做**合理性校验**（`/why-numbers` ⑯「推算值必须 ≤ 总脂肪」）：
+       * 库里有 3 条脏数据（梨罐头 / 咖啡（现煮）/ 红茶（冲泡），均为 `fat=0, sfa=0.002`），
+       * 照原样显示会得到「脂肪 0 g、饱和脂肪 0.002 g」这种自相矛盾的数字 → 判异常留空。
+       * 另两项无数据的 `nutrient` 不做校验（缺失已经走 `null` 分支）。
+       */
+      const value = (per100g: number | null | undefined): number | null => {
+        if (food === null || per100g === null || per100g === undefined) {
+          return null;
+        }
+        return per100g * factor;
+      };
+      const saturatedFatRaw = food?.saturatedFatGPer100g ?? null;
+      const totalFat = food?.fatGPer100g ?? null;
+      const saturatedFat =
+        saturatedFatRaw !== null && totalFat !== null && saturatedFatRaw > totalFat
+          ? null // 推算值 > 总脂肪 = 数据异常，按 ⑯ 判异常留空
+          : value(saturatedFatRaw);
+
       return {
-        fiberG: value(food?.fiberGPer100g ?? null),
-        sodiumMg: value(food?.sodiumMgPer100g ?? null),
-        sugarG: value(food?.sugarGPer100g ?? null),
-        saturatedFatG: value(food?.saturatedFatGPer100g ?? null),
-        calciumMg: value(food?.calciumMgPer100g ?? null),
-        ironMg: value(food?.ironMgPer100g ?? null),
-        potassiumMg: value(food?.potassiumMgPer100g ?? null),
-        vitaminDUg: value(food?.vitaminDUgPer100g ?? null),
-        b12Ug: value(food?.b12UgPer100g ?? null),
-        magnesiumMg: value(food?.magnesiumMgPer100g ?? null),
+        fiberG: value(food?.fiberGPer100g),
+        sodiumMg: value(food?.sodiumMgPer100g),
+        sugarG: value(food?.sugarGPer100g),
+        saturatedFatG: saturatedFat,
+        calciumMg: value(food?.calciumMgPer100g),
+        ironMg: value(food?.ironMgPer100g),
+        potassiumMg: value(food?.potassiumMgPer100g),
+        vitaminDUg: value(food?.vitaminDUgPer100g),
+        b12Ug: value(food?.b12UgPer100g),
+        magnesiumMg: value(food?.magnesiumMgPer100g),
       };
     });
   }
 
-  private sumMicronutrient(rows: Array<Record<MicronutrientKey, number>>, key: MicronutrientKey): number {
-    return rows.reduce((sum, row) => sum + row[key], 0);
+  /**
+   * 汇总一项微量营养素。
+   *
+   * 🔴 **有一条缺失就整项返回 `null`**（`/why-numbers` ⑯「宁可留空，也不猜」）：
+   * 把缺失当 0 求和会得到一个「看起来正常、实则偏低」的数字，并据此判「达标」——
+   * 方向错在「让用户放心」这一侧。半个窗口的数字同样误导（用户会以为那就是全部）。
+   *
+   * - 窗口内**没有任何记录** → `null`（无从得知，不是 0）；
+   * - 全部有值 → 正常求和（含合法的 0）。
+   */
+  private sumMicronutrient(
+    rows: Array<Record<MicronutrientKey, number | null>>,
+    key: MicronutrientKey,
+  ): number | null {
+    if (rows.length === 0) {
+      return null;
+    }
+    let sum = 0;
+    for (const row of rows) {
+      const value = row[key];
+      if (value === null) {
+        return null;
+      }
+      sum += value;
+    }
+    return sum;
   }
 
   private round1(value: number): number {

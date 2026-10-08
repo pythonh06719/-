@@ -36,7 +36,8 @@ interface TestReport {
     key: string;
     name: string;
     unit: string;
-    dailyAvg: number;
+    /** 🔴 `null` = 数据缺失（不是 0），UI 应显示「暂无数据」且不渲染条 */
+    dailyAvg: number | null;
     reference: number;
     direction: string;
   }>;
@@ -214,5 +215,67 @@ describe('ReportPage 摄入 vs 运动 + 达成率（C2）', () => {
     expect(overMeter?.getAttribute('aria-valuenow')).toBe('100');
     expect(overMeter?.getAttribute('aria-valuemax')).toBe('100');
     expect((overMeter as HTMLElement | undefined)?.style.width).toBe('150%');
+  });
+
+  /**
+   * 🔴 回归护栏：`dailyAvg === null`（数据缺失）**不得**被渲染成「0 g + 达标 ✓」。
+   *
+   * 缺陷背景：后端曾把「没查到」用 `?? 0` 折叠成 0，前端照常渲染 →
+   * 5 项「建议不超过」因 `0 ≤ 参考` 恒成立而显示「达标 ✓」，
+   * **把数据缺失误报成「吃得很健康」**（实测食物库缺失率：糖 80%、纤维 72.8%、
+   * 饱和脂肪 65.7%，维生素 D 与 B12 100%）。`/why-numbers` ⑯ 早已承诺「宁可留空」。
+   */
+  describe('微量营养素缺失值（dailyAvg === null）', () => {
+    it('缺失项显示「暂无数据」，且不渲染进度条', async () => {
+      const withNull = {
+        ...makeReport(sevenDays(), 0.2),
+        micronutrients: [
+          // 缺失
+          { key: 'saturatedFatG', name: '饱和脂肪', unit: 'g', dailyAvg: null, reference: 20, direction: 'atMost' },
+          { key: 'vitaminDUg', name: '维生素 D', unit: 'µg', dailyAvg: null, reference: 10, direction: 'atLeast' },
+          // 有值（防过度修复：好数据必须照常显示）
+          { key: 'calciumMg', name: '钙', unit: 'mg', dailyAvg: 400, reference: 800, direction: 'atLeast' },
+        ],
+      };
+      const container = renderReport(withNull);
+
+      await waitFor(() => {
+        expect(screen.getByText('微量营养素（日均）')).toBeDefined();
+      });
+
+      // 两项缺失 → 两处「暂无数据」
+      expect(screen.getAllByText('暂无数据')).toHaveLength(2);
+
+      // 缺失项**不渲染条**：整个列表只应有「钙」那一个 meter
+      const meters = Array.from(container.querySelectorAll('[role="meter"]'));
+      const microMeters = meters.filter((m) =>
+        (m.getAttribute('aria-label') ?? '').includes('日均占参考值百分比'),
+      );
+      expect(microMeters).toHaveLength(1);
+      expect(microMeters[0]?.getAttribute('aria-label')).toBe('钙日均占参考值百分比');
+
+      // 缺失项不出现「0 g」这种被当成成绩的数字
+      expect(screen.queryByText('0 g')).toBeNull();
+      // 有值项照常显示（「400 mg」是 `{dailyAvg} {unit}` 拼成的单个文本节点）
+      expect(screen.getByText('400 mg')).toBeDefined();
+    });
+
+    it('合法的 0 必须照常显示为 0（0 是测量值，不是缺失）', async () => {
+      const withZero = {
+        ...makeReport(sevenDays(), 0.2),
+        micronutrients: [
+          { key: 'sugarG', name: '糖', unit: 'g', dailyAvg: 0, reference: 50, direction: 'atMost' },
+        ],
+      };
+      renderReport(withZero);
+
+      await waitFor(() => {
+        expect(screen.getByText('微量营养素（日均）')).toBeDefined();
+      });
+
+      // 0 是真实测量值 → 渲染条、显示 0，且不显示「暂无数据」
+      expect(screen.queryByText('暂无数据')).toBeNull();
+      expect(screen.getByText('0 g')).toBeDefined();
+    });
   });
 });

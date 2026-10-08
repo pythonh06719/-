@@ -14,7 +14,7 @@
  * 许可：OFF 数据为 **ODbL 1.0**，须署名「© Open Food Facts contributors」（见 DATA-LICENSE.md）。
  */
 
-import { DEFAULT_FOOD_CATEGORY, classifyCategoryByKeywords, round1 } from '@qsh/core';
+import { DEFAULT_FOOD_CATEGORY, KJ_PER_KCAL, classifyCategoryByKeywords, round1 } from '@qsh/core';
 
 import type { FoodCategory } from '@qsh/core';
 import type { ServingUnit } from '@qsh/shared-types';
@@ -113,7 +113,11 @@ function readNutriment(nutriments: Record<string, unknown>, key: string): number
 
 /**
  * 提取每 100g 热量（kcal）。
- * 优先 `energy-kcal_100g`；否则用 `energy-kj_100g` / `energy_100g`（kJ）÷ 4.184 换算。
+ * 优先 `energy-kcal_100g`；否则用 `energy-kj_100g` / `energy_100g`（kJ）÷ `KJ_PER_KCAL` 换算。
+ *
+ * ⚠️ 换算系数走 `@qsh/core` 的 `KJ_PER_KCAL`（唯一真源，`units/convert.ts`）——
+ * 此前这里硬编码字面量 `4.184`，而同文件下方已经从 core 引入了其它常量，
+ * 属于「同一语义两处各写一遍」：系数一旦调整，这里会静默留下不一致的角落。
  */
 function extractKcalPer100g(nutriments: Record<string, unknown>): number | null {
   const direct = readNutriment(nutriments, 'energy-kcal_100g');
@@ -122,7 +126,7 @@ function extractKcalPer100g(nutriments: Record<string, unknown>): number | null 
   }
   const kj = readNutriment(nutriments, 'energy-kj_100g') ?? readNutriment(nutriments, 'energy_100g');
   if (kj !== null) {
-    return kj / 4.184;
+    return kj / KJ_PER_KCAL;
   }
   return null;
 }

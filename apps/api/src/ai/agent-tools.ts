@@ -279,13 +279,29 @@ export function createAgentTools(deps: AgentToolDeps): Record<string, AgentTool>
         const data = await deps.report.weekly(ctx.userId, ctx.dateKey);
         const days = data.days;
         const logged = days.filter((day) => day.intakeKcal > 0).length;
-        // direction='min' 表示「至少摄入」，低于参考值 70% 才算明显不足；'max' 表示「不超上限」
+        /**
+         * 挑出「值得提一句」的项：
+         * - `atLeast`（建议达到，如钙 / 纤维）：低于参考值 70% 才算明显不足；
+         * - `atMost`（建议不超过，如钠 / 糖 / 饱和脂肪）：超过参考值才算需要注意。
+         *
+         * ⚠️ 口径修正：`direction` 的实际取值是 `'atLeast'` / `'atMost'`
+         * （见 `report.service.ts` 的 `DRI_REFERENCES`）。此前这里写的是
+         * `=== 'min'` / `else`，**永远匹配不上 `'atLeast'`** → 10 项全部落进
+         * 「超过上限」分支，把「钙、铁、纤维全部不足」误报成「全部超标」。
+         *
+         * 🔴 `dailyAvg === null` = 数据缺失（不是 0），必须跳过：
+         * 缺失项若参与比较，`null < x` 恒成立会被报成「明显不足」，
+         * 等于让 AI 拿一个不存在的数字评价用户的饮食。
+         */
         const notable = data.micronutrients
-          .filter((item) =>
-            item.direction === 'min'
+          .filter((item) => {
+            if (item.dailyAvg === null) {
+              return false;
+            }
+            return item.direction === 'atLeast'
               ? item.dailyAvg < item.reference * 0.7
-              : item.dailyAvg > item.reference,
-          )
+              : item.dailyAvg > item.reference;
+          })
           .map((item) => `${item.name} ${item.dailyAvg}/${item.reference}${item.unit}`)
           .slice(0, 5);
         const summary = {

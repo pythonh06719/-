@@ -830,7 +830,22 @@ export interface MicronutrientSummary {
   key: string;
   name: string;
   unit: string;
-  dailyAvg: number;
+  /**
+   * 日均值；**`null` = 数据缺失，不是 0**（NFR-11 红线，见 `/why-numbers` ⑯）。
+   *
+   * 🔴 契约曾经是 `number`，后端把「没查到」用 `?? 0` 折叠成 0 ——
+   * 10 项里有 5 项是「建议不超过」口径，`0 ≤ 参考` 恒成立 → 用户看到「达标 ✓」，
+   * **把数据缺失误报成「吃得很健康」**。实测食物库缺失率：糖 80% / 纤维 72.8% /
+   * 饱和脂肪 65.7% / 维生素 D 与 B12 **100%**（这两项过去恒显示「0 µg 达标」）。
+   *
+   * 现在语义明确：
+   * - `null` = 窗口内无记录，或有记录但该项无数据（含推算值异常）→ **UI 应显示「暂无数据」，不渲染条**；
+   * - `0` = 有数据且确实是 0（0 是合法测量值，**不是**缺失）。
+   *
+   * ⚠️ 消费方必须显式处理 `null`（`item.dailyAvg === null`），
+   * 直接参与算术会得到 `NaN` 并让「达标」判断恒为真。
+   */
+  dailyAvg: number | null;
   reference: number;
   direction: string;
 }

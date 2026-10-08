@@ -213,7 +213,7 @@ export default function MealPortionEditor({
 
         {isLibrary ? (
           <div className="mt-4 space-y-3">
-            {food !== null && food.servingUnits.length > 0 && (
+            {food !== null && (food.servingUnits ?? []).length > 0 && (
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">按份量单位</p>
                 <div className="mt-1 flex flex-wrap gap-2">

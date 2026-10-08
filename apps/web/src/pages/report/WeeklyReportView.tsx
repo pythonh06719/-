@@ -326,6 +326,23 @@ export default function WeeklyReportView(): ReactElement {
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
               <ul className="mt-3 space-y-3">
                 {micronutrients.map((item) => {
+                  // 🔴 `dailyAvg === null` = 数据缺失（无记录 / 无数据 / 推算异常），
+                  // **不是 0**。此时不渲染条、不判达标，只说「暂无数据」——
+                  // 否则 5 项「建议不超过」会因 `0 ≤ 参考` 恒成立而显示「达标 ✓」，
+                  // 把「没查到」报成「吃得很健康」（`/why-numbers` ⑯ 的承诺）。
+                  // 与 `DataOverviewCard` 的「count===0 整行隐藏，不显示 0」同一口径。
+                  if (item.dailyAvg === null) {
+                    return (
+                      <li key={item.key}>
+                        <div className="flex items-baseline justify-between text-sm">
+                          <span className="text-slate-500 dark:text-slate-400">{item.name}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            暂无数据
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  }
                   // 视觉条长上限 150%（外层 overflow-hidden 会把超过 100% 的部分裁掉）。
                   const barPercent = Math.min(150, Math.round((item.dailyAvg / Math.max(1, item.reference)) * 100));
                   // ARIA 值必须落在 [aria-valuemin, aria-valuemax] = [0, 100] 内：
