@@ -23,7 +23,7 @@ import {
 
 import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
-import { toDateKey } from '../common/utils/date.util';
+import { isValidLocalDateKey, toDateKey } from '../common/utils/date.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** 体重导入行（§9.3）。 */
@@ -631,10 +631,28 @@ export class DataService {
     return { deleted: true };
   }
 
+  /**
+   * 单行体重数据是否合法（`rows` 分支逐行过滤，坏行计入 `skipped`）。
+   *
+   * ⚠️ **日期判据必须与 `csvText` 分支一致**（GAP-6 的核心产品契约：
+   * 「非法行跳过并汇总，不影响合法行」）。此前这里用**第三份裸正则**
+   * `/^\d{4}-\d{2}-\d{2}$/`，只验形状不验真实性 —— `2026-02-31` 这类
+   * **日历上不存在**的日期会被判为合法并 `upsert` 入库；而 `csvText` 分支走
+   * core 的 `parseWeightCsv` → `isLocalDateKey`（严格 + 回环）会**拒绝**它。
+   * 同一个接口的两条分支对同一份坏数据给出相反结论，且入库的那个不可逆
+   * （会进入趋势图、污染移动平均、让周报体重变化量算错）。
+   *
+   * 现统一用 `isValidLocalDateKey`（`common/utils/date.util.ts`，口径唯一）：
+   * - 与 core 的 `isLocalDateKey` 同一套「严格正则 + 回环比对」判据，两者结论一致；
+   * - 与 `@IsLocalDateKey` 装饰器（DTO 层）同源，写接口与导入接口口径统一；
+   * - 非法日期只是被**跳过并计入 `skipped`**，不抛错、不整批 400（契约不变）。
+   *
+   * 注：`isValidLocalDateKey` 是类型谓词（`value is string`），
+   * 故不再需要原先的 `typeof row?.date === 'string'` —— 非字符串入参会被它一并拒绝。
+   */
   private isValidRow(row: WeightImportRow): boolean {
     return (
-      typeof row?.date === 'string' &&
-      /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+      isValidLocalDateKey(row?.date) &&
       Number.isFinite(row?.weightKg) &&
       row.weightKg > 0 &&
       row.weightKg < 500
