@@ -159,6 +159,72 @@ describe('「我的目标」卡片 · 渲染现值', () => {
     await screen.findByText(COPY.goalCardEmpty);
     expect(screen.queryByTestId('goal-form')).not.toBeInTheDocument();
   });
+
+  /**
+   * ★ 失败 ≠ 没引导：读不到`/profile` 时**绝不能**说「完成引导问卷后」。
+   *
+   * 病根：`goal = profileQuery.data?.goal ?? null` 把「请求失败」也收成了 `null`，
+   * 于是 `goal === null` 这个分支同时表达了「真没引导 / 还在路上 / 读不到」三件事。
+   * 断网时用户看到「完成引导问卷后」，会以为引导没生效甚至数据被重置 → 可能重走一遍问卷。
+   */
+  it('★ /profile 请求失败 → 不得显示「完成引导问卷后」（读不到 ≠ 没引导）', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    renderCard();
+
+    // 失败态必须给一个与「没引导」可区分的中性说明
+    await screen.findByTestId('goal-card-load-error');
+    expect(screen.queryByText(COPY.goalCardEmpty)).not.toBeInTheDocument();
+    // 失败时也不能给表单（表单里全是空输入框，提交必然报错）
+    expect(screen.queryByTestId('goal-form')).not.toBeInTheDocument();
+  });
+
+  it('★ /profile 请求失败 → 失败提示不含禁用词，且给出重试入口', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    renderCard();
+
+    const errorBlock = await screen.findByTestId('goal-card-load-error');
+    expect(errorBlock).toHaveTextContent(COPY.offlineNotice);
+    for (const banned of BANNED) {
+      expect(errorBlock).not.toHaveTextContent(banned);
+    }
+    // 没有重试入口 = 用户只能刷新整页，这是「入口不可用」
+    expect(screen.getByTestId('goal-card-retry')).toBeInTheDocument();
+  });
+
+  it('★ /profile 请求失败后点「重新试试」→ 恢复成功即渲染表单', async () => {
+    let fail = true;
+    const fetchMock = vi.fn(async () => {
+      if (fail) {
+        throw new TypeError('Failed to fetch');
+      }
+      return ok({
+        profile: null,
+        goal: { startWeightKg: 60, targetWeightKg: 55, targetWeeks: 12 },
+        budget: null,
+        warnings: [],
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCard();
+
+    await screen.findByTestId('goal-card-load-error');
+    fail = false;
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('goal-card-retry'));
+
+    await screen.findByTestId('goal-form');
+    expect(screen.queryByTestId('goal-card-load-error')).not.toBeInTheDocument();
+  });
 });
 
 describe('「我的目标」卡片 · 提交（部分更新）', () => {

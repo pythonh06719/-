@@ -136,7 +136,63 @@ export default function GoalSettingsCard(): ReactElement | null {
     onError: (error: unknown) => setNotice(noticeFromError(error, COPY.goalSaveMissed)),
   });
 
-  // 未完成引导（无生效目标）：给一句中性说明，不渲染表单
+  /**
+   * 未完成引导（无生效目标）：给一句中性说明，不渲染表单。
+   *
+   * ⚠️ **`goal === null` 有三个成因**，必须先排掉后两个再落到这句说明上：
+   * 「真没引导」/「请求还在路上（`isLoading`）」/「请求失败（`isError`）」——
+   * `profileQuery.data?.goal ?? null` 把后两者也收成了 `null`。
+   * 若不排，断网时用户会看到「完成引导问卷后」，而ta 其实已完成过引导
+   * → 以为数据被重置，可能白跑一遍引导问卷。
+   * 这与产品第二目标「数字可信」直接冲突：**拿不到 ≠ 没有**。
+   *
+   * ⚠️ 与同页 `ProfilePage` 的关系：父页已在 `:151` 算 `offline = profileQuery.isError`
+   * 并于顶部挂了 `COPY.offlineNotice` 横幅 —— 本卡**复用同一句**，
+   * 避免同屏出现「网络不稳定」+「完成引导问卷后」两句自相矛盾的话。
+   * `retry: false` 与父页测试脚手架一致（默认重试 3 次会让空卡挂着骨架等 7秒）。
+   */
+  if (profileQuery.isLoading) {
+    return (
+      <section aria-labelledby="goal-title" className="qsh-surface p-5">
+        <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.goalCardTitle}
+        </h2>
+        <p role="status" className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          正在取出你现在的目标…
+        </p>
+      </section>
+    );
+  }
+  if (profileQuery.isError) {
+    return (
+      <section aria-labelledby="goal-title" className="qsh-surface p-5">
+        <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
+          {COPY.goalCardTitle}
+        </h2>
+        {/* 与 `HabitsPage` 的「读不到」块同形：中性灰底 + 一句软着陆 + 一个重试入口。
+            不用 `StateBlock`：本卡未取到数据时**没有卡片可渲染**，而 `StateBlock` 自带
+            `.qsh-surface`，套进去会变成「卡中卡」。 */}
+        <div
+          role="status"
+          data-testid="goal-card-load-error"
+          className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        >
+          <span>{COPY.offlineNotice}</span>
+          <button
+            type="button"
+            data-testid="goal-card-retry"
+            className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 transition-colors duration-qsh-base ease-qsh-out disabled:opacity-60 dark:text-brand-300"
+            disabled={profileQuery.isFetching}
+            onClick={() => {
+              void profileQuery.refetch();
+            }}
+          >
+            重新试试
+          </button>
+        </div>
+      </section>
+    );
+  }
   if (goal === null) {
     return (
       <section
