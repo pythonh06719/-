@@ -17,14 +17,35 @@
  *
  * - ① 用**真实渲染**（渲染 `ExercisePage` 后取 `innerHTML`）—— 覆盖 JSX 里所有 class 来源，
  *   比读源码更贴近「用户真正看到的」；
- * - ② 另用 `readFileSync` 扫源码，兜住「写在模板字符串 / 拼接 className 里、当前数据路径没走到」的情况；
+ * - ② 另用 `readFileSync` **递归扫全量 `.tsx`**，兜住「写在模板字符串 / 拼接 className 里、
+ *   当前数据路径没走到」的情况；
  * - ③ `SafetyBanner` 断言的是**结构约束**（底色必须不是 coral、文字必须仍是 coral），
  *   而非「必须等于某个具体色值」—— 前者是本轮的设计意图（coral 保留但只落在边与字），
  *   后者会把实现细节冻死。
+ *
+ * ## ⚠️ 这条守卫曾经是**假绿**（2026-10-07 修）
+ *
+ * 原实现是**硬编码 4 个文件**的 `readSrc`（ExercisePage / WaterGoalCard / DashboardPage /
+ * SafetyBanner），用例名却写着「**全仓** src 不应再有 sky-*」。而 `src/` 下共 59 个 `.tsx`。
+ * 已实跑证实的假绿：往**不在列表**的 `pages/weight/WeightPage.tsx` 注入 `bg-sky-500`，
+ * 本守卫 **5/5 全绿**；往列表内的 `ExercisePage.tsx` 注入才恰好 3 例转红。
+ *
+ * 讽刺之处正在本文件自己的注释里：它写「下一个新页面很容易顺手写下 `bg-sky-500`」——
+ * 而**新页面恰恰全在覆盖范围之外**。从 5 个页面涨到 59 个，守卫一次都没扩展过。
+ *
+ * 现改为与 `surface-dark-ring-guard.test.ts` / `secondary-text-contrast.test.ts` 同一套
+ * `readdirSync` 递归遍历（见 {@link collectTsx}），并加**自证断言**堵死「一个文件都没扫到」
+ * 这条假绿路径。**不再手工维护文件列表** —— 那是本缺陷的根因。
+ *
+ * ## 扫描口径：`sky-` 带连字符，不是裸 `sky`
+ *
+ * 裸 `sky` 会误报：`lib/copy.ts` 的 `riskyGroupNotice`、以及引用它的 `OnboardingPage.tsx`
+ * 都含子串 `sky`。只有带连字符的 `sky-`（Tailwind 色号形态 `sky-500` / `text-sky-700`）
+ * 才是要拦的孤儿冷蓝。当前实测：裸 `sky` 命中 2 处（全是误报），`sky-` 命中 0 处。
  */
 
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -34,11 +55,63 @@ import { MemoryRouter } from 'react-router-dom';
 import ExercisePage from '@/pages/exercise/ExercisePage';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 
+const SRC_ROOT = resolve(process.cwd(), 'src');
+
 /**
  * 读源码。路径以 **cwd** 为基准（vitest 从 `apps/web` 跑）——
  * 不能用 `import.meta.url`：本项目 vitest 下它会解析成盘符根（`C:\`），拼不出 `src/`。
  */
-const readSrc = (rel: string): string => readFileSync(resolve(process.cwd(), 'src', rel), 'utf8');
+const readSrc = (rel: string): string => readFileSync(resolve(SRC_ROOT, rel), 'utf8');
+
+/**
+ * 递归列出 `src/` 下所有 `.tsx`（手写遍历，不引 glob 依赖）。
+ *
+ * 与 `surface-dark-ring-guard.test.ts` / `secondary-text-contrast.test.ts` 同一形状。
+ * **这是本守卫从「假绿」变成真覆盖的关键**：原先的 4 条硬编码路径只覆盖 59 个文件里的 4 个。
+ */
+function collectTsx(dir: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...collectTsx(full));
+    } else if (entry.name.endsWith('.tsx')) {
+      found.push(full);
+    }
+  }
+  return found;
+}
+
+/** 绝对路径 → 以 `/` 分隔的 `src/` 相对路径（保证报错信息跨平台可读）。 */
+function relOf(abs: string): string {
+  return abs.slice(SRC_ROOT.length + 1).replace(/\\/g, '/');
+}
+
+interface SkyHit {
+  readonly relPath: string;
+  readonly line: number;
+  readonly text: string;
+}
+
+/**
+ * 扫一个文件里所有含 `sky-` 的行。
+ *
+ * 只取**整行**而非精确到列，是刻意的：孤儿冷蓝既可能是 `bg-sky-500`，
+ * 也可能藏在 `className={[ … ].join(' ')}` 的跨行数组里；按行抓文本足以定位到人，
+ * 且能顺带覆盖拼接写法（按精确的 className 块扫反而会漏跨行数组）。
+ */
+function scanSky(abs: string): SkyHit[] {
+  const relPath = relOf(abs);
+  const hits: SkyHit[] = [];
+  readFileSync(abs, 'utf8')
+    .split('\n')
+    .forEach((raw, index) => {
+      if (raw.includes('sky-')) {
+        hits.push({ relPath, line: index + 1, text: raw.trim() });
+      }
+    });
+  return hits;
+}
 
 /** ExercisePage 会发的请求（与 `water-goal-edit.test.tsx` 同一套桩）。 */
 function stubFetch(): void {
@@ -78,6 +151,24 @@ beforeEach(() => {
 });
 
 describe('① 孤儿冷蓝 sky-* 已从全站清除（防回灌）', () => {
+  // 全量扫描：递归 `src/` 下所有 `.tsx`（原先只扫 4 个硬编码文件 → 假绿）
+  const files = collectTsx(SRC_ROOT);
+  const offenders = files.flatMap(scanSky);
+
+  it('★ 自证：扫描器真的扫到了 .tsx（否则下面全是假绿）', () => {
+    // 这条不是业务断言，是**守卫自身的健康检查**：
+    // 若 cwd 不对（忘记从 apps/web 跑）或遍历逻辑坏了，files 会是空数组，
+    // 下一条 `toEqual([])` 会永远通过 —— 用断言把「假绿」这条路堵死。
+    // 阈值刻意宽松：这里要挡的是「一个都没扫到」，不是给数量设下限。
+    expect(files.length).toBeGreaterThan(20);
+    // 关键：必须**超过原先硬编码的 4 个**，否则等于退回旧行为。
+    expect(files.length).toBeGreaterThan(4);
+    // 还要确认「列到文件名」= 「真读到了内容」：若路径算出来了但读回空串
+    // （编码/路径异常等），下一条 `toEqual([])` 照样假绿。
+    const totalChars = files.reduce((sum, abs) => sum + readFileSync(abs, 'utf8').length, 0);
+    expect(totalChars).toBeGreaterThan(10000);
+  });
+
   it('渲染 /exercise 后页面里不出现任何 sky-* 类名', async () => {
     stubFetch();
     const container = renderExercise();
@@ -96,18 +187,16 @@ describe('① 孤儿冷蓝 sky-* 已从全站清除（防回灌）', () => {
     }
   });
 
-  it('★ 反向：sky 全站只此一处被清除 —— 全仓 src 不应再有 sky-* 孤儿色', () => {
+  it('★ 反向：全仓 src 不应再有 sky-* 孤儿色（递归全量扫描，不是几个页面）', () => {
     // 机械可查的规则：`sky` 未在 tailwind.config.ts 扩展，是 Tailwind 内置色。
-    // 项目刻意选的语义色只有 brand / coral / warm / cream / slate，故 src 里不应再出现 sky。
-    const files = [
-      'pages/exercise/ExercisePage.tsx',
-      'pages/exercise/WaterGoalCard.tsx',
-      'pages/dashboard/DashboardPage.tsx',
-      'components/feedback/SafetyBanner.tsx',
-    ];
-    for (const rel of files) {
-      expect(readSrc(rel), `${rel} 不应再含 sky-*`).not.toContain('sky-');
-    }
+    // 项目刻意选的语义色只有 brand / coral / warm / cream / slate，故 src 里不应再出现 sky-。
+    //
+    // 报出 `文件:行号 + 原文` 而不是只报文件名：孤儿冷蓝长回来时，
+    // owner 需要能直接定位到那一行，而不是再手工 grep 一遍。
+    expect(
+      offenders.map((o) => `${o.relPath}:${o.line}  ${o.text}`),
+      '这些位置出现了 Tailwind 内置冷蓝 sky-*（项目语义色里没有 sky，应改用 brand）',
+    ).toEqual([]);
   });
 });
 

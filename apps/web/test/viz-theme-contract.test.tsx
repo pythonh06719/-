@@ -48,8 +48,12 @@ describe('数据可视化 · 深浅两套一致性', () => {
     const { container: b } = render(<ProgressRing value={0.5} />);
     const idA = a.querySelector('linearGradient')?.getAttribute('id');
     const idB = b.querySelector('linearGradient')?.getAttribute('id');
-    expect(idA).toBeTruthy();
-    expect(idB).toBeTruthy();
+    // 断言「固定前缀 + useId 后缀」而不是 toBeTruthy()：
+    // 空串、undefined、纯数字都能骗过 toBeTruthy，而它们都会让 url(#id) 引用失效
+    // （SVG 渐变整块不渲染 → 进度环少一层底色，肉眼却容易忽略）。
+    // 后缀形态由 React `useId()` 决定（形如 `:r1:`，带冒号），故这里只锚定前缀。
+    expect(idA).toMatch(/^qshProgressGradient-.+$/);
+    expect(idB).toMatch(/^qshProgressGradient-.+$/);
     // 修复前两处都是硬编码的 'qshProgressGradient' → 重复 id
     expect(idA).not.toBe(idB);
   });

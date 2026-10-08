@@ -216,10 +216,16 @@ describe('目录导航', () => {
     }
   });
 
-  it('目录区有自己的 nav 无障碍名（读屏能定位）', () => {
+  it('目录区有自己的 nav 无障碍名，且条数随条目真源走（不写死）', () => {
     renderToc();
     const nav = screen.getByRole('navigation');
-    expect(nav.getAttribute('aria-label')).toBeTruthy();
+    // 断「条数 = WHY_SECTIONS.length」这个**契约**，而不是断某个字面量：
+    // 文案是 `COPY.whyTocNavAriaLabel(count)`，条数由真源动态传入。
+    // 写死 '23' 会在加第 24 条时静默过期（copy.ts 注释里记的正是这个坑），
+    // 而 `toBeTruthy()` 又太松 —— 任意非空字符串都能过。两者都不接受。
+    expect(nav.getAttribute('aria-label')).toBe(`本页 ${WHY_SECTIONS.length} 条解释的目录`);
+    // 自证：条目数不为 1，否则上面那句可能因为「本页 1 条…」而碰巧成立
+    expect(WHY_SECTIONS.length).toBeGreaterThan(1);
   });
 });
 
