@@ -186,3 +186,42 @@ R3 现状：全仓 31 处 `.qsh-surface` 经逐个审计**全部为静态容器*
 
 新增界面时只需要：`className="qsh-surface p-5"`（圆角已内建），阴影、过渡、焦点环自动继承；
 **可点的**卡片再叠 `qsh-surface-tappable`；**不要再写** `shadow-xl`、`rounded-*` 数值。
+
+## 9. 卡面类与 ring 工具类（结构性陷阱，2026-10-06 发现）
+
+⚠️ **不要在 `.qsh-surface` / `.qsh-surface-warm` / `.qsh-action-card` 上写任何 `ring-*` 工具类** —— 它们**完全无效，连变粗都不会**。
+
+原因：这三个类是**排在 `@tailwind utilities` 之后的普通 CSS 规则**（见 `src/styles/index.css`），且各自 `@apply ring-1`，把 `--tw-ring-shadow` 里的 `1px` 与 `--tw-ring-color` **一并锁死**。
+
+特异性佐证（后写者赢 / 更高特异性赢）：
+
+| 选择器 | 特异性 | 结果 |
+| --- | --- | --- |
+| `.ring-brand-500` / `.ring-2`（工具类） | (0,1,0) | 与 `.qsh-surface`(0,1,0) 同特异性，但**源序靠后的是卡面类** → 工具类输 |
+| `html.dark .qsh-surface` | (0,2,1) | 压过 `.dark\:ring-x:is(.dark *)` 的 (0,2,0) → 深色档工具类也输 |
+| `.qsh-surface.qsh-surface-drop`（修饰符） | (0,2,0) | 压过 `.qsh-surface`(0,1,0) → **卡面状态 ring 的正确写法** |
+| `html.dark .qsh-surface.qsh-surface-drop` | (0,3,1) | 压过 `html.dark .qsh-surface`(0,2,1) → 深色档状态 ring 必须这么写 |
+
+**正确做法**：卡面要显示**状态 ring**（如拖拽落区高亮）→ 用**状态修饰符** `.qsh-surface-drop`，不要碰 `ring-*`。
+
+- 浅色定义：`src/styles/index.css` 的 `.qsh-surface.qsh-surface-drop`（颜色 `brand-500` `#2f9e78`，3.34:1 on white）；
+- 深色定义：`src/theme/dark.css` 的 `html.dark .qsh-surface.qsh-surface-drop`（颜色 `brand-400` `#4fbf94`，6.42:1 on `#16241f`）—— **只写 `.qsh-surface-drop` 会输给 `html.dark .qsh-surface`，必须带 `html.dark` 前缀**；
+- 用法示例：`DiaryPage.tsx:1110` 拖拽落区 `'qsh-surface-drop'`。
+
+> 历史坑：`HabitsPage.tsx:190` 早踩过同一条（当时绕开卡面类手写一套）。新增任何卡面状态 ring 都走修饰符。
+> 守卫：`apps/web/test/surface-dark-ring-guard.test.ts`（按 `className` 表达式块扫描，判定任何 `ring-` 出现在 `qsh-surface` 上即报错；覆盖 `className={[…].join(' ')}` 的跨行写法）。
+
+## 10. 数据可视化组件渲染陷阱（2026-10-06 发现）
+
+两条与「响应式 SVG 图表」相关的坑，改 `Sparkline` / `WeightChart` / `IntakeExerciseChart` 等时必读：
+
+1. **`preserveAspectRatio="none"` 会拉伸图形元素**（非矩形）。`Sparkline` 曾用 `viewBox="0 0 260 72"` + `width="100%"` + `preserveAspectRatio="none"`
+   → 圆点变椭圆、描边粗细随走向变化。**修法**：用 `ResizeObserver` 实测容器宽，让 `viewBox` 宽度 == 渲染宽度（照搬 `WeightChart.tsx` 既有模式）。
+   `IntakeExerciseChart` 复核后**未改**：它只有 `<rect>`（柱状）与水平 `<line>`，横向拉伸对柱状图是期望行为；已在源码加注释标为「同一缺陷的活化石」，**若以后往里加 `<circle>`/`<path>` 会重新引入该 bug**。
+
+2. **条件渲染的容器测量必须用 callback ref 存 state，不能用 `useRef`**。`Sparkline` 的 `<figure>` 只在非早退分支渲染，
+   而看板冷启动恰好走早退分支（兜底 dashboard `miniTrend: []`）。`useRef` + `useEffect(…, [])` 在占位分支拿到 `null` 就返回、**之后永不重跑** → 宽度永久停在兜底值 260（桌面卡内宽 ≈187，溢出 ≈73px）。
+   → `ref={(node) => setBox(node)}` + `useEffect(…, [box])`，让「节点挂载」本身成为依赖。改回 `[]` 会让 cold-start 测试转红（`expected 260 to be 328`），可据此反验。
+
+> 守卫：`apps/web/test/sparkline-scale.test.tsx`（4 例：无 `preserveAspectRatio="none"` / viewBox 宽 == 渲染宽 / 假 ResizeObserver 宽 328 流入 viewBox 与 circle cx / 冷启动 rerender 后宽度变 328）。
+> ⚠️ jsdom 不做布局 → 这类几何断言只能靠静态扫描 + 真算派生值，vitest 里不能直接 `getComputedStyle` 验证（永远是假绿）。
