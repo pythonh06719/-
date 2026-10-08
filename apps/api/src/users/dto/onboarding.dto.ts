@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Max,
   Min,
   ValidateNested,
@@ -15,8 +14,9 @@ import {
 
 import type { ActivityLevel, Gender } from '@qsh/core';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
 import { MacroRatioDto } from './macro-ratio.dto';
+
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /**
  * `POST /api/onboarding` 请求体（R1.3 / US-03）。
@@ -32,7 +32,7 @@ export class OnboardingDto {
 
   /** 出生日期 `YYYY-MM-DD` */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '出生日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '出生日期格式应为 YYYY-MM-DD' })
   birthDate?: string;
 
   /** 周岁（14–100），`birthDate` 缺省时使用 */

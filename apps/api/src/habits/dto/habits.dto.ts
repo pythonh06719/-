@@ -1,6 +1,15 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /** `POST /api/habits`（创建自定义习惯，R7.3）。 */
 export class CreateHabitDto {
@@ -50,7 +59,7 @@ export class UpdateHabitDto {
 export class CheckinDto {
   /** 打卡日期 `YYYY-MM-DD`（缺省 = 今天） */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 
   /** true = 打卡；false = 取消当日打卡 */

@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 import { MET_ACTIVITY_LIBRARY } from '@qsh/core';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /** 合法活动编码（来自 core 内置 MET 表）。 */
 const ACTIVITY_CODES = MET_ACTIVITY_LIBRARY.map((activity) => activity.code) as [string, ...string[]];
@@ -12,7 +12,7 @@ const ACTIVITY_CODES = MET_ACTIVITY_LIBRARY.map((activity) => activity.code) as 
 export class CreateExerciseDto {
   /** 记录日期 `YYYY-MM-DD`（缺省 = 今天） */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 
   /** 活动编码（`@qsh/core` 内置 MET 表） */

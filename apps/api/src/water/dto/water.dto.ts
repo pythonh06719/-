@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /** `POST /api/water` 请求体（R6.3：一键 +250ml，可传其他量）。 */
 export class CreateWaterDto {
@@ -15,7 +15,7 @@ export class CreateWaterDto {
 
   /** 记录日期 `YYYY-MM-DD`（缺省 = 今天） */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 }
 

@@ -6,7 +6,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Max,
   Min,
   ValidateNested,
@@ -14,8 +13,9 @@ import {
 
 import type { ActivityLevel, Gender } from '@qsh/core';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
 import { MacroRatioDto } from './macro-ratio.dto';
+
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /**
  * `PATCH /api/profile` 请求体（R1.4 / TC-12）。
@@ -32,7 +32,7 @@ export class UpdateProfileDto {
 
   /** 出生日期 `YYYY-MM-DD` */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '出生日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '出生日期格式应为 YYYY-MM-DD' })
   birthDate?: string;
 
   /** 身高（cm） */

@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 import type { MealLogSource, MealType } from '@qsh/shared-types';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const SOURCES: MealLogSource[] = ['search', 'quick_add', 'barcode', 'ai', 'combo'];
@@ -16,7 +16,7 @@ const SOURCES: MealLogSource[] = ['search', 'quick_add', 'barcode', 'ai', 'combo
 export class CreateMealDto {
   /** 记录日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 
   /** 餐次 */

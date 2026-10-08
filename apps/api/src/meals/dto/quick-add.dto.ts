@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 import type { MealType } from '@qsh/shared-types';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -16,7 +16,7 @@ const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 export class QuickAddDto {
   /** 记录日期 `YYYY-MM-DD` */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 
   /** 餐次 */

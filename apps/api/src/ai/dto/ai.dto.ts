@@ -1,14 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, MaxLength, Matches, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 /** `POST /api/ai/daily-summary` 请求体（R9.1）。 */
 export class DailySummaryDto {
   /** 复盘日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
   @IsString({ message: '日期需为文本' })
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   date?: string;
 }
 
@@ -17,7 +17,7 @@ export class TodayPlanDto {
   /** 方案日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
   @IsString({ message: '日期需为文本' })
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   date?: string;
 }
 
@@ -31,7 +31,7 @@ export class FreeAskDto {
   /** 提问日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
   @IsString({ message: '日期需为文本' })
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   date?: string;
 }
 
@@ -53,7 +53,7 @@ export class AgentAskDto {
   /** 目标日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
   @IsString({ message: '日期需为文本' })
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   date?: string;
 }
 
