@@ -100,8 +100,28 @@ export class ReportService {
     ]);
 
     const habitTotal = habits.length;
+    /**
+     * 🔴 **分子必须与分母同口径**：`habitTotal` 来自上面 `habits` 查询
+     * （`where: { OR: [{ userId }, { userId: null }], isActive: true }`），
+     * 即**只数「启用中」的习惯**。若 `checked` 不按同一集合过滤，
+     * 叠加「停用只切 `isActive`、`HabitCheckin` 完全不动」这个刻意设计
+     * （见 `HabitsService.setActive` 注释：停用而非删除，保住历史打卡）后，
+     * 停用 1 个习惯就会得到 `habitsDone = 3 > habitsTotal = 2` —— 达成率 > 100%。
+     *
+     * 前端 `reportHabitRateLabel` 有 `Math.min(100, ...)` 夹取，所以**不会显示 130%**，
+     * 但那等于把缺陷静默吞掉：用户看到的「达成率 100%」建立在口径不一致的数字上。
+     *
+     * 修法：`habit: { isActive: true }` 走 relation 过滤，与分母完全一致。
+     * ⚠️ **只改 `weekly()`**：`period()` 的分子分母都用「含停用」的同一口径（那里查的是
+     * 全量 `habitDefinition`），两者都正确，不要动。
+     */
     const checked = await this.prisma.habitCheckin.findMany({
-      where: { userId, loggedDate: { gte: from, lte: to }, done: true },
+      where: {
+        userId,
+        loggedDate: { gte: from, lte: to },
+        done: true,
+        habit: { isActive: true },
+      },
       select: { loggedDate: true, habitId: true },
     });
 
