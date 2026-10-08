@@ -133,11 +133,37 @@ export default function FastingPage(): ReactElement {
       <section className="qsh-surface p-5">
         <h1 className="text-title font-semibold text-slate-800 dark:text-slate-100">断食计时</h1>
 
-        {!settings ? (
-          /* 骨架而非裸文案：给 `min-h-[88px]` 与真实内容块同量级的高度，
-             设置到位那一刻不再「跳一下」。骨架块用 `rounded-control`，与下方内嵌数据块对齐。
-             `正在读取设置…` 对读屏仍有价值，故保留（`aria-live` 由父容器提供）。 */
-          <div className="mt-2 min-h-[88px]" role="status" aria-live="polite">
+        {/* ⚠️ 三分支，不可退回单一 `!settings`：`retry: 0` 之下请求失败会让 `data` 恒为 `undefined`，
+             `!settings` 永真 → 骨架块**永远停不下来**，而「正在读取设置…」是 `sr-only`
+             （sighted 用户零可见文字），页面上也没有任何重试入口 —— 用户既不知道出了什么事，
+             也只能刷新整页。病根与「读不到 == 没有」同源：拿不到 ≠ 还在路上，更 ≠ 已关闭。 */}
+        {settingsQuery.isError ? (
+          // 失败专属区块：中性灰底 + 一句软着陆 + 一个重试入口（调 `refetch()`，成功后自动消失）。
+          // 形态与 `HabitsPage` 的「读不到」块一致；不用 `StateBlock` 是因为本卡已有外层
+          // `.qsh-surface`，套两层卡片会变成「卡中卡」。文案复用全站既有的 `COPY.offlineNotice`。
+          <div
+            role="status"
+            data-testid="fasting-settings-error"
+            className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-body text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <span>{COPY.offlineNotice}</span>
+            <button
+              type="button"
+              data-testid="fasting-settings-retry"
+              className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 transition-colors duration-qsh-base ease-qsh-out disabled:opacity-60 dark:text-brand-300"
+              disabled={settingsQuery.isFetching}
+              onClick={() => {
+                void settingsQuery.refetch();
+              }}
+            >
+              重新试试
+            </button>
+          </div>
+        ) : !settings ? (
+          // 骨架而非裸文案：给 `min-h-[88px]` 与真实内容块同量级的高度，
+          // 设置到位那一刻不再「跳一下」。骨架块用 `rounded-control`，与下方内嵌数据块对齐。
+          // `正在读取设置…` 对读屏仍有价值，故保留（`aria-live` 由父容器提供）。
+          <div className="mt-2 min-h-[88px]" role="status" aria-live="polite" data-testid="fasting-settings-loading">
             <span className="qsh-sr-only">正在读取设置…</span>
             <div className="h-12 w-full animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
             <div className="mt-2 h-8 w-2/3 animate-pulse rounded-control bg-slate-100 dark:bg-slate-700" />
