@@ -14,6 +14,22 @@
  * - 把第 3 条拖到第 1/2 条之间（下标 1）→ `[1,3,2]`。
  *
  * 缺陷存在时两条都会退化成「插到最前」（`[3,1,2]`），断言必失败。
+ *
+ * ## ⚠️ 别用 `grep pointerDown` 判断本文件是否覆盖了 pointer 路径
+ *
+ * 本文件**确实覆盖了** pointer 拖拽路径，但派发方式不是 `fireEvent.pointerDown`，
+ * 而是 `new MouseEvent('pointerdown', …)`（jsdom 对 `PointerEvent` 支持不一）。
+ * 能这么替代的前提是 hook 只依赖少量属性：`usePointerReorder.ts` 读的是
+ * `clientX` / `clientY` / `button` / `pointerId`，且 `setPointerCapture` 那一段
+ * 本身就有 `typeof … === 'function'` 守卫 + try/catch（注释里明写「某些环境
+ * 如 jsdom 不支持指针捕获，忽略即可」），所以 jsdom 缺这个方法也不会抛。
+ *
+ * 于是 `grep -c pointerDown` 在本文件返回 **0** —— 用它判断会得出
+ * 「pointer 路径零覆盖」的错误结论，进而重复造轮子、或误以为
+ * `meal-reorder.test.tsx` 的降级路径缺口没人补。2026-10-07 的测试审查
+ * 就实测踩过这个坑（审查报告与派工说明里都写了「看起来像没覆盖 pointer」）。
+ *
+ * 要确认覆盖情况，请看下面的 `dragTo()` 与 5 个 `it(...)` 用例。
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
