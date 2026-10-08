@@ -29,6 +29,9 @@ import type { ActivityLevel, CalorieResult, Gender } from '@qsh/core';
 import { api } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth.store';
 import { queryKeys } from '@/lib/queryClient';
+// 本页正文多为内联字面量，但「读不到档案」的失败态**复用全站既有**的 `COPY.offlineNotice`
+// （与 `HabitsPage` / `GoalSettingsCard` / `FastingPage` 同句），不另造一句。
+import { COPY } from '@/lib/copy';
 import { MEAL_BUDGET_SHARE } from '@/theme/tokens';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '@/pages/diary/meal-utils';
 import WhyNumbersToc from './WhyNumbersToc';
@@ -239,7 +242,29 @@ export default function WhyNumbersPage(): ReactElement {
 
         {/* 实时分解：用用户档案数据算出「你的数字」 */}
         <h3 className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-100">你的数字（实时算出）</h3>
-        {live !== null ? (
+        {profileQuery.isError ? (
+          // 失败专属区块：拿不到档案 ≠ 没做引导问卷。这一支必须排在 `live === null` 的
+          // 兜底之前，否则已登录用户读不到数据时会被说成「完成引导问卷后」（P0，见测试）。
+          // 形态与 `HabitsPage` / `GoalSettingsCard` 的「读不到」块一致；文案复用 `COPY.offlineNotice`。
+          <div
+            role="status"
+            data-testid="why-numbers-profile-error"
+            className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-body text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <span>{COPY.offlineNotice}</span>
+            <button
+              type="button"
+              data-testid="why-numbers-profile-retry"
+              className="qsh-touch-target rounded-control px-2 py-1 font-medium text-brand-700 underline underline-offset-2 transition-colors duration-qsh-base ease-qsh-out disabled:opacity-60 dark:text-brand-300"
+              disabled={profileQuery.isFetching}
+              onClick={() => {
+                void profileQuery.refetch();
+              }}
+            >
+              重新试试
+            </button>
+          </div>
+        ) : live !== null ? (
           <dl className="mt-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-700">
             <DerivationRow term="你的年龄" value={`${live.age} 岁`} />
             <DerivationRow term="当前体重" value={`${data?.goal?.startWeightKg ?? '—'} kg`} />
