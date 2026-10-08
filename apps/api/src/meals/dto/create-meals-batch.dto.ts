@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsIn,
@@ -7,14 +8,22 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
 
 import type { MealLogSource, MealType } from '@qsh/shared-types';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
+
+/**
+ * 单次批量入账的最大条目数（C-3）。
+ *
+ * 挡的是「一个请求把 SQLite 写锁占死」：服务层对每个条目做一次食物库查询，
+ * 并在同一事务内串行 `create` N 次，而请求体上限是 10MB。
+ * 取 200 与 `ReorderMealsDto.orderedIds` 的 `@ArrayMaxSize(200)` 对齐（既有先例）。
+ */
+export const MAX_BATCH_MEAL_ITEMS = 200;
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const SOURCES: MealLogSource[] = ['search', 'quick_add', 'barcode', 'ai', 'combo'];
@@ -90,16 +99,30 @@ export class BatchMealItemDto {
 export class CreateMealsBatchDto {
   /** 记录日期 `YYYY-MM-DD`（缺省 = 服务端本地今天） */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 
   /** 餐次（整批共用） */
   @IsIn(MEAL_TYPES, { message: '请选择餐次' })
   mealType!: MealType;
 
-  /** 待记清单（至少 1 条） */
+  /**
+   * 待记清单（1 ~ {@link MAX_BATCH_MEAL_ITEMS} 条）
+   *
+   * ⚠️ **上限是必需的，不是可选的**：`MealsService.createBatch` 对每个元素都做
+   * 一次 DB 查询（准备阶段 `await prepareBatchItem`），并在**同一个事务内**串行
+   * `await tx.mealLog.create` N 次。`main.ts` 的请求体上限是 `express.json({ limit: '10mb' })`，
+   * 10MB 的 JSON 数组足以构造几万条 → 单请求长时间占住 SQLite 的**全库级写锁**，
+   * 期间其他写请求（记一餐、喝水、打卡）全部阻塞。
+   *
+   * 取值 200 参照 `ReorderMealsDto.orderedIds` 的 `@ArrayMaxSize(200)`（同一代码库既有先例），
+   * 远高于任何真实使用（一餐不会记 200 个条目），不会误伤正常使用。
+   */
   @IsArray({ message: '清单需为数组' })
   @ArrayMinSize(1, { message: '清单里至少要有一样' })
+  @ArrayMaxSize(MAX_BATCH_MEAL_ITEMS, {
+    message: `一次最多记录 ${MAX_BATCH_MEAL_ITEMS} 条，再多请分几次记`,
+  })
   @ValidateNested({ each: true })
   @Type(() => BatchMealItemDto)
   items!: BatchMealItemDto[];

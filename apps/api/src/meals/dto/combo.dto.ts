@@ -1,21 +1,30 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
 
 import type { MealType } from '@qsh/shared-types';
 
-import { LOCAL_DATE_PATTERN_STRICT } from '../../common/utils/date.util';
+import { IsLocalDateKey } from '../../common/validators/local-date-key.validator';
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+/**
+ * 单个套餐模板的最大明细条数。
+ *
+ * 挡的是「一个请求把 SQLite 写锁占死」：服务层对每条明细做一次食物库查询，
+ * 再用嵌套 `create` 逐条写入同一个事务，而请求体上限是 10MB。
+ */
+export const MAX_COMBO_ITEMS = 50;
 
 /**
  * 套餐模板明细输入（R3.9）。
@@ -109,8 +118,21 @@ export class CreateComboDto {
   @IsIn(MEAL_TYPES, { message: '请选择餐次' })
   mealType?: MealType;
 
-  /** 明细条目 */
+  /**
+   * 明细条目（1 ~ {@link MAX_COMBO_ITEMS} 条）
+   *
+   * ⚠️ **上限是必需的**：`MealsService.createCombo` 对每个明细都做一次
+   * `await this.prepareComboItem(...)`，并用 `items: { create: prepared }` 一次性写入。
+   * 缺上限时，一个 10MB 请求体（`express.json` 的上限）能塞进几万条明细，
+   * 在**单个事务**里逐条查库 + 逐条写库，长时间占住 SQLite 的**全库级写锁**，
+   * 期间其他写请求（记一餐、喝水、打卡）全部阻塞。
+   *
+   * 取 50：一个「套餐」是用户自己攒的常用组合（对照 C-3 批量入账的 200 条上限），
+   * 50 条已远超任何真实套餐，且与既有先例同量级。
+   */
   @IsArray({ message: '明细需为数组' })
+  @ArrayMinSize(1, { message: '套餐里至少要有一样' })
+  @ArrayMaxSize(MAX_COMBO_ITEMS, { message: `一个套餐最多 ${MAX_COMBO_ITEMS} 条明细` })
   @ValidateNested({ each: true })
   @Type(() => ComboItemDto)
   items!: ComboItemDto[];
@@ -124,6 +146,6 @@ export class ApplyComboDto {
 
   /** 记录日期 `YYYY-MM-DD` */
   @IsOptional()
-  @Matches(LOCAL_DATE_PATTERN_STRICT, { message: '日期格式应为 YYYY-MM-DD' })
+  @IsLocalDateKey({ message: '日期格式应为 YYYY-MM-DD' })
   loggedDate?: string;
 }
