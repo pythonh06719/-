@@ -1320,6 +1320,11 @@ export default function WhyNumbersPage(): ReactElement {
             value="分母兜底为 1，各项显示 0"
             hint="不会出现「除以 0」"
           />
+          <DerivationRow
+            term="某一项营养素本身没数据时"
+            value="这一项留空，显示「暂无数据」，不画条也不判达标"
+            hint="食物库里这项缺失很常见（如维生素 D 与 B12 整库都没有）；拿「没查到」当 0 会把缺失误报成「达标」"
+          />
         </dl>
         <dl className="mt-3 space-y-3 text-sm">
           <div>
