@@ -25,39 +25,12 @@ import { ERROR_CODES } from '../common/constants/error-codes';
 import { ApiException } from '../common/exceptions/api.exception';
 import { isValidLocalDateKey, toDateKey } from '../common/utils/date.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { WEIGHT_IMPORT_BATCH_SIZE } from './weight-import.constants';
 
 /** 体重导入行（§9.3）。 */
 export interface WeightImportRow {
   date: string;
   weightKg: number;
   note?: string;
-}
-
-/** 导入前某一天的体重旧值快照（失败回滚时写回，见 `restoreWeightSnapshot`）。 */
-export interface WeightImportSnapshotRow {
-  loggedAt: string;
-  weightKg: number;
-  note: string | null;
-  source: string;
-}
-
-/**
- * 按固定大小切分数组（**不修改入参**；`size <= 0` 时按整块返回，避免死循环）。
- *
- * 用途有二：① 把 N 条 upsert 切成多个事务（体重导入分批，见
- * `writeWeightRowsInBatches`）；② 把 2000 个日期切成多段 `IN` 查询，
- * 不赌 SQLite 的绑定变量上限。
- */
-function chunk<T>(items: readonly T[], size: number): T[][] {
-  if (size <= 0) {
-    return [[...items]];
-  }
-  const result: T[][] = [];
-  for (let start = 0; start < items.length; start += size) {
-    result.push(items.slice(start, start + size));
-  }
-  return result;
 }
 
 /**
@@ -622,169 +595,30 @@ export class DataService {
     }
 
     /**
-     * **分批**事务写入（此前逐行往返，500 行导入要 500 次串行查询）。
+     * 单事务批量写入（此前逐行往返，500 行导入要 500 次串行查询）。
      *
      * ⚠️ `$transaction` 收 `[]` 时**没有实际事务被开启**，是空操作 —— 所以这里显式判空，
      * 避免「0 行也要开一次事务」的误导性写法；返回值照旧是 `imported: 0`。
-     *
-     * ⚠️⚠️ **为什么必须分批**（规模缺陷，只在行数多时暴露）：这里曾经是
-     * `await this.prisma.$transaction(rows.map(...))` —— **一条**事务包住全部 N 条 upsert。
-     * 数据库是 SQLite（单写者），N 条写在一个事务里会**长期独占写锁**，
-     * 而 Prisma 事务默认 5 秒超时（`P2028`）：2000 行（= `MAX_IMPORT_ROWS` 上限，
-     * 约 5 年逐日记录）几乎必然超时，结果是**整批回滚、一行都没进去**，
-     * 用户只看到一次失败。2000 行在自用场景完全可能，而这条接口正是为它写的。
-     *
-     * 现在按 {@link WEIGHT_IMPORT_BATCH_SIZE}（500）切片，每片一个独立事务，
-     * 单事务写锁持有时间降到百毫秒级，不再触碰 5 秒上限。
      */
     if (rows.length > 0) {
-      await this.writeWeightRowsInBatches(userId, rows);
+      await this.prisma.$transaction(
+        rows.map((row) =>
+          this.prisma.weightLog.upsert({
+            where: { userId_loggedAt: { userId, loggedAt: row.date } },
+            create: {
+              userId,
+              loggedAt: row.date,
+              weightKg: row.weightKg,
+              note: row.note ?? null,
+              source: 'import',
+            },
+            update: { weightKg: row.weightKg, note: row.note ?? null, source: 'import' },
+          }),
+        ),
+      );
     }
 
     return { imported: rows.length, skipped: errors.length, errors };
-  }
-
-  /**
-   * 把 N 条体重 upsert **按批切成多个事务**顺序执行（详见调用处的缺陷说明）。
-   *
-   * ### ⚠️ 分批绝不能破坏「同日覆盖、后者胜」
-   *
-   * upsert 的唯一键是 `@@unique([userId, loggedAt])`，所以「后者胜」**完全取决于
-   * 执行顺序**：同一日期的两条记录若被切到不同批次，仍必须是**后一条**覆盖前一条。
-   * 这里用 `for` + `await` 按 `rows` 原序（下标升序）**串行**提交每一批 ——
-   * 没有 `Promise.all`、没有并发 —— 因此跨批执行顺序与不分批时逐条执行**完全一致**，
-   * 语义不变（`apps/api/test/weight-import-batch.e2e.test.ts` 有用例钉住：
-   * 同一日期的第 1 行与最后一行分属首尾两批，断言库里是最后一条的值）。
-   *
-   * ### 中途某批失败怎么办 → **选 (a)：整批失败，回滚到导入前**
-   *
-   * 两个选项：(a) 全或无 —— 已写入的批也要撤掉，用户看到一次失败、库里没有半成品；
-   * (b) 部分成功 —— 已成功的批保留，返回 `imported` 为实际写入数。
-   *
-   * **选 (a)**，理由（产品决定）：
-   * ① **导入结果必须与用户看到的 `imported` 数一致** —— 这条比「尽量多导」重要。
-   *    (b) 需要前端有「部分成功」的展示位（「导入了 1373 行，剩下 627 行没进去」），
-   *    而当前前端只有「成功 / 失败」两种提示，没有这个位；给了 `imported: 1373`
-   *    用户只会以为 2000 行都进去了，下次再导一次又会撞上同样的失败。
-   * ② 体重是**趋势图与移动平均的输入**：半成品数据（前 1373 天有、后 627 天没有）
-   *    会让 7 日均线、周报体重变化量算出**看起来正常但实际错误**的结果，
-   *    比「看得见的一次失败」更难发现。
-   * ③ 不分批时的既有语义就是全或无（单事务回滚），(a) 与它**逐字一致**，
-   *    分批只是性能改造，不该顺手改掉失败语义。
-   *
-   * 实现上：分批后没有「一个包住全部的外层事务」（那正是要避免的长事务），
-   * 所以 (a) 的回滚靠**补偿事务** —— 写入前先把受影响日期的旧值快照下来
-   * （{@link snapshotWeightRows}），任一批失败就在一个事务里删掉这些日期的行、
-   * 再把快照写回（{@link restoreWeightSnapshot}）。补偿本身失败只记日志，
-   * 仍把**原始错误**抛给上层（不让它掩盖真正的失败原因）。
-   */
-  private async writeWeightRowsInBatches(userId: number, rows: WeightImportRow[]): Promise<void> {
-    const dates = this.uniqueDates(rows);
-    const snapshot = await this.snapshotWeightRows(userId, dates);
-
-    try {
-      for (let start = 0; start < rows.length; start += WEIGHT_IMPORT_BATCH_SIZE) {
-        const batch = rows.slice(start, start + WEIGHT_IMPORT_BATCH_SIZE);
-        await this.prisma.$transaction(
-          batch.map((row) => this.buildWeightImportUpsert(userId, row)),
-        );
-      }
-    } catch (error) {
-      await this.restoreWeightSnapshot(userId, dates, snapshot);
-      throw error;
-    }
-  }
-
-  /** 一行体重的 upsert 语句（不 await —— 交给 `$transaction` 批量提交）。 */
-  private buildWeightImportUpsert(userId: number, row: WeightImportRow) {
-    return this.prisma.weightLog.upsert({
-      where: { userId_loggedAt: { userId, loggedAt: row.date } },
-      create: {
-        userId,
-        loggedAt: row.date,
-        weightKg: row.weightKg,
-        note: row.note ?? null,
-        source: 'import',
-      },
-      update: { weightKg: row.weightKg, note: row.note ?? null, source: 'import' },
-    });
-  }
-
-  /**
-   * 导入前快照：读出**这次会碰到的日期**上已有的体重行，用于失败时回滚。
-   *
-   * 按 {@link WEIGHT_IMPORT_BATCH_SIZE} 切分 `IN` 查询，避免一次把 2000 个日期
-   * 塞进单条 SQL（SQLite 的绑定变量上限随版本变化，不赌它）。
-   *
-   * ### 代价（明确接受，并与本文件既有取舍不冲突）
-   *
-   * 每次导入会多 1~N 次只读查询（走 `ix_weight_user_at` 索引；2000 行全量导入
-   * 实测 ~800ms 含写，可忽略）。这与 {@link ImportResult} 注释里「不为 `overwritten`
-   * 多跑一轮查询」的取舍**不冲突**：那个数字是**用户读不懂也提不出需求**的，
-   * 而这里换来的是「失败时能安全回滚」—— 正确性问题的优先级高于一次往返。
-   */
-  private async snapshotWeightRows(
-    userId: number,
-    dates: string[],
-  ): Promise<WeightImportSnapshotRow[]> {
-    if (dates.length === 0) {
-      return [];
-    }
-
-    const snapshot: WeightImportSnapshotRow[] = [];
-    for (const part of chunk(dates, WEIGHT_IMPORT_BATCH_SIZE)) {
-      const found = await this.prisma.weightLog.findMany({
-        where: { userId, loggedAt: { in: part } },
-        select: { loggedAt: true, weightKg: true, note: true, source: true },
-      });
-      snapshot.push(...found);
-    }
-    return snapshot;
-  }
-
-  /**
-   * 补偿事务：删掉本次导入涉及日期的全部体重行，再把快照写回。
-   *
-   * 之所以能「全删再写回」：**这些日期上此刻的每一行都是本次导入写的**
-   * （要么是我们新建的，要么是被我们 upsert 覆盖的），而快照里是导入**前**的旧值 ——
-   * 于是「全删 + 写回快照」恰好把数据恢复到导入前的状态。
-   *
-   * ⚠️ 代价（明确接受）：`createMany` 是新增行，`id` / `createdAt` 不保证与原来相同
-   * —— 恢复的是**内容等价**状态。体重记录没有其它表引用它的 `id`，故可接受。
-   *
-   * @param dates 本次导入涉及的去重日期
-   * @param snapshot 导入前这些日期上的旧值（可能为空数组）
-   */
-  private async restoreWeightSnapshot(
-    userId: number,
-    dates: string[],
-    snapshot: WeightImportSnapshotRow[],
-  ): Promise<void> {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        for (const part of chunk(dates, WEIGHT_IMPORT_BATCH_SIZE)) {
-          await tx.weightLog.deleteMany({ where: { userId, loggedAt: { in: part } } });
-        }
-        if (snapshot.length > 0) {
-          await tx.weightLog.createMany({
-            data: snapshot.map((row) => ({
-              userId,
-              loggedAt: row.loggedAt,
-              weightKg: row.weightKg,
-              note: row.note,
-              source: row.source,
-            })),
-          });
-        }
-      });
-    } catch (compensationError) {
-      // 补偿失败也不能吞掉原始错误：只记日志，让调用方照常把真正的失败原因抛上去。
-      this.logger.error(
-        `体重导入回滚失败（userId=${userId}，${dates.length} 个日期）：${
-          compensationError instanceof Error ? compensationError.message : String(compensationError)
-        }`,
-      );
-    }
   }
 
   /**
