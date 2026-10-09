@@ -7,6 +7,15 @@
 
 import { toLocalDateKey } from '@qsh/core';
 
+/**
+ * ⚠️ **不要用这两个正则去「校验」日期** —— 它们只验形状，不验日期是否真实存在
+ * （`2026-02-31` 两条都放行），这正是历史上三份各自为政的裸正则让坏日期入库的根因。
+ *
+ * 判据请一律用 {@link isValidLocalDateKey}（严格正则 + 日历回环比对）：
+ * DTO 层用 `@IsLocalDateKey()`，query 层用 `LocalDateKeyQueryPipe`，二者共用它。
+ * 下面两个常量仅供 `date.util` 内部解析使用，**不要再导出给新代码当校验用**。
+ */
+
 /** `YYYY-MM-DD` 正则（宽松到 1 位月/日，与引擎解析一致）。 */
 export const LOCAL_DATE_PATTERN = /^\d{4}-\d{1,2}-\d{1,2}$/;
 
