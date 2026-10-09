@@ -188,6 +188,16 @@ export {
   type MovingAverageSharedCase,
 } from './weight/moving-average';
 
+// 体重区间统计（R7.2 / C4，NFR-11 唯一真源）：后端 service 与前端 trend 共用；
+// 口径以原前端实现为准（读数一律 round2、最早/最晚按日期取）
+export {
+  computeTrendStats,
+  TREND_STATS_SHARED_CASES,
+  type TrendStatsInputPoint,
+  type TrendStatsResult,
+  type TrendStatsSharedCase,
+} from './weight/trend-stats';
+
 // ---------------------------------------------------------------------------
 // 四期补完（R3.8 / R11.5）
 // ---------------------------------------------------------------------------

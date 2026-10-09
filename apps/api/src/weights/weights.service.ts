@@ -4,7 +4,7 @@ import {
   buildGoalForecast,
   buildGoalProgress,
   computeMovingAverage7d,
-  round2,
+  computeTrendStats,
 } from '@qsh/core';
 import type {
   GoalForecastPoint,
@@ -108,17 +108,15 @@ export class WeightsService {
 
     const points = logs.map((log) => ({ date: log.loggedAt, weightKg: log.weightKg }));
 
-    let minKg: number | null = null;
-    let maxKg: number | null = null;
-    let latestKg: number | null = null;
-    for (const log of logs) {
-      minKg = minKg === null ? log.weightKg : Math.min(minKg, log.weightKg);
-      maxKg = maxKg === null ? log.weightKg : Math.max(maxKg, log.weightKg);
-      latestKg = log.weightKg;
-    }
-    const firstKg = logs.length > 0 ? logs[0]!.weightKg : null;
-    const changeKg =
-      firstKg === null || latestKg === null ? null : round2(latestKg - firstKg);
+    // 统计判据真源在 `@qsh/core`（NFR-11）：与前端 `lib/trend.ts` 同一份实现，不在此地复制公式。
+    // 契约 `WeightListResult.stats` 只有四字段（无 `meanKg`），故按契约投影，字段名不动。
+    const trendStats = computeTrendStats(
+      logs.map((log) => ({ date: log.loggedAt, weightKg: log.weightKg })),
+    );
+    const minKg = trendStats.minKg;
+    const maxKg = trendStats.maxKg;
+    const latestKg = trendStats.latestKg;
+    const changeKg = trendStats.changeKg;
 
     // 目标达成预测曲线（R2.6）：有生效目标才生成（纯函数在 @qsh/core，前后端同源）
     const forecast = await this.buildForecast(userId);

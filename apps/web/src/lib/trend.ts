@@ -7,8 +7,9 @@ import type {
 } from '@qsh/shared-types';
 import {
   computeMovingAverage7d as computeMovingAverage7dCore,
+  computeTrendStats as computeTrendStatsCore,
   MOVING_AVERAGE_WINDOW_DAYS,
-  round2,
+  type TrendStatsResult,
 } from '@qsh/core';
 import { addDays, diffDays, parseDateKey, todayKey } from './format';
 
@@ -49,47 +50,17 @@ export function computeMovingAverage7d(
   return computeMovingAverage7dCore(points);
 }
 
-/** 体重趋势统计（最小 / 最大 / 均值 / 最新 / 净变化）。 */
-export interface TrendStats {
-  minKg: number | null;
-  maxKg: number | null;
-  /** 区间内所有记录的算术平均（C4 区间视图用；不是移动平均） */
-  meanKg: number | null;
-  latestKg: number | null;
-  /** 最新 − 最早（可正可负） */
-  changeKg: number | null;
-}
+/**
+ * 体重趋势统计（最小 / 最大 / 均值 / 最新 / 净变化）。
+ *
+ * 类型真源在 `@qsh/core` 的 `TrendStatsResult`（C4 区间视图用；`meanKg` 是算术平均，不是移动平均）。
+ */
+export type TrendStats = TrendStatsResult;
 
 /** 计算趋势统计（纯函数）。传入哪个区间就统计哪个区间。 */
 export function computeTrendStats(points: readonly WeightTrendPoint[]): TrendStats {
-  if (points.length === 0) {
-    return { minKg: null, maxKg: null, meanKg: null, latestKg: null, changeKg: null };
-  }
-  const sorted = sortTrendPoints(points);
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
-  if (first === undefined || last === undefined) {
-    return { minKg: null, maxKg: null, meanKg: null, latestKg: null, changeKg: null };
-  }
-  let minKg = first.weightKg;
-  let maxKg = first.weightKg;
-  let sumKg = 0;
-  for (const point of sorted) {
-    if (point.weightKg < minKg) {
-      minKg = point.weightKg;
-    }
-    if (point.weightKg > maxKg) {
-      maxKg = point.weightKg;
-    }
-    sumKg += point.weightKg;
-  }
-  return {
-    minKg: round2(minKg),
-    maxKg: round2(maxKg),
-    meanKg: round2(sumKg / sorted.length),
-    latestKg: round2(last.weightKg),
-    changeKg: round2(last.weightKg - first.weightKg),
-  };
+  // 统计判据真源在 `@qsh/core`：与后端 `WeightsService.list()` 同一份实现，此处不再复制公式
+  return computeTrendStatsCore(points);
 }
 
 /**
