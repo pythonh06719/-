@@ -50,13 +50,39 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
    * 惰性初始化即取一次，避免首帧空串。
    */
   const [value, setValue] = useState<string>(() => String(resolveWaterGoalMl(serverGoalMl)));
+  /**
+   * 「用户正在编辑」标记 —— 为什么需要它，见下面 useEffect 里的 ⚠️ 注释。
+   *
+   * 判据是**用户改过值**（输入框内容 ≠ 当前生效值），而不是「有没有焦点」：
+   * 输入框失焦但还没保存时，那半截输入同样是用户亲手敲的，不能被服务端回流抹掉。
+   */
+  const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   /** 当前生效值（服务端目标到货、单位或本机值变化时刷新输入框）。 */
   const current = resolveWaterGoalMl(serverGoalMl);
   useEffect(() => {
+    /*
+     * ⚠️ 编辑期间**不**把 `current` 灌回输入框：服务端数据一回流（比如另一台设备
+     * 刚把目标改了），用户正在敲到一半的数字会被无声抹掉 —— 那是「用户亲眼看见
+     * 自己输入消失」，比安静地算错更伤。
+     *
+     * 什么时候恢复同步（必须双向收口，否则会退化成「服务端再也无法更新输入框」）：
+     * 1. 保存成功 —— 见 `handleSubmit`，那时 `current` 已经等于刚保存的值，同步不会打回去；
+     * 2. 放弃编辑 —— 用户把输入改回等于当前生效值，见 `handleChange`（不额外加 UI）。
+     */
+    if (editing) {
+      return;
+    }
     setValue(String(current));
-  }, [current]);
+  }, [current, editing]);
+
+  /** 用户输入：顺带维护「是否处于编辑中」。 */
+  const handleChange = (next: string): void => {
+    setValue(next);
+    // 改回等于当前生效值 = 放弃这次编辑，同步重新生效
+    setEditing(next.trim() !== String(current));
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -70,6 +96,9 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
 
     // 1) 本地快路径：立即记住，离线也能显示、联网后可补推（见 lib/water-goal.ts）。
     persistWaterGoalMl(parsed);
+    // 此刻 `current` 已经等于 parsed（快路径写完了），可以放心退出编辑态：
+    // 同步恢复不会把输入框打回去，而服务端后续更新从此又能照常同步进来。
+    setEditing(false);
     // 2) 服务端权威值：fire-and-forget 落库（失败静默重试一次，仍失败则记 dirty，联网后补推）。
     void pushSettings({ waterGoalMl: parsed });
 
@@ -103,7 +132,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
             type="number"
             inputMode="numeric"
             value={value}
-            onChange={(event) => setValue(event.target.value)}
+            onChange={(event) => handleChange(event.target.value)}
             className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>

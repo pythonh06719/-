@@ -30,7 +30,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -73,6 +73,12 @@ const STORED_GOAL_ML: number = 1800;
  * 刻意不等于上面三层的值，这样「重渲后回显了什么」不会被占位值本身掩盖。
  */
 const TYPED_PLACEHOLDER_ML = '700';
+
+/**
+ * 「另一台设备把目标改成了别的值」——服务端回流后的 `goalMl`。
+ * 同样要区别于本文件所有其它数字，否则「有没有被覆盖」看不出来。
+ */
+const REFETCHED_GOAL_ML = 2100;
 
 /** 统一 `{ data, error }` 包装的成功响应。 */
 function wrappedResponse(data: unknown): Response {
@@ -121,7 +127,12 @@ function stubFetch(options: { goalMl?: number; failPatch?: boolean } = {}): {
   return { calls };
 }
 
-function renderPage(): void {
+/**
+ * 渲染 `/exercise`。
+ *
+ * @returns 同一个 QueryClient —— 「服务端目标回流」那几条用例要拿它重取 `water` 查询。
+ */
+function renderPage(): QueryClient {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -130,6 +141,43 @@ function renderPage(): void {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return client;
+}
+
+/**
+ * 运动页喝水卡那一行「已记录 / 目标 ml（百分比）」。
+ *
+ * 它由同一份 `GET /water` 数据算出，但**不是输入框** —— 因此可以做「回流到底有没有进组件树」
+ * 的独立证据：只看输入框的话，「输入框没变」既可能是保护住了，也可能只是数据还没到。
+ */
+function waterLineText(): string {
+  const lines = Array.from(document.body.querySelectorAll('p'))
+    .map((node) => (node.textContent ?? '').trim())
+    .filter((text) => /^\d+\s*\/\s*\d+\s*ml（\d+%）$/.test(text));
+  expect(lines, '运动页没找到「已记录 / 目标 ml（百分比）」那一行').toHaveLength(1);
+  return lines[0] as string;
+}
+
+/**
+ * 模拟「另一台设备改了目标 → 服务端数据回流」：换掉 `GET /water` 的返回值并重取该查询。
+ *
+ * ⚠️ 只保证「请求发出并重取完成」，**不**等回流反映到界面 —— 等什么由各用例自己写
+ * （见下一条 `waitForWaterLine`），否则「输入框没变」会在「数据还没到」时偶然通过，
+ * 那正是本轮要躲的假绿。
+ */
+async function reflowWaterGoal(client: QueryClient, goalMl: number): Promise<void> {
+  const { calls } = stubFetch({ goalMl });
+  await act(async () => {
+    await client.invalidateQueries({ queryKey: ['water'] });
+  });
+  expect(calls.some((call) => call.method === 'GET' && call.url.includes('/api/water'))).toBe(true);
+}
+
+/** 等「回流确实进了组件树」——喝水卡那一行已按 `goalMl` 重算（同一份查询数据，但是另一个 DOM 节点）。 */
+async function waitForWaterLine(goalMl: number): Promise<void> {
+  await waitFor(() => {
+    expect(waterLineText()).toContain(`${String(goalMl)} ml`);
+  });
 }
 
 /** 从 fetch 记录里筛出 PATCH `/api/users/settings` 的调用体。 */
@@ -166,7 +214,7 @@ describe('GAP-3：每日饮水目标编辑入口（落点 /exercise 喝水区）
 
   it('★ 优先级：本机值 > 服务端值（离线刚改的目标不能被服务端旧值打回去）', async () => {
     stubFetch({ goalMl: SERVER_GOAL_ML });
-    renderPage();
+    const client = renderPage();
 
     // ① 先让服务端值落地到 DOM —— 这一步同时也是后面断言的**前提**：
     //    不知道服务端什么时候到货，就无法区分「本机值赢了」和「服务端还没来」。
@@ -179,14 +227,21 @@ describe('GAP-3：每日饮水目标编辑入口（落点 /exercise 喝水区）
     //    若改到渲染前写，终值同样是 1800，但解释变成了「服务端压根没到货」——正是本轮要堵的那种假绿。
     persistWaterGoalMl(STORED_GOAL_ML);
 
-    // ③ 敲一下输入框（占位值）—— 只为触发一次重渲。卡片每次渲染都会重算 `resolveWaterGoalMl()`
-    //    并用 useEffect 把结果同步回显到输入框，所以「下一次渲染后的回显值」就是优先级的答案：
-    //    本机值优先 → 打成 1800；服务端值优先 → 停在 700（current 没变，effect 不再触发）。
-    fireEvent.change(inputEl(), { target: { value: TYPED_PLACEHOLDER_ML } });
+    // ③ 让服务端数据回流，且**故意换个值**，逼出一次重渲。
+    //    ⚠️ 不能回流同一个值：react-query 的 structural sharing 会让结构相同的数据保持同一份引用，
+    //    于是根本不会重渲，`current` 也就没有机会被重算 —— 上一版就栽在这里（看似绿，实则啥也没验）。
+    //    ⚠️ 也不能改回「敲一下输入框」来逼重渲（上一版的做法）：本轮加了「正在编辑」保护，
+    //    敲过之后卡片会刻意不再同步，那样只能证明保护生效，证明不了优先级。
+    await reflowWaterGoal(client, REFETCHED_GOAL_ML);
+    // 落地证据：喝水卡那一行被重算过就不再可能还是 SERVER_GOAL_ML —— 这个判据与「哪层赢了」无关
+    await waitFor(() => {
+      expect(waterLineText()).not.toContain(String(SERVER_GOAL_ML));
+    });
 
     // ④ 终值断言：本机值必须压过服务端值与默认值
+    //    （把 resolveWaterGoalMl 的优先级反过来时，这一步会是被回流进来的服务端值）
     expect(inputEl().value).toBe(String(STORED_GOAL_ML));
-    expect(inputEl().value).not.toBe(String(SERVER_GOAL_ML));
+    expect(inputEl().value).not.toBe(String(REFETCHED_GOAL_ML));
     expect(inputEl().value).not.toBe(String(DEFAULT_WATER_GOAL_ML));
   });
 
@@ -334,6 +389,53 @@ describe('GAP-3：每日饮水目标编辑入口（落点 /exercise 喝水区）
     expect(pushed).toBe(true);
     expect(patchBodies(calls)).toContainEqual({ waterGoalMl: 3000 });
     expect(hasPendingSettings()).toBe(false);
+  });
+
+  it('★ 保护未保存输入：服务端目标回流时，正在编辑的值不被覆盖', async () => {
+    stubFetch({ goalMl: SERVER_GOAL_ML });
+    const client = renderPage();
+    await waitFor(() => expect(inputEl().value).toBe(String(SERVER_GOAL_ML)));
+
+    // 用户开始改目标、还没点保存
+    fireEvent.change(inputEl(), { target: { value: TYPED_PLACEHOLDER_ML } });
+
+    // 另一台设备把目标改了 → `GET /water` 回流到另一个值；先确认它**真的进了组件树**
+    await reflowWaterGoal(client, REFETCHED_GOAL_ML);
+    await waitForWaterLine(REFETCHED_GOAL_ML);
+
+    // 用户亲眼在输入的东西不能被服务端数据抹掉
+    expect(inputEl().value).toBe(TYPED_PLACEHOLDER_ML);
+    expect(inputEl().value).not.toBe(String(REFETCHED_GOAL_ML));
+  });
+
+  it('反向对照：没编辑过时，服务端目标回流照旧同步进输入框（防「一律不同步」蒙对）', async () => {
+    stubFetch({ goalMl: SERVER_GOAL_ML });
+    const client = renderPage();
+    await waitFor(() => expect(inputEl().value).toBe(String(SERVER_GOAL_ML)));
+
+    await reflowWaterGoal(client, REFETCHED_GOAL_ML);
+
+    await waitFor(() => {
+      expect(inputEl().value).toBe(String(REFETCHED_GOAL_ML));
+    });
+  });
+
+  it('恢复同步：保存成功后 editing 标记被清除，后续变更照旧同步进输入框', async () => {
+    stubFetch({ goalMl: SERVER_GOAL_ML });
+    const client = renderPage();
+    await waitFor(() => expect(inputEl().value).toBe(String(SERVER_GOAL_ML)));
+
+    fireEvent.change(inputEl(), { target: { value: '2600' } });
+    fireEvent.click(screen.getByText(COPY.waterGoalButton));
+    await waitFor(() => expect(readStoredWaterGoalMl()).toBe(2600));
+
+    // 别处把当前生效目标改成 REFETCHED_GOAL_ML（本机层同步变了 → 触发重取与重渲）
+    persistWaterGoalMl(REFETCHED_GOAL_ML);
+    await reflowWaterGoal(client, REFETCHED_GOAL_ML);
+
+    await waitFor(() => {
+      expect(inputEl().value).toBe(String(REFETCHED_GOAL_ML));
+    });
   });
 
   it('文案红线：新文案不含「失败 / 错误 / 警告」作标题，无红色类名，无催促性措辞', async () => {
