@@ -5,6 +5,10 @@ import type {
   WeightTrendPoint,
   WeightTrendResponse,
 } from '@qsh/shared-types';
+import {
+  computeMovingAverage7d as computeMovingAverage7dCore,
+  MOVING_AVERAGE_WINDOW_DAYS,
+} from '@qsh/core';
 import { addDays, diffDays, parseDateKey, todayKey } from './format';
 
 /**
@@ -16,11 +20,15 @@ import { addDays, diffDays, parseDateKey, todayKey } from './format';
  * - 窗口内**没有任何记录**时返回 `null`（图表断点）；
  * - 结果保留 2 位小数（与 `WeightTrendResponse.movingAverage7` 契约一致）。
  *
- * 优先消费后端算好的 `WeightTrendResponse.movingAverage7`；后端不可用时前端本地计算（离线可用），两者算法保持一致。
+ * **判据真源在 `@qsh/core` 的 `computeMovingAverage7d`**（NFR-11 唯一口径）：
+ * 服务端 `WeightsService.list()` 与本文件的 `computeMovingAverage7d` 都调它，
+ * 因此「前端本地计算」（离线可用，后端不可用时兜底）与后端算好的
+ * `WeightTrendResponse.movingAverage7` **不可能**算出两个数字 —— 不再是注释承诺，
+ * 而是由 `MOVING_AVERAGE_SHARED_CASES` 跨端断言钉住（core / api / web 三处测试共用同一份用例集）。
  */
 
-/** 移动平均窗口天数（契约固定 7）。 */
-export const MOVING_AVERAGE_WINDOW_DAYS = 7;
+/** 移动平均窗口天数（契约固定 7）—— 真源在 `@qsh/core`，此处仅转出以保持对外签名不变。 */
+export { MOVING_AVERAGE_WINDOW_DAYS };
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -40,18 +48,8 @@ export function sortTrendPoints(points: readonly WeightTrendPoint[]): WeightTren
 export function computeMovingAverage7d(
   points: readonly WeightTrendPoint[],
 ): MovingAveragePoint[] {
-  const sorted = sortTrendPoints(points);
-  return sorted.map((point) => {
-    const windowStart = addDays(point.date, -(MOVING_AVERAGE_WINDOW_DAYS - 1));
-    const inWindow = sorted.filter(
-      (candidate) => candidate.date >= windowStart && candidate.date <= point.date,
-    );
-    if (inWindow.length === 0) {
-      return { date: point.date, value: null };
-    }
-    const sum = inWindow.reduce((acc, candidate) => acc + candidate.weightKg, 0);
-    return { date: point.date, value: round2(sum / inWindow.length) };
-  });
+  // 判据真源在 `@qsh/core`：与后端 `WeightsService.list()` 同一份实现，此处不再复制公式
+  return computeMovingAverage7dCore(points);
 }
 
 /** 体重趋势统计（最小 / 最大 / 均值 / 最新 / 净变化）。 */

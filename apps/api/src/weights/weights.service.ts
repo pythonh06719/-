@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
-import { buildGoalForecast, buildGoalProgress, round2 } from '@qsh/core';
+import {
+  buildGoalForecast,
+  buildGoalProgress,
+  computeMovingAverage7d,
+  round2,
+} from '@qsh/core';
 import type {
   GoalForecastPoint,
   GoalProgress,
@@ -43,9 +48,6 @@ export interface WeightListResult {
     changeKg: number | null;
   };
 }
-
-/** 移动平均窗口长度（天）。 */
-const MOVING_AVERAGE_WINDOW = 7;
 
 /**
  * 体重服务（R7.1 / R7.2）。
@@ -99,10 +101,10 @@ export class WeightsService {
     });
     const logs = rows.map(toWeightLog);
 
-    const movingAverage7: MovingAveragePoint[] = logs.map((log) => ({
-      date: log.loggedAt,
-      value: round2(this.averageWindow(logs, log.loggedAt)),
-    }));
+    // 判据真源在 `@qsh/core`（NFR-11）：与前端 `lib/trend.ts` 同一份实现，不在此地复制公式
+    const movingAverage7: MovingAveragePoint[] = computeMovingAverage7d(
+      logs.map((log) => ({ date: log.loggedAt, weightKg: log.weightKg })),
+    );
 
     const points = logs.map((log) => ({ date: log.loggedAt, weightKg: log.weightKg }));
 
@@ -264,20 +266,6 @@ export class WeightsService {
       result.push({ date, weightKg: byDate.get(date) ?? null });
     }
     return result;
-  }
-
-  /** 计算某日往前 7 天窗口内的平均体重（不足 7 天按已有点计算）。 */
-  private averageWindow(logs: WeightLog[], endDate: string): number {
-    const start = addDays(endDate, -(MOVING_AVERAGE_WINDOW - 1));
-    let sum = 0;
-    let count = 0;
-    for (const log of logs) {
-      if (log.loggedAt >= start && log.loggedAt <= endDate) {
-        sum += log.weightKg;
-        count += 1;
-      }
-    }
-    return count === 0 ? 0 : sum / count;
   }
 
   /**

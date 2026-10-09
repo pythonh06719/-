@@ -177,6 +177,17 @@ export {
   type PlateauResult,
 } from './weight/plateau';
 
+// 体重 7 日移动平均（R7.2，NFR-11 唯一真源）：后端 service 与前端 trend 共用，
+// `MOVING_AVERAGE_SHARED_CASES` 是钉住「两侧一致」的跨端基线用例集
+export {
+  computeMovingAverage7d,
+  MOVING_AVERAGE_SHARED_CASES,
+  MOVING_AVERAGE_WINDOW_DAYS,
+  type MovingAverageInputPoint,
+  type MovingAverageOutputPoint,
+  type MovingAverageSharedCase,
+} from './weight/moving-average';
+
 // ---------------------------------------------------------------------------
 // 四期补完（R3.8 / R11.5）
 // ---------------------------------------------------------------------------
