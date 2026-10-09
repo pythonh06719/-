@@ -13,6 +13,9 @@
  * **邻近的合法值**（闰年 `2024-02-29`、`2026-12-31`、`2026-02-28`、`2026-03-01`）
  * 护住：它们必须 200，且能真的查到当天记录。
  *
+ * **同源缺陷 4**：`DELETE /water/last?date=2026-12-31`（那天没记录）的 404 文案写死
+ * 「今天还没有可撤销的记录」—— 把「那一天没记录」报成「今天没记录」（见 `describe('🔴 缺陷 4')`）。
+ *
  * **缺陷注入反验**（改管道为裸正则 `^\d{4}-\d{2}-\d{2}$` 后必须红）：
  * 见文件末尾 `describe('🔴 注入探针')`。
  *
@@ -103,7 +106,13 @@ async function call(
   method: 'get' | 'delete',
   path: string,
   date?: string,
-): Promise<{ status: number; body: { data: unknown; error: { code: string; fields?: Record<string, string> } | null } }> {
+): Promise<{
+  status: number;
+  body: {
+    data: unknown;
+    error: { code: string; message?: string; fields?: Record<string, string> } | null;
+  };
+}> {
   let req = request(server as never)[method](`${API}${path}`).set(auth(token));
   // `.query()` 对空串会编码成 `date=`（正是本轮要钉的边界），故手写查询串
   if (date !== undefined) {
@@ -112,7 +121,10 @@ async function call(
   const res = await req;
   return {
     status: res.status as number,
-    body: res.body as { data: unknown; error: { code: string; fields?: Record<string, string> } | null },
+    body: res.body as {
+      data: unknown;
+      error: { code: string; message?: string; fields?: Record<string, string> } | null;
+    },
   };
 }
 
@@ -347,6 +359,54 @@ describe('🔴 缺陷 3 · DELETE /api/water/last 的 date 必须与写入侧同
     expect(res.status).toBe(200);
     expect((res.body.data as { undone: boolean }).undone).toBe(true);
     expect(await prisma.waterLog.count({ where: { userId } })).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 🔴 缺陷 4：撤销空日的 404 文案把「那一天没记录」说成「今天没记录」
+// ---------------------------------------------------------------------------
+
+describe('🔴 缺陷 4 · DELETE /water/last 的 404 文案必须跟着传入日期走', () => {
+  it('★ ?date=2026-12-31（那天没记录）→ 404，且文案不含「今天」、含该日期', async () => {
+    const res = await call('delete', '/water/last', '2026-12-31');
+    expect(res.status).toBe(404);
+    expect(res.body.error).not.toBeNull();
+    expect(res.body.error!.code).toBe('E_NOTFOUND_WATER');
+
+    const message = res.body.error!.message ?? '';
+    // 🔴 核心断言：写死「今天」的实现会在这里红
+    expect(message, `文案不应把 2026-12-31 说成今天，实际：${message}`).not.toContain('今天');
+    // 且要指明确实是那一天，不能含糊成「这一天」
+    expect(message).toContain('2026-12-31');
+    // 语气红线（PRD §7）：不出现失败/错误/警告与催促性措辞
+    for (const banned of ['失败', '错误', '警告', '必须', '一定', '坚持', '赶紧']) {
+      expect(message, `文案出现禁用语气词「${banned}」`).not.toContain(banned);
+    }
+  });
+
+  it('★ 反向对照：当天有记录时能正常撤销 → 200，且响应里不出现该文案', async () => {
+    await createWater('2026-12-31', 250);
+    const res = await call('delete', '/water/last', '2026-12-31');
+    expect(res.status).toBe(200);
+    expect((res.body.data as { undone: boolean }).undone).toBe(true);
+    // 成功路径没有 error 文案（防「把文案整段删掉/一律不出现」型实现蒙对时看不出差别）
+    expect(res.body.error).toBeNull();
+    expect(await prisma.waterLog.count({ where: { userId, loggedDate: '2026-12-31' } })).toBe(0);
+  });
+
+  it('★ 不传 date（确实是今天、且今天没记录）→ 404 且文案仍说「今天」（防一律写死日期）', async () => {
+    const res = await call('delete', '/water/last');
+    expect(res.status).toBe(404);
+    const message = res.body.error!.message ?? '';
+    // 默认场景就是今天，说「今天」才是对的；若改成永远打印日期，这条会红
+    expect(message, `缺省场景应说「今天」，实际：${message}`).toContain('今天');
+    expect(res.body.error!.code).toBe('E_NOTFOUND_WATER');
+  });
+
+  it('显式传今天的日期 → 404 文案说「今天」（与不传同口径）', async () => {
+    const res = await call('delete', '/water/last', todayKey());
+    expect(res.status).toBe(404);
+    expect(res.body.error!.message ?? '').toContain('今天');
   });
 });
 
