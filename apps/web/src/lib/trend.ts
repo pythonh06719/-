@@ -8,6 +8,7 @@ import type {
 import {
   computeMovingAverage7d as computeMovingAverage7dCore,
   MOVING_AVERAGE_WINDOW_DAYS,
+  round2,
 } from '@qsh/core';
 import { addDays, diffDays, parseDateKey, todayKey } from './format';
 
@@ -29,10 +30,6 @@ import { addDays, diffDays, parseDateKey, todayKey } from './format';
 
 /** 移动平均窗口天数（契约固定 7）—— 真源在 `@qsh/core`，此处仅转出以保持对外签名不变。 */
 export { MOVING_AVERAGE_WINDOW_DAYS };
-
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
 
 /** 按日期升序排序（返回新数组，不修改入参）。 */
 export function sortTrendPoints(points: readonly WeightTrendPoint[]): WeightTrendPoint[] {
