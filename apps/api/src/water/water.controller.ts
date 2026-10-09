@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPip
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { LocalDateKeyQueryPipe } from '../common/pipes/local-date-key.pipe';
 import { CreateWaterDto, UpdateWaterGoalDto } from './dto/water.dto';
 import { WaterService } from './water.service';
 
@@ -14,9 +15,14 @@ import { WaterService } from './water.service';
 export class WaterController {
   constructor(private readonly waterService: WaterService) {}
 
-  /** 查询某日饮水（`?date=YYYY-MM-DD`）。 */
+  /**
+   * 查询某日饮水（`?date=YYYY-MM-DD`，缺省今天）。
+   *
+   * ⚠️ `date` 走 `LocalDateKeyQueryPipe`，与写入侧 `CreateWaterDto.loggedDate` 的
+   * `@IsLocalDateKey()` **同一判据**；非法日期 → 400，而不是静默返回「今天 0 ml」。
+   */
   @Get()
-  list(@CurrentUser() userId: number, @Query('date') date?: string) {
+  list(@CurrentUser() userId: number, @Query('date', LocalDateKeyQueryPipe) date?: string) {
     return this.waterService.listByDate(userId, date);
   }
 
@@ -27,9 +33,15 @@ export class WaterController {
     return this.waterService.create(userId, dto);
   }
 
-  /** 撤销上一条。 */
+  /**
+   * 撤销上一条（按 `?date` 指定日期，缺省今天）。
+   *
+   * ⚠️ 这是**写操作**，日期口径更不能松：没有管道时 `?date=2026-02-31` 会去查
+   * `loggedDate: '2026-02-31'` → 必然 404「今天还没有可撤销的记录」，
+   * 把「日期填错」伪装成「没记录」，用户会反复重试。故与 `GET` 共用同一管道。
+   */
   @Delete('last')
-  undoLast(@CurrentUser() userId: number, @Query('date') date?: string) {
+  undoLast(@CurrentUser() userId: number, @Query('date', LocalDateKeyQueryPipe) date?: string) {
     return this.waterService.undoLast(userId, date);
   }
 

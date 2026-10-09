@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPip
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { LocalDateKeyQueryPipe } from '../common/pipes/local-date-key.pipe';
 import { CreateExerciseDto, EstimateExerciseDto } from './dto/create-exercise.dto';
 import { ExerciseService } from './exercise.service';
 
@@ -20,9 +21,15 @@ export class ExerciseController {
     return this.exerciseService.listActivities();
   }
 
-  /** 查询某日运动记录（`?date=YYYY-MM-DD`）。 */
+  /**
+   * 查询某日运动记录（`?date=YYYY-MM-DD`，缺省今天）。
+   *
+   * ⚠️ `date` 走 `LocalDateKeyQueryPipe`，与写入侧 `CreateExerciseDto.loggedDate`
+   * 的 `@IsLocalDateKey()` **同一判据**（`isValidLocalDateKey`：形状 + 日历真实性）。
+   * 没有它时 `?date=2026-02-31` 不报错、静默返回空列表，用户会以为记录丢了。
+   */
   @Get()
-  list(@CurrentUser() userId: number, @Query('date') date?: string) {
+  list(@CurrentUser() userId: number, @Query('date', LocalDateKeyQueryPipe) date?: string) {
     return this.exerciseService.listByDate(userId, date);
   }
 
