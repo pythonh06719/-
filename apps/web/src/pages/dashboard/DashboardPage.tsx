@@ -20,7 +20,8 @@ import {
   mealSummaryLine,
   mealSummaryTag,
 } from '@/lib/copy';
-import { DEFAULT_WATER_GOAL_ML, WATER_QUICK_ADD_ML } from '@/theme/tokens';
+import { WATER_QUICK_ADD_ML } from '@/theme/tokens';
+import { DEFAULT_WATER_GOAL_ML } from '@qsh/core';
 import Sparkline from '@/components/common/Sparkline';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 import EncouragementText from '@/components/feedback/EncouragementText';

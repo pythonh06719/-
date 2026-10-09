@@ -55,14 +55,21 @@ export const WATER_QUICK_ADD_ML = 250;
 export const WATER_ML_PER_CUP = 250;
 
 /**
- * 默认每日饮水目标（ml）。
+ * 默认每日饮水目标（ml）—— **真源在 `@qsh/core`**，此处只是 re-export。
  *
- * ⚠️ **必须与服务端真源一致**（`water.service.ts` 的 `?? 2000` + `schema.prisma`
- * `UserSettings.waterGoalMl @default(2000)`）。此前这里是 1500，导致断网 / 接口失败时
- * 看板显示「目标 6 杯」、运动页显示「0 / 2000 ml」—— 同一天、同一用户出现两个目标。
- * 统一到 2000：它是服务端真实默认值，也是用户在离线时刻最该看到的那一个。
+ * ⚠️ **web 侧不允许再定义同名常量**：这里曾经有一份独立的 `= 2000`（与 core 重复），
+ * 于是同一份口径在仓库里有两个作者：改后端要动 core，改这屏（看板的离线兜底）要动这里，
+ * 哪天漏了一个，用户就会在同一天看到两个不同的「今日目标」。
+ * 现在收敛成一处：`@qsh/core` 与后端 DTO（`?? 2000` / `@default(2000)`）对齐，
+ * 本文件与 `lib/csv.ts`、`SettingsDataPage` 一律从 core 取。
+ *
+ * 由 `test/water-goal-constant-guard.test.ts` 静态守卫：web / core 源码里若出现
+ * 第二处同名常量的**定义**（re-export 与 import 不算）就红。
+ *
+ * 注：`tailwind.config.ts` 并不 import 本文件（调色板在配置里另有一份字面量），
+ * 所以这条 `@qsh/core` 依赖不会进 Tailwind 的构建链。
  */
-export const DEFAULT_WATER_GOAL_ML = 2000;
+export { DEFAULT_WATER_GOAL_ML } from '@qsh/core';
 
 /** 各餐次在每日预算中的参考占比（「每餐独立预算」，R3.8）。 */
 export const MEAL_BUDGET_SHARE = {
