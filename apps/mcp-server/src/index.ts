@@ -46,6 +46,7 @@ import {
   ageFromBirthDate,
   buildSafetyMessages,
   calcExerciseKcal,
+  computeTrendStats,
   deriveWeeklyLossKg,
   findMetActivity,
   MET_ACTIVITY_LIBRARY,
@@ -663,16 +664,19 @@ const tools: Record<string, ToolDef> = {
         select: { loggedAt: true, weightKg: true },
       });
 
-      let minKg: number | null = null;
-      let maxKg: number | null = null;
-      let latestKg: number | null = null;
-      for (const row of rows) {
-        minKg = minKg === null ? row.weightKg : Math.min(minKg, row.weightKg);
-        maxKg = maxKg === null ? row.weightKg : Math.max(maxKg, row.weightKg);
-        latestKg = row.weightKg;
-      }
-      const firstKg = rows.length > 0 ? (rows[0]?.weightKg ?? null) : null;
-      const changeKg = firstKg === null || latestKg === null ? null : round1(latestKg - firstKg);
+      /**
+       * 判据真源在 `@qsh/core` 的 `computeTrendStats`（NFR-11 唯一口径）：
+       * 与后端 `WeightsService.list()`、前端 `lib/trend.ts` 同一份实现，此处不再自算。
+       *
+       * ⚠️ 这里**曾经**是第四份口径：min/max/latest 不取整、`changeKg` 用 `round1`（1 位小数）、
+       * first/latest 按数组顺序取（依赖 `orderBy: loggedAt asc`）。结果是同一个「区间最小值」
+       * 在三处有三个答案（App 显示 59.88，MCP 却说 59.876）。现在全部跟 App 口径一致（round2）。
+       *
+       * `count` 是 MCP 响应特有的字段（`WeightListResult.stats` 契约里没有），保留在此处自算。
+       */
+      const trendStats = computeTrendStats(
+        rows.map((row) => ({ date: row.loggedAt, weightKg: row.weightKg })),
+      );
 
       return {
         from,
@@ -681,10 +685,10 @@ const tools: Record<string, ToolDef> = {
         points: rows.map((row) => ({ date: row.loggedAt, weightKg: row.weightKg })),
         stats: {
           count: rows.length,
-          minKg,
-          maxKg,
-          latestKg,
-          changeKg,
+          minKg: trendStats.minKg,
+          maxKg: trendStats.maxKg,
+          latestKg: trendStats.latestKg,
+          changeKg: trendStats.changeKg,
         },
       };
     }),

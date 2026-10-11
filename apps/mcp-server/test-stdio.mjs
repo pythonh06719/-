@@ -125,6 +125,16 @@ function fail(message, stderr) {
 const results = {};
 let createdWaterId = null;
 
+/**
+ * 体重趋势统计口径校验用的**一次性隔离账号**。
+ *
+ * 为什么另建账号而不是拿真实用户的数据去凑数：
+ * `get_weight_trend` 的窗口锚定在今天，真实用户在窗口里的既有体重记录会混进来，
+ * 污染 min/max/change 的期望值（也拿不到稳定的、能区分 round1/round2 的数字）。
+ * 用一个新账号自造三条 >2 位小数的体重，断言才有确定性；跑完连同账号删掉。
+ */
+const TREND_PROBE_EMAIL = 'mcp-trend-parity-probe@qsh.local';
+
 try {
   // -------------------------------------------------------------------------
   // 阶段一：未设 MCP_USER_ID —— 工具清单 + 授权闸
@@ -251,6 +261,88 @@ try {
 
     phaseTwo.child.kill();
     results.phaseTwo = { userId: testUser.id, email: testUser.email };
+  }
+
+  // -------------------------------------------------------------------------
+  // 阶段三：体重趋势统计口径必须与 App 一致（round2），不能是第三份答案
+  //
+  // 这三条体重都故意带 3 位小数。分歧点：
+  //   round2（App 口径）→ min 59.88 / max 61.23 / change -0.68
+  //   round1（改前的 MCP 口径）→ change -0.7
+  //   不取整（改前的 MCP 口径）→ min 59.876 / max 61.234
+  // 断言取 round2，等于同时否掉另外两种。
+  // -------------------------------------------------------------------------
+  const todayKey = (() => {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  })();
+  const shiftKey = (key, deltaDays) => {
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    date.setUTCDate(date.getUTCDate() + deltaDays);
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+  };
+  const probeWeightKgByDate = new Map([
+    [shiftKey(todayKey, -2), 60.555],
+    [shiftKey(todayKey, -1), 61.234],
+    [todayKey, 59.876],
+  ]);
+
+  await prisma.user.deleteMany({ where: { email: TREND_PROBE_EMAIL } });
+  const probeUser = await prisma.user.create({ data: { email: TREND_PROBE_EMAIL } });
+  for (const [date, weightKg] of probeWeightKgByDate) {
+    await prisma.weightLog.create({ data: { userId: probeUser.id, loggedAt: date, weightKg } });
+  }
+
+  try {
+    const phaseThree = startServer({ ...baseEnv, MCP_USER_ID: String(probeUser.id) });
+    await phaseThree.handshake();
+
+    const trend = await phaseThree.request('tools/call', {
+      name: 'get_weight_trend',
+      arguments: { days: 3 },
+    });
+    const trendPayload = payloadOf(trend);
+    const trendStats = trendPayload.stats ?? {};
+
+    results.weightTrendParity = {
+      isError: trend.result?.isError === true,
+      count: trendStats.count ?? null,
+      points: Array.isArray(trendPayload.points) ? trendPayload.points.length : 0,
+      minKg: trendStats.minKg ?? null,
+      maxKg: trendStats.maxKg ?? null,
+      latestKg: trendStats.latestKg ?? null,
+      changeKg: trendStats.changeKg ?? null,
+    };
+
+    if (trend.result?.isError === true) {
+      fail('get_weight_trend 应成功（隔离账号）', phaseThree.getStderr());
+    }
+    if (trendPayload.points?.length !== 3 || trendStats.count !== 3) {
+      fail(`窗口内应有 3 条体重记录，实际 points=${trendPayload.points?.length} count=${trendStats.count}`, phaseThree.getStderr());
+    }
+    // 核心断言：必须等于 round2（App 口径），且不等于 round1 / 不取整那两个旧答案
+    if (trendStats.minKg !== 59.88) {
+      fail(`minKg 应为 round2 的 59.88（不是 59.876、也不是 round1 的 59.9），实际 ${trendStats.minKg}`, phaseThree.getStderr());
+    }
+    if (trendStats.maxKg !== 61.23) {
+      fail(`maxKg 应为 round2 的 61.23（不是 61.234），实际 ${trendStats.maxKg}`, phaseThree.getStderr());
+    }
+    if (trendStats.latestKg !== 59.88) {
+      fail(`latestKg 应为 round2 的 59.88（取最晚一天，不是数组末位的巧合），实际 ${trendStats.latestKg}`, phaseThree.getStderr());
+    }
+    if (trendStats.changeKg !== -0.68) {
+      fail(`changeKg 应为 round2 的 -0.68（不是 round1 的 -0.7），实际 ${trendStats.changeKg}`, phaseThree.getStderr());
+    }
+
+    phaseThree.child.kill();
+  } finally {
+    // 清理：先删体重记录再删账号，确保脚本可重复运行且不残留
+    await prisma.weightLog.deleteMany({ where: { userId: probeUser.id } });
+    await prisma.user.delete({ where: { id: probeUser.id } });
+    results.weightTrendCleanup = `已删除隔离账号 ${TREND_PROBE_EMAIL} 及其 ${probeWeightKgByDate.size} 条体重`;
   }
 
   // -------------------------------------------------------------------------
