@@ -22,7 +22,7 @@ import {
   TOOL_MEMORY_LIMITS,
   ageFromBirthDate,
   buildSafetyMessages,
-  deriveWeeklyLossKg,
+  round2,
   safeCalcCalorieBudget,
 } from '@qsh/core';
 import type { ActivityLevel, CalorieResult, Gender } from '@qsh/core';
@@ -62,7 +62,6 @@ interface LiveGoal {
   startWeightKg: number;
   targetWeightKg: number;
   targetWeeks: number;
-  weeklyLossKg: number;
 }
 
 /** `GET /api/profile` 的只读子集（字段宽松以容忍服务端附加字段）。 */
@@ -168,10 +167,8 @@ export default function WhyNumbersPage(): ReactElement {
     if (!safe.ok) {
       return null;
     }
-    const weeklyLossKg = deriveWeeklyLossKg(goal.startWeightKg, goal.targetWeightKg, goal.targetWeeks);
     return {
       age,
-      weeklyLossKg,
       activityFactor: ACTIVITY_FACTORS[profile.activityLevel],
       activityLabel: ACTIVITY_LABEL[profile.activityLevel],
       budget: safe.result,
@@ -271,7 +268,18 @@ export default function WhyNumbersPage(): ReactElement {
             <DerivationRow term="BMR（基础代谢）" value={`${live.budget.bmr} kcal`} />
             <DerivationRow term="活动系数" value={`${live.activityFactor}`} hint={live.activityLabel} />
             <DerivationRow term="TDEE（每日总消耗）" value={`${live.budget.tdee} kcal`} />
-            <DerivationRow term="每周目标减重" value={`${Math.round(live.weeklyLossKg * 100) / 100} kg/周`} />
+            {/*
+              取 core 的 `weeklyLossKg`（taper **后**），与下一行「原始缺口」同源：
+              本地用 `deriveWeeklyLossKg` 重算只能得到 taper 前的 base 速度，收尾阶段会出现
+              「0.15 kg/周」配「123.7 kcal/日」这种乘不出彼此的自相矛盾（NFR-11）。
+              core 该字段已是 `round2`（`types.ts` 明确它是喂进 `targetDeficitRaw` 的那个值），
+              此处再过一次 `round2` 只为替代原先手写的 `Math.round(x*100)/100`，幂等。
+            */}
+            <DerivationRow
+              term="每周目标减重"
+              value={`${round2(live.budget.weeklyLossKg)} kg/周`}
+              hint={live.budget.taperApplied ? `距目标不足 ${TAPER_REMAINING_KG} kg，已自动放缓` : ''}
+            />
             <DerivationRow term="原始缺口" value={`${live.budget.targetDeficitRaw} kcal/日`} />
             <DerivationRow
               term="缺口上限（TDEE×30%）"
