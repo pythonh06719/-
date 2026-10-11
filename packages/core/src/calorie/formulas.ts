@@ -161,6 +161,7 @@ export function computeCalorieBudget(input: CalorieInput): CalorieResult {
     safetyMessages: buildSafetyMessages({ floorApplied, isDeficitCapped }),
     warnings,
     macros,
+    weeklyLossKg: round2(weeklyLoss),
     weeklyLossEffectiveKg: round2(weeklyLossEffectiveKg),
     taperApplied,
     etaWeeks: etaWeeksRaw === null ? null : round2(etaWeeksRaw),

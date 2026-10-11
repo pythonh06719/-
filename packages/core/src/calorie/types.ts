@@ -79,6 +79,31 @@ export interface CalorieResult {
   warnings: ValidationWarning[];
   /** 宏量营养素克数目标 */
   macros: MacroResult;
+  /**
+   * **taper 后的**每周目标减重（2 位小数 kg/周，`round2`）。
+   *
+   * 这就是喂进 `targetDeficitRaw` 的那个值：`targetDeficitRaw ≈ weeklyLossKg × 7700 ÷ 7`
+   * （`targetDeficitRaw` 另经 `round1`，故两侧允许 1 位小数级的舍入差）。
+   *
+   * ⚠️ **它与 `deriveWeeklyLossKg()` 的返回值不是一回事**，禁止拿后者顶替：
+   * `deriveWeeklyLossKg(weightKg, targetWeightKg, targetWeeks)` 只是
+   * 「(当前体重 − 目标体重) ÷ 周数」的**纯推导，不含 taper**；当剩余需减重量 ≤
+   * `TAPER_REMAINING_KG` 时，本字段已按剩余量线性收窄，会**严格小于**它的结果。
+   *
+   * 算例：70 → 68.5（剩 1.5kg）、10 周 →
+   * `deriveWeeklyLossKg()` = 0.15，而本字段 = 0.15 × (1.5 ÷ 2) ≈ **0.11**，
+   * 对应的 `targetDeficitRaw` = 123.8（≈ 0.11 × 7700 ÷ 7），**不是** 0.15 × 7700 ÷ 7 = 165。
+   *
+   * 消费方（UI / MCP / API）**必须直接读本字段**来展示「每周目标减重」，**不要自己重算** ——
+   * 自己重算必然得到未收窄的值，从而与紧邻展示的「原始缺口」乘不出彼此，
+   * 这是同一个概念两份实现、直接违反 NFR-11（每个展示数字必须有唯一口径真源）。
+   * 本项目已因此类复制发生过四次口径分裂事故，请勿再抄一遍公式。
+   *
+   * 与 `weeklyLossEffectiveKg` 的区别：本字段是**计划侧**目标速度（taper 后、尚未被
+   * 30% 缺口上限截断、也未经安全下限钳制）；`weeklyLossEffectiveKg` 是**结果侧**按最终
+   * 摄入反推的实际周减重。两者含义不同，可以不等。
+   */
+  weeklyLossKg: number;
   /** 按最终摄入反推的每周实际减重（2 位小数 kg） */
   weeklyLossEffectiveKg: number;
   /**
