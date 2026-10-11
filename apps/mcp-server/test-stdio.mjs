@@ -178,6 +178,68 @@ try {
     fail('explain_budget 未返回有效 intakeRecommended', phaseOne.getStderr());
   }
 
+  // -------------------------------------------------------------------------
+  // A3：taper 命中的算例（70 → 68.5 / 10 周）——「每周目标减重」必须与「原始缺口」同源
+  //
+  // 为什么必须钉住：改前这一行用本地 `deriveWeeklyLossKg` 重算，拿到的是 taper **前** 的
+  // base 速度 0.15；而紧邻的「原始缺口」来自 core taper **后** 的 123.7 ——
+  // 0.15 × 7700 ÷ 7 = 165 ≠ 123.7，同一份响应里两个数字乘不出彼此（NFR-11 破损）。
+  //
+  // 断言取「两行互为一致」的反推式写法，而不是「165 不该出现」—— 后者是从没被打印过
+  // 的值，改不改都绿，等于没测。
+  // -------------------------------------------------------------------------
+  const explainTaper = await phaseOne.request('tools/call', {
+    name: 'explain_budget',
+    arguments: {
+      gender: 'female',
+      age: 28,
+      heightCm: 163,
+      weightKg: 70,
+      targetWeightKg: 68.5,
+      targetWeeks: 10,
+      activityLevel: 'light',
+    },
+  });
+  const taperPayload = payloadOf(explainTaper);
+  const taperRawText = explainTaper.result?.content?.[0]?.text ?? '';
+  const taperStep = (taperPayload.derivation ?? []).find((entry) => entry.name === '每周目标减重');
+  const taperDeficitStep = (taperPayload.derivation ?? []).find((entry) => entry.name === '原始缺口');
+  const taperDerivedPerDayKcal = ((taperStep?.value ?? 0) * 7700) / 7;
+  const taperDeficitGap = Math.abs(taperDerivedPerDayKcal - (taperDeficitStep?.value ?? 0));
+  results.explainBudgetTaper = {
+    isError: explainTaper.result?.isError === true,
+    weeklyLossKg: taperStep?.value ?? null,
+    targetDeficitRaw: taperDeficitStep?.value ?? null,
+    hint: taperStep?.hint ?? null,
+    hasPerDayKcal: taperRawText.includes('perDayKcal'),
+    deficitGap: Math.round(taperDeficitGap * 100) / 100,
+  };
+
+  // ① 必须是 core taper **后** 的 0.11，不是 taper 前的 0.15
+  if (taperStep?.value !== 0.11) {
+    fail(`taper 算例「每周目标减重」应为 core 的 0.11（不是 taper 前的 0.15），实际 ${taperStep?.value}`, phaseOne.getStderr());
+  }
+  // ② perDayKcal 已按契约删减（与「原始缺口」是同一个概念，不再给第三个精度）
+  if (taperRawText.includes('perDayKcal')) {
+    fail('explain_budget 响应里不应再出现 perDayKcal 字段', phaseOne.getStderr());
+  }
+  // ③ 同一份响应里的这两行必须互为一致：由行值反推的 kcal/日 落在 core 取整容差内
+  //    （0.11 × 7700 ÷ 7 = 121.0 vs 123.7 → 差 2.7 ≤ 6；退回 0.15 则为 165，差 41.3 → 转红）
+  if (!(taperDeficitGap <= 6)) {
+    fail(`「每周目标减重」与「原始缺口」应互为一致（反推差 ≤ 6），实际差 ${taperDeficitGap}`, phaseOne.getStderr());
+  }
+  // ④ taper 生效时要有提示，且措辞守住无负罪感红线
+  if (typeof taperStep?.hint !== 'string' || taperStep.hint.length === 0) {
+    fail('taper 生效时「每周目标减重」应带 hint', phaseOne.getStderr());
+  } else {
+    const BANNED_WORDS = ['失败', '错误', '警告', '崩溃', '必须', '一定', '坚持', '赶紧'];
+    const bannedHits = BANNED_WORDS.filter((word) => taperStep.hint.includes(word));
+    results.explainBudgetTaper.bannedWords = bannedHits;
+    if (bannedHits.length > 0) {
+      fail(`taper hint 含禁用词：${bannedHits.join('、')}（原文：${taperStep.hint}）`, phaseOne.getStderr());
+    }
+  }
+
   // 授权闸：写工具在未设 MCP_USER_ID 时必须返回可读错误（拒绝写入）
   const writeCalls = [
     { name: 'log_meal', arguments: { foodId: 1, grams: 150, mealType: 'lunch' } },
@@ -337,10 +399,126 @@ try {
       fail(`changeKg 应为 round2 的 -0.68（不是 round1 的 -0.7），实际 ${trendStats.changeKg}`, phaseThree.getStderr());
     }
 
+    // ---------------------------------------------------------------------
+    // A1：`log_weight` 写库不得取整 —— 必须与后端写路径（`WeightsService`）一致
+    //
+    // 为什么必须钉住：MCP 侧**曾经** `round1(weightKg)`，同一笔 62.345 走 API 存 62.345、
+    // 走 MCP 却存 62.3（round1 得 62.3）或 62.35（round2）—— 写侧取整是**不可逆**的精度
+    // 丢失，存量数据被抹掉真实值，且没有备份可回滚。这里同时断言响应与落库的行。
+    // ---------------------------------------------------------------------
+    const rawWeightKg = 62.345;
+    const rawWeightDate = shiftKey(todayKey, -5);
+    const weightWrite = await phaseThree.request('tools/call', {
+      name: 'log_weight',
+      arguments: { weightKg: rawWeightKg, date: rawWeightDate },
+    });
+    const weightWritePayload = payloadOf(weightWrite);
+    const storedWeight = await prisma.weightLog.findUnique({
+      where: { userId_loggedAt: { userId: probeUser.id, loggedAt: rawWeightDate } },
+      select: { weightKg: true },
+    });
+    results.logWeightPrecision = {
+      isError: weightWrite.result?.isError === true,
+      respondedKg: weightWritePayload.weightKg ?? null,
+      storedKg: storedWeight?.weightKg ?? null,
+    };
+    if (weightWrite.result?.isError === true) {
+      fail('log_weight 成功路径应可用（隔离账号）', phaseThree.getStderr());
+    }
+    if (weightWritePayload.weightKg !== rawWeightKg) {
+      fail(`log_weight 应原样返回 ${rawWeightKg}（不是 round1 的 62.3），实际 ${weightWritePayload.weightKg}`, phaseThree.getStderr());
+    }
+    if (storedWeight?.weightKg !== rawWeightKg) {
+      fail(`log_weight 落库应为 ${rawWeightKg}（后端写路径同样不取整），实际 ${storedWeight?.weightKg}`, phaseThree.getStderr());
+    }
+
+    // ---------------------------------------------------------------------
+    // A5：非法日历日期必须**拒绝**，不能静默改写成另一天
+    //
+    // 为什么必须钉住：`2026-02-31` 形状合法但日历上不存在。旧实现只验形状 → 放行，
+    // 然后被**原样写进日期键**（饮水写 `loggedDate`，是日期键字符串，不做 Date 转换，
+    // 所以并不会「自动纠正」），留下一条日历上不存在的桶：UI 永远翻不到这一天，
+    // 却会污染按日期聚合的查询；而同一输入走 API 侧是 `@IsLocalDateKey` 直接 400 拒绝。
+    // ---------------------------------------------------------------------
+    const illegalDate = '2026-02-31';
+    const illegalWrite = await phaseThree.request('tools/call', {
+      name: 'log_water',
+      arguments: { amountMl: 200, date: illegalDate },
+    });
+    const illegalPayload = payloadOf(illegalWrite);
+    // 脏数据的落点：就是 `loggedDate` 本身（不是 loggedAt —— loggedAt 是本笔的时间戳）
+    const illegalRow = await prisma.waterLog.findFirst({
+      where: { userId: probeUser.id, loggedDate: illegalDate },
+      select: { id: true },
+    });
+    results.illegalDateKey = {
+      isError: illegalWrite.result?.isError === true,
+      message: illegalPayload.error ?? null,
+      illegalRowCreated: illegalRow !== null,
+    };
+    if (illegalWrite.result?.isError !== true) {
+      fail(`log_water 传 ${illegalDate} 应被拒绝（不存在的日历日期），实际返回成功`, phaseThree.getStderr());
+    }
+    if (illegalRow !== null) {
+      fail(`log_water 传 ${illegalDate} 不应真的写成 ${illegalDate} 这一天（库里出现了该行）`, phaseThree.getStderr());
+    }
+
+    // ---------------------------------------------------------------------
+    // A2：`log_meal` 的营养换算必须走 core `scaleFoodNutrients`
+    //
+    // 为什么必须钉在边界上：主路径 `per100 × grams ÷ 100` 两种写法数值等价，只有边界不同 ——
+    // 膳食纤维 / 钠，core 用 `isPositive(...)`（**0 与负数 → null**），旧写法用 `=== null`
+    // 判断（**0 → 0**）。这里专门造一个 fiber / sodium 都是 0 的食物：
+    // 正确的结果是 **`null`**（缺失），旧写法会落一个真的 `0` —— 而 0 会被读侧当成真值
+    // 参与求和，正是本项目踩过两次的「缺失被算成达标」事故。
+    // ---------------------------------------------------------------------
+    const zeroMicroFood = await prisma.foodItem.create({
+      data: {
+        name: 'mcp-scale-boundary-probe',
+        category: 'other',
+        kcalPer100g: 100,
+        proteinGPer100g: 5,
+        fatGPer100g: 2,
+        carbGPer100g: 10,
+        fiberGPer100g: 0,
+        sodiumMgPer100g: 0,
+        source: 'user_custom',
+        createdByUserId: probeUser.id,
+      },
+    });
+    const mealWrite = await phaseThree.request('tools/call', {
+      name: 'log_meal',
+      arguments: { foodId: zeroMicroFood.id, grams: 100, mealType: 'lunch' },
+    });
+    const mealWritePayload = payloadOf(mealWrite);
+    const storedMeal = await prisma.mealLog.findUnique({
+      where: { id: Number(mealWritePayload.entryId ?? 0) },
+      select: { kcal: true, fiberG: true, sodiumMg: true },
+    });
+    results.logMealScaleBoundary = {
+      isError: mealWrite.result?.isError === true,
+      entryId: mealWritePayload.entryId ?? null,
+      kcal: storedMeal?.kcal ?? null,
+      fiberG: storedMeal?.fiberG ?? null,
+      sodiumMg: storedMeal?.sodiumMg ?? null,
+    };
+    if (mealWrite.result?.isError === true) {
+      fail('log_meal 成功路径应可用（隔离账号 + 本人自定义食物）', phaseThree.getStderr());
+    }
+    if (storedMeal?.fiberG !== null) {
+      fail(`log_meal 对 fiberGPer100g=0 的食物应落 null（core 的 isPositive 口径），实际 ${storedMeal?.fiberG}`, phaseThree.getStderr());
+    }
+    if (storedMeal?.sodiumMg !== null) {
+      fail(`log_meal 对 sodiumMgPer100g=0 的食物应落 null，实际 ${storedMeal?.sodiumMg}`, phaseThree.getStderr());
+    }
+
     phaseThree.child.kill();
   } finally {
-    // 清理：先删体重记录再删账号，确保脚本可重复运行且不残留
+    // 清理：先删依赖行再删账号，确保脚本可重复运行且不残留
     await prisma.weightLog.deleteMany({ where: { userId: probeUser.id } });
+    await prisma.waterLog.deleteMany({ where: { userId: probeUser.id } });
+    await prisma.mealLog.deleteMany({ where: { userId: probeUser.id } });
+    await prisma.foodItem.deleteMany({ where: { createdByUserId: probeUser.id } });
     await prisma.user.delete({ where: { id: probeUser.id } });
     results.weightTrendCleanup = `已删除隔离账号 ${TREND_PROBE_EMAIL} 及其 ${probeWeightKgByDate.size} 条体重`;
   }

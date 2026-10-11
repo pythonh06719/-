@@ -41,16 +41,17 @@ import { PrismaClient } from '@prisma/client';
 import {
   ACTIVITY_FACTORS,
   DEFICIT_CAP_RATIO,
-  KCAL_PER_KG_FAT,
   SAFETY_FLOOR,
+  TAPER_REMAINING_KG,
   ageFromBirthDate,
   buildSafetyMessages,
   calcExerciseKcal,
   computeTrendStats,
-  deriveWeeklyLossKg,
   findMetActivity,
   MET_ACTIVITY_LIBRARY,
+  isLocalDateKey,
   round1,
+  scaleFoodNutrients,
   safeCalcCalorieBudget,
   toLocalDateKey,
 } from '@qsh/core';
@@ -196,8 +197,20 @@ function optionalDateKey(args: Record<string, unknown>, key: string): string {
   if (raw === undefined || raw === null || raw === '') {
     return toLocalDateKey(new Date());
   }
-  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    throw new ToolInputError(`参数 ${key} 必须是 YYYY-MM-DD 格式的日期`);
+  /**
+   * 判据真源在 `@qsh/core` 的 **`isLocalDateKey`**（校验位数 **且** 日历真实性）。
+   *
+   * ⚠️ 这里**曾经**只用裸正则 `/^\d{4}-\d{2}-\d{2}$/` 验**形状**：`2026-02-31` 会放行，
+   * 然后被**原样写进日期键**——`WeightLog.loggedAt` / `WaterLog.loggedDate` / `MealLog.loggedDate`
+   * 存的都是日期键字符串，不带任何 Date 转换，所以不会「自动纠正」，只会留下一条
+   * `2026-02-31` 这种**日历上不存在的桶**。后果是这条记录永久不可见（UI 没有这一天可翻），
+   * 却会污染按日期聚合的查询；而同一个输入走 API 侧是 `@IsLocalDateKey` 直接 400 拒绝。
+   * 这正是本项目历史上反复出现的「同一概念多份正则」的典型形态。
+   *
+   * 现在与后端 `@IsLocalDateKey` 共用同一判据，非法输入一律**拒绝**，绝不静默改写。
+   */
+  if (typeof raw !== 'string' || !isLocalDateKey(raw)) {
+    throw new ToolInputError(`参数 ${key} 必须是 YYYY-MM-DD 格式的真实日期`);
   }
   return raw;
 }
@@ -480,7 +493,6 @@ const tools: Record<string, ToolDef> = {
         throw new ToolInputError('入参未通过校验', { ok: false, errors: safe.errors });
       }
       const budget = safe.result;
-      const weeklyLossKg = deriveWeeklyLossKg(weightKg, targetWeightKg, targetWeeks);
       const factor = ACTIVITY_FACTORS[activityLevel];
 
       return {
@@ -498,7 +510,29 @@ const tools: Record<string, ToolDef> = {
           { name: 'BMR（基础代谢）', value: budget.bmr, unit: 'kcal' },
           { name: '活动系数', activityLevel, factor },
           { name: 'TDEE（每日总消耗）', value: budget.tdee, unit: 'kcal' },
-          { name: '每周目标减重', value: round1(weeklyLossKg), unit: 'kg/周', perDayKcal: Math.round((weeklyLossKg * KCAL_PER_KG_FAT) / 7) },
+          /**
+           * 直接取 core 结果里 taper **后** 的 `budget.weeklyLossKg`（NFR-11 唯一口径真源），
+           * 与下一行「原始缺口」同源。
+           *
+           * ⚠️ 这里**曾经**本地 `deriveWeeklyLossKg` 重算，拿到的是 taper **前** 的 base 速度：
+           * 收尾阶段（距目标 ≤ `TAPER_REMAINING_KG`）会出现「0.15 kg/周」配「123.7 kcal/日」
+           * 这种乘不出彼此的自相矛盾，用户照着工具自己验算 0.15×7700÷7=165≠123.7。
+           * 更隐蔽的一点：本地推导只认 `targetWeeks`，**忽略显式传入的每周减重目标**。
+           *
+           * 原 `perDayKcal` 字段已删除：它与下一行「原始缺口」是**同一个概念**，
+           * 留着只会多出第三个精度（`Math.round` 整数 vs core 的 `round1` 一位小数）。
+           * 项目既定原则 —— 「选择不展示」比新增解释更省事。
+           */
+          {
+            name: '每周目标减重',
+            // core 已是 round2（`trend-stats` 一贯口径），**不要**再压一层 round1 ——
+            // 那会把 0.11 变成 0.1，反而制造出第三个精度。
+            value: budget.weeklyLossKg,
+            unit: 'kg/周',
+            ...(budget.taperApplied
+              ? { hint: `距目标不足 ${TAPER_REMAINING_KG} kg，已自动放缓` }
+              : {}),
+          },
           { name: '原始缺口', value: budget.targetDeficitRaw, unit: 'kcal/日' },
           { name: '缺口上限（TDEE×30%）', value: budget.deficitCap, unit: 'kcal/日' },
           { name: '有效缺口 = min(原始, 上限)', value: budget.effectiveDeficit, unit: 'kcal/日', capped: budget.isDeficitCapped },
@@ -733,7 +767,17 @@ const tools: Record<string, ToolDef> = {
         throw new ToolInputError(`食物 id=${foodId} 不存在或不可见，请先用 search_food 查 id`);
       }
 
-      const factor = grams / 100;
+      /**
+       * 按克数换算营养取自 `@qsh/core` 的 **`scaleFoodNutrients`**（NFR-11 唯一口径真源），
+       * 与后端 `MealsService` 的四处写路径（`:191` / `:460` / `:783` / `:849`）同一份实现。
+       *
+       * ⚠️ 这里**曾经**是手写的 `const factor = grams / 100` + 六个 `round1(per100 × factor)`。
+       * 主路径数值恰好等价，但**边界真不一致**：膳食纤维 / 钠缺失与否，core 用 `isPositive(...)`
+       * （**0 与负数 → `null`**），旧写法用 `=== null` 判断（**0 → `0`**）。同一个
+       * `fiberGPer100g = 0` 的食物，API 落库 `null`、MCP 落库 `0` —— 读侧把 0 当真值参与求和，
+       * 正是本项目踩过两次的「缺失被算成达标」那类事故。
+       */
+      const scaled = scaleFoodNutrients(food, grams);
       const row = await prisma.mealLog.create({
         data: {
           userId,
@@ -744,12 +788,12 @@ const tools: Record<string, ToolDef> = {
           grams: round1(grams),
           servingUnit: null,
           servingQty: null,
-          kcal: round1(food.kcalPer100g * factor),
-          proteinG: round1(food.proteinGPer100g * factor),
-          fatG: round1(food.fatGPer100g * factor),
-          carbG: round1(food.carbGPer100g * factor),
-          fiberG: food.fiberGPer100g === null ? null : round1(food.fiberGPer100g * factor),
-          sodiumMg: food.sodiumMgPer100g === null ? null : round1(food.sodiumMgPer100g * factor),
+          kcal: scaled.kcal,
+          proteinG: scaled.proteinG,
+          fatG: scaled.fatG,
+          carbG: scaled.carbG,
+          fiberG: scaled.fiberG,
+          sodiumMg: scaled.sodiumMg,
           source: 'ai',
         },
       });
@@ -832,10 +876,19 @@ const tools: Record<string, ToolDef> = {
       const date = optionalDateKey(args, 'date');
       const note = optionalNote(args, 'note');
 
+      /**
+       * ⚠️ 写库**不取整**，与后端 `WeightsService` 的写路径一致
+       * （`apps/api/src/weights/weights.service.ts` 的 create/update 都是 `weightKg: dto.weightKg`）。
+       *
+       * 这里**曾经**是 `round1(weightKg)`：同一笔 59.876 走 API 存 59.876、走 MCP 却存 59.9。
+       * 因为 API 侧的 DTO 只有 `@Min(0.1) @Max(499.9)` 而无精度约束，读侧也刚统一到 round2 显示，
+       * 写侧再来一层 round1 就成了**不可逆的精度丢失**——存量数据被抹掉真实值且无备份可回滚。
+       * `packages/core/src/weight/trend-stats.ts` 的注释已明确记载「刻意不改写入路径」。
+       */
       const row = await prisma.weightLog.upsert({
         where: { userId_loggedAt: { userId, loggedAt: date } },
-        create: { userId, loggedAt: date, weightKg: round1(weightKg), note, source: 'manual' },
-        update: { weightKg: round1(weightKg), note, updatedAt: new Date().toISOString() },
+        create: { userId, loggedAt: date, weightKg, note, source: 'manual' },
+        update: { weightKg, note, updatedAt: new Date().toISOString() },
       });
 
       return {
