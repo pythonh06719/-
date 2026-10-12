@@ -37,6 +37,14 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api');
   /**
+   * Render 单层反代：信任 1 跳，`req.ip` 才是真实客户端 IP —— IP 维度限流计数键的前提
+   * （上线前全检 F-007）。不开时 `req.ip` 恒为代理地址，同出口的所有用户共用一个限流桶，
+   * 攻击者打满 5 次即使全部真实用户收不到验证码。
+   * ⚠️ 禁用 `true`：信任整条 `X-Forwarded-For` 链等于允许客户端伪造头、每请求轮换限流桶，
+   *    比不修更糟。`1` = 只信最近一跳（Render 的代理），客户端自带的 XFF 头不被采信。
+   */
+  (app.getHttpAdapter().getInstance() as import('express').Express).set('trust proxy', 1);
+  /**
    * `helmet()` 的默认 CSP 是 `script-src 'self'` —— 会**连带拦掉** `apps/web/index.html` 里那段
    * 「首屏前预置深色主题」的内联脚本（它的唯一作用就是防深色用户看到浅色闪一下）。
    * 单 URL 部署下 HTML 由本服务伺服，CSP 因此生效；dev 模式 HTML 走 Vite，故本地开发看不出来。

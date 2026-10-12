@@ -80,6 +80,7 @@ model AuthVerificationCode {
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
   consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  failedAttempts Int   @default(0) @map("failed_attempts")
 
   @@index([email, purpose, expiresAt], map: "ix_avc_email_purpose")
   @@map("auth_verification_codes")

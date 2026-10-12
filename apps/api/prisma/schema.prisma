@@ -71,6 +71,7 @@ model AuthVerificationCode {
   expiresAt  String  @map("expires_at") // ISO8601 UTC
   consumedAt String? @map("consumed_at") // 消费即置位（一次性）
   createdAt  String  @default(dbgenerated("(strftime('%Y-%m-%dT%H:%M:%fZ','now'))")) @map("created_at")
+  failedAttempts Int @default(0) @map("failed_attempts") // 连续校验失败次数；达上限即作废该码（防爆破，F-002）
 
   @@index([email, purpose, expiresAt], map: "ix_avc_email_purpose")
   @@map("auth_verification_codes")

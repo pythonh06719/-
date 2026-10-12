@@ -16,6 +16,16 @@ import { PrismaService } from '../prisma/prisma.service';
 /** 验证码哈希成本因子（验证码为短生命周期低熵串，取 10 兼顾安全与响应速度）。 */
 const CODE_HASH_COST = 10;
 
+/**
+ * 同一验证码连续校验失败的上限：达到即作废该码（上线前全检 F-002 防爆破的第二层）。
+ *
+ * 与路由限流（email+IP 复合键 5 次 / 分钟）互补：限流按「邮箱+IP」计数，
+ * 挡不住分布式多 IP 打同一个邮箱；本计数器存在**码记录行**上，对单个码的
+ * 失败次数是全局限流的，与来源 IP 无关。达到上限只作废当期这一条
+ * （`consumedAt` 置位），之后新取的码有独立的 `failedAttempts`，不受影响。
+ */
+const MAX_CODE_VERIFY_ATTEMPTS = 5;
+
 /** `/auth/send-code` 的返回体。 */
 export interface SendCodeResult {
   /** 固定 `true`（无论邮箱是否存在，避免账号枚举） */
@@ -122,6 +132,7 @@ export class AuthService {
 
     const matched = await compare(code, record.codeHash);
     if (!matched) {
+      await this.registerFailedAttempt(record.id);
       throw new ApiException(400, ERROR_CODES.AUTH_CODE_INVALID, '验证码不正确，请重新获取');
     }
 
@@ -149,6 +160,26 @@ export class AuthService {
     }
 
     return this.issueSession(userRow.id, userRow.email, toUser(userRow));
+  }
+
+  /**
+   * 登记一次校验失败：失败计数 +1，达到上限立即作废该验证码。
+   *
+   * 只作用于**当期这一条**未消费码（按 id 精确更新）；`requestCode` 的
+   * 「新码到、旧码废」逻辑与 TTL / expiry 检查顺序均不受影响。
+   */
+  private async registerFailedAttempt(codeId: number): Promise<void> {
+    const updated = await this.prisma.authVerificationCode.update({
+      where: { id: codeId },
+      data: { failedAttempts: { increment: 1 } },
+      select: { failedAttempts: true },
+    });
+    if (updated.failedAttempts >= MAX_CODE_VERIFY_ATTEMPTS) {
+      await this.prisma.authVerificationCode.update({
+        where: { id: codeId },
+        data: { consumedAt: new Date().toISOString() },
+      });
+    }
   }
 
   /**
