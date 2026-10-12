@@ -512,6 +512,103 @@ try {
       fail(`log_meal 对 sodiumMgPer100g=0 的食物应落 null，实际 ${storedMeal?.sodiumMg}`, phaseThree.getStderr());
     }
 
+    // ---------------------------------------------------------------------
+    // A4：`get_daily_summary` 的预算输入必须带 `weeklyLossKg`（显式目标优先）
+    //
+    // 为什么必须钉住：改前 `safeCalcCalorieBudget` 的入参漏了 `weeklyLossKg`
+    // （与 `macroRatio`）—— 用户在 App 里 `PATCH /goals` 设过显式每周减重目标后，
+    // MCP 的当日汇总会**静默改用推导值**算预算，同一账号两个出口给出不同数字。
+    // 判据真源：`apps/api/src/users/budget.service.ts` 的 `buildInput()`。
+    //
+    // 算例（全部取整数，杜绝浮点噪声）：
+    //   男 / 30 岁 / 180cm / 80kg / sedentary → BMR = 10×80+6.25×180−5×30+5 = 1780，
+    //   TDEE = 1780 × 1.2 = 2136；
+    //   显式 weeklyLossKg = 0.2 → 缺口 0.2×7700÷7 = 220 → 摄入 2136−220 = 1916；
+    //   推导 weeklyLossKg = (80−75)÷10 = 0.5 → 缺口 550 → 摄入 2136−550 = 1586。
+    // 该算例**刻意不触发**缺口上限（2136×30% = 640.8 > 550）与安全下限（1500 < 1586），
+    // 也不触发 taper（剩余 5kg > TAPER_REMAINING_KG 2kg）—— 否则「摄入 ≠ TDEE−缺口」，
+    // 自洽断言会被保护机制正当转红，失去分辨力。
+    // ---------------------------------------------------------------------
+    await prisma.userProfile.create({
+      data: {
+        userId: probeUser.id,
+        gender: 'male',
+        birthDate: `${new Date().getFullYear() - 30}-01-15`, // 30 周岁（本年度内恒为 30）
+        heightCm: 180,
+        activityLevel: 'sedentary',
+      },
+    });
+    // start 80 → target 75 / 10 周 → 推导值 0.5；显式设 0.2（与推导值不同才能分辨走了哪条路）
+    await prisma.userGoal.create({
+      data: {
+        userId: probeUser.id,
+        startWeightKg: 80,
+        targetWeightKg: 75,
+        targetWeeks: 10,
+        weeklyLossKg: 0.2,
+      },
+    });
+
+    const summaryExplicit = await phaseThree.request('tools/call', { name: 'get_daily_summary', arguments: {} });
+    const explicitPayload = payloadOf(summaryExplicit);
+    // 自洽判据（用响应里的 tdee 反推）：缺口 = weeklyLossKg × 7700 ÷ 7（core 的 KCAL_PER_KG_FAT）。
+    // 容差 6 kcal：bmr/tdee/intake 是 core 对未舍入浮点的 Math.round，weeklyLossKg 是 round2，
+    // 用响应（已舍入）值反推允许几位小数级的漂移；本算例三项均为整数，实际差为 0。
+    const explicitExpectedDeficit = (explicitPayload.weeklyLossKg ?? 0) * 7700 / 7;
+    const explicitIntakeGap = Math.abs(
+      (explicitPayload.intakeRecommended ?? 0) - ((explicitPayload.tdee ?? 0) - explicitExpectedDeficit),
+    );
+    results.dailySummaryWeeklyLoss = {
+      isError: summaryExplicit.result?.isError === true,
+      weeklyLossKg: explicitPayload.weeklyLossKg ?? null,
+      taperApplied: explicitPayload.taperApplied ?? null,
+      bmr: explicitPayload.bmr ?? null,
+      tdee: explicitPayload.tdee ?? null,
+      intakeRecommended: explicitPayload.intakeRecommended ?? null,
+      intakeGap: Math.round(explicitIntakeGap * 100) / 100,
+    };
+    if (summaryExplicit.result?.isError === true) {
+      fail('get_daily_summary 应成功（隔离账号 + 引导资料）', phaseThree.getStderr());
+    }
+    // ① 必须是显式的 0.2，不是推导的 0.5（修复前必然是 0.5 或字段缺失）
+    if (explicitPayload.weeklyLossKg !== 0.2) {
+      fail(`显式 weeklyLossKg=0.2 时应返回 0.2（不是推导值 0.5），实际 ${explicitPayload.weeklyLossKg}`, phaseThree.getStderr());
+    }
+    // ② taper 未命中（剩余 5kg > 2kg），标志位必须为 false
+    if (explicitPayload.taperApplied !== false) {
+      fail(`剩余 5kg 不应触发 taper，实际 taperApplied=${explicitPayload.taperApplied}`, phaseThree.getStderr());
+    }
+    // ③ 摄入建议与「TDEE − 缺口」自洽（同一份响应里的数字必须乘得出彼此）
+    if (!(explicitIntakeGap <= 6)) {
+      fail(`intakeRecommended 应与 tdee − weeklyLossKg×7700÷7 自洽（差 ≤ 6），实际差 ${explicitIntakeGap}`, phaseThree.getStderr());
+    }
+
+    // 配对钉「不误伤合法回退」：weeklyLossKg = 0 → 必须走推导值 0.5。
+    // （`user_goals` 是 1:1 —— `userId` 即主键，同一账号建不出第二条 goal，
+    //  故用状态翻转表达任务里的「再建一个 goal」；0 是 api `updateProfile` 也会落库的合法值。）
+    await prisma.userGoal.update({ where: { userId: probeUser.id }, data: { weeklyLossKg: 0 } });
+    const summaryDerived = await phaseThree.request('tools/call', { name: 'get_daily_summary', arguments: {} });
+    const derivedPayload = payloadOf(summaryDerived);
+    const derivedExpectedDeficit = (derivedPayload.weeklyLossKg ?? 0) * 7700 / 7;
+    const derivedIntakeGap = Math.abs(
+      (derivedPayload.intakeRecommended ?? 0) - ((derivedPayload.tdee ?? 0) - derivedExpectedDeficit),
+    );
+    results.dailySummaryWeeklyLossDerived = {
+      isError: summaryDerived.result?.isError === true,
+      weeklyLossKg: derivedPayload.weeklyLossKg ?? null,
+      intakeRecommended: derivedPayload.intakeRecommended ?? null,
+      intakeGap: Math.round(derivedIntakeGap * 100) / 100,
+    };
+    if (summaryDerived.result?.isError === true) {
+      fail('get_daily_summary（推导值算例）应成功', phaseThree.getStderr());
+    }
+    if (derivedPayload.weeklyLossKg !== 0.5) {
+      fail(`weeklyLossKg=0 时应回退推导值 0.5，实际 ${derivedPayload.weeklyLossKg}`, phaseThree.getStderr());
+    }
+    if (!(derivedIntakeGap <= 6)) {
+      fail(`推导值算例的 intakeRecommended 应与 tdee − 0.5×7700÷7 自洽（差 ≤ 6），实际差 ${derivedIntakeGap}`, phaseThree.getStderr());
+    }
+
     phaseThree.child.kill();
   } finally {
     // 清理：先删依赖行再删账号，确保脚本可重复运行且不残留
@@ -519,6 +616,9 @@ try {
     await prisma.waterLog.deleteMany({ where: { userId: probeUser.id } });
     await prisma.mealLog.deleteMany({ where: { userId: probeUser.id } });
     await prisma.foodItem.deleteMany({ where: { createdByUserId: probeUser.id } });
+    // A4 新建的引导资料（无依赖行，删账号前删掉更直白；DB 层本是 ON DELETE CASCADE）
+    await prisma.userGoal.deleteMany({ where: { userId: probeUser.id } });
+    await prisma.userProfile.deleteMany({ where: { userId: probeUser.id } });
     await prisma.user.delete({ where: { id: probeUser.id } });
     results.weightTrendCleanup = `已删除隔离账号 ${TREND_PROBE_EMAIL} 及其 ${probeWeightKgByDate.size} 条体重`;
   }

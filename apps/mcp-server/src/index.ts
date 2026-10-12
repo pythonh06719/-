@@ -40,6 +40,7 @@ import { createInterface } from 'node:readline';
 import { PrismaClient } from '@prisma/client';
 import {
   ACTIVITY_FACTORS,
+  DEFAULT_MACRO_RATIO,
   DEFICIT_CAP_RATIO,
   SAFETY_FLOOR,
   TAPER_REMAINING_KG,
@@ -55,7 +56,7 @@ import {
   safeCalcCalorieBudget,
   toLocalDateKey,
 } from '@qsh/core';
-import type { ActivityLevel, Gender } from '@qsh/core';
+import type { ActivityLevel, Gender, MacroRatio } from '@qsh/core';
 
 const prisma = new PrismaClient();
 
@@ -240,6 +241,41 @@ function shiftDateKey(dateKey: string, deltaDays: number): string {
   const date = new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1);
   date.setDate(date.getDate() + deltaDays);
   return toLocalDateKey(date);
+}
+
+/**
+ * 解析 `user_goals.macro_ratio`（DB 列是 JSON **字符串**）→ 引擎入参对象。
+ *
+ * 判据真源在 api 的 `apps/api/src/common/mappers/entity.mapper.ts` 的 `parseMacroRatio`：
+ * `loadProfileGoalSettings` 先用 `toUserGoal` 把行解析成 `macroRatio: MacroRatio` 对象，
+ * 再喂给 `BudgetService.buildInput` —— **api 传进 core 的从来不是原始字符串**。
+ * mcp 不允许跨 app import，故按同一口径逐行照抄；解析失败 / 非对象 → 回退 core 的
+ * `DEFAULT_MACRO_RATIO`（与 api 的失败回退一致）。
+ *
+ * ⚠️ 不能把 `goal.macroRatio` 原样（字符串）传给 `safeCalcCalorieBudget`：
+ * `CalorieInput.macroRatio` 的类型是 `MacroRatio` 对象，且 core 校验会解构
+ * `{ protein, fat, carb }` —— 字符串会让三者全为 `undefined`，触发
+ * `E_MACRO_SUM` 硬错误（`safe.ok === false` → 整块预算变 null）。
+ */
+function parseMacroRatio(raw: string | null): MacroRatio {
+  if (!raw) {
+    return { ...DEFAULT_MACRO_RATIO };
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const record = parsed as Record<string, unknown>;
+      const protein = Number(record.protein ?? 0);
+      const fat = Number(record.fat ?? 0);
+      const carb = Number(record.carb ?? 0);
+      if (Number.isFinite(protein) && Number.isFinite(fat) && Number.isFinite(carb)) {
+        return { protein, fat, carb };
+      }
+    }
+  } catch {
+    /* 回退默认 */
+  }
+  return { ...DEFAULT_MACRO_RATIO };
 }
 
 // ---------------------------------------------------------------------------
@@ -591,8 +627,29 @@ const tools: Record<string, ToolDef> = {
       let intakeRecommended: number | null = null;
       let bmr: number | null = null;
       let tdee: number | null = null;
+      /**
+       * NFR-11 的另一半：摄入建议数字的「速度输入」必须**可见**。
+       *
+       * `weeklyLossKg` 取 core taper **后**的值（`CalorieResult.weeklyLossKg`，
+       * 与「原始缺口」同源）；`taperApplied` 标明收尾放缓是否生效。
+       * `safe.ok` 为假时与 `intakeRecommended` 一样保持 null / false。
+       */
+      let weeklyLossKg: number | null = null;
+      let taperApplied = false;
       let budgetWarnings: unknown[] = [];
       if (profile !== null && goal !== null) {
+        /**
+         * 判据真源：`apps/api/src/users/budget.service.ts` 的 `buildInput()`
+         * （ARCHITECTURE §7 K8：预算唯一真源 = `@qsh/core`，各端只做组装）。
+         *
+         * ⚠️ 这里**曾经**漏传 `weeklyLossKg` 与 `macroRatio`：用户在 App 里
+         * `PATCH /goals` 设过显式每周减重目标后，MCP 的当日汇总会**静默改用
+         * 推导值**（`(startWeightKg − targetWeightKg) ÷ targetWeeks`）算预算 ——
+         * 同一账号两个出口给出不同数字（NFR-11 破损）。
+         *
+         * 夹紧方式与 `buildInput` 逐字一致：显式目标优先（`> 0` 才采用），
+         * 否则传 `undefined` 让引擎自己按推导值算（合法回退，勿误伤）。
+         */
         const safe = safeCalcCalorieBudget({
           gender: profile.gender as Gender,
           age: ageFromBirthDate(profile.birthDate, new Date()),
@@ -601,11 +658,15 @@ const tools: Record<string, ToolDef> = {
           targetWeightKg: goal.targetWeightKg,
           targetWeeks: goal.targetWeeks,
           activityLevel: profile.activityLevel as ActivityLevel,
+          weeklyLossKg: goal.weeklyLossKg > 0 ? goal.weeklyLossKg : undefined,
+          macroRatio: parseMacroRatio(goal.macroRatio),
         });
         if (safe.ok) {
           intakeRecommended = safe.result.intakeRecommended;
           bmr = safe.result.bmr;
           tdee = safe.result.tdee;
+          weeklyLossKg = safe.result.weeklyLossKg;
+          taperApplied = safe.result.taperApplied;
           budgetWarnings = safe.result.warnings;
         }
       }
@@ -623,6 +684,9 @@ const tools: Record<string, ToolDef> = {
         intakeRecommended,
         bmr,
         tdee,
+        // 摄入建议的「速度输入」（NFR-11）：taper 后的每周目标减重 + 是否触发 taper
+        weeklyLossKg,
+        taperApplied,
         intakeKcal,
         burnedKcal,
         remainingKcal,
