@@ -663,6 +663,51 @@ try {
     },
   });
 
+  // A7 排序探针（创建顺序即 id 顺序，全部挂在本账号下；关键词「排序探针」已确认全库 0 命中，
+  // 且刻意避开 A6 探针食物的 token「寇豆码」—— 否则它会以更小的 id 同占 prefix 档，
+  // 把「饭团排第一」的断言搅掉）：
+  //   ① 蛋炒饭排序探针（先建，id 最小）—— 关键词为 substring 命中（rank 1）；
+  //   ② 排序探针饭团（后建，id 更大）—— 关键词为 prefix 命中（rank 0）；
+  //   ③ 菜饭排序探针（最后建，id 最大）—— 与 ① 同为 substring 命中（rank 1）。
+  const rankSubFirst = await prisma.foodItem.create({
+    data: {
+      name: '蛋炒饭排序探针',
+      category: 'other',
+      kcalPer100g: 150,
+      source: 'user_custom',
+      createdByUserId: searchProbe.id,
+    },
+  });
+  const rankPrefixSecond = await prisma.foodItem.create({
+    data: {
+      name: '排序探针饭团',
+      category: 'other',
+      kcalPer100g: 160,
+      source: 'user_custom',
+      createdByUserId: searchProbe.id,
+    },
+  });
+  const rankSubThird = await prisma.foodItem.create({
+    data: {
+      name: '菜饭排序探针',
+      category: 'other',
+      kcalPer100g: 110,
+      source: 'user_custom',
+      createdByUserId: searchProbe.id,
+    },
+  });
+
+  // A7：区分词探针（内置库已有同名的 id=1768，本账号再建一条，按 id 精确断言）
+  const qualifierFood = await prisma.foodItem.create({
+    data: {
+      name: '蘑菇(干)',
+      category: 'other',
+      kcalPer100g: 295,
+      source: 'user_custom',
+      createdByUserId: searchProbe.id,
+    },
+  });
+
   try {
     const phaseFour = startServer({ ...baseEnv, MCP_USER_ID: String(searchProbe.id) });
     await phaseFour.handshake();
@@ -724,6 +769,83 @@ try {
       fail(`他人账号搜「寇豆码探针」应零命中，实际 found=${otherSearchPayload.found}`, phaseFourOther.getStderr());
     }
     phaseFourOther.child.kill();
+
+    // ---------------------------------------------------------------------
+    // A7①：相关度排序 —— prefix 压过 substring（尽管 id 更大）；同档按 id 升序。
+    // 判据真源：core `rankFoodSearch` / `pageFoodSearch`（与 `GET /api/foods/search`
+    // 的 searchRanked 同一份纯函数）；修复前是 `isVerified desc, id asc`（= 入库序）。
+    // ---------------------------------------------------------------------
+    const rankSearch = await phaseFour.request('tools/call', {
+      name: 'search_food',
+      arguments: { query: '排序探针', limit: 10 },
+    });
+    const rankPayload = payloadOf(rankSearch);
+    const rankItems = rankPayload.items ?? [];
+    const idxPrefix = rankItems.findIndex((item) => item.id === rankPrefixSecond.id);
+    const idxSubFirst = rankItems.findIndex((item) => item.id === rankSubFirst.id);
+    const idxSubThird = rankItems.findIndex((item) => item.id === rankSubThird.id);
+    results.searchRanking = {
+      isError: rankSearch.result?.isError === true,
+      found: rankPayload.found ?? null,
+      order: rankItems.map((item) => ({ id: item.id, name: item.name, matchRank: item.matchRank ?? null })),
+    };
+    if (rankSearch.result?.isError === true) {
+      fail('search_food（排序算例）应成功', phaseFour.getStderr());
+    }
+    // 三条探针都应在本页（关键词独特，无内置命中，总数恰为 3）
+    if (idxPrefix === -1 || idxSubFirst === -1 || idxSubThird === -1) {
+      fail(
+        `三条排序探针食物都应搜到，实际 prefix=${idxPrefix} subFirst=${idxSubFirst} subThird=${idxSubThird}`,
+        phaseFour.getStderr(),
+      );
+    }
+    // ① prefix 命中的「排序探针饭团」（id 更大）必须排第一 —— 修复前（入库序）会是 id 最小的「蛋炒饭排序探针」
+    if (idxPrefix !== 0) {
+      fail(
+        `prefix 命中的「排序探针饭团」应排第一（prefix 压过 substring，尽管 id 更大），实际第一是「${rankItems[0]?.name}」`,
+        phaseFour.getStderr(),
+      );
+    }
+    if (rankItems[idxPrefix]?.matchRank !== 0) {
+      fail(`「排序探针饭团」的 matchRank 应为 0（prefix），实际 ${rankItems[idxPrefix]?.matchRank}`, phaseFour.getStderr());
+    }
+    // ② 同档（substring）按 id 升序：先建的「蛋炒饭排序探针」在后建的「菜饭排序探针」之前
+    if (!(idxSubFirst < idxSubThird)) {
+      fail(
+        `同档 substring 应按 id 升序（蛋炒饭排序探针 idx=${idxSubFirst} 应在菜饭排序探针 idx=${idxSubThird} 之前）`,
+        phaseFour.getStderr(),
+      );
+    }
+    if (rankItems[idxSubFirst]?.matchRank !== 1 || rankItems[idxSubThird]?.matchRank !== 1) {
+      fail(
+        `两条 substring 探针的 matchRank 应为 1，实际 ${rankItems[idxSubFirst]?.matchRank} / ${rankItems[idxSubThird]?.matchRank}`,
+        phaseFour.getStderr(),
+      );
+    }
+
+    // ---------------------------------------------------------------------
+    // A7②：区分词标注 qualifier（core `foodQualifierLabel` 口径：`蘑菇(干)` → `干`）
+    // ---------------------------------------------------------------------
+    const qualifierSearch = await phaseFour.request('tools/call', {
+      name: 'search_food',
+      arguments: { query: '蘑菇', limit: 10 },
+    });
+    const qualifierPayload = payloadOf(qualifierSearch);
+    const qualifierHit = (qualifierPayload.items ?? []).find((item) => item.id === qualifierFood.id) ?? null;
+    results.searchQualifier = {
+      isError: qualifierSearch.result?.isError === true,
+      found: qualifierPayload.found ?? null,
+      qualifier: qualifierHit?.qualifier ?? null,
+      matchRank: qualifierHit?.matchRank ?? null,
+    };
+    if (qualifierSearch.result?.isError === true) {
+      fail('search_food（区分词算例）应成功', phaseFour.getStderr());
+    }
+    if (qualifierHit === null) {
+      fail(`「蘑菇(干)」探针食物（id=${qualifierFood.id}）应能搜到`, phaseFour.getStderr());
+    } else if (qualifierHit.qualifier !== '干') {
+      fail(`「蘑菇(干)」的 qualifier 应为「干」（core foodQualifierLabel 口径），实际 ${qualifierHit.qualifier}`, phaseFour.getStderr());
+    }
 
     phaseFour.child.kill();
   } finally {

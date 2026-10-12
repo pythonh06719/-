@@ -51,12 +51,14 @@ import {
   findMetActivity,
   MET_ACTIVITY_LIBRARY,
   isLocalDateKey,
+  pageFoodSearch,
+  rankFoodSearch,
   round1,
   scaleFoodNutrients,
   safeCalcCalorieBudget,
   toLocalDateKey,
 } from '@qsh/core';
-import type { ActivityLevel, Gender, MacroRatio } from '@qsh/core';
+import type { ActivityLevel, FoodSearchCandidate, Gender, MacroRatio } from '@qsh/core';
 
 const prisma = new PrismaClient();
 
@@ -78,6 +80,15 @@ const WEIGHT_MAX = 500;
 const WATER_ML_MIN = 50;
 const WATER_ML_MAX = 2000;
 const WATER_ML_DEFAULT = 250;
+/**
+ * 相关度排序的候选扫描上限（纵深防御，A7）。
+ *
+ * 真源在 `apps/api/src/foods/foods.util.ts` 的 `FOOD_SEARCH_RANK_SCAN_LIMIT` ——
+ * mcp 不 import api，故本地定义同名常量；**勿改数值**（改即与 api 口径分叉）。
+ * 当前食物库 1789 条（远小于此上限），整体进内存没有压力；此上限只用于堵住
+ * 「未来库膨胀到十万级 + 极宽泛关键词」时把整表读进内存的情况。
+ */
+const FOOD_SEARCH_RANK_SCAN_LIMIT = 5000;
 
 // ---------------------------------------------------------------------------
 // 输入校验（非法值 → 可读错误，不静默转换）
@@ -310,6 +321,25 @@ function keywordWhere(keyword: string) {
   };
 }
 
+/**
+ * 解析 `food_items.aliases`（DB 列是 JSON **字符串**）→ 字符串数组（A7）。
+ *
+ * api 侧对应 `apps/api/src/common/mappers/entity.mapper.ts` 的 `parseJsonStringArray`
+ * （跨 app 不可 import，照抄同一口径）；`null` / 非法 JSON / 非数组 → `[]`。
+ * core 的 `rankFoodSearch` 只接受解析后的数组（`FoodSearchCandidate.aliases`）。
+ */
+function parseAliases(raw: string | null): string[] {
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 interface ToolResult {
   content: Array<{ type: string; text: string }>;
   isError?: boolean;
@@ -321,6 +351,26 @@ interface ToolDef {
   /** 是否为写操作（仅用于文档与启动日志，不改变协议形状）。 */
   write?: boolean;
   run(args: Record<string, unknown>): Promise<ToolResult>;
+}
+
+/**
+ * `search_food` 的单条返回（A7 起与 api 的 `FoodSearchHit` 对齐）。
+ *
+ * - `qualifier`：跨来源同物异名的**区分词**标注（core `foodQualifierLabel` 口径，
+ *   如 `蘑菇(干)` → `干`；无区分词时为 `null`）——不合并同名，交给用户自己分辨；
+ * - `matchRank`：相关度档位（core `ORDER_RANK`：prefix=0 / substring=1 / alias=2）。
+ */
+interface SearchFoodItem {
+  id: number;
+  name: string;
+  category: string;
+  kcalPer100g: number;
+  proteinG: number;
+  fatG: number;
+  carbG: number;
+  source: string;
+  qualifier: string | null;
+  matchRank: number;
 }
 
 /**
@@ -379,21 +429,75 @@ const tools: Record<string, ToolDef> = {
        */
       const userId = resolveUserId('read');
       await ensureUser(userId);
-      const rows = await prisma.foodItem.findMany({
-        where: { AND: [visibleFoodWhere(userId), keywordWhere(query)] },
-        orderBy: [{ isVerified: 'desc' }, { id: 'asc' }],
-        take: limit,
+
+      const where = { AND: [visibleFoodWhere(userId), keywordWhere(query)] };
+
+      /**
+       * 严格镜像 api `FoodsService.searchRanked()`（`apps/api/src/foods/foods.service.ts:178-234`）的四步：
+       * ① 最小投影取候选（排序只需要身份字段）+ 扫描上限；
+       * ② core 纯函数 `rankFoodSearch` 排序（相关度 prefix > substring > alias，同档 id 升序）；
+       * ③ `pageFoodSearch` 取本页 id；
+       * ④ 一次 `id in` 回表取完整行，按排序顺序组装响应。
+       *
+       * ⚠️ 改前是 `orderBy: [{ isVerified: 'desc' }, { id: 'asc' }]` —— `is_verified`
+       * 全库为 0，这就是**入库顺序**，与前端实际口径（`GET /api/foods/search`）不一致：
+       * 同一个关键词，MCP 与 App 给出不同顺序（NFR-11 破损）。
+       * 🔴 红线：绝不按任何营养字段排序 —— `rankFoodSearch` 只接收身份字段
+       * （id / name / namePinyin / aliases），从接口上就不存在按营养排序的可能。
+       */
+      // ① 候选：最小投影 + id 升序 + 扫描上限
+      const candidateRows = await prisma.foodItem.findMany({
+        where,
+        select: { id: true, name: true, namePinyin: true, aliases: true },
+        orderBy: { id: 'asc' },
+        take: FOOD_SEARCH_RANK_SCAN_LIMIT,
       });
-      const items = rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        category: row.category,
-        kcalPer100g: row.kcalPer100g,
-        proteinG: row.proteinGPer100g,
-        fatG: row.fatGPer100g,
-        carbG: row.carbGPer100g,
-        source: row.source,
-      }));
+
+      // ② core 排序（DB 的 aliases 是 JSON 字符串列，core 没有解析器 → 本地 parseAliases）
+      const ranked = rankFoodSearch(
+        candidateRows.map(
+          (row): FoodSearchCandidate => ({
+            id: row.id,
+            name: row.name,
+            namePinyin: row.namePinyin,
+            aliases: parseAliases(row.aliases),
+          }),
+        ),
+        query,
+      );
+      const hitById = new Map(ranked.map((hit) => [hit.id, hit]));
+      const pageIds = pageFoodSearch(ranked, 1, limit);
+
+      // ③ 回表取完整行（where 再并 visibleFoodWhere，纵深防御，照 api L219）
+      const fullRows =
+        pageIds.length === 0
+          ? []
+          : await prisma.foodItem.findMany({
+              where: { id: { in: pageIds }, ...visibleFoodWhere(userId) },
+            });
+      const rowById = new Map(fullRows.map((row) => [row.id, row]));
+
+      // ④ 按排序顺序组装（qualifier / matchRank 与 api 的 FoodSearchHit 对齐）
+      const items: SearchFoodItem[] = [];
+      for (const id of pageIds) {
+        const row = rowById.get(id);
+        const hit = hitById.get(id);
+        if (row === undefined || hit === undefined) {
+          continue; // 理论上不会发生（候选与回表同一 where）
+        }
+        items.push({
+          id: row.id,
+          name: row.name,
+          category: row.category,
+          kcalPer100g: row.kcalPer100g,
+          proteinG: row.proteinGPer100g,
+          fatG: row.fatGPer100g,
+          carbG: row.carbGPer100g,
+          source: row.source,
+          qualifier: hit.qualifier,
+          matchRank: hit.rank,
+        });
+      }
       return { query, found: items.length, items };
     }),
   },
