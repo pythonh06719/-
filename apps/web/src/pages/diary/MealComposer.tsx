@@ -35,9 +35,7 @@ import BarcodeScanner from '@/components/common/BarcodeScanner';
 import { queryKeys } from '@/lib/queryClient';
 import {
   COPY,
-  favoriteToggleAria,
   foodCategoryAriaFor,
-  foodHistoryToggleAria,
   topFoodDaysLabel,
   topFoodsAria,
   topFoodsLastLoggedLabel,
@@ -47,7 +45,7 @@ import { formatMonthDay, isDateKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
 import SegmentedControl from '@/components/common/SegmentedControl';
-import FoodHistoryPanel from './FoodHistoryPanel';
+import FoodResultList from './FoodResultList';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
 
 /**
@@ -64,6 +62,19 @@ import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './
  * **D-5 食用历史**：每一行食物（搜索 / 最近 / 收藏 / 分类）带一个**次级**「历史」动作，
  * 展开该食物在本人记录里的**只读**日期明细（`FoodHistoryPanel`）。补上「常吃榜之外
  * 无处可查上次吃到什么时候」的缺口；详见该组件顶部的红线说明。
+ *
+ * ---
+ * **拆分台账（2026-10-12 UI 评审 P1-4）** —— 本文件曾是 1824 行单函数组件。
+ * 已拆出：`FoodResultList.tsx`（五面板共用的食物行渲染，纯展示 + 回调 props）。
+ * **留档不拆**（附理由，供后续执行者判断，不是遗忘）：
+ * - 份量确认区 / 待记清单 / 确认按钮（约 180 行）：依赖 20+ 个内部符号
+ *   （selected / grams / servingUnit / previewKcal / pendingItems / run / submitQuick /
+ *   submitBatch / sameMealMatches…），拆出需 props drilling 或 context 化，
+ *   风险与噪音高于收益；真要拆应以「提升为受控子组件 + 收敛 state 归属」为前提，
+ *   属于独立重构轮次。
+ * - 快加表单（约 114 行）：与确认按钮的提交分支（tab === 'quick'）耦合，同上。
+ * - 条码扫码 / 组合保存 / 份量编辑器：早已是独立文件（BarcodeScanner /
+ *   SaveComboDialog / MealPortionEditor），不在本文件内。
  */
 
 export type ComposerSubmit =
@@ -1018,95 +1029,24 @@ export default function MealComposer({
    * 它是 `<li>` 的子节点，与按钮们平级，**不在任何按钮内部**，
    * 故不构成「button 套 button」的非法结构。
    */
+  /**
+   * 食物结果列表（2026-10-12 UI 评审 P1-4：体搬至 `FoodResultList.tsx`）。
+   *
+   * 搜索 / 分类 / 最近 / 收藏 / 常吃五个面板共用同一份行渲染（「份量确认 →
+   * 确认记录」行为完全一致）。此处只做 props 接线，行内三个按钮的平级关系与
+   * `stopPropagation` 语义在子组件里逐字保留。
+   */
   const renderFoodList = (items: readonly FoodItem[]): ReactElement => (
-    <ul className="mt-block space-y-2">
-      {items.map((food) => {
-        const qualifier = 'qualifier' in food ? (food as FoodSearchHit).qualifier : null;
-        const favorited = favoriteIds.has(food.id);
-        const historyOpen = historyFoodId === food.id;
-        return (
-          <li
-            key={food.id}
-            className="rounded-control ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
-          >
-            <div className="flex items-stretch gap-1">
-              <button
-                type="button"
-                onClick={() => chooseFood(food)}
-                className="qsh-touch-target min-w-0 flex-1 rounded-l-xl px-4 py-3 text-left"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
-                  <span aria-hidden="true" className="text-base">
-                    {emojiForCategory(food.category)}
-                  </span>
-                  <span className="min-w-0 truncate">{food.name}</span>
-                  {qualifier !== null && (
-                    <span className="shrink-0 rounded-pill bg-slate-100 px-2 py-0.5 text-caption font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                      {qualifier}
-                    </span>
-                  )}
-                </span>
-                <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
-                  {foodCategoryLabel(food.category)} · 每 100g {toDisplayEnergy(food.kcalPer100g, unit)} {energyLabel(unit)}
-                </span>
-              </button>
-              {/*
-                D-5 历史开关：与「选食物」「星号」**平级的第三个按钮**（不是嵌套）。
-                视觉刻意做轻（次级动作），不与「选中这一行」抢主操作。
-              */}
-              <button
-                type="button"
-                aria-expanded={historyOpen}
-                aria-controls={historyOpen ? `food-history-panel-${food.id}` : undefined}
-                aria-label={foodHistoryToggleAria(food.name, historyOpen)}
-                onClick={(event) => {
-                  // 独立控件：绝不让这次点击冒泡去选中 / 记录这一行食物
-                  event.stopPropagation();
-                  toggleHistory(food.id);
-                }}
-                aria-pressed={historyOpen}
-                className="qsh-touch-target shrink-0 px-2 text-xs text-slate-500 dark:text-slate-400"
-              >
-                {COPY.foodHistoryToggle}
-              </button>
-              <button
-                type="button"
-                aria-pressed={favorited}
-                aria-label={favoriteToggleAria(food.name, favorited)}
-                disabled={favoriteMutation.isPending}
-                onClick={(event) => {
-                  // 星号是独立控件：绝不让这次点击冒泡去选中 / 记录这一行食物
-                  event.stopPropagation();
-                  toggleFavorite(food);
-                }}
-                className="qsh-touch-target shrink-0 rounded-r-xl px-3 text-lg leading-none disabled:opacity-60"
-              >
-                <span
-                  aria-hidden="true"
-                  // ☆ 是**可点控件**的状态指示（不是装饰），WCAG 1.4.11 要 ≥3:1：
-                  // 原来的 `text-slate-300` 对白底只有 1.48:1，等于看不见「还能收藏」这个入口。
-                  // 深色档原来的 slate-500 对 slate-800 是 3.07:1，也仅勉强过线，一并提到
-                  // slate-400（5.71:1）。★ 的 amber-400 是「已收藏」的既有语义，不动。
-                  className={favorited ? 'text-amber-400' : 'text-slate-500 dark:text-slate-400'}
-                >
-                  {favorited ? '★' : '☆'}
-                </span>
-              </button>
-            </div>
-            {/* 展开区：`<li>` 的子节点，与上面的按钮们**平级**（不在任何按钮内部）。 */}
-            {historyOpen && (
-              <div id={`food-history-panel-${food.id}`} className="px-3 pb-3">
-                <FoodHistoryPanel
-                  food={food}
-                  expanded={historyOpen}
-                  onCollapse={() => toggleHistory(food.id)}
-                />
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <FoodResultList
+      items={items}
+      favoriteIds={favoriteIds}
+      historyFoodId={historyFoodId}
+      unit={unit}
+      onChoose={chooseFood}
+      onToggleHistory={toggleHistory}
+      onToggleFavorite={toggleFavorite}
+      favoritePending={favoriteMutation.isPending}
+    />
   );
 
   /**
