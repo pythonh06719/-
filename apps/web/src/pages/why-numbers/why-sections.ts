@@ -25,12 +25,36 @@ export interface WhySection {
   readonly title: string;
 }
 
+/**
+ * 锚点 id 的联合类型（26 个字面量）。
+ *
+ * 2026-10-12（P2-4 注册表化）：`sections/index.tsx` 的注册表用它做
+ * `Record<WhySectionId, …>` 的 key —— 新增第 27 条时若忘了登记组件，
+ * **编译期**直接报「缺 key」，而不是等页面渲染出来少一张卡、再由测试报红。
+ * （`as const` 数据对象的 computed key 也靠这个联合做穷尽性校验。）
+ */
+export type WhySectionId = (typeof WHY_SECTIONS)[number]['id'];
+
+/**
+ * `WHY_SECTIONS` 的单条类型 —— 与 `WhySection` 的区别是 `id` 保留**字面量联合**。
+ * 注册表 `renderSection` 用它接参：`RENDERERS[section.id]` 因此命中
+ * `Record<WhySectionId, …>` 的字面量键，不需要 `| undefined` 兜底分支。
+ */
+export type WhySectionEntry = (typeof WHY_SECTIONS)[number];
+
 /** 26 个带圈数字（① … ㉖），顺序即页面上的编号顺序。 */
 export const CIRCLED_NUMERALS =
   '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖';
 
-/** 全部 26 条，顺序 = 页面自上而下的顺序。 */
-export const WHY_SECTIONS: readonly WhySection[] = [
+/**
+ * 全部 26 条，顺序 = 页面自上而下的顺序。
+ *
+ * `as const` 不是风格偏好：它让每条的 `id` 保留**字面量类型**，`WhySectionId`
+ * 才能成为 26 个锚点的联合类型（`sections/index.tsx` 的注册表靠它做编译期
+ * 穷尽性检查 —— 漏登记一条组件直接编译报错）。`satisfies` 保证形状仍符合
+ * 上面的 `WhySection` 接口：写错字段名照样在编译期被抓到。
+ */
+export const WHY_SECTIONS = [
   { id: 'why-budget-title', title: '① 热量预算怎么算' },
   { id: 'why-exercise-title', title: '② 运动消耗怎么算' },
   { id: 'why-data-title', title: '③ 数据来源与许可' },
@@ -57,7 +81,7 @@ export const WHY_SECTIONS: readonly WhySection[] = [
   { id: 'why-fasting-title', title: '㉔ 断食计时里的小时数怎么算' },
   { id: 'why-habit-streak-title', title: '㉕ 习惯的当前连续与历史最佳怎么算' },
   { id: 'why-water-progress-title', title: '㉖ 饮水目标与百分比怎么算' },
-];
+] as const satisfies readonly WhySection[];
 
 /** 条目的编号字符（`①` … `㉓`）—— 即标题的首字符。 */
 export function sectionMarker(title: string): string {
