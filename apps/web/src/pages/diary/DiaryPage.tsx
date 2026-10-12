@@ -959,7 +959,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                 style={{ width: `${Math.min(progressRatio, 1) * 100}%` }}
               />
             </div>
-            <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
               参考预算 {toDisplayEnergy(dailyBudget, unit)} {energyLabel(unit)}
               {progressRatio > 1 && isToday ? ' · 今天吃得丰富一些，明天照常就好' : ''}
             </p>
@@ -1114,14 +1114,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
               <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
                 {MEAL_TYPE_LABELS[group.mealType]}
               </h2>
-              <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
+              <p className="qsh-tnum text-xs text-slate-600 dark:text-slate-400">
                 {toDisplayEnergy(group.totalKcal, unit)}
                 {budget !== null ? ` / 参考 ${toDisplayEnergy(budget, unit)}` : ''} {energyLabel(unit)}
               </p>
             </div>
 
             {group.logs.length === 0 ? (
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                 <span aria-hidden="true" className="mr-1">
                   🍽️
                 </span>

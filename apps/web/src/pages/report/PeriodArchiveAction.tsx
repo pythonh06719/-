@@ -134,7 +134,7 @@ export default function PeriodArchiveAction({
       >
         {topFoodsLoading ? '正在准备存档…' : '保存这一份'}
       </button>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
         保存为只在本地生成的 HTML，打开后可打印或另存 PDF。
       </p>
       {notice !== null && (

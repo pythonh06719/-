@@ -161,7 +161,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       </h2>
       <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">{scaleLabel}</p>
       {/* 真实日期：给这段记忆一个落点（日期不是评判）。 */}
-      <p className="text-xs text-slate-500 dark:text-slate-400" data-testid="on-this-day-date">
+      <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="on-this-day-date">
         {dateLabel}
       </p>
 
@@ -172,7 +172,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       <ul className="mt-2 space-y-2" data-testid="on-this-day-groups">
         {groups.map((group) => (
           <li key={group.mealType} data-meal-type={group.mealType}>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
               {MEAL_TYPE_LABELS[group.mealType]}
             </p>
             <p className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
@@ -183,7 +183,7 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       </ul>
 
       {/* 尾注：把「这只是回看」讲清楚 —— 反缺席指控。 */}
-      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.onThisDayFootnote}</p>
+      <p className="mt-block text-xs text-slate-600 dark:text-slate-400">{COPY.onThisDayFootnote}</p>
 
       {/* 去那一天完整看 —— 复用 C-1 的 `/diary?date=`（DiaryPage 已支持该 query）。 */}
       <Link

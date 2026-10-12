@@ -47,7 +47,7 @@ export default function WeeklyDiversityRow({ report }: { report: WeeklyReport })
 
       {expanded && (
         <div className="mt-block" data-testid="weekly-diversity-list">
-          <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.diversityListTitle}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">{COPY.diversityListTitle}</p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {foods.map((name) => (
               <li
@@ -58,7 +58,7 @@ export default function WeeklyDiversityRow({ report }: { report: WeeklyReport })
               </li>
             ))}
           </ul>
-          {truncated && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.diversityTruncated}</p>}
+          {truncated && <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.diversityTruncated}</p>}
         </div>
       )}
     </div>

@@ -54,7 +54,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
   if (!expanded) {
     return (
       <div className="mt-block flex items-center justify-between gap-3">
-        <p className="text-caption text-slate-500 dark:text-slate-400">{COPY.habitCalendarEmpty}</p>
+        <p className="text-caption text-slate-600 dark:text-slate-400">{COPY.habitCalendarEmpty}</p>
         <button
           type="button"
           className="qsh-touch-target shrink-0 rounded-control px-2 text-caption font-medium text-brand-700 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-slate-800"
@@ -94,7 +94,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
           <span
             key={`weekday-${column}`}
             aria-hidden="true"
-            className="text-center text-caption text-slate-500 dark:text-slate-400"
+            className="text-center text-caption text-slate-600 dark:text-slate-400"
           >
             {label}
           </span>

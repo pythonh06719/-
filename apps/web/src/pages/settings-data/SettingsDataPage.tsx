@@ -317,7 +317,7 @@ export default function SettingsDataPage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
           JSON 可完整恢复你的资料、目标、记录与设置（单位、体重单位、深色、断食开关、饮水目标）；
           CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
         </p>
@@ -343,7 +343,7 @@ export default function SettingsDataPage(): ReactElement {
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.dataBackupTitle}
         </h2>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.dataBackupDesc}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.dataBackupDesc}</p>
         <button
           type="button"
           onClick={() => void handleBackup()}
@@ -354,7 +354,7 @@ export default function SettingsDataPage(): ReactElement {
         {/* C6 基座：三态事实陈述（回归保护，AC-11.6.1 —— 只增不删、只加不改） */}
         <p
           data-testid="last-backup"
-          className="mt-2 text-xs text-slate-500 dark:text-slate-400"
+          className="mt-2 text-xs text-slate-600 dark:text-slate-400"
         >
           {lastBackupLabel(daysSinceLastBackup(lastBackupAt))}
         </p>
@@ -365,7 +365,7 @@ export default function SettingsDataPage(): ReactElement {
         {backupHint !== null && (
           <p
             data-testid="backup-hint"
-            className="mt-1.5 text-xs text-slate-500 dark:text-slate-400"
+            className="mt-1.5 text-xs text-slate-600 dark:text-slate-400"
           >
             {backupHint}
           </p>
@@ -389,7 +389,7 @@ export default function SettingsDataPage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
           模板列：<code>date</code>（YYYY-MM-DD）、<code>weightKg</code>、<code>note</code>（可选）。
           同日期以导入值覆盖，未能识别的行会跳过并汇总。
         </p>

@@ -175,7 +175,7 @@ export default function FastingPage(): ReactElement {
             </p>
             {session && !session.endedAt ? (
               <div className="mt-4 rounded-control bg-slate-50 p-3 text-center dark:bg-slate-700">
-                <p className="text-xs text-slate-500 dark:text-slate-300">已断食</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">已断食</p>
                 <p className="mt-tight text-4xl font-bold text-slate-800 dark:text-slate-100" aria-live="off">
                   {session.elapsedHours.toFixed(1)}
                   <span className="text-base font-normal"> 小时</span>
@@ -224,7 +224,7 @@ export default function FastingPage(): ReactElement {
           </>
         )}
         {notice ? <p className="mt-block text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
-        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
+        <p className="mt-block text-xs text-slate-600 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
         <Link
           to="/why-numbers#why-fasting-title"
           className="mt-block inline-block text-sm font-medium text-brand-700 dark:text-brand-300"

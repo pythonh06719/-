@@ -199,10 +199,10 @@ export default function WeeklyReportView(): ReactElement {
         </div>
 
         {/* 窗口口径摊开讲：用户一看就知道自己在看哪一周（NFR-11 可解释性） */}
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400" data-testid="week-window-label">
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400" data-testid="week-window-label">
           {windowLabel}
         </p>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.weekWindowNote}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.weekWindowNote}</p>
       </section>
 
       {report === undefined ? (
@@ -217,7 +217,7 @@ export default function WeeklyReportView(): ReactElement {
             近 7 天（{rangeText}）
           </h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{COPY.weeklyEmptyTitle}</p>
-          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
+          <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
         </section>
       ) : (
         <>
@@ -243,19 +243,19 @@ export default function WeeklyReportView(): ReactElement {
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">日均摄入</p>
                   <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">运动消耗</p>
                   <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">体重变化</p>
                   <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">
                     {formatSignedWeight(report.weightChangeKg, weightUnit)}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-300">{weightLabel(weightUnit)}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{weightLabel(weightUnit)}</p>
                 </div>
               </div>
 
@@ -263,7 +263,7 @@ export default function WeeklyReportView(): ReactElement {
               <h3 className="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {COPY.reportTrendTitle}
               </h3>
-              <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
+              <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.reportTrendCaption}</p>
               <div className="mt-2">
                 <IntakeExerciseChart days={reportDays} />
               </div>
@@ -273,7 +273,7 @@ export default function WeeklyReportView(): ReactElement {
                 {reportDays.map((day, index) => (
                   <li
                     key={`${index}-${safeStr(day.date)}`}
-                    className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
+                    className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400"
                   >
                     <span className="w-12 shrink-0">{safeStr(day.date).length >= 5 ? safeStr(day.date).slice(5) : '—'}</span>
                     <span className="flex-1 text-right text-slate-600 dark:text-slate-300">
@@ -282,7 +282,7 @@ export default function WeeklyReportView(): ReactElement {
                   </li>
                 ))}
               </ul>
-              <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-block text-xs text-slate-600 dark:text-slate-400">
                 {weeklyWeightReading(report.weightChangeKg)}
               </p>
             </section>
@@ -316,14 +316,14 @@ export default function WeeklyReportView(): ReactElement {
                       aria-label={COPY.reportHabitTitle}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.reportHabitNote}</p>
+                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.reportHabitNote}</p>
                 </>
               )}
             </section>
 
             <section className="qsh-surface p-5">
               <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
-              <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
+              <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
               <ul className="mt-block space-y-3">
                 {micronutrients.map((item) => {
                   // 🔴 `dailyAvg === null` = 数据缺失（无记录 / 无数据 / 推算异常），
@@ -336,7 +336,7 @@ export default function WeeklyReportView(): ReactElement {
                       <li key={item.key}>
                         <div className="flex items-baseline justify-between text-sm">
                           <span className="text-slate-500 dark:text-slate-400">{item.name}</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="text-xs text-slate-600 dark:text-slate-400">
                             暂无数据
                           </span>
                         </div>
@@ -355,7 +355,7 @@ export default function WeeklyReportView(): ReactElement {
                       <div className="flex items-baseline justify-between text-sm">
                         <span className="text-slate-700 dark:text-slate-200">
                           {item.name}
-                          <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="ml-2 text-xs text-slate-600 dark:text-slate-400">
                             参考{item.direction === 'atLeast' ? '≥' : '≤'} {item.reference} {item.unit}
                           </span>
                         </span>
@@ -378,7 +378,7 @@ export default function WeeklyReportView(): ReactElement {
                   );
                 })}
               </ul>
-              <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
+              <p className="mt-block text-xs text-slate-600 dark:text-slate-400">{referenceNote}</p>
             </section>
           </div>
         </>

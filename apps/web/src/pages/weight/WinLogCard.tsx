@@ -140,7 +140,7 @@ export default function WinLogCard(): ReactElement {
       <h2 id="win-log-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.winCardTitle}
       </h2>
-      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.winCardDesc}</p>
+      <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.winCardDesc}</p>
 
       <label className="mt-block block text-sm text-slate-600 dark:text-slate-300">
         <span className="sr-only">{COPY.winCardInputLabel}</span>
@@ -156,7 +156,7 @@ export default function WinLogCard(): ReactElement {
         />
       </label>
       {overLimit && (
-        <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400" data-testid="win-too-long">
+        <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400" data-testid="win-too-long">
           {COPY.winCardTooLong}
         </p>
       )}
@@ -180,7 +180,7 @@ export default function WinLogCard(): ReactElement {
       <div className="mt-4">
         <h3 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.winCardListTitle}</h3>
         {winsQuery.isLoading ? (
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">读取中…</p>
+          <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">读取中…</p>
         ) : winsQuery.isError && wins.length === 0 ? (
           // 读取失败且无缓存可展示 → 「读不到」，**不能**说成「还没有记过」（语义完全相反）
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" data-testid="win-list-error">
@@ -198,7 +198,7 @@ export default function WinLogCard(): ReactElement {
               >
                 <div className="min-w-0">
                   <p className="break-words text-sm text-slate-800 dark:text-slate-100">{win.text}</p>
-                  <p className="qsh-tnum mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="qsh-tnum mt-0.5 text-xs text-slate-600 dark:text-slate-400">
                     {winDateLine(win.loggedDate, today, formatMonthDay)}
                   </p>
                 </div>

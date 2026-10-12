@@ -547,14 +547,14 @@ export default function DashboardPage(): ReactElement {
             <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
           </div>
           <p
-            className="mt-tight text-xs text-slate-500 dark:text-slate-400"
+            className="mt-tight text-xs text-slate-600 dark:text-slate-400"
             role="status"
             aria-live="polite"
           >
             {cupText(water.totalMl, waterGoal)}
           </p>
           <div className="mt-block flex items-center justify-between gap-2">
-            <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
+            <p className="qsh-tnum text-xs text-slate-600 dark:text-slate-400">
               {water.totalMl} / {waterGoal} ml
             </p>
             <button
@@ -575,7 +575,7 @@ export default function DashboardPage(): ReactElement {
         {/* 这周的小变化（迷你体重趋势） */}
         <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
-          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
+          <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
           <div className="mt-block">
             <Sparkline data={data.miniTrend} weightUnit={weightUnit} />
           </div>

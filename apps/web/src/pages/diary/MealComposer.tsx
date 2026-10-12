@@ -1095,7 +1095,7 @@ export default function MealComposer({
             关闭
           </button>
         </div>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{date}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{date}</p>
 
         {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2）
 
@@ -1144,7 +1144,7 @@ export default function MealComposer({
             />
             {COPY.multiSelectToggle}
           </label>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-xs text-slate-600 dark:text-slate-400">
             {multiSelect ? COPY.multiSelectHintOn : COPY.multiSelectHintOff}
           </span>
         </div>
@@ -1191,14 +1191,14 @@ export default function MealComposer({
               )}
             </div>
 
-            {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">搜索中…</p>}
+            {searchQuery.isFetching && <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">搜索中…</p>}
             {searchQuery.data !== undefined && renderFoodList(localItems)}
 
             {/* 结果完整性（阶段 2.4）：把服务端的 `total` 如实呈现，并给「加载更多」。
                 顺序完全由服务端相关度决定，前端不重排、不筛选、不做任何评价。 */}
             {searchQuery.data !== undefined && localItems.length > 0 && (
               <div className="mt-block flex items-center justify-between gap-2">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   共 {searchTotal} 条，已显示 {localItems.length} 条
                 </span>
                 {hasMoreSearch && (
@@ -1233,7 +1233,7 @@ export default function MealComposer({
             {keyword.trim() !== '' && localEmpty && !searchQuery.isFetching && (
               <div className="mt-block">
                 {liveQuery.isFetching && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">本地没有，正在帮你找在线食物库…</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">本地没有，正在帮你找在线食物库…</p>
                 )}
 
                 {onlineDegraded && (
@@ -1248,7 +1248,7 @@ export default function MealComposer({
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">在线结果</h3>
-                        <span className="rounded-pill bg-slate-100 px-2 py-0.5 text-caption text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                        <span className="rounded-pill bg-slate-100 px-2 py-0.5 text-caption text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                           Open Food Facts · ODbL 1.0
                         </span>
                       </div>
@@ -1263,7 +1263,7 @@ export default function MealComposer({
                                 <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
                                   {item.name}
                                 </p>
-                                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
+                                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                                   {item.brand !== null ? `${item.brand} · ` : ''}每 100g {toDisplayEnergy(item.kcalPer100g, unit)} {energyLabel(unit)}
                                 </p>
                               </div>
@@ -1282,7 +1282,7 @@ export default function MealComposer({
                       {/* 次级文字对比度：slate-400 对白底只有 2.56:1、slate-500 对
                           dark:bg-slate-800 只有 3.08:1，两套主题都不达 AA；署名是本
                           该看清的内容（ODbL 归属），故取深浅各自达标的一档。 */}
-                      <p className="mt-tight text-caption text-slate-500 dark:text-slate-400">
+                      <p className="mt-tight text-caption text-slate-600 dark:text-slate-400">
                         数据来自 Open Food Facts（ODbL 1.0），加入后会存到你的食物库。
                       </p>
                     </>
@@ -1310,7 +1310,7 @@ export default function MealComposer({
             分类浏览正是其中一种（PRD §4.3 R3.4 把「搜索 / 分类浏览」并列）。 */}
         {tab === 'category' && (
           <div className="mt-4">
-            {categoriesQuery.isLoading && <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>}
+            {categoriesQuery.isLoading && <p className="text-xs text-slate-600 dark:text-slate-400">读取中…</p>}
 
             {orderedCategories.length > 0 && (
               <div className="flex gap-1.5 overflow-x-auto" role="group" aria-label={COPY.foodCategoryTab}>
@@ -1364,7 +1364,7 @@ export default function MealComposer({
             {/* 选中后：复用 `renderFoodList` —— 视觉与点击行为（份量确认 → 确认记录）
                 与 搜索 / 最近 / 收藏 / 常吃 **完全一致**，不另写一套列表。 */}
             {selectedCategory !== null && categoryQuery.isFetching && categoryItems.length === 0 && (
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">读取中…</p>
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">读取中…</p>
             )}
             {selectedCategory !== null && categoryItems.length > 0 && renderFoodList(categoryItems)}
             {categoryEmpty && (
@@ -1374,7 +1374,7 @@ export default function MealComposer({
             {/* 完整性：把服务端 `total` 如实呈现 + 「加载更多」（与搜索同款呈现方式） */}
             {selectedCategory !== null && categoryItems.length > 0 && (
               <div className="mt-block flex items-center justify-between gap-2">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   共 {categoryTotal} 条，已显示 {categoryItems.length} 条
                 </span>
                 {hasMoreCategory && (
@@ -1398,7 +1398,7 @@ export default function MealComposer({
             {(() => {
               const query = tab === 'recent' ? recentQuery : favoriteQuery;
               if (query.isLoading) {
-                return <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>;
+                return <p className="text-xs text-slate-600 dark:text-slate-400">读取中…</p>;
               }
               // 防御：接口降级 / 契约不符时 `data` 可能不是数组 —— 当作「暂时没有」的空态，
               // 绝不把非数组喂给 `renderFoodList`（那会让整面板崩掉）。
@@ -1422,7 +1422,7 @@ export default function MealComposer({
         {tab === 'top' && (
           <div className="mt-4">
             {topQuery.isLoading ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">读取中…</p>
             ) : (
               topItems.length > 0 && (
                 <>
@@ -1462,14 +1462,14 @@ export default function MealComposer({
                 className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{COPY.quickAddHint}</p>
 
             {/* D-2：快加的名称与今天这一餐已记过的自定义条目同名时，给同一句中性觉察
                 （判定口径与「选中食物」同源，都走 `findSameMealItem`）。仍是不阻断。 */}
             {sameMealMatches.quick !== null && (
               <p
                 data-testid="same-meal-hint-quick"
-                className="text-xs text-slate-500 dark:text-slate-400"
+                className="text-xs text-slate-600 dark:text-slate-400"
               >
                 {COPY.sameMealHint}
               </p>
@@ -1501,7 +1501,7 @@ export default function MealComposer({
                 <span className="block">{COPY.quickSaveToLibraryLabel}</span>
                 <span
                   id="quick-save-to-library-hint"
-                  className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400"
+                  className="mt-0.5 block text-xs text-slate-600 dark:text-slate-400"
                 >
                   {COPY.quickSaveToLibraryHint}
                 </span>
@@ -1553,7 +1553,7 @@ export default function MealComposer({
             指向 `/diary` 的那条去路，避免用户在本 tab 找不到入口而以为功能不存在。 */}
         {tab === 'combo' && (
           <div className="mt-4">
-            {comboQuery.isLoading && <p className="text-xs text-slate-500 dark:text-slate-400">读取中…</p>}
+            {comboQuery.isLoading && <p className="text-xs text-slate-600 dark:text-slate-400">读取中…</p>}
             {(comboQuery.data ?? []).length === 0 && !comboQuery.isLoading && (
               <p className="text-sm text-slate-500 dark:text-slate-400">{COPY.comboEmpty}</p>
             )}
@@ -1587,7 +1587,7 @@ export default function MealComposer({
             {lastPortionGrams !== null && (
               <p
                 data-testid="last-portion-hint"
-                className="mt-tight text-xs text-slate-500 dark:text-slate-400"
+                className="mt-tight text-xs text-slate-600 dark:text-slate-400"
               >
                 {COPY.lastPortionHint(lastPortionGrams)}
               </p>
@@ -1598,7 +1598,7 @@ export default function MealComposer({
             {sameMealMatches.selected !== null && (
               <p
                 data-testid="same-meal-hint"
-                className="mt-tight text-xs text-slate-500 dark:text-slate-400"
+                className="mt-tight text-xs text-slate-600 dark:text-slate-400"
               >
                 {COPY.sameMealHint}
               </p>
@@ -1671,7 +1671,7 @@ export default function MealComposer({
                     aria-label={COPY.pendingGramsAria(entry.name)}
                     className="qsh-tnum w-16 rounded-control border border-brand-100 px-2 py-1 text-right text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                   />
-                  <span className="text-xs text-slate-500 dark:text-slate-400">g</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-400">g</span>
                   <button
                     type="button"
                     aria-label={COPY.pendingListRemoveAria(entry.name)}
@@ -1688,7 +1688,7 @@ export default function MealComposer({
             {sameMealMatches.pending && (
               <p
                 data-testid="same-meal-hint-batch"
-                className="mt-2 text-xs text-slate-500 dark:text-slate-400"
+                className="mt-2 text-xs text-slate-600 dark:text-slate-400"
               >
                 {COPY.sameMealHint}
               </p>
@@ -1709,7 +1709,7 @@ export default function MealComposer({
                 {busy ? '正在记录…' : COPY.pendingConfirm(pendingItems.length)}
               </button>
             ) : (
-              <p className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
+              <p className="flex-1 text-center text-xs text-slate-600 dark:text-slate-400">
                 {COPY.pendingListEmpty}
               </p>
             )
@@ -1743,7 +1743,7 @@ export default function MealComposer({
               {busy ? '正在记录…' : '确认记录'}
             </button>
           ) : (
-            <p className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
+            <p className="flex-1 text-center text-xs text-slate-600 dark:text-slate-400">
               先选一个食物，或者切到「快加」
             </p>
           )}

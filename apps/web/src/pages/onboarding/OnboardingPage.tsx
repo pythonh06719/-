@@ -216,19 +216,19 @@ export default function OnboardingPage(): ReactElement {
 
         <dl className="mt-6 grid grid-cols-3 gap-3 text-center">
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">基础代谢</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">基础代谢</dt>
             <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.bmr}
             </dd>
           </div>
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">每日消耗</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">每日消耗</dt>
             <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.tdee}
             </dd>
           </div>
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">每日缺口</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">每日缺口</dt>
             <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {Math.round(preview.effectiveDeficit)}
             </dd>
@@ -436,7 +436,7 @@ export default function OnboardingPage(): ReactElement {
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
             常见情况（可多选）
           </legend>
-          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
             这部分属于敏感信息，仅你自己可见，也可以随时不填。
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

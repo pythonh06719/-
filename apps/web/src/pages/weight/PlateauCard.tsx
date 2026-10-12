@@ -45,14 +45,14 @@ export default function PlateauCard({
 
       <dl className="mt-block space-y-2 rounded-card bg-brand-50 p-4 dark:bg-brand-900/40">
         <div>
-          <dt className="text-xs text-slate-500 dark:text-slate-400">这几周发生了什么</dt>
+          <dt className="text-xs text-slate-600 dark:text-slate-400">这几周发生了什么</dt>
           <dd className="qsh-tnum mt-0.5 text-sm text-slate-700 dark:text-slate-200">
             {plateauStalledLine(stalledDays, weightUnit)}
           </dd>
         </div>
         {slope4wKgPerWeek !== null && (
           <div>
-            <dt className="text-xs text-slate-500 dark:text-slate-400">换个尺度看</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">换个尺度看</dt>
             <dd className="qsh-tnum mt-0.5 text-sm text-slate-700 dark:text-slate-200">
               <span className="block">{plateauSlopeLine(slope4wKgPerWeek, weightUnit)}</span>
               <span className="block">{plateauSlopeHint(slope4wKgPerWeek)}</span>
@@ -61,7 +61,7 @@ export default function PlateauCard({
         )}
       </dl>
 
-      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.plateauFootnote}</p>
+      <p className="mt-block text-xs text-slate-600 dark:text-slate-400">{COPY.plateauFootnote}</p>
 
       {/*
         AC-11.1.6：温和的收起按钮。刻意**不用**「关闭 / 忽略 / 不再显示」这类生硬字眼，
@@ -72,7 +72,7 @@ export default function PlateauCard({
           type="button"
           onClick={onDismiss}
           aria-label={COPY.plateauDismissAria}
-          className="qsh-touch-target inline-flex items-center rounded-control px-3 py-2 text-xs font-medium text-slate-500 underline decoration-dotted underline-offset-4 transition duration-qsh-base ease-qsh-out hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-300"
+          className="qsh-touch-target inline-flex items-center rounded-control px-3 py-2 text-xs font-medium text-slate-600 underline decoration-dotted underline-offset-4 transition duration-qsh-base ease-qsh-out hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-300"
         >
           {COPY.plateauDismiss}
         </button>

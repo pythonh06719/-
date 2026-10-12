@@ -246,7 +246,7 @@ export default function HabitsPage(): ReactElement {
               <span className="flex items-baseline gap-1.5">
                 <span className="font-medium text-slate-800 dark:text-slate-100">{habit.name}</span>
                 {habit.isBuiltin && (
-                  <span aria-hidden="true" className="text-xs text-slate-500 dark:text-slate-400">
+                  <span aria-hidden="true" className="text-xs text-slate-600 dark:text-slate-400">
                     {COPY.habitBuiltinTag}
                   </span>
                 )}
@@ -257,7 +257,7 @@ export default function HabitsPage(): ReactElement {
                 必须 `aria-hidden`（否则浏览模式下会被念两遍：先整钮念一遍 label，走到
                 这个 span 再念一遍数字）。这是本仓「信息已在别处」的第二种 aria-hidden 用法。
               */}
-              <span aria-hidden="true" className="block text-xs text-slate-500 dark:text-slate-400">
+              <span aria-hidden="true" className="block text-xs text-slate-600 dark:text-slate-400">
                 当前连续 {habit.currentStreak} 天 · 历史最佳 {habit.bestStreak} 天
               </span>
             </span>
@@ -376,7 +376,7 @@ export default function HabitsPage(): ReactElement {
           </button>
           {showStopped && (
             <>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.habitStoppedSectionHint}</p>
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.habitStoppedSectionHint}</p>
               <ul className="mt-block space-y-2" aria-label={COPY.habitStoppedSectionTitle}>
                 {stoppedHabits.map((habit) => (
                   <li

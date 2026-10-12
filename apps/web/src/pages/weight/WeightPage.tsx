@@ -578,25 +578,25 @@ export default function WeightPage(): ReactElement {
 
         <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">{COPY.weightStatMin}</dt>
             <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.minKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">{COPY.weightStatMax}</dt>
             <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.maxKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">{COPY.weightStatMean}</dt>
             <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.meanKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
-            <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
+            <dt className="text-xs text-slate-600 dark:text-slate-400">{COPY.weightStatChange}</dt>
             <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatSignedWeight(stats.changeKg, weightUnit)}
             </dd>
@@ -639,7 +639,7 @@ export default function WeightPage(): ReactElement {
                 ))}
             </ul>
           )}
-          <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-block text-xs text-slate-600 dark:text-slate-400">
             参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
           </p>
         </div>

@@ -56,7 +56,7 @@ export default function ReminderSettings(): ReactElement {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.reminderToggleTitle}</h2>
-          <p className="mt-tight text-xs leading-relaxed text-slate-500 dark:text-slate-400">{COPY.reminderToggleDesc}</p>
+          <p className="mt-tight text-xs leading-relaxed text-slate-600 dark:text-slate-400">{COPY.reminderToggleDesc}</p>
         </div>
         <button
           type="button"

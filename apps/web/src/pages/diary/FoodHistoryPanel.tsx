@@ -101,20 +101,20 @@ export default function FoodHistoryPanel({ food, expanded, onCollapse }: FoodHis
           type="button"
           onClick={onCollapse}
           aria-label={foodHistoryCloseAria(food.name)}
-          className="qsh-touch-target shrink-0 rounded-lg px-2 text-xs text-slate-500 dark:text-slate-400"
+          className="qsh-touch-target shrink-0 rounded-lg px-2 text-xs text-slate-600 dark:text-slate-400"
         >
           {COPY.foodHistoryCollapse}
         </button>
       </div>
 
       {historyQuery.isLoading ? (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.foodHistoryLoading}</p>
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.foodHistoryLoading}</p>
       ) : historyQuery.isError ? (
         // 软着陆：只说「这次没读到」，不写「加载失败」，也不暗示「没有历史」
         // （没读到 ≠ 没有记录 —— §「不把缺失说成亏欠」）。
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.foodHistoryError}</p>
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.foodHistoryError}</p>
       ) : items.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.foodHistoryEmpty}</p>
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.foodHistoryEmpty}</p>
       ) : (
         <>
           <ul className="mt-2 space-y-1">
@@ -146,7 +146,7 @@ export default function FoodHistoryPanel({ food, expanded, onCollapse }: FoodHis
               );
             })}
           </ul>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.foodHistoryFootnote}</p>
+          <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.foodHistoryFootnote}</p>
         </>
       )}
     </div>

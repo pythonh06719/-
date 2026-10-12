@@ -76,13 +76,13 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
         <div className="min-w-0 flex-1 space-y-1 text-center text-sm text-slate-600 sm:text-left dark:text-slate-300">
           <p className="qsh-tnum font-medium text-slate-800 dark:text-slate-100">{primaryLine}</p>
           {secondaryLine !== null && <p className="qsh-tnum">{secondaryLine}</p>}
-          <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
+          <p className="qsh-tnum text-xs text-slate-600 dark:text-slate-400">
             {goalBaselineLine(progress.baselineKg, progress.targetWeightKg, weightUnit)}
           </p>
         </div>
       </div>
 
-      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.goalProgressFootnote}</p>
+      <p className="mt-block text-xs text-slate-600 dark:text-slate-400">{COPY.goalProgressFootnote}</p>
     </section>
   );
 }

@@ -408,7 +408,7 @@ export default function ExercisePage(): ReactElement {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-24 pt-4" aria-live="polite">
       <section className="qsh-surface p-5">
         <h1 className="text-title font-semibold text-slate-800 dark:text-slate-100">动一动</h1>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
           消耗 = MET × 体重 × 时长（估算值，来源见「参考来源」页）
         </p>
 
@@ -560,7 +560,7 @@ export default function ExercisePage(): ReactElement {
             </button>
           </div>
         )}
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">
           {waterTotal} / {waterGoal} ml（{waterPercent}%）
         </p>
         <div
@@ -592,7 +592,7 @@ export default function ExercisePage(): ReactElement {
             撤销上一条
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.waterGentle}</p>
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.waterGentle}</p>
       </section>
 
       {/* 每日饮水目标编辑（GAP-3）：紧接喝水卡 —— 这里刚展示过 `0 / 2000 ml`，

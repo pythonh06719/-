@@ -119,7 +119,7 @@ function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
       className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700"
     >
       <p className="text-sm text-slate-800 dark:text-slate-100">{trace.question}</p>
-      <p className="mt-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-600 dark:text-slate-400">
         <span>{traceTimeLabel(trace.createdAt)}</span>
         <span aria-hidden="true">·</span>
         <span>{traceStatusLabel(trace.status)}</span>
@@ -128,16 +128,16 @@ function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
       </p>
 
       {toolSteps.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceNoTools}</p>
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.aiTraceNoTools}</p>
       ) : (
         <div className="mt-2">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             {COPY.aiTraceToolsPrefix}
             {toolSteps.map((step) => (step.tool !== undefined ? (TOOL_LABELS[step.tool] ?? step.tool) : '这一步')).join(
               ' · ',
             )}
           </p>
-          <ul className="mt-tight space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+          <ul className="mt-tight space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
             {toolSteps.map((step, index) => (
               <li key={`${step.index}-${index}`} className="flex items-center justify-between gap-3">
                 <span>{step.tool !== undefined ? (TOOL_LABELS[step.tool] ?? step.tool) : '这一步'}</span>
@@ -171,7 +171,7 @@ function TracePanel(): ReactElement {
   return (
     <section className="qsh-surface p-5" aria-live="polite">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiTraceTitle}</h2>
-      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceDesc}</p>
+      <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.aiTraceDesc}</p>
 
       {tracesQuery.isLoading ? (
         <p className="mt-block text-sm text-slate-500 dark:text-slate-400">{COPY.aiTraceLoading}</p>
@@ -190,7 +190,7 @@ function TracePanel(): ReactElement {
               <TraceCard key={trace.id} trace={trace} />
             ))}
           </ul>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceLimitNote}</p>
+          <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.aiTraceLimitNote}</p>
         </>
       )}
     </section>
@@ -226,7 +226,7 @@ function InsightCard({ insight }: { insight: { conclusion: string; basis: string
       <p className="mt-block rounded-control bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
         {insight.suggestion}
       </p>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRuleModeNote}</p>
+      <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{COPY.aiRuleModeNote}</p>
     </div>
   );
 }
@@ -244,7 +244,7 @@ function UsageLine({ usage }: { usage: AiUsageResponse | undefined }): ReactElem
   }
   return (
     <p
-      className="px-1 text-xs text-slate-500 dark:text-slate-400"
+      className="px-1 text-xs text-slate-600 dark:text-slate-400"
       aria-label={usage.remaining > 0 ? COPY.aiUsageRemaining(usage.remaining) : COPY.aiUsagePlenty}
     >
       {usage.remaining > 0 ? (
@@ -307,7 +307,7 @@ function FoodRecognizePanel(): ReactElement {
   return (
     <section className="qsh-surface p-5">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
-      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
+      <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
       <div className="mt-block flex gap-2">
         <input
           type="text"
@@ -347,7 +347,7 @@ function FoodRecognizePanel(): ReactElement {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100">{candidate.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300">
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                       每 100g 约 {toDisplayEnergy(candidate.kcalPer100g, unit)} {energyLabel(unit)}
                       {candidate.servingKcal !== null && candidate.servingUnitLabel !== null
                         ? `；一份（${candidate.servingUnitLabel}）约 ${toDisplayEnergy(candidate.servingKcal, unit)} ${energyLabel(unit)}`
@@ -369,7 +369,7 @@ function FoodRecognizePanel(): ReactElement {
           {confirmedName !== null && (
             <p className="mt-block text-sm text-brand-600 dark:text-brand-300">{COPY.aiRecognizeConfirmed}</p>
           )}
-          <p className="mt-block text-xs text-slate-500 dark:text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
+          <p className="mt-block text-xs text-slate-600 dark:text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
         </div>
       )}
     </section>
@@ -642,7 +642,7 @@ export default function AiPage(): ReactElement {
                 <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQueryLike.data.answer}</p>
                 {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
                 {askQueryLike.data.tools !== undefined && askQueryLike.data.tools.length > 0 && (
-                  <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-block text-xs text-slate-600 dark:text-slate-400">
                     我查了：{askQueryLike.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
                   </p>
                 )}

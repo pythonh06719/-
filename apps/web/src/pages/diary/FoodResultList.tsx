@@ -74,7 +74,7 @@ export default function FoodResultList({
                     </span>
                   )}
                 </span>
-                <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">
+                <span className="mt-0.5 block text-xs text-slate-600 dark:text-slate-300">
                   {foodCategoryLabel(food.category)} · 每 100g {toDisplayEnergy(food.kcalPer100g, unit)} {energyLabel(unit)}
                 </span>
               </button>
@@ -93,7 +93,7 @@ export default function FoodResultList({
                   onToggleHistory(food.id);
                 }}
                 aria-pressed={historyOpen}
-                className="qsh-touch-target shrink-0 px-2 text-xs text-slate-500 dark:text-slate-400"
+                className="qsh-touch-target shrink-0 px-2 text-xs text-slate-600 dark:text-slate-400"
               >
                 {COPY.foodHistoryToggle}
               </button>

@@ -189,8 +189,8 @@ export default function ProfilePage(): ReactElement {
               </dd>
             </div>
           </dl>
-          {!offline && <p className="mt-block text-xs text-slate-500 dark:text-slate-400">数据来自服务端重算结果</p>}
-          {offline && <p className="mt-block text-xs text-slate-500 dark:text-slate-400">当前展示为本地预览，联网后会自动更新</p>}
+          {!offline && <p className="mt-block text-xs text-slate-600 dark:text-slate-400">数据来自服务端重算结果</p>}
+          {offline && <p className="mt-block text-xs text-slate-600 dark:text-slate-400">当前展示为本地预览，联网后会自动更新</p>}
         </div>
       )}
 
@@ -297,28 +297,28 @@ export default function ProfilePage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
-        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
         <ul className="mt-block space-y-3 text-sm text-slate-600 dark:text-slate-300">
           <li>
             <strong className="text-slate-800 dark:text-slate-100">Mifflin-St Jeor 公式（1990）</strong>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
               基础代谢率（BMR）：男 = 10×体重(kg) + 6.25×身高(cm) − 5×年龄 + 5；女 = 同式 − 161。
             </p>
           </li>
           <li>
             <strong className="text-slate-800 dark:text-slate-100">WHO BMI 标准</strong>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
               健康体重区间以 BMI 18.5–23.9 为参考，目标体重过轻时会给出温和提示。
             </p>
           </li>
           <li>
             <strong className="text-slate-800 dark:text-slate-100">成人活动 MET 汇编（2024）</strong>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
               活动系数：久坐 1.2 / 轻度 1.375 / 中度 1.55 / 高强度 1.725 / 运动员 1.9。
             </p>
           </li>
         </ul>
-        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-block text-xs text-slate-600 dark:text-slate-400">
           安全下限：女性 1200 kcal / 男性 1500 kcal；每日缺口不超过 TDEE 的 30%。
         </p>
       </section>
@@ -364,7 +364,7 @@ export default function ProfilePage(): ReactElement {
                 <span>
                   {link.label}
                   {link.hint !== undefined && (
-                    <span className="mt-0.5 block text-xs font-normal text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 block text-xs font-normal text-slate-600 dark:text-slate-400">
                       {link.hint}
                     </span>
                   )}

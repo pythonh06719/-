@@ -244,7 +244,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
           </button>
         </form>
 
-        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-block text-xs text-slate-600 dark:text-slate-400">
           画面只在你手机上识别，不会上传，也不保存照片。
         </p>
       </div>
