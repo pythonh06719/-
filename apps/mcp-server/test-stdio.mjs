@@ -266,6 +266,17 @@ try {
     fail('get_daily_summary 在未设 MCP_USER_ID 时应返回可读错误', phaseOne.getStderr());
   }
 
+  // A6：search_food 读的是「对本人可见」的食物子集（含本人自建）→ 同样是只读*工具
+  const searchGate = await phaseOne.request('tools/call', { name: 'search_food', arguments: { query: '饭' } });
+  const searchGatePayload = payloadOf(searchGate);
+  const searchGateErrored = searchGate.result?.isError === true;
+  const searchGateMentionsConfig =
+    typeof searchGatePayload.error === 'string' && searchGatePayload.error.includes('MCP_USER_ID');
+  results.searchGate = { isError: searchGateErrored, message: searchGatePayload.error ?? searchGatePayload };
+  if (!searchGateErrored || !searchGateMentionsConfig) {
+    fail('search_food 在未设 MCP_USER_ID 时应返回包含「MCP_USER_ID」的可读错误', phaseOne.getStderr());
+  }
+
   phaseOne.child.kill();
 
   // -------------------------------------------------------------------------
@@ -621,6 +632,106 @@ try {
     await prisma.userProfile.deleteMany({ where: { userId: probeUser.id } });
     await prisma.user.delete({ where: { id: probeUser.id } });
     results.weightTrendCleanup = `已删除隔离账号 ${TREND_PROBE_EMAIL} 及其 ${probeWeightKgByDate.size} 条体重`;
+  }
+
+  // -------------------------------------------------------------------------
+  // 阶段四：search_food 的数据隔离（A6）
+  //
+  // 为什么另建隔离账号：search_food 的结果取决于「对本人可见」的食物子集与全库
+  // 既有数据，必须用可自造数据的干净账号钉断言；**两个**账号才能钉住「他人自建
+  // 食物不可见」的隔离钉（单个账号只能证明「能搜到」，证明不了「不会多看」）。
+  // -------------------------------------------------------------------------
+  const SEARCH_PROBE_EMAIL = 'mcp-search-probe@qsh.local';
+  const SEARCH_OTHER_EMAIL = 'mcp-search-other@qsh.local';
+
+  await prisma.user.deleteMany({ where: { email: { in: [SEARCH_PROBE_EMAIL, SEARCH_OTHER_EMAIL] } } });
+  const searchProbe = await prisma.user.create({ data: { email: SEARCH_PROBE_EMAIL } });
+  const searchOther = await prisma.user.create({ data: { email: SEARCH_OTHER_EMAIL } });
+
+  // A6：本人自建食物（source=user_custom + createdByUserId=本人）。名字带独特 token，
+  // 避开内置库同名命中，让断言能精确钉在这一条上。
+  const customFood = await prisma.foodItem.create({
+    data: {
+      name: '寇豆码探针食物',
+      category: 'other',
+      kcalPer100g: 123,
+      proteinGPer100g: 5,
+      fatGPer100g: 2,
+      carbGPer100g: 20,
+      source: 'user_custom',
+      createdByUserId: searchProbe.id,
+    },
+  });
+
+  try {
+    const phaseFour = startServer({ ...baseEnv, MCP_USER_ID: String(searchProbe.id) });
+    await phaseFour.handshake();
+
+    // ---------------------------------------------------------------------
+    // A6①：本人自建食物必须能搜到（修复前搜不到 —— visibleFoodWhere 只认 4 个
+    // 公开来源，search_food 也从不 resolveUserId）
+    // ---------------------------------------------------------------------
+    const customSearch = await phaseFour.request('tools/call', {
+      name: 'search_food',
+      arguments: { query: '寇豆码探针' },
+    });
+    const customSearchPayload = payloadOf(customSearch);
+    const customHit = (customSearchPayload.items ?? []).find((item) => item.id === customFood.id) ?? null;
+    results.searchOwnCustom = {
+      isError: customSearch.result?.isError === true,
+      found: customSearchPayload.found ?? null,
+      hitId: customHit?.id ?? null,
+      hitSource: customHit?.source ?? null,
+    };
+    if (customSearch.result?.isError === true) {
+      fail('search_food 应成功（隔离账号 + 本人自建食物）', phaseFour.getStderr());
+    }
+    if (customHit === null) {
+      fail(
+        `search_food 应能搜到本人自建食物「寇豆码探针食物」（id=${customFood.id}），实际 found=${customSearchPayload.found}`,
+        phaseFour.getStderr(),
+      );
+    } else if (customHit.source !== 'user_custom') {
+      fail(`命中条目的 source 应为 user_custom，实际 ${customHit.source}`, phaseFour.getStderr());
+    }
+
+    // ---------------------------------------------------------------------
+    // A6② 配对隔离钉：换另一个账号搜同一关键词 → 不能返回前者的自建食物。
+    // 这条钉的是「修复不能过度」：若把 visibleFoodWhere 改成不过滤（或按
+    // source='user_custom' 放行全部自建），他人就会看到别人的私有食物。
+    // ---------------------------------------------------------------------
+    const phaseFourOther = startServer({ ...baseEnv, MCP_USER_ID: String(searchOther.id) });
+    await phaseFourOther.handshake();
+    const otherSearch = await phaseFourOther.request('tools/call', {
+      name: 'search_food',
+      arguments: { query: '寇豆码探针' },
+    });
+    const otherSearchPayload = payloadOf(otherSearch);
+    const otherItems = otherSearchPayload.items ?? [];
+    const leaked = otherItems.some((item) => item.id === customFood.id);
+    results.searchOtherIsolation = {
+      isError: otherSearch.result?.isError === true,
+      found: otherSearchPayload.found ?? null,
+      leakedCustomFood: leaked,
+    };
+    if (otherSearch.result?.isError === true) {
+      fail('search_food（他人账号）应成功', phaseFourOther.getStderr());
+    }
+    if (leaked) {
+      fail(`他人账号不应搜到 id=${customFood.id} 的自建食物（可见性越权）`, phaseFourOther.getStderr());
+    }
+    if ((otherSearchPayload.found ?? 0) !== 0) {
+      fail(`他人账号搜「寇豆码探针」应零命中，实际 found=${otherSearchPayload.found}`, phaseFourOther.getStderr());
+    }
+    phaseFourOther.child.kill();
+
+    phaseFour.child.kill();
+  } finally {
+    // 清理：先删自建食物再删账号（food_items.created_by_user_id 是 ON DELETE CASCADE，显式删更直白）
+    await prisma.foodItem.deleteMany({ where: { createdByUserId: { in: [searchProbe.id, searchOther.id] } } });
+    await prisma.user.delete({ where: { id: searchProbe.id } });
+    await prisma.user.delete({ where: { id: searchOther.id } });
+    results.searchProbeCleanup = `已删除搜索隔离账号 ${SEARCH_PROBE_EMAIL} / ${SEARCH_OTHER_EMAIL}`;
   }
 
   // -------------------------------------------------------------------------

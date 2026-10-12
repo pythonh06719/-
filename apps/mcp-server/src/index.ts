@@ -12,7 +12,7 @@
  * - `tools/call`（执行工具，文本结果）
  *
  * 暴露 **11 个工具**（4 只读 + 4 只读用户数据 + 3 写）：
- *   search_food         只读   食物库检索（builtin / Open Food Facts / USDA）
+ *   search_food         只读*  食物库检索（builtin / Open Food Facts / USDA / cfcd / 本人自建）
  *   calc_budget         只读   热量预算（Mifflin-St Jeor，含安全下限与缺口上限）
  *   estimate_exercise   只读   MET 公式运动消耗
  *   list_activities     只读   支持的运动清单
@@ -282,8 +282,22 @@ function parseMacroRatio(raw: string | null): MacroRatio {
 // 工具实现
 // ---------------------------------------------------------------------------
 
-function visibleFoodWhere() {
-  return { OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } }] };
+/**
+ * 食物可见性过滤（R3.1 / 数据隔离）。
+ *
+ * 判据真源：`apps/api/src/foods/foods.util.ts` 的 `visibleFoodWhere(userId)` ——
+ * 内置 / 开放数据库（OFF / USDA / 中国食物成分表 cfcd）对所有人可见；
+ * `user_custom` 仅创建者本人可见。两处**逐字一致，勿在此处另立口径**（NFR-11）。
+ *
+ * ⚠️ 这里**曾经**是不收 `userId` 参数的单分支 OR（只列 4 个公开来源）：后果是
+ * `search_food` **永远搜不到本人自建的食物**（用户在 App「我的食物库」建了也白建），
+ * 而 `log_meal` 另内联了一份带 `createdByUserId` 的同一 OR —— 同一概念两份写法。
+ * 现在统一收 `userId` 参数，两处调用同一个 helper。
+ */
+function visibleFoodWhere(userId: number) {
+  return {
+    OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } }, { createdByUserId: userId }],
+  };
 }
 
 function keywordWhere(keyword: string) {
@@ -342,14 +356,31 @@ const tools: Record<string, ToolDef> = {
       },
       required: ['query'],
     },
-    async run(args) {
+    /**
+     * 与其他用户数据工具（get_daily_summary 等）同一模式：`guard` 包装 →
+     * `ToolInputError` 归一为结构化 `{ error }` 可读结果。
+     *
+     * ⚠️ 改前 `search_food` 是唯一**不套 guard** 的用户数据工具：未配
+     * `MCP_USER_ID` 时回包是裸字符串 `工具执行失败：ToolInputError: ...`，
+     * 而非兄弟工具那样的 `{ error: '...MCP_USER_ID...' }` —— 调用方无法稳定取值。
+     */
+    run: guard(async (args) => {
       const query = String(args.query ?? '').trim();
       const limit = Math.min(Math.max(Number(args.limit ?? 5) || 5, 1), 10);
       if (query.length === 0) {
-        return text({ error: 'query 不能为空' }, true);
+        throw new ToolInputError('query 不能为空');
       }
+      /**
+       * A6：`search_food` 读的是「对**本人**可见」的食物子集（公开来源 + 本人自建），
+       * 与其他用户数据工具同一模式：先解析 `MCP_USER_ID` 再查库。
+       *
+       * ⚠️ 这里**曾经**从不调用 `resolveUserId`，`visibleFoodWhere` 也不收 `userId` ——
+       * 本人 `source='user_custom'` 的食物两边都漏，建了也搜不到。
+       */
+      const userId = resolveUserId('read');
+      await ensureUser(userId);
       const rows = await prisma.foodItem.findMany({
-        where: { AND: [visibleFoodWhere(), keywordWhere(query)] },
+        where: { AND: [visibleFoodWhere(userId), keywordWhere(query)] },
         orderBy: [{ isVerified: 'desc' }, { id: 'asc' }],
         take: limit,
       });
@@ -363,8 +394,8 @@ const tools: Record<string, ToolDef> = {
         carbG: row.carbGPer100g,
         source: row.source,
       }));
-      return text({ query, found: items.length, items });
-    },
+      return { query, found: items.length, items };
+    }),
   },
 
   calc_budget: {
@@ -820,12 +851,9 @@ const tools: Record<string, ToolDef> = {
       const mealType = requireMealType(args);
       const date = optionalDateKey(args, 'date');
 
-      // 食物必须存在且可见（builtin/off/usda/cfcd 或本人自定义），否则拒绝写入
+      // 食物必须存在且可见（公开来源或本人自定义），否则拒绝写入
       const food = await prisma.foodItem.findFirst({
-        where: {
-          id: foodId,
-          OR: [{ source: { in: ['builtin', 'openfoodfacts', 'usda', 'cfcd'] } }, { createdByUserId: userId }],
-        },
+        where: { id: foodId, ...visibleFoodWhere(userId) },
       });
       if (food === null) {
         throw new ToolInputError(`食物 id=${foodId} 不存在或不可见，请先用 search_food 查 id`);
