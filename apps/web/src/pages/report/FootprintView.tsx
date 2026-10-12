@@ -157,7 +157,7 @@ export default function FootprintView(): ReactElement {
               <span
                 key={`weekday-${index}`}
                 aria-hidden="true"
-                className="text-center text-caption text-slate-500 dark:text-slate-400"
+                className="text-center text-caption text-slate-600 dark:text-slate-400"
               >
                 {label}
               </span>
@@ -172,7 +172,11 @@ export default function FootprintView(): ReactElement {
               const level = calendarDepthLevel(kinds?.length ?? 0);
               const dayNumber = Number(date.slice(8, 10));
 
-              // 无记录的日子：**留白**（只有淡淡的日期数字，无填充 / 无边框 / 无叉 / 不标红）
+              // 无记录的日子：**彻底留白**（空格，无填充 / 无边框 / 无叉 / 不标红）。
+              // 2026-10-12（UI 评审 P2-2 对比度闸门）：此处原本渲染一个 slate-300 的
+              // 日期数字，实测对白底仅 1.21:1 —— 「淡淡的数字」实际是「看不见的数字」。
+              // 既然产品语义就是留白，就留得彻底：去掉数字只保空格（与上面的月初 /
+              // 月末补位格同款），月历可读性由「点亮」承担，不由灰数字承担。
               if (level === 0) {
                 return (
                   <span
@@ -180,10 +184,8 @@ export default function FootprintView(): ReactElement {
                     data-date={date}
                     data-blank="true"
                     aria-hidden="true"
-                    className="flex aspect-square items-center justify-center rounded-cell text-xs text-slate-300 dark:text-slate-600"
-                  >
-                    {dayNumber}
-                  </span>
+                    className="aspect-square"
+                  />
                 );
               }
 
@@ -204,7 +206,7 @@ export default function FootprintView(): ReactElement {
           </div>
 
           {/* 图例：把「深浅」讲清楚（中性陈述，不评判） */}
-          <div className="mt-block flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-block flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
             <span>{COPY.footprintLegendNote}</span>
             <span className="flex items-center gap-2">
               {LEGEND_LEVELS.map((level) => (

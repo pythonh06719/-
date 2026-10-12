@@ -155,8 +155,11 @@ describe('内置标注 · 样式克制（是元信息，不是徽章）', () => 
     const className = builtinTag()?.className ?? '';
 
     expect(className).toContain('text-xs');
-    // 中性色（浅/深色各一档），与全站元信息文字同一口径
-    expect(className).toContain('text-slate-500');
+    // 中性色（浅/深色各一档），与全站元信息文字同一口径。
+    // 2026-10-12（UI 评审 P2-2 对比度闸门）：全站 12px 元信息浅色档从 slate-500
+    // 统一提到 slate-600（slate-500 对 warm-50/slate-100 底仅 3.9:1，不达 WCAG AA），
+    // 本处随之更新；深色档 slate-400（对深底 5.7:1）不变。
+    expect(className).toContain('text-slate-600');
     expect(className).toContain('dark:text-slate-400');
     // 不引入「徽章」形态语言
     expect(className).not.toMatch(/bg-/);

@@ -65,5 +65,10 @@ jobs:
       - run: npm ci
       - name: 前端单测
         run: npx vitest run --root apps/web
+      - name: 小字号对比度闸门（WCAG AA 4.5:1）
+        # 2026-10-12 UI 评审 P2-2：tailwind.config.ts 字号注释要求「caption 12px 用于
+        # 文字时必须 ≥4.5:1」此前无自动闸门；本步骤静态扫描全部 tsx 里与 text-caption /
+        # text-xs 同串的前景色 token，按浅/深两组背景集合校验最差比值，不达标即阻断。
+        run: npm run contrast:check -w @qsh/web
       - name: 构建（含 PWA 产物）
         run: npm run build -w @qsh/web

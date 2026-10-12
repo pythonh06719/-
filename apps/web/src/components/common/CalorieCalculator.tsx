@@ -223,7 +223,7 @@ export default function CalorieCalculator(): ReactElement {
               <p className="qsh-tnum mt-tight text-display font-semibold text-brand-700 dark:text-brand-200">
                 {result.intakeRecommended}
               </p>
-              <p className="text-caption text-brand-600 dark:text-brand-300">kcal</p>
+              <p className="text-caption text-brand-700 dark:text-brand-300">kcal</p>
             </div>
           </div>
 
@@ -240,7 +240,7 @@ export default function CalorieCalculator(): ReactElement {
             </ul>
           )}
 
-          <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
             参考来源：Mifflin-St Jeor（1990）基础代谢公式、2024 成人活动 MET 汇编。
             结果仅为健康生活参考，不构成医疗建议。孕期 / 哺乳期 / 疾病治疗期请咨询专业医师。
           </p>
