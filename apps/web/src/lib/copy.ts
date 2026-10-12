@@ -191,6 +191,12 @@ export const COPY = {
   habitCalendarTitle: '最近 35 天',
   habitCalendarHint: '实心是打过卡的日子，空心只是那天没记 —— 歇一歇也很正常',
   habitCalendarEmpty: '还没有打卡记录，从今天开始就很好',
+  /**
+   * 零打卡时的折叠 / 展开（2026-10-12 UI 评审 P1-3 紧凑化）。
+   * 折叠态是一行摘要 + 这个按钮；「看看」是邀请不是催促，与全站语气一致。
+   */
+  habitCalendarExpand: '看看这 35 天',
+  habitCalendarCollapse: '收起来',
   /** 断食（二期）——不做怂恿，随时可以停（R8.3） */
   fastingReminder: '断食适合与否因人而异，随时可以停下来',
   fastingWarningTitle: '开始前，想先和你说清楚几件事',

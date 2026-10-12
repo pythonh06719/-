@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import HabitCalendar, { HABIT_CALENDAR_DAYS } from '@/pages/habits/HabitCalendar';
@@ -64,17 +64,38 @@ describe('HabitCalendar（C3 连续日历）', () => {
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', '最近 35 天里，有 1 天打过卡');
   });
 
-  it('无任何记录 → 0 实心 + 中性引导语文案，且不含惩罚性表述', () => {
+  it('无任何记录 → 默认折叠为单行摘要 + 展开按钮；展开后 0 实心且不含惩罚性表述', () => {
     const { container } = render(<HabitCalendar checkedDates={[]} today="2026-09-30" />);
 
+    // 折叠态：没有网格，只有摘要与「看看这 35 天」按钮
+    expect(cells(container)).toHaveLength(0);
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.getByText(COPY.habitCalendarEmpty)).toBeDefined();
+    const expand = screen.getByRole('button', { name: COPY.habitCalendarExpand });
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+
+    // 点开后：35 格全空心 + 原有 aria 口径
+    fireEvent.click(expand);
+    expect(cells(container)).toHaveLength(HABIT_CALENDAR_DAYS);
     expect(checkedCells(container)).toHaveLength(0);
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', '最近 35 天里，有 0 天打过卡');
-    expect(screen.getByText(COPY.habitCalendarEmpty)).toBeDefined();
 
     const html = container.innerHTML;
     for (const banned of ['coral', 'red', '已断', '断签', '×', '✗']) {
       expect(html).not.toContain(banned);
     }
+  });
+
+  it('有记录 → 默认展开（不折叠）；零记录 → 默认折叠', () => {
+    const today = '2026-09-30';
+    const { container: withRecords } = render(
+      <HabitCalendar checkedDates={[today]} today={today} />,
+    );
+    expect(cells(withRecords)).toHaveLength(HABIT_CALENDAR_DAYS);
+
+    const { container: without } = render(<HabitCalendar checkedDates={[]} today={today} />);
+    expect(cells(without)).toHaveLength(0);
+    expect(screen.getByRole('button', { name: COPY.habitCalendarExpand })).toBeDefined();
   });
 });
 
@@ -102,7 +123,7 @@ describe('HabitsPage 连续日历接线（C3）', () => {
     );
   }
 
-  it('每个习惯渲染一张日历，实心数 == 该习惯 recentDates 命中窗口的天数', async () => {
+  it('每个习惯一张日历：有记录的展开，零记录的默认折叠（P1-3 紧凑化）', async () => {
     const today = todayKey();
     renderPage([
       {
@@ -136,9 +157,14 @@ describe('HabitsPage 连续日历接线（C3）', () => {
       expect(screen.getByText('喝水')).toBeDefined();
     });
 
-    const images = screen.getAllByRole('img');
-    expect(images).toHaveLength(2);
-    expect(images[0]).toHaveAttribute('aria-label', '最近 35 天里，有 3 天打过卡');
-    expect(images[1]).toHaveAttribute('aria-label', '最近 35 天里，有 0 天打过卡');
+    // 有记录的习惯 1 展开（grid 在），零记录的习惯 2 折叠（只有摘要 + 展开按钮）
+    expect(screen.getAllByRole('img')).toHaveLength(1);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', '最近 35 天里，有 3 天打过卡');
+    expect(screen.getByText(COPY.habitCalendarEmpty)).toBeDefined();
+
+    // 手动展开习惯 2 后，两个网格都在、口径各自正确
+    fireEvent.click(screen.getByRole('button', { name: COPY.habitCalendarExpand }));
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(screen.getAllByRole('img')[1]).toHaveAttribute('aria-label', '最近 35 天里，有 0 天打过卡');
   });
 });
