@@ -599,7 +599,7 @@ export default function WeightChart({
       {hoverIndex !== null && hoverDate !== null && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-slate-800/95 px-2.5 py-1.5 text-[11px] leading-tight text-white shadow-qsh-2 dark:bg-slate-700/95"
+          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-slate-800/95 px-2.5 py-1.5 text-caption leading-tight text-white shadow-qsh-2 dark:bg-slate-700/95"
           style={{ left: Math.min(Math.max(hoverX, 64), Math.max(size.width - 64, 64)) }}
         >
           <p className="font-medium">{hoverDate}</p>
@@ -609,7 +609,7 @@ export default function WeightChart({
       )}
 
       {/* 图例 */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center gap-4 text-[11px] text-slate-600 dark:text-slate-300">
+      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center gap-4 text-caption text-slate-600 dark:text-slate-300">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-4 rounded-pill" style={{ backgroundColor: WEIGHT_COLOR }} />
           体重

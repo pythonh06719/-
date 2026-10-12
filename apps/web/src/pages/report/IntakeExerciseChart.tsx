@@ -109,7 +109,7 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
 
       {/* 日期标签用 HTML 呈现：SVG 用 `preserveAspectRatio="none"` 横向拉伸，文字放进 SVG 会变形 */}
       <div
-        className="mt-tight grid text-[10px] text-slate-500 dark:text-slate-400"
+        className="mt-tight grid text-caption text-slate-500 dark:text-slate-400"
         style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
         aria-hidden="true"
       >
@@ -120,7 +120,7 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
         ))}
       </div>
 
-      <figcaption className="mt-1.5 flex items-center justify-center gap-4 text-[11px] text-slate-600 dark:text-slate-300">
+      <figcaption className="mt-1.5 flex items-center justify-center gap-4 text-caption text-slate-600 dark:text-slate-300">
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-sm"

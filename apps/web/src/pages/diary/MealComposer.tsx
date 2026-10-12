@@ -1033,7 +1033,7 @@ export default function MealComposer({
                   </span>
                   <span className="min-w-0 truncate">{food.name}</span>
                   {qualifier !== null && (
-                    <span className="shrink-0 rounded-pill bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    <span className="shrink-0 rounded-pill bg-slate-100 px-2 py-0.5 text-caption font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {qualifier}
                     </span>
                   )}
@@ -1315,7 +1315,7 @@ export default function MealComposer({
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">在线结果</h3>
-                        <span className="rounded-pill bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                        <span className="rounded-pill bg-slate-100 px-2 py-0.5 text-caption text-slate-500 dark:bg-slate-700 dark:text-slate-300">
                           Open Food Facts · ODbL 1.0
                         </span>
                       </div>
@@ -1349,7 +1349,7 @@ export default function MealComposer({
                       {/* 次级文字对比度：slate-400 对白底只有 2.56:1、slate-500 对
                           dark:bg-slate-800 只有 3.08:1，两套主题都不达 AA；署名是本
                           该看清的内容（ODbL 归属），故取深浅各自达标的一档。 */}
-                      <p className="mt-tight text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="mt-tight text-caption text-slate-500 dark:text-slate-400">
                         数据来自 Open Food Facts（ODbL 1.0），加入后会存到你的食物库。
                       </p>
                     </>
