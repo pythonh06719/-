@@ -212,7 +212,7 @@ describe('导航可达性 · /profile 的「更多功能」兜底区', () => {
 const NO_ENTRY_NEEDED = new Set(['/', '/onboarding', '*']);
 
 describe('导航可达性 · 穷举校验（每条路由都有入口）', () => {
-  it('★ 除 /、/onboarding、* 与 BottomNav 4 项外，每条路由都能在 Dashboard/Profile 里找到入口', async () => {
+  it('★ 除 /、/onboarding、* 与 BottomNav 5 项外，每条路由都能在 Dashboard/Profile 里找到入口', async () => {
     // 1) 从**路由表本身**取路径清单（不是手抄一份，改路由表即被覆盖）
     const routePaths = routes.map((route) => route.path);
 
@@ -227,7 +227,9 @@ describe('导航可达性 · 穷举校验（每条路由都有入口）', () => 
     expect(mustHaveEntry).toContain('/habits');
     expect(mustHaveEntry).toContain('/report');
     expect(mustHaveEntry).toContain('/fasting');
-    expect(mustHaveEntry).toContain('/ai');
+    // 2026-10-12 P1：/ai 已进底部导航，从「必须靠页面入口」降级为「一级可达」；
+    // 它仍留在 Profile「更多功能」兜底列表里（见下一个 it 的逐条确认）。
+    expect(mustHaveEntry).not.toContain('/ai');
 
     // 4) 渲染 Dashboard 与 Profile，收集全部入口链接
     const dashboard = renderAt(<DashboardPage />);
@@ -263,14 +265,14 @@ describe('导航可达性 · 穷举校验（每条路由都有入口）', () => 
 });
 
 // ---------------------------------------------------------------------------
-// ④ 底部导航：刻意保持 4 项（不新增第 5 项）
+// ④ 底部导航：5 项（2026-10-12 UI 评审 P1 起，AI 从「我的」二级提升到一级）
 // ---------------------------------------------------------------------------
 
 describe('底部导航（BottomNav）', () => {
-  it('刻意保持 4 项：今天 / 记录 / 变化 / 我的', () => {
+  it('5 项：今天 / 记录 / AI / 变化 / 我的', () => {
     const paths = NAV_ITEMS.map((item) => item.to);
-    expect(paths).toHaveLength(4);
-    expect(paths).toEqual(['/dashboard', '/diary', '/weight', '/profile']);
+    expect(paths).toHaveLength(5);
+    expect(paths).toEqual(['/dashboard', '/diary', '/ai', '/weight', '/profile']);
   });
 });
 

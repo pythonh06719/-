@@ -4,9 +4,15 @@ import { NavLink } from 'react-router-dom';
 /**
  * 底部导航（components/layout/BottomNav.tsx）—— 移动端优先（NFR-9）。
  *
- * 四个一级入口：今天 / 记录 / 变化 / 我的（显示文案生活化；**路由 path 保持不变**）。
+ * 五个一级入口：今天 / 记录 / AI / 变化 / 我的（显示文案生活化；**路由 path 保持不变**）。
  * 桌面端由 `AppShell` 转为顶部横向导航。
  * 无障碍：使用 `<nav>` + `aria-current`（NavLink 自动设置），触控目标 ≥44px（NFR-7）。
+ *
+ * 2026-10-12（UI 评审 P1）：4 项 → 5 项，新增 `/ai`。此前「刻意保持 4 项」的决策
+ * （nav-reachability 测试与 routes.tsx 均有留档）在本轮被**显式推翻**：AI 助手是
+ * 留存核心功能，却只能经「我的 → 更多功能」二级到达，与它「每日总结 / 今日方案 /
+ * 自由提问」主功能级的信息密度不匹配。其余页面（断食 / 运动饮水 / 习惯 / 工具 /
+ * 周报 / 数字是怎么来的）仍列在「我的 → 更多功能」，作为完整路由兜底。
  */
 
 interface NavItem {
@@ -54,9 +60,19 @@ function ProfileIcon(): ReactElement {
   );
 }
 
+function AiIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z" strokeLinejoin="round" />
+      <path d="M8.5 10h.01M12 10h.01M15.5 10h.01" strokeLinecap="round" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
 export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/dashboard', label: '今天', icon: <DashboardIcon /> },
   { to: '/diary', label: '记录', icon: <DiaryIcon /> },
+  { to: '/ai', label: 'AI', icon: <AiIcon /> },
   { to: '/weight', label: '变化', icon: <WeightIcon /> },
   { to: '/profile', label: '我的', icon: <ProfileIcon /> },
 ];

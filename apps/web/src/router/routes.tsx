@@ -92,12 +92,15 @@ function bare(page: ReactNode): ReactElement {
  * 是全站唯一能开关断食功能的地方）。已补齐入口，下面按「入口分布」如实描述。
  *
  * 入口分布（每条路由都能从应用内某个页面到达）：
- * - 底部导航 `BottomNav`（刻意只有 4 项）：`/dashboard`、`/diary`、`/weight`、`/profile`；
+ * - 底部导航 `BottomNav`（5 项，2026-10-12 UI 评审 P1 起）：`/dashboard`、`/diary`、
+ *   `/ai`、`/weight`、`/profile`。此前「刻意只有 4 项」的决策在本轮被显式推翻：
+ *   AI 助手是留存核心，却只能经「我的 → 更多功能」二级到达；
  * - 「今天」页 `/dashboard` 的行动卡：`/diary`、`/exercise`、`/habits`、`/report`、
  *   `/why-numbers`、`/weight`，以及空态时的 `/onboarding`；
  * - 「我的」页 `/profile` 的设置类落点：`/settings/data`、`/settings/foods`，
  *   加「更多功能」区兜底列出不在底部导航里的页面：`/fasting`、`/ai`、`/exercise`、
- *   `/habits`、`/tools`、`/report`、`/why-numbers`；
+ *   `/habits`、`/tools`、`/report`、`/why-numbers`（`/ai` 同时在一级导航与兜底列表，
+ *   双入口是有意保留：兜底列表的价值在于「任意位置可达」的完整性）；
  * - 落地页 `/` 与引导页 `/onboarding`：`/dashboard`、`/onboarding`、`/tools`。
  *
  * ⚠️ **新增页面时必须同时补一个应用内入口**，否则用户只能手输 URL —— 否则会踩
