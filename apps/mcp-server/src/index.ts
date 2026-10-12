@@ -41,6 +41,7 @@ import { PrismaClient } from '@prisma/client';
 import {
   ACTIVITY_FACTORS,
   DEFAULT_MACRO_RATIO,
+  DEFAULT_WATER_GOAL_ML,
   DEFICIT_CAP_RATIO,
   SAFETY_FLOOR,
   TAPER_REMAINING_KG,
@@ -56,6 +57,7 @@ import {
   round1,
   scaleFoodNutrients,
   safeCalcCalorieBudget,
+  shiftLocalDateKey,
   toLocalDateKey,
 } from '@qsh/core';
 import type { ActivityLevel, FoodSearchCandidate, Gender, MacroRatio } from '@qsh/core';
@@ -246,14 +248,6 @@ function optionalNote(args: Record<string, unknown>, key: string, maxLength = 20
   return text;
 }
 
-/** 将 `YYYY-MM-DD` 向前推 `n` 天（本地时区）。 */
-function shiftDateKey(dateKey: string, deltaDays: number): string {
-  const [year, month, day] = dateKey.split('-').map((part) => Number(part));
-  const date = new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1);
-  date.setDate(date.getDate() + deltaDays);
-  return toLocalDateKey(date);
-}
-
 /**
  * 解析 `user_goals.macro_ratio`（DB 列是 JSON **字符串**）→ 引擎入参对象。
  *
@@ -397,7 +391,9 @@ function steps(entries: Array<Record<string, unknown>>): Array<Record<string, un
 
 const tools: Record<string, ToolDef> = {
   search_food: {
-    description: '按名称关键词搜索「轻生活」食物库（1773 条中文食物，含每 100g 热量与三大营养素）',
+    // 描述里**不写食物条数**：库容随用户自建持续增长（种子 1773 → dev.db 实测 1789），
+    // 任何硬编码数字从写下那刻就开始漂移，而调用方并不需要这个数来做决策。
+    description: '按名称关键词搜索「轻生活」食物库（中文食物数据，含每 100g 热量与三大营养素）',
     inputSchema: {
       type: 'object',
       properties: {
@@ -598,7 +594,7 @@ const tools: Record<string, ToolDef> = {
         met: matched.met,
         minutes,
         weightKg: weight,
-        kcalBurned: Math.round(kcal * 10) / 10,
+        kcalBurned: round1(kcal),
       });
     },
   },
@@ -809,7 +805,7 @@ const tools: Record<string, ToolDef> = {
       const intakeKcal = round1(mealAgg._sum.kcal ?? 0);
       const burnedKcal = round1(exerciseAgg._sum.kcalBurned ?? 0);
       const waterMl = waterAgg._sum.amountMl ?? 0;
-      const waterGoalMl = settings?.waterGoalMl ?? 2000;
+      const waterGoalMl = settings?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
       const remainingKcal = intakeRecommended === null ? null : round1(intakeRecommended - intakeKcal);
       const progressRatio =
         intakeRecommended !== null && intakeRecommended > 0 ? round1(intakeKcal / intakeRecommended) : null;
@@ -850,7 +846,7 @@ const tools: Record<string, ToolDef> = {
       await ensureUser(userId);
       const days = optionalInt(args, 'days', { min: 1, max: 30 }, 3);
       const today = toLocalDateKey(new Date());
-      const from = shiftDateKey(today, -(days - 1));
+      const from = shiftLocalDateKey(today, -(days - 1));
 
       const rows = await prisma.mealLog.findMany({
         where: { userId, loggedDate: { gte: from, lte: today } },
@@ -889,7 +885,7 @@ const tools: Record<string, ToolDef> = {
       await ensureUser(userId);
       const days = optionalInt(args, 'days', { min: 1, max: 365 }, 30);
       const today = toLocalDateKey(new Date());
-      const from = shiftDateKey(today, -(days - 1));
+      const from = shiftLocalDateKey(today, -(days - 1));
 
       const rows = await prisma.weightLog.findMany({
         where: { userId, loggedAt: { gte: from, lte: today } },
@@ -1042,7 +1038,7 @@ const tools: Record<string, ToolDef> = {
         date,
         amountMl,
         totalMl: totalAgg._sum.amountMl ?? 0,
-        goalMl: settings?.waterGoalMl ?? 2000,
+        goalMl: settings?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
       };
     }),
   },
