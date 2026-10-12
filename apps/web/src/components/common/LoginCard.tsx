@@ -84,7 +84,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
       className="qsh-surface p-5"
     >
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">登录后同步你的记录</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mt-tight text-sm text-slate-500 dark:text-slate-400">
         用邮箱 + 验证码登录即可，我们不需要密码。
       </p>
 
@@ -96,14 +96,14 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             placeholder="you@example.com"
           />
         </label>
 
         <label className="block text-sm text-slate-600 dark:text-slate-300">
           验证码
-          <div className="mt-1 flex gap-2">
+          <div className="mt-tight flex gap-2">
             <input
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -136,7 +136,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
         <p
           role="status"
           aria-live="polite"
-          className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-body text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+          className="mt-block rounded-control bg-brand-50 px-3 py-2 text-body text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
         >
           {notice}
         </p>

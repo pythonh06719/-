@@ -281,7 +281,7 @@ export default function HabitsPage(): ReactElement {
             - 样式沿用全站「条目级操作」惯例：文字按钮、静止态非红（`text-slate-600`）、hover 才 coral。
           */}
           {!habit.isBuiltin && (
-            <div className="mt-1 flex justify-end">
+            <div className="mt-tight flex justify-end">
               <button
                 type="button"
                 data-testid={`habit-stop-${habit.id}`}
@@ -377,7 +377,7 @@ export default function HabitsPage(): ReactElement {
           {showStopped && (
             <>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.habitStoppedSectionHint}</p>
-              <ul className="mt-3 space-y-2" aria-label={COPY.habitStoppedSectionTitle}>
+              <ul className="mt-block space-y-2" aria-label={COPY.habitStoppedSectionTitle}>
                 {stoppedHabits.map((habit) => (
                   <li
                     key={habit.id}

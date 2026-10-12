@@ -74,7 +74,7 @@ export default function DataOverviewCard(): ReactElement | null {
         {COPY.dataOverviewTitle}
       </h2>
       {visible.length === 0 ? (
-        <div className="mt-3 [&_.qsh-surface-warm]:p-4">
+        <div className="mt-block [&_.qsh-surface-warm]:p-4">
           {/* `EmptyState` 自带 `p-5` 与自己的表面，而本卡外层已是 `qsh-surface p-5` ——
               直接嵌套会变成「卡中卡」双层内边距。上面那个任意值选择器把它的 `p-5`
               收进卡片内容区，视觉上仍是卡片内的一个凹陷区块。 */}
@@ -82,8 +82,8 @@ export default function DataOverviewCard(): ReactElement | null {
         </div>
       ) : (
         <>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{COPY.dataOverviewDesc}</p>
-          <dl className="mt-3 space-y-1.5">
+          <p className="mt-tight text-xs text-slate-600 dark:text-slate-300">{COPY.dataOverviewDesc}</p>
+          <dl className="mt-block space-y-1.5">
             {visible.map((row) => (
               <div
                 key={row.key}

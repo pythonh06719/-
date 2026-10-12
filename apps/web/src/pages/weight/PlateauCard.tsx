@@ -43,7 +43,7 @@ export default function PlateauCard({
       </h2>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{COPY.plateauBody}</p>
 
-      <dl className="mt-3 space-y-2 rounded-card bg-brand-50 p-4 dark:bg-brand-900/40">
+      <dl className="mt-block space-y-2 rounded-card bg-brand-50 p-4 dark:bg-brand-900/40">
         <div>
           <dt className="text-xs text-slate-500 dark:text-slate-400">这几周发生了什么</dt>
           <dd className="qsh-tnum mt-0.5 text-sm text-slate-700 dark:text-slate-200">
@@ -61,13 +61,13 @@ export default function PlateauCard({
         )}
       </dl>
 
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{COPY.plateauFootnote}</p>
+      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.plateauFootnote}</p>
 
       {/*
         AC-11.1.6：温和的收起按钮。刻意**不用**「关闭 / 忽略 / 不再显示」这类生硬字眼，
         也不用醒目的 ✕ 图标 —— 保留触控目标（qsh-touch-target）与无障碍标签。
       */}
-      <div className="mt-1 flex justify-end">
+      <div className="mt-tight flex justify-end">
         <button
           type="button"
           onClick={onDismiss}

@@ -157,7 +157,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.goalCardTitle}
         </h2>
-        <p role="status" className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p role="status" className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           正在取出你现在的目标…
         </p>
       </section>
@@ -175,7 +175,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         <div
           role="status"
           data-testid="goal-card-load-error"
-          className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          className="mt-tight flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
         >
           <span>{COPY.offlineNotice}</span>
           <button
@@ -202,7 +202,7 @@ export default function GoalSettingsCard(): ReactElement | null {
         <h2 id="goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.goalCardTitle}
         </h2>
-        <p role="status" className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p role="status" className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           {COPY.goalCardEmpty}
         </p>
       </section>
@@ -278,7 +278,7 @@ export default function GoalSettingsCard(): ReactElement | null {
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {goalCurrentWeightLabel(weightUnit)}
           </dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+          <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
             {formatWeight(goal.startWeightKg, weightUnit)}
           </dd>
         </div>
@@ -286,7 +286,7 @@ export default function GoalSettingsCard(): ReactElement | null {
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {goalTargetWeightLabel(weightUnit)}
           </dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
+          <dd className="qsh-tnum mt-tight font-semibold text-brand-700 dark:text-brand-200">
             {formatWeight(goal.targetWeightKg, weightUnit)}
           </dd>
         </div>
@@ -294,7 +294,7 @@ export default function GoalSettingsCard(): ReactElement | null {
           <dt className="text-xs text-slate-600 dark:text-slate-400">
             {COPY.goalTargetWeeksLabel}
           </dt>
-          <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+          <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
             {goal.targetWeeks} 周
           </dd>
         </div>
@@ -314,7 +314,7 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="decimal"
               value={edit.currentWeightKg}
               onChange={(event) => setEdit((prev) => ({ ...prev, currentWeightKg: event.target.value }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -324,7 +324,7 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="decimal"
               value={edit.targetWeightKg}
               onChange={(event) => setEdit((prev) => ({ ...prev, targetWeightKg: event.target.value }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -334,7 +334,7 @@ export default function GoalSettingsCard(): ReactElement | null {
               inputMode="numeric"
               value={edit.targetWeeks}
               onChange={(event) => setEdit((prev) => ({ ...prev, targetWeeks: event.target.value }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
         </div>

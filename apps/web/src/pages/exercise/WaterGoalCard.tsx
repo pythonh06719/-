@@ -116,7 +116,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
       <h2 id="water-goal-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.waterGoalTitle}
       </h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.waterGoalDesc}</p>
+      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.waterGoalDesc}</p>
 
       <form data-testid="water-goal-form" className="mt-4 flex items-end gap-3" onSubmit={handleSubmit}>
         <label className="flex-1 text-sm text-slate-600 dark:text-slate-300" htmlFor="water-goal-input">
@@ -133,7 +133,7 @@ export default function WaterGoalCard({ serverGoalMl }: WaterGoalCardProps): Rea
             inputMode="numeric"
             value={value}
             onChange={(event) => handleChange(event.target.value)}
-            className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
         <button

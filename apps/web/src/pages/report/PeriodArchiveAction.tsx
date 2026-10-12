@@ -182,7 +182,7 @@ export default function PeriodArchiveAction({
               </h3>
               <p
                 id="period-archive-confirm-description"
-                className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300"
+                className="mt-block text-sm leading-6 text-slate-600 dark:text-slate-300"
               >
                 {PERIOD_ARCHIVE_SENSITIVE_NOTICE}
               </p>

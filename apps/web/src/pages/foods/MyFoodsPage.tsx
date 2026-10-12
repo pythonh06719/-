@@ -104,7 +104,7 @@ export default function MyFoodsPage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.myFoodsTitle}</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.myFoodsDesc}</p>
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">{COPY.myFoodsDesc}</p>
       </section>
 
       {notice !== null && (

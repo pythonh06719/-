@@ -408,7 +408,7 @@ export default function ExercisePage(): ReactElement {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pb-24 pt-4" aria-live="polite">
       <section className="qsh-surface p-5">
         <h1 className="text-title font-semibold text-slate-800 dark:text-slate-100">动一动</h1>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
           消耗 = MET × 体重 × 时长（估算值，来源见「参考来源」页）
         </p>
 
@@ -417,7 +417,7 @@ export default function ExercisePage(): ReactElement {
         </label>
         <select
           id="exercise-type"
-          className="mt-1 w-full rounded-control border border-slate-200 bg-white px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="mt-tight w-full rounded-control border border-slate-200 bg-white px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
           value={activityCode}
           onChange={(event) => setActivityCode(event.target.value)}
         >
@@ -436,12 +436,12 @@ export default function ExercisePage(): ReactElement {
           type="number"
           min={1}
           max={480}
-          className="mt-1 w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="mt-tight w-full rounded-control border border-slate-200 px-3 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
           value={minutes}
           onChange={(event) => setMinutes(Math.max(1, Math.min(480, Number(event.target.value) || 1)))}
         />
 
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
+        <p className="mt-block text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
           大约消耗 <span className="text-xl font-bold text-brand-600 dark:text-brand-400">{toDisplayEnergy(previewKcal, unit)}</span>{' '}
           {energyLabel(unit)}
         </p>
@@ -528,7 +528,7 @@ export default function ExercisePage(): ReactElement {
             颜色接品牌色 brand（实测 on 白底 6.50:1 / 深色面 8.47:1，均过 AA）；
             改前用的是冷蓝（Tailwind 内置色，全站仅饮水模块一处），与看板的绿色对不上。 */}
         {shortcutNotice ? (
-          <p role="status" className="mt-1 text-sm text-brand-700 dark:text-brand-300">
+          <p role="status" className="mt-tight text-sm text-brand-700 dark:text-brand-300">
             {shortcutNotice}
           </p>
         ) : null}
@@ -544,7 +544,7 @@ export default function ExercisePage(): ReactElement {
             role="status"
             aria-live="polite"
             data-testid="water-stale-notice"
-            className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            className="mt-tight flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-slate-100 px-4 py-2 text-caption text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             <span>{WATER_STALE_NOTICE}</span>
             <button
@@ -560,7 +560,7 @@ export default function ExercisePage(): ReactElement {
             </button>
           </div>
         )}
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
           {waterTotal} / {waterGoal} ml（{waterPercent}%）
         </p>
         <div

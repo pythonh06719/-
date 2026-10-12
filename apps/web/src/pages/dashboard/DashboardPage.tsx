@@ -379,7 +379,7 @@ export default function DashboardPage(): ReactElement {
     data.encouragement.trim() !== '' ? data.encouragement : encouragementForHour(hour);
 
   return (
-    // C-6 宽屏（≥1024px）：`space-y-6` 单栏在 `lg` 变成三栏。移动端所有类名不变。
+    // C-6 宽屏（≥1024px）：`space-y-section` 单栏在 `lg` 变成三栏。移动端所有类名不变。
     //
     // ⚠️ 下方三栏各自的包裹 `<div>` **不是**多余的嵌套，**不要删** ——
     // CSS Grid 同一行内各列**共享行高**：若把卡片直接平铺进栅格，矮栏会被相邻高栏的行高
@@ -387,11 +387,11 @@ export default function DashboardPage(): ReactElement {
     // ⚠️ 这个空档**只有真实浏览器（会排版）看得见，jsdom 不算布局 → 单测证明不了**；
     // 删掉包裹块时 `wide-layout.test.tsx` 仍会全绿（它只断言类名与 DOM 顺序）。
     //
-    // 包裹块在移动端只是中性容器（`space-y-6` 与父级同款），卡片顺序 / 间距与改动前一致。
+    // 包裹块在移动端只是中性容器（`space-y-section` 与父级同款），卡片顺序 / 间距与改动前一致。
     // DOM 顺序 == 视觉「先左栏、再中栏、再右栏」→ **不改变焦点顺序**。
     <section
       aria-labelledby="dashboard-title"
-      className="space-y-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-6 lg:space-y-0"
+      className="space-y-section lg:grid lg:grid-cols-3 lg:items-start lg:gap-6 lg:space-y-0"
     >
       <header className="flex items-baseline justify-between gap-3 lg:col-span-3">
         <h1 id="dashboard-title" className="text-title font-semibold text-slate-900 dark:text-slate-100">
@@ -412,12 +412,12 @@ export default function DashboardPage(): ReactElement {
 
       {/* 左栏（C-6，≥1024px）：今日状态 + 快捷动作。
           包裹块用于消除跨栏共享行高的空档 —— 理由与「删不得」的警告见上方栅格注释，**别删**。
-          移动端这是一层中性包裹（`space-y-6` 与父级同款），间距 / 顺序与改动前一致。 */}
-      <div className="space-y-6 lg:col-start-1">
+          移动端这是一层中性包裹（`space-y-section` 与父级同款），间距 / 顺序与改动前一致。 */}
+      <div className="space-y-section lg:col-start-1">
         {/* ① 时段问候 + 一句生活叙事 */}
         <div className="qsh-surface-warm p-5">
           <p className="text-title font-semibold text-warm-900 dark:text-warm-200">{greeting}</p>
-          <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{narrative}</p>
+          <p className="mt-tight text-sm text-slate-700 dark:text-slate-300">{narrative}</p>
         </div>
 
         {/* ② 今日行动卡（主 CTA：动作优先，每次都是一大步） */}
@@ -483,7 +483,7 @@ export default function DashboardPage(): ReactElement {
       </div>
 
       {/* 中栏（C-6，≥1024px）：今天的记录 + 喝水。同左栏 —— 这层包裹块别删（见上方栅格注释）。 */}
-      <div className="space-y-6 lg:col-start-2">
+      <div className="space-y-section lg:col-start-2">
         {/* ③ 生活化摘要。
             ⚠️ 这里原本是「热量进度环」：一个 96px 的珊瑚色圆环，环内写「117% / 今日进度」。
             它是全屏最大、最饱和的元素 —— 形态本身就把「超标 17%」呈现成了**一个评分**，
@@ -521,7 +521,7 @@ export default function DashboardPage(): ReactElement {
               去记早餐 →
             </Link>
           ) : (
-            <p className="qsh-tnum mt-1 text-xs text-slate-600 dark:text-slate-400">
+            <p className="qsh-tnum mt-tight text-xs text-slate-600 dark:text-slate-400">
               {data.remainingKcal < 0
                 ? `已摄入 ${intakeDisplay} ${energyLabel(unit)} / 参考 ${budgetDisplay} ${energyLabel(unit)}`
                 : (
@@ -534,7 +534,7 @@ export default function DashboardPage(): ReactElement {
 
           <Link
             to="/why-numbers"
-            className="mt-3 inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
+            className="mt-block inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
           >
             这些数字是怎么来的 →
           </Link>
@@ -547,13 +547,13 @@ export default function DashboardPage(): ReactElement {
             <p className="text-sm text-warm-800 dark:text-warm-200">{cupLabel}</p>
           </div>
           <p
-            className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+            className="mt-tight text-xs text-slate-500 dark:text-slate-400"
             role="status"
             aria-live="polite"
           >
             {cupText(water.totalMl, waterGoal)}
           </p>
-          <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="mt-block flex items-center justify-between gap-2">
             <p className="qsh-tnum text-xs text-slate-500 dark:text-slate-400">
               {water.totalMl} / {waterGoal} ml
             </p>
@@ -571,17 +571,17 @@ export default function DashboardPage(): ReactElement {
       </div>
 
       {/* 右栏（C-6，≥1024px）：这周的小变化 + 安全提示与鼓励。同左栏 —— 这层包裹块别删。 */}
-      <div className="space-y-6 lg:col-start-3">
+      <div className="space-y-section lg:col-start-3">
         {/* 这周的小变化（迷你体重趋势） */}
         <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这周的小变化</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
-          <div className="mt-3">
+          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{weightStory(data.miniTrend, weightUnit)}</p>
+          <div className="mt-block">
             <Sparkline data={data.miniTrend} weightUnit={weightUnit} />
           </div>
           <Link
             to="/weight"
-            className="mt-3 inline-block text-sm font-medium text-brand-600 dark:text-brand-300"
+            className="mt-block inline-block text-sm font-medium text-brand-600 dark:text-brand-300"
           >
             看看这几天的变化 →
           </Link>

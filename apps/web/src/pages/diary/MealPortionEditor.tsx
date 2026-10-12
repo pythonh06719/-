@@ -206,8 +206,8 @@ export default function MealPortionEditor({
             关闭
           </button>
         </div>
-        <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">{displayName}</p>
-        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-700 dark:text-slate-200">{displayName}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-300">
           {isLibrary ? COPY.portionEditHint : COPY.portionEditKcalHint}
         </p>
 
@@ -216,7 +216,7 @@ export default function MealPortionEditor({
             {food !== null && (food.servingUnits ?? []).length > 0 && (
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">按份量单位</p>
-                <div className="mt-1 flex flex-wrap gap-2">
+                <div className="mt-tight flex flex-wrap gap-2">
                   {food.servingUnits.map((item) => (
                     <button
                       key={`${item.unit}-${item.grams}`}
@@ -241,7 +241,7 @@ export default function MealPortionEditor({
                       inputMode="decimal"
                       value={servingQty}
                       onChange={(event) => changeQty(event.target.value)}
-                      className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                      className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     />
                   </label>
                 )}
@@ -258,7 +258,7 @@ export default function MealPortionEditor({
                   setServingUnit(null);
                 }}
                 aria-label={`${displayName} 的克数`}
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
 
@@ -275,14 +275,14 @@ export default function MealPortionEditor({
                 value={kcalInput}
                 onChange={(event) => setKcalInput(event.target.value)}
                 aria-label={`${displayName} 的热量`}
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
           </div>
         )}
 
         {hint !== null && (
-          <p role="status" className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          <p role="status" className="mt-block rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
             {hint}
           </p>
         )}

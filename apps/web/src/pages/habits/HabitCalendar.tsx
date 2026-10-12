@@ -37,7 +37,7 @@ export default function HabitCalendar({ checkedDates, today }: HabitCalendarProp
   const checkedCount = cells.filter((date) => checked.has(date)).length;
 
   return (
-    <figure className="mt-3">
+    <figure className="mt-block">
       <figcaption className="text-caption font-medium text-slate-600 dark:text-slate-300">
         {COPY.habitCalendarTitle}
       </figcaption>

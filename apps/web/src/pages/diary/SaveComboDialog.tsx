@@ -144,14 +144,14 @@ export default function SaveComboDialog({
           </button>
         </div>
 
-        <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+        <p className="mt-tight text-sm text-slate-700 dark:text-slate-200">
           {MEAL_TYPE_LABELS[mealType]}
         </p>
-        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{COPY.comboSaveDesc}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-300">{COPY.comboSaveDesc}</p>
 
         {/* 条目名称列表：只列名字，**不出现任何热量 / 条数统计**（Q-2） */}
         {itemNames.length > 0 && (
-          <ul className="mt-3 flex flex-wrap gap-1.5">
+          <ul className="mt-block flex flex-wrap gap-1.5">
             {itemNames.map((itemName, index) => (
               <li
                 key={`${itemName}-${index}`}
@@ -178,7 +178,7 @@ export default function SaveComboDialog({
               }
             }}
             aria-label={COPY.comboNameLabel}
-            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
 
@@ -186,7 +186,7 @@ export default function SaveComboDialog({
           <p
             role="status"
             data-testid="save-combo-notice"
-            className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+            className="mt-block rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
           >
             {notice}
           </p>

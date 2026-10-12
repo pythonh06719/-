@@ -205,11 +205,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-budget-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ① 热量预算怎么算
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           我们按一套公开公式一步步推，不是拍脑袋给一个数字。顺序是：BMR → 乘活动系数得 TDEE → 减去一个温和缺口 → 再套一层安全网。
         </p>
 
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="BMR（基础代谢率）" value="Mifflin-St Jeor（1990）" />
           <DerivationRow term="男性" value="10×体重(kg) + 6.25×身高(cm) − 5×年龄 + 5" />
           <DerivationRow term="女性" value="10×体重(kg) + 6.25×身高(cm) − 5×年龄 − 161" />
@@ -303,7 +303,7 @@ export default function WhyNumbersPage(): ReactElement {
         )}
 
         {live !== null && live.safeguardMessages.length > 0 && (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-block space-y-2">
             {live.safeguardMessages.map((message) => (
               <li
                 key={message}
@@ -319,7 +319,7 @@ export default function WhyNumbersPage(): ReactElement {
         <h3 className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-100">
           每餐参考预算怎么分
         </h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           饮食页每一餐后面那句「参考 N kcal」=
           <strong className="font-semibold">每日建议摄入 × 这一餐的占比</strong>
           ，没有第二套算法。每日建议摄入取自服务端按你的资料重算的结果（本机缓存只在断网时兜底），
@@ -368,7 +368,7 @@ export default function WhyNumbersPage(): ReactElement {
             </p>
           </li>
         </ul>
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-block text-sm text-slate-600 dark:text-slate-300">
           参考也可以：宏量营养素按能量的 {KCAL_PER_G_PROTEIN} kcal/g（蛋白）、{KCAL_PER_G_FAT} kcal/g（脂肪）、
           {KCAL_PER_G_CARB} kcal/g（碳水）折算；1kg 脂肪约 {KCAL_PER_KG_FAT} kcal。
         </p>
@@ -382,17 +382,17 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-exercise-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ② 运动消耗怎么算
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           用运动医学通用的 MET 公式（MET = 代谢当量），数值来自《2024 成人活动 MET 汇编》，与后端是同一份表。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="公式" value="kcal = MET × 体重(kg) × 时长(小时)" />
           <DerivationRow
             term="示例"
             value={`快走 MET ${MET_EXAMPLE.met} × 60kg × 0.5h ≈ ${MET_EXAMPLE.kcalFor30minAt60kg} kcal`}
           />
         </dl>
-        <table className="mt-3 w-full border-collapse text-sm">
+        <table className="mt-block w-full border-collapse text-sm">
           <caption className="sr-only">常见运动的 MET 值与换算示例（60kg / 30 分钟）</caption>
           <thead>
             <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
@@ -411,7 +411,7 @@ export default function WhyNumbersPage(): ReactElement {
             ))}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+        <p className="mt-block text-xs text-slate-600 dark:text-slate-300">
           运动消耗是估算值：实际还受强度、效率、体质影响，所以我们会说「大约」。别把它当精确账本。
         </p>
       </section>
@@ -424,11 +424,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-data-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ③ 数据来源与许可
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           食物库共 1773 条，逐条标注来源与许可；代码为 MIT，数据是混合来源（详见仓库 DATA-LICENSE.md）。
           其中《中国食物成分表》扩量条目仅限个人非商业自用，不参与对外分发。
         </p>
-        <table className="mt-3 w-full border-collapse text-sm">
+        <table className="mt-block w-full border-collapse text-sm">
           <caption className="sr-only">食物营养数据来源与许可</caption>
           <thead>
             <tr className="text-left text-xs text-slate-600 dark:text-slate-300">
@@ -460,7 +460,7 @@ export default function WhyNumbersPage(): ReactElement {
             </tr>
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+        <p className="mt-block text-xs text-slate-600 dark:text-slate-300">
           署名：© Open Food Facts contributors（ODbL 1.0）；USDA FoodData Central — SR Legacy（公有领域）。
           《中国食物成分表》数据未经中国营养学会/中国疾控中心营养与健康所书面允许不得用于商业目的，本项目仅个人非商业自用、不再分发。
         </p>
@@ -518,11 +518,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-goal-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑤ 目标进度与维持模式怎么判断
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           体重页那个环只回答两件事：你走到哪儿了，大概还要多久。算不出来的时候，我们宁可整张卡片不显示，
           也不给你一个假数字。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="进度基准" value="目标历史里最早一条的起始体重" hint="= 设定目标时的体重" />
           <DerivationRow term="达成比" value="(基准 − 最新) ÷ (基准 − 目标)" hint="钳制到 0~100%" />
           <DerivationRow
@@ -533,7 +533,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="还需几周" value="引擎 etaWeeks = 剩余(kg) ÷ 每周有效减重" hint="展示时向上取整" />
           <DerivationRow term="维持模式" value="最新体重 ≤ 目标体重 → 不再制造缺口" hint="摄入回到 TDEE" />
         </dl>
-        <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <ul className="mt-block space-y-2 text-sm text-slate-600 dark:text-slate-300">
           <li className="rounded-control bg-brand-50 px-4 py-3 dark:bg-brand-900/30">
             <strong className="text-brand-800 dark:text-brand-200">到了目标之后，我们不再催你往下走</strong>
             <p className="mt-0.5 text-xs text-brand-700 dark:text-brand-100">
@@ -559,12 +559,12 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-plateau-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑥ 平台期是怎么判断的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           连着几周体重不动，很容易让人以为「白坚持了」。所以我们在体重页会主动解释一句，
           并把视角从每天的数字拉到 4 周。下面是判定规则 —— 全部来自 @qsh/core
           的纯函数，前后端同源。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="观察窗口"
             value={`${PLATEAU_WINDOW_DAYS} 天（3 周）`}
@@ -591,7 +591,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="单位 kg/周"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用 7 日均线，而不是每天的数字</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -620,11 +620,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-weight-range-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑦ 体重区间（近 7 / 30 / 90 天）怎么统计
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           体重页可以切换看最近 7 / 30 / 90 天。换区间只是换看哪一段，取数方式没变，也不会改动你的任何记录 ——
           下面的「最低 / 最高 / 均值 / 净变化」跟着你选的区间一起变。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="区间窗口" value="[今天 − (N−1) 天, 今天]" hint="闭区间，含今天" />
           <DerivationRow term="最低 / 最高" value="窗口内记录的最小 / 最大体重" />
           <DerivationRow term="均值" value="窗口内所有记录的算术平均" hint="与 7 日均线不是一回事" />
@@ -635,7 +635,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="窗口跨区间边界时仍用区间外的历史"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么默认给你看 90 天</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -664,11 +664,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-weekly-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑧ 周报里的对比与达成率怎么读
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           周报里新增了一张「摄入 vs 运动」对比图和一行习惯达成率。它们的口径都写在下面 ——
           数字只是把这一周发生的事摊开，不给你打分。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="摄入 vs 运动 柱高" value="按 7 天单日峰值统一缩放" hint="两组同一尺度，可直接目视对比" />
           <DerivationRow term="摄入合计" value="一周内所有饮食记录热量之和" />
           <DerivationRow term="运动合计" value="一周内所有运动记录消耗之和" />
@@ -679,7 +679,7 @@ export default function WhyNumbersPage(): ReactElement {
           />
           <DerivationRow term="体重变化" value="本周内最后一条 − 最早一条" hint="不足两条记录则不给数字" />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么运动那根柱总比摄入矮</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -708,11 +708,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-taper-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑨ 快到目标时，为什么建议会自动变宽松
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           离目标只剩一点点时，你会看到建议摄入悄悄变高（缺口变小）。这不是算错了，而是刻意的收尾设计 ——
           规则和理由都在下面。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="触发条件"
             value={`剩余需减 ≤ ${TAPER_REMAINING_KG} kg`}
@@ -729,7 +729,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="缺口归零、摄入回到 TDEE（见 ⑤）"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么要放慢</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -766,11 +766,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-meal-order-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑩ 餐次里的顺序是怎么定的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           一餐里的条目可以按你实际吃的顺序排，也能整条挪到别的餐。
           顺序只是「摆放位置」，规则都在下面。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="存在哪儿"
             value="sort_order（0 开始的小整数）"
@@ -802,7 +802,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="前端先乐观更新，重新拉取后一律以服务端为准"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么拖来拖去不会改变热量</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -831,10 +831,10 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-top-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑪ 常吃榜是怎么排出来的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           「你常吃的」是你自己记出来的结果：不猜、不推荐、不评价，只把你这段时间出现得最多的几样列出来。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="时间窗" value="近 90 天，含今天" />
           <DerivationRow
             term="怎么算「同一种」"
@@ -851,7 +851,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="并列时怎么排" value="最近出现过的排在前面" hint="再并列按名称定序，结果不会跳动" />
           <DerivationRow term="排序依据" value="只有频次" hint="不含热量、不含营养素、不含任何健康度" />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么算「天数」而不是「次数」</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -880,11 +880,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑫ 备份提醒与记录概览
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           「多久没备份」和「我到底记了多少」这两个数字，口径都在下面 ——
           它们只是陈述，不是催你做事。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="上次备份存在哪儿"
             value="本机 localStorage 的 lastBackupAt"
@@ -905,7 +905,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="记录概览的跨度" value="最早与最晚的记录日期" hint="某项一条都没有时整行隐藏" />
           <DerivationRow term="备份文件去哪了" value="只在本机生成一个文件" hint="不上传任何地方" />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不做定时提醒</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -932,7 +932,7 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-period-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑬「这段时间」里的六个数字怎么来
         </h2>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="有记录的天数" value="当日体重 / 饮食 / 运动 / 习惯 / 饮水 / 这句话，任一有记录即计数" hint="区间含今天" />
           <DerivationRow term="食物种类数" value="与周报是同一个函数（distinctFoodKeys）" hint="归一化显示名优先" />
           <DerivationRow term="餐次条目" value="饮食记录的行数" />
@@ -954,7 +954,7 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-distinct-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑭ 不同食物的种类是怎么数出来的
         </h2>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="数据来源" value="区间内你记下的饮食条目" />
           <DerivationRow term="身份口径" value="归一化后的显示名优先，缺失时按食物库编号" hint="「种类」是用户的语言" />
           <DerivationRow term="同名合并" value="库内条目与同名的快速记录算同一种" />
@@ -972,7 +972,7 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-wins-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑮「体重之外的变化」这个数字怎么用
         </h2>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="数据来源" value="区间内你写下的句子条数" />
           <DerivationRow term="只能记今天" value="不支持补录" hint="把补录做成任务会带来完成压力" />
           <DerivationRow term="删除" value="不进回收站" hint="随账号删除一并清除" />
@@ -989,11 +989,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-sfa-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑯ 周报里的「饱和脂肪」是怎么来的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           周报的「微量营养素（日均）」里有一条「饱和脂肪」。它和热量、蛋白那些不太一样 ——
           有一部分不是数据源直接给的克数，而是按比例<strong className="font-semibold">推算</strong>出来的，所以在这里把口径摊开讲清楚。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="推算公式"
             value="饱和脂肪(g) ÷ 100g = 总脂肪(g) × SFA% ÷ 100"
@@ -1008,7 +1008,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="合理性校验" value="推算值必须 ≤ 总脂肪" hint="否则判为数据异常，留空不显示" />
           <DerivationRow term="USDA 条目" value="直接用其原始饱和脂肪克数" hint="不属于推算值" />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么是「推算」而不是直接抄一个克数</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1035,11 +1035,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-ai-usage-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑰ AI 页面那个「还能问 N 次」是怎么算的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           AI 页顶部那一行数字不是一个估算 —— 它是你今天实际问过的次数，直接从服务端的计数表里读出来的。
           算式和来源都在下面。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="数据来源"
             value="ai_usage 表当日各功能行的 request_count 合计"
@@ -1059,7 +1059,7 @@ export default function WhyNumbersPage(): ReactElement {
           <DerivationRow term="什么时候重置" value="每天本地零点重新计" hint="不累计、不清零之外的惩罚" />
           <DerivationRow term="查用量本身" value="不计数" hint="看多少次都不影响剩余" />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么用完时只说一句「明天再来也行」</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1087,11 +1087,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-portion-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑱ 改份量后，热量是怎么重算的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           记完发现份量填错了，直接改一下就好 —— 不用删掉重新搜。
           改完这条会按食物库重新算一遍，口径和「新记一条」完全一样。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="数据来源"
             value="食物库里那一条的「每 100g」值"
@@ -1120,7 +1120,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="改份量只是把数字改对，不给任何评价"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么「改成 200g」和「重新记一条 200g」一定同一个数</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1146,11 +1146,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-restore-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑲ 备份恢复里的数字怎么来
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           选择 JSON 备份后看到的条数与日期跨度，只来自这份文件；预览阶段不写入任何记录。
           确认页也会把合并规则原样列出，不做静默覆盖。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="统计来源" value="已通过结构校验的 JSON 备份" hint="支持结构版本 1 和 2" />
           <DerivationRow term="体重 / 运动 / 习惯 / 饮水 / 这句话" value="各自数组的记录条数" />
           <DerivationRow term="餐次条目" value="meals 每个餐次里的 items 数量之和" hint="不是餐次分组数量" />
@@ -1169,11 +1169,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-tool-memory-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ⑳ 生活化工具里的「我的常点」是怎么记住的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           外卖和饮品工具会记住你常用的品类与档位，下次打开先帮你选好。
           它<strong className="font-semibold">只做这一件事</strong>：替你省一次点选 —— 不推荐、不排序、也不评价你点了什么。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="存在哪儿"
             value="你自己的浏览器（本机 localStorage）"
@@ -1211,7 +1211,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="绝不拿已不存在的选项去预选"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么只记忆，不给你推荐</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1239,11 +1239,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-pending-sync-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉑ 顶部那个「还有 N 笔在排队」是怎么来的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           断网时你照样能记，记录会先存在本机，联网后自动送出去。顶部那条横幅主行讲网络，
           副行的数字就是「还留在本机、还没送出去」的笔数。它的口径在下面。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="这个数字是什么"
             value="本机待同步队列里的条目数"
@@ -1279,7 +1279,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="与你在页面上做的动作一一对应，不用换算"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么联网了还一直显示</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1310,12 +1310,12 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-daily-avg-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉒ 周报里两处「日均」用的是同一个分母
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           周报上「日均摄入」和「微量营养素（日均）」里的「日均」是同一个意思：都除以这一周里
           <strong className="font-semibold">「有饮食记录的天数」</strong>，不是固定的 7 天。
           这样两个数字才能互相印证 —— 一个说吃了多少，一个说钙铁大概够不够，分母相同才比得起来。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="「日均」的分母"
             value="本周 7 天里「当日有饮食记录」的天数"
@@ -1334,7 +1334,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="食物库里这项缺失很常见（如维生素 D 与 B12 整库都没有）；拿「没查到」当 0 会把缺失误报成「达标」"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不用固定的 7 天</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1361,12 +1361,12 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉓ 足迹日历里颜色的深浅是怎么定的
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           「足迹」那张月历里，有记录的日期会被点亮。颜色的深浅只表示一件事：
           <strong className="font-semibold">那一天记了几类</strong> —— 不表示好坏，也不表示热量高低。
           口径写在这里，你可以对着它去核对每一格。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="点亮某一天的依据"
             value="那一天「有记录」的模块数量大于 0"
@@ -1390,7 +1390,7 @@ export default function WhyNumbersPage(): ReactElement {
             hint="不是「第 0 档颜色」，没有任何负向标记"
           />
         </dl>
-        <dl className="mt-3 space-y-3 text-sm">
+        <dl className="mt-block space-y-3 text-sm">
           <div>
             <dt className="font-semibold text-slate-800 dark:text-slate-100">为什么不用百分比、也不数「连着记了多少天」</dt>
             <dd className="mt-0.5 text-slate-600 dark:text-slate-300">
@@ -1418,11 +1418,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-fasting-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉔ 断食计时里的小时数怎么算
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           断食页显示的目标、已过时长和剩余时长都由服务端给出。页面只把小时数显示到 1 位小数，
           不会在浏览器里另算一套。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="目标时长从哪来"
             value="明确提交的 targetFastHours > 常见方案模板 > 原有目标"
@@ -1460,11 +1460,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-habit-streak-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉕ 习惯的当前连续与历史最佳怎么算
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           连续天数按打卡的本地日历日期来数，不按相隔了多少小时来数。一天打过卡就算这一天，
           同一天不会重复增加。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow
             term="计入哪些日期"
             value="该习惯所有 done=true 的 loggedDate"
@@ -1501,11 +1501,11 @@ export default function WhyNumbersPage(): ReactElement {
         <h2 id="why-water-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
           ㉖ 饮水目标与百分比怎么算
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
           饮水页的「已记录 / 目标 ml（百分比）」把今天的记录与当前目标放在一起展示。
           默认 2000 ml 是产品的缺省值，不是根据体重、性别或天气推算的医学建议。
         </p>
-        <dl className="mt-3 rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
+        <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
           <DerivationRow term="今天已记录" value="今天每笔饮水 amountMl 的合计" />
           <DerivationRow
             term="饮水目标优先级"

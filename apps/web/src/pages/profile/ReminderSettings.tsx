@@ -56,7 +56,7 @@ export default function ReminderSettings(): ReactElement {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.reminderToggleTitle}</h2>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{COPY.reminderToggleDesc}</p>
+          <p className="mt-tight text-xs leading-relaxed text-slate-500 dark:text-slate-400">{COPY.reminderToggleDesc}</p>
         </div>
         <button
           type="button"
@@ -76,7 +76,7 @@ export default function ReminderSettings(): ReactElement {
         </button>
       </div>
       {notice !== null && (
-        <p role="status" className="mt-3 text-sm text-brand-600 dark:text-brand-300">
+        <p role="status" className="mt-block text-sm text-brand-600 dark:text-brand-300">
           {notice}
         </p>
       )}

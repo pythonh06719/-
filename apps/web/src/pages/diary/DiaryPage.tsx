@@ -944,7 +944,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
 
       <div className="qsh-surface p-5">
         <p className="text-sm text-slate-500 dark:text-slate-400">{isToday ? '今天一共' : '这天一共'}</p>
-        <p className="qsh-tnum mt-1 text-display font-bold text-brand-700 dark:text-brand-300">
+        <p className="qsh-tnum mt-tight text-display font-bold text-brand-700 dark:text-brand-300">
           {toDisplayEnergy(todayTotal, unit)}
           <span className="ml-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">
             {energyLabel(unit)}
@@ -952,14 +952,14 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         </p>
         {/* B5：预算**未就绪时不渲染这一段**（加载中不留 0，也不 0 ↔ 真实值闪烁） */}
         {dailyBudget !== null && (
-          <div className="mt-3" data-testid="daily-budget">
+          <div className="mt-block" data-testid="daily-budget">
             <div className="h-2 w-full overflow-hidden rounded-pill bg-brand-100 dark:bg-slate-700">
               <div
                 className="h-full rounded-pill bg-brand-500 transition-all"
                 style={{ width: `${Math.min(progressRatio, 1) * 100}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
               参考预算 {toDisplayEnergy(dailyBudget, unit)} {energyLabel(unit)}
               {progressRatio > 1 && isToday ? ' · 今天吃得丰富一些，明天照常就好' : ''}
             </p>
@@ -1003,11 +1003,11 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
       <div className="qsh-surface p-5">
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">这一天的体重</h2>
         {weightOfDay === null ? (
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-tight text-sm text-slate-500 dark:text-slate-400">
             这天没有称体重的记录。想补的话去「变化」页加一条就好。
           </p>
         ) : (
-          <p className="qsh-tnum mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">
+          <p className="qsh-tnum mt-tight text-2xl font-bold text-slate-800 dark:text-slate-100">
             {formatWeightNumber(weightOfDay.weightKg, weightUnit)}
             <span className="ml-1 text-sm font-medium text-slate-500 dark:text-slate-400">{weightLabel(weightUnit)}</span>
           </p>
@@ -1128,7 +1128,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                 还没有记录，点一下下面就好
               </p>
             ) : (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-block space-y-2">
                 {group.logs.map((log, index) => (
                   <MealItemRow
                     key={log.id}
@@ -1169,7 +1169,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
                   setComboError(null);
                   setSavingComboMeal(group.mealType);
                 }}
-                className="qsh-touch-target mt-3 w-full rounded-control py-2.5 text-sm font-medium text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+                className="qsh-touch-target mt-block w-full rounded-control py-2.5 text-sm font-medium text-slate-600 ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
               >
                 {COPY.comboSaveEntry}
               </button>
@@ -1178,7 +1178,7 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
             <button
               type="button"
               onClick={() => setComposerMeal(group.mealType)}
-              className="qsh-touch-target mt-3 w-full rounded-control bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
+              className="qsh-touch-target mt-block w-full rounded-control bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
             >
               + 记录{MEAL_TYPE_LABELS[group.mealType]}
             </button>

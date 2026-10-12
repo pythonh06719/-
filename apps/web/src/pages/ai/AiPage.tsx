@@ -118,7 +118,7 @@ function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
       className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700"
     >
       <p className="text-sm text-slate-800 dark:text-slate-100">{trace.question}</p>
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
         <span>{traceTimeLabel(trace.createdAt)}</span>
         <span aria-hidden="true">·</span>
         <span>{traceStatusLabel(trace.status)}</span>
@@ -136,7 +136,7 @@ function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
               ' · ',
             )}
           </p>
-          <ul className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+          <ul className="mt-tight space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
             {toolSteps.map((step, index) => (
               <li key={`${step.index}-${index}`} className="flex items-center justify-between gap-3">
                 <span>{step.tool !== undefined ? (TOOL_LABELS[step.tool] ?? step.tool) : '这一步'}</span>
@@ -170,21 +170,21 @@ function TracePanel(): ReactElement {
   return (
     <section className="qsh-surface p-5" aria-live="polite">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiTraceTitle}</h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceDesc}</p>
+      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.aiTraceDesc}</p>
 
       {tracesQuery.isLoading ? (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{COPY.aiTraceLoading}</p>
+        <p className="mt-block text-sm text-slate-500 dark:text-slate-400">{COPY.aiTraceLoading}</p>
       ) : tracesQuery.isError && traces.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-error">
+        <p className="mt-block text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-error">
           {COPY.aiTraceError}
         </p>
       ) : traces.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-empty">
+        <p className="mt-block text-sm text-slate-500 dark:text-slate-400" data-testid="ai-trace-empty">
           {COPY.aiTraceEmpty}
         </p>
       ) : (
         <>
-          <ul className="mt-3 space-y-2" aria-label={COPY.aiTraceTitle}>
+          <ul className="mt-block space-y-2" aria-label={COPY.aiTraceTitle}>
             {traces.map((trace) => (
               <TraceCard key={trace.id} trace={trace} />
             ))}
@@ -215,14 +215,14 @@ function InsightCard({ insight }: { insight: { conclusion: string; basis: string
   return (
     <div className="qsh-surface p-5">
       <p className="text-base font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{insight.conclusion}</p>
-      <ul className="mt-3 space-y-1.5" aria-label="依据">
+      <ul className="mt-block space-y-1.5" aria-label="依据">
         {insight.basis.map((item) => (
           <li key={item} className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             · {item}
           </li>
         ))}
       </ul>
-      <p className="mt-3 rounded-control bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
+      <p className="mt-block rounded-control bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
         {insight.suggestion}
       </p>
       <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRuleModeNote}</p>
@@ -306,8 +306,8 @@ function FoodRecognizePanel(): ReactElement {
   return (
     <section className="qsh-surface p-5">
       <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
-      <div className="mt-3 flex gap-2">
+      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
+      <div className="mt-block flex gap-2">
         <input
           type="text"
           value={description}
@@ -366,9 +366,9 @@ function FoodRecognizePanel(): ReactElement {
             </ul>
           )}
           {confirmedName !== null && (
-            <p className="mt-3 text-sm text-brand-600 dark:text-brand-300">{COPY.aiRecognizeConfirmed}</p>
+            <p className="mt-block text-sm text-brand-600 dark:text-brand-300">{COPY.aiRecognizeConfirmed}</p>
           )}
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
+          <p className="mt-block text-xs text-slate-500 dark:text-slate-400">确认后才会记入饮食日记，热量按食物库计算。</p>
         </div>
       )}
     </section>
@@ -651,7 +651,7 @@ export default function AiPage(): ReactElement {
                 <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-100">{askQueryLike.data.answer}</p>
                 {/* 可观测性：告诉用户数字是怎么来的（Agent 实际调用了哪些工具） */}
                 {askQueryLike.data.tools !== undefined && askQueryLike.data.tools.length > 0 && (
-                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
                     我查了：{askQueryLike.data.tools.map((tool) => TOOL_LABELS[tool] ?? tool).join(' · ')}
                   </p>
                 )}
@@ -666,10 +666,10 @@ export default function AiPage(): ReactElement {
                     className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/50 dark:bg-amber-900/20"
                   >
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-200">需要你确认</p>
-                    <p className="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-100">
+                    <p className="mt-tight text-sm leading-relaxed text-amber-700 dark:text-amber-100">
                       {askQueryLike.data.pending.describe}
                     </p>
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-block flex gap-2">
                       <button
                         type="button"
                         onClick={() =>

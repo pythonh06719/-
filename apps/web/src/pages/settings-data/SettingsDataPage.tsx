@@ -317,19 +317,19 @@ export default function SettingsDataPage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导出我的数据</h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
           JSON 可完整恢复你的资料、目标、记录与设置（单位、体重单位、深色、断食开关、饮水目标）；
           CSV 每实体一个文件，UTF-8 with BOM，首行表头，日期为 YYYY-MM-DD。
         </p>
         <button
           type="button"
           onClick={() => void handleExport()}
-          className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
+          className="qsh-touch-target mt-block w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           一键导出 JSON + CSV
         </button>
         {exportState !== null && (
-          <p role="status" aria-live="polite" className="mt-3 text-sm text-brand-700 dark:text-brand-300">
+          <p role="status" aria-live="polite" className="mt-block text-sm text-brand-700 dark:text-brand-300">
             {exportState}
           </p>
         )}
@@ -343,11 +343,11 @@ export default function SettingsDataPage(): ReactElement {
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.dataBackupTitle}
         </h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.dataBackupDesc}</p>
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.dataBackupDesc}</p>
         <button
           type="button"
           onClick={() => void handleBackup()}
-          className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
+          className="qsh-touch-target mt-block w-full rounded-control bg-brand-600 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           {COPY.dataBackupButton}
         </button>
@@ -389,11 +389,11 @@ export default function SettingsDataPage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">导入历史体重（CSV）</h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
           模板列：<code>date</code>（YYYY-MM-DD）、<code>weightKg</code>、<code>note</code>（可选）。
           同日期以导入值覆盖，未能识别的行会跳过并汇总。
         </p>
-        <label className="qsh-touch-target mt-3 block">
+        <label className="qsh-touch-target mt-block block">
           <span className="sr-only">选择 CSV 文件</span>
           <input
             type="file"
@@ -409,12 +409,12 @@ export default function SettingsDataPage(): ReactElement {
           />
         </label>
         {importState !== null && (
-          <div role="status" aria-live="polite" className="mt-3 rounded-control bg-brand-50 px-3 py-2 dark:bg-brand-900/40">
+          <div role="status" aria-live="polite" className="mt-block rounded-control bg-brand-50 px-3 py-2 dark:bg-brand-900/40">
             <p className="text-sm text-brand-700 dark:text-brand-200">
               导入完成：成功 {importState.imported} 条，跳过 {importState.skipped} 行。
             </p>
             {importState.errors.length > 0 && (
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-600 dark:text-slate-400">
+              <ul className="mt-tight list-disc space-y-0.5 pl-5 text-xs text-slate-600 dark:text-slate-400">
                 {importState.errors.slice(0, 5).map((error) => (
                   <li key={`${error.row}-${error.reason}`}>
                     第 {error.row} 行：{error.reason}
@@ -432,7 +432,7 @@ export default function SettingsDataPage(): ReactElement {
         className="rounded-card border border-coral-200 bg-coral-50 p-5 dark:border-coral-700 dark:bg-coral-900/30"
       >
         <h2 className="text-subtitle font-semibold text-coral-700 dark:text-coral-200">删除我的全部数据</h2>
-        <p className="mt-1 text-xs leading-relaxed text-coral-700 dark:text-coral-100">
+        <p className="mt-tight text-xs leading-relaxed text-coral-700 dark:text-coral-100">
           这是<strong className="font-semibold">硬删除</strong>：账号、体重、饮食、设置等全部记录都会从服务器真实移除，无法恢复。
           建议先「导出我的数据」留一份备份。
         </p>
@@ -441,14 +441,14 @@ export default function SettingsDataPage(): ReactElement {
           <button
             type="button"
             onClick={() => setConfirmStep('confirm')}
-            className="qsh-touch-target mt-3 w-full rounded-control bg-coral-500 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-coral-600"
+            className="qsh-touch-target mt-block w-full rounded-control bg-coral-500 py-3 font-medium text-white transition-colors duration-qsh-fast ease-qsh-out hover:bg-coral-600"
           >
             删除我的全部数据
           </button>
         )}
 
         {confirmStep === 'confirm' && (
-          <div className="mt-3 space-y-2">
+          <div className="mt-block space-y-2">
             <p className="text-sm font-medium text-coral-700 dark:text-coral-100">
               再确认一次：删除后无法恢复，确定继续吗？
             </p>
@@ -472,13 +472,13 @@ export default function SettingsDataPage(): ReactElement {
         )}
 
         {confirmStep === 'deleting' && (
-          <p role="status" aria-live="polite" className="mt-3 text-sm text-coral-700 dark:text-coral-100">
+          <p role="status" aria-live="polite" className="mt-block text-sm text-coral-700 dark:text-coral-100">
             正在删除…
           </p>
         )}
 
         {deleteState !== null && (
-          <p role="status" aria-live="polite" className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          <p role="status" aria-live="polite" className="mt-block text-sm text-slate-600 dark:text-slate-300">
             {deleteState}
           </p>
         )}

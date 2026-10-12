@@ -148,7 +148,7 @@ export default function MealItemRow({
 
       {/* 降级控件组（AC-3.8.7）：上移 / 下移 / 移动到某餐。
           与拖拽**等价**、**独立** —— 拖拽 hook 不挂载时这一组照常可用。 */}
-      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      <div className="mt-tight flex flex-wrap items-center gap-1.5">
         {/*
           改份量（B3）：与排序控件**同层**、同为按钮 —— 拖动 / 上移 / 下移都是「摆放」，
           改份量是「改这条本身」，两者互不干扰；本按钮**不注册任何指针事件**，

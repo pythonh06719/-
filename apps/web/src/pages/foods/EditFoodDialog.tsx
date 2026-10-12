@@ -151,7 +151,7 @@ export default function EditFoodDialog({
           </button>
         </div>
 
-        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{COPY.myFoodsEditDesc}</p>
+        <p className="mt-tight text-xs text-slate-600 dark:text-slate-300">{COPY.myFoodsEditDesc}</p>
 
         <label className="mt-4 block text-sm text-slate-600 dark:text-slate-300">
           {COPY.myFoodsEditNameLabel}
@@ -173,18 +173,18 @@ export default function EditFoodDialog({
               }
             }}
             aria-label={COPY.myFoodsEditNameLabel}
-            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
 
-        <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+        <label className="mt-block block text-sm text-slate-600 dark:text-slate-300">
           {COPY.myFoodsEditCategoryLabel}
           <select
             value={category}
             data-testid="edit-food-category"
             onChange={(event) => setCategory(event.target.value)}
             aria-label={COPY.myFoodsEditCategoryLabel}
-            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           >
             {FOOD_CATEGORIES.map((item) => (
               <option key={item} value={item}>
@@ -194,7 +194,7 @@ export default function EditFoodDialog({
           </select>
         </label>
 
-        <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+        <label className="mt-block block text-sm text-slate-600 dark:text-slate-300">
           {COPY.myFoodsEditKcalLabel(unit)}
           <input
             type="number"
@@ -215,7 +215,7 @@ export default function EditFoodDialog({
               }
             }}
             aria-label={COPY.myFoodsEditKcalLabel(unit)}
-            className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </label>
 
@@ -223,7 +223,7 @@ export default function EditFoodDialog({
           <p
             role="status"
             data-testid="edit-food-notice"
-            className="mt-3 rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+            className="mt-block rounded-control bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
           >
             {notice}
           </p>

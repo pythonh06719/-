@@ -34,7 +34,7 @@ const INITIAL_FORM: FormState = {
 
 /** 表单控件共用样式（含深色变体；`dark:bg-slate-900` 沿用「我的」页输入框惯例）。 */
 const FIELD_CLASS =
-  'mt-1 w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+  'mt-tight w-full rounded-control border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
 
 /** 将字符串安全转为数字（空串 / 非法 → NaN，交由引擎校验）。 */
 function toNumber(value: string): number {
@@ -102,7 +102,7 @@ export default function CalorieCalculator(): ReactElement {
       <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         先算一算，再决定要不要用
       </h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mt-tight text-sm text-slate-500 dark:text-slate-400">
         无需注册，数据只在你的浏览器里计算，不会上传。
       </p>
 
@@ -186,7 +186,7 @@ export default function CalorieCalculator(): ReactElement {
 
         <button
           type="submit"
-          className="col-span-2 mt-1 rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition duration-qsh-fast ease-qsh-out hover:bg-brand-700"
+          className="col-span-2 mt-tight rounded-control bg-brand-600 px-4 py-3 font-medium text-white transition duration-qsh-fast ease-qsh-out hover:bg-brand-700"
         >
           计算我的每日预算
         </button>
@@ -210,17 +210,17 @@ export default function CalorieCalculator(): ReactElement {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
               <p className="text-caption text-slate-600 dark:text-slate-400">基础代谢 BMR</p>
-              <p className="qsh-tnum mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.bmr}</p>
+              <p className="qsh-tnum mt-tight text-xl font-semibold text-slate-800 dark:text-slate-100">{result.bmr}</p>
               <p className="text-caption text-slate-600 dark:text-slate-400">kcal</p>
             </div>
             <div className="rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
               <p className="text-caption text-slate-600 dark:text-slate-400">每日消耗 TDEE</p>
-              <p className="qsh-tnum mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">{result.tdee}</p>
+              <p className="qsh-tnum mt-tight text-xl font-semibold text-slate-800 dark:text-slate-100">{result.tdee}</p>
               <p className="text-caption text-slate-600 dark:text-slate-400">kcal</p>
             </div>
             <div className="rounded-control bg-brand-100 p-4 dark:bg-brand-900/40">
               <p className="text-caption text-brand-700 dark:text-brand-200">建议摄入</p>
-              <p className="qsh-tnum mt-1 text-display font-semibold text-brand-700 dark:text-brand-200">
+              <p className="qsh-tnum mt-tight text-display font-semibold text-brand-700 dark:text-brand-200">
                 {result.intakeRecommended}
               </p>
               <p className="text-caption text-brand-600 dark:text-brand-300">kcal</p>

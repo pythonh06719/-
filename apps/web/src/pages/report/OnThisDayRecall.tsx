@@ -159,13 +159,13 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       <h2 id="on-this-day-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.onThisDayTitle}
       </h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{scaleLabel}</p>
+      <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">{scaleLabel}</p>
       {/* 真实日期：给这段记忆一个落点（日期不是评判）。 */}
       <p className="text-xs text-slate-500 dark:text-slate-400" data-testid="on-this-day-date">
         {dateLabel}
       </p>
 
-      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{COPY.onThisDayLead}</p>
+      <p className="mt-block text-sm text-slate-600 dark:text-slate-300">{COPY.onThisDayLead}</p>
 
       {/* 那天吃了什么：按餐次分组，只列食物名。
           刻意不写「共 N 餐 / N 样 / N kcal」—— 计数与热量都是分母型数字（红线②③）。 */}
@@ -183,14 +183,14 @@ export default function OnThisDayRecall({ today }: OnThisDayRecallProps = {}): R
       </ul>
 
       {/* 尾注：把「这只是回看」讲清楚 —— 反缺席指控。 */}
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{COPY.onThisDayFootnote}</p>
+      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.onThisDayFootnote}</p>
 
       {/* 去那一天完整看 —— 复用 C-1 的 `/diary?date=`（DiaryPage 已支持该 query）。 */}
       <Link
         to={`/diary?date=${target.dateKey}`}
         data-testid="on-this-day-link"
         aria-label={onThisDayOpenFullAria(dateLabel)}
-        className="qsh-touch-target mt-3 inline-block rounded-control bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
+        className="qsh-touch-target mt-block inline-block rounded-control bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 transition-colors duration-qsh-base ease-qsh-out hover:bg-brand-100 dark:bg-brand-900/40 dark:text-brand-200"
       >
         {COPY.onThisDayOpenFull}
       </Link>

@@ -46,9 +46,9 @@ export default function EmptyState({
       <div className="min-w-0">
         <p className="text-subtitle font-medium text-slate-800 dark:text-slate-100">{title}</p>
         {description !== undefined && (
-          <p className="mt-1 text-body text-slate-600 dark:text-slate-300">{description}</p>
+          <p className="mt-tight text-body text-slate-600 dark:text-slate-300">{description}</p>
         )}
-        {action !== undefined && <div className="mt-3">{action}</div>}
+        {action !== undefined && <div className="mt-block">{action}</div>}
       </div>
     </section>
   );

@@ -170,7 +170,7 @@ export default function WeeklyReportView(): ReactElement {
           </button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-block flex flex-wrap items-center gap-2">
           <label className="text-sm text-slate-600 dark:text-slate-300" htmlFor="week-end-date">
             {COPY.weekJumpLabel}
             <input
@@ -202,7 +202,7 @@ export default function WeeklyReportView(): ReactElement {
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400" data-testid="week-window-label">
           {windowLabel}
         </p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weekWindowNote}</p>
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.weekWindowNote}</p>
       </section>
 
       {report === undefined ? (
@@ -217,7 +217,7 @@ export default function WeeklyReportView(): ReactElement {
             近 7 天（{rangeText}）
           </h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{COPY.weeklyEmptyTitle}</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
+          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.weeklyEmptyNote}</p>
         </section>
       ) : (
         <>
@@ -239,20 +239,20 @@ export default function WeeklyReportView(): ReactElement {
               <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
                 近 7 天（{rangeText}）
               </h2>
-              <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+              <div className="mt-block grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">日均摄入</p>
-                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
+                  <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.avgIntakeKcal, unit)}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">运动消耗</p>
-                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
+                  <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">{toDisplayEnergy(report.totalExerciseKcal, unit)}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-300">{energyLabel(unit)}</p>
                 </div>
                 <div className="rounded-control bg-slate-50 p-3 dark:bg-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-300">体重变化</p>
-                  <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
+                  <p className="mt-tight text-lg font-bold text-slate-800 dark:text-slate-100">
                     {formatSignedWeight(report.weightChangeKg, weightUnit)}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-300">{weightLabel(weightUnit)}</p>
@@ -263,7 +263,7 @@ export default function WeeklyReportView(): ReactElement {
               <h3 className="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {COPY.reportTrendTitle}
               </h3>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
+              <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.reportTrendCaption}</p>
               <div className="mt-2">
                 <IntakeExerciseChart days={reportDays} />
               </div>
@@ -282,7 +282,7 @@ export default function WeeklyReportView(): ReactElement {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
                 {weeklyWeightReading(report.weightChangeKg)}
               </p>
             </section>
@@ -323,8 +323,8 @@ export default function WeeklyReportView(): ReactElement {
 
             <section className="qsh-surface p-5">
               <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">微量营养素（日均）</h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
-              <ul className="mt-3 space-y-3">
+              <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">免费提供，参考条按《中国居民膳食营养素参考摄入量》成人一般人群口径。</p>
+              <ul className="mt-block space-y-3">
                 {micronutrients.map((item) => {
                   // 🔴 `dailyAvg === null` = 数据缺失（无记录 / 无数据 / 推算异常），
                   // **不是 0**。此时不渲染条、不判达标，只说「暂无数据」——
@@ -363,7 +363,7 @@ export default function WeeklyReportView(): ReactElement {
                           {item.dailyAvg} {item.unit}
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700">
+                      <div className="mt-tight h-2 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700">
                         <div
                           className={`h-full rounded-pill ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
                           style={{ width: `${barPercent}%` }}
@@ -378,7 +378,7 @@ export default function WeeklyReportView(): ReactElement {
                   );
                 })}
               </ul>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
+              <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{referenceNote}</p>
             </section>
           </div>
         </>

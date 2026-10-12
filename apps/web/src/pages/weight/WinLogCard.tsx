@@ -140,9 +140,9 @@ export default function WinLogCard(): ReactElement {
       <h2 id="win-log-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.winCardTitle}
       </h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{COPY.winCardDesc}</p>
+      <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{COPY.winCardDesc}</p>
 
-      <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+      <label className="mt-block block text-sm text-slate-600 dark:text-slate-300">
         <span className="sr-only">{COPY.winCardInputLabel}</span>
         <input
           type="text"
@@ -166,13 +166,13 @@ export default function WinLogCard(): ReactElement {
         onClick={handleSubmit}
         disabled={createMutation.isPending}
         data-testid="win-submit"
-        className="qsh-touch-target mt-3 w-full rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
+        className="qsh-touch-target mt-block w-full rounded-control bg-brand-600 py-3 font-medium text-white transition duration-qsh-base ease-qsh-out hover:bg-brand-700 disabled:opacity-60 dark:bg-brand-500 dark:hover:bg-brand-400"
       >
         {COPY.winCardSubmit}
       </button>
 
       {notice !== null && (
-        <p role="status" aria-live="polite" className="mt-3 text-sm text-brand-700 dark:text-brand-300" data-testid="win-notice">
+        <p role="status" aria-live="polite" className="mt-block text-sm text-brand-700 dark:text-brand-300" data-testid="win-notice">
           {notice}
         </p>
       )}

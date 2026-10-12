@@ -176,11 +176,11 @@ export default function FastingPage(): ReactElement {
             {session && !session.endedAt ? (
               <div className="mt-4 rounded-control bg-slate-50 p-3 text-center dark:bg-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-300">已断食</p>
-                <p className="mt-1 text-4xl font-bold text-slate-800 dark:text-slate-100" aria-live="off">
+                <p className="mt-tight text-4xl font-bold text-slate-800 dark:text-slate-100" aria-live="off">
                   {session.elapsedHours.toFixed(1)}
                   <span className="text-base font-normal"> 小时</span>
                 </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
+                <p className="mt-tight text-sm text-slate-500 dark:text-slate-300">
                   {session.remainingHours > 0 ? `还有 ${session.remainingHours.toFixed(1)} 小时到目标` : '已经达到目标啦'}
                 </p>
                 <button
@@ -203,7 +203,7 @@ export default function FastingPage(): ReactElement {
             )}
             <button
               type="button"
-              className="mt-3 w-full rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400"
+              className="mt-block w-full rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400"
               onClick={() => saveSettings.mutate({ enabled: false })}
             >
               关闭断食功能
@@ -223,11 +223,11 @@ export default function FastingPage(): ReactElement {
             </button>
           </>
         )}
-        {notice ? <p className="mt-3 text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
+        {notice ? <p className="mt-block text-sm text-brand-700 dark:text-brand-400">{notice}</p> : null}
+        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">我们不会因为断食给你发任何提醒或推送。</p>
         <Link
           to="/why-numbers#why-fasting-title"
-          className="mt-3 inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
+          className="mt-block inline-block text-sm font-medium text-brand-700 dark:text-brand-300"
         >
           这些数字是怎么来的 →
         </Link>

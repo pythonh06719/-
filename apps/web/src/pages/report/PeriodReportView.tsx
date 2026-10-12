@@ -150,7 +150,7 @@ export default function PeriodReportView(): ReactElement {
           <h2 id="period-metrics-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.reportTabPeriod}
           </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400" data-testid="period-range">
+          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400" data-testid="period-range">
             {rangeLine}
           </p>
 
@@ -194,7 +194,7 @@ export default function PeriodReportView(): ReactElement {
           <h2 id="period-top-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.periodTopTitle}
           </h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-block space-y-2">
             {topItems.map((item) => (
               <li
                 key={item.foodItemId ?? item.name}

@@ -159,7 +159,7 @@ export default function OnboardingPage(): ReactElement {
     return (
       <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-5 py-12">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">开始前，先聊两句</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+        <p className="mt-block text-sm leading-relaxed text-slate-600 dark:text-slate-300">
           我们希望你先了解适用边界，再决定要不要用。这几句话很重要，请读一读。
         </p>
 
@@ -168,7 +168,7 @@ export default function OnboardingPage(): ReactElement {
           className="qsh-surface mt-6 p-5"
         >
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">免责声明</h2>
-          <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          <ul className="mt-block space-y-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             <li>· 本产品不提供医疗建议，也不能替代专业诊断与治疗。</li>
             <li>· 计算结果仅用于健康生活参考。</li>
             <li>· 孕期、哺乳期或正处于疾病治疗期的朋友，我们不建议使用热量缺口方案。</li>
@@ -185,7 +185,7 @@ export default function OnboardingPage(): ReactElement {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="qsh-touch-target mt-3 w-full rounded-control py-3 text-sm text-slate-600 dark:text-slate-400"
+          className="qsh-touch-target mt-block w-full rounded-control py-3 text-sm text-slate-600 dark:text-slate-400"
         >
           再想想，先回首页
         </button>
@@ -217,19 +217,19 @@ export default function OnboardingPage(): ReactElement {
         <dl className="mt-6 grid grid-cols-3 gap-3 text-center">
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">基础代谢</dt>
-            <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.bmr}
             </dd>
           </div>
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">每日消耗</dt>
-            <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {preview.tdee}
             </dd>
           </div>
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">每日缺口</dt>
-            <dd className="qsh-tnum mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight text-lg font-semibold text-slate-800 dark:text-slate-100">
               {Math.round(preview.effectiveDeficit)}
             </dd>
           </div>
@@ -237,22 +237,22 @@ export default function OnboardingPage(): ReactElement {
 
         <section aria-label="宏量营养素建议" className="mt-4 qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
-          <ul className="mt-3 grid grid-cols-3 gap-3 text-center">
+          <ul className="mt-block grid grid-cols-3 gap-3 text-center">
             <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">蛋白质</p>
-              <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
+              <p className="qsh-tnum mt-tight font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.proteinG} g
               </p>
             </li>
             <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">脂肪</p>
-              <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
+              <p className="qsh-tnum mt-tight font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.fatG} g
               </p>
             </li>
             <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">碳水</p>
-              <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
+              <p className="qsh-tnum mt-tight font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.carbG} g
               </p>
             </li>
@@ -320,7 +320,7 @@ export default function OnboardingPage(): ReactElement {
               <select
                 value={form.gender}
                 onChange={(event) => update('gender', event.target.value as Gender)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               >
                 <option value="female">女</option>
                 <option value="male">男</option>
@@ -333,7 +333,7 @@ export default function OnboardingPage(): ReactElement {
                 max={todayKey()}
                 value={form.birthDate}
                 onChange={(event) => update('birthDate', event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -342,7 +342,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.heightCm}
                 onChange={(event) => update('heightCm', event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -351,7 +351,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.currentWeightKg}
                 onChange={(event) => update('currentWeightKg', event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
           </div>
@@ -366,7 +366,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.targetWeightKg}
                 onChange={(event) => update('targetWeightKg', event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -375,7 +375,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="numeric"
                 value={form.targetWeeks}
                 onChange={(event) => update('targetWeeks', event.target.value)}
-                className="mt-1 w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
           </div>
@@ -436,7 +436,7 @@ export default function OnboardingPage(): ReactElement {
           <legend className="px-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
             常见情况（可多选）
           </legend>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">
             这部分属于敏感信息，仅你自己可见，也可以随时不填。
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

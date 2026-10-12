@@ -404,7 +404,7 @@ export default function WeightPage(): ReactElement {
                 max={todayKey()}
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -414,7 +414,7 @@ export default function WeightPage(): ReactElement {
                 value={weight}
                 onChange={(event) => setWeight(event.target.value)}
                 placeholder={weightUnit === 'jin' ? '如：120' : '如：59.8'}
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
               />
             </label>
           </div>
@@ -425,7 +425,7 @@ export default function WeightPage(): ReactElement {
               maxLength={200}
               onChange={(event) => setNote(event.target.value)}
               placeholder="如：昨天聚餐，睡得比较晚"
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:text-slate-100"
             />
           </label>
           <button
@@ -454,7 +454,7 @@ export default function WeightPage(): ReactElement {
             <h2 id="weight-rise-title" className="font-semibold">
               {COPY.weightRiseTitle}
             </h2>
-            <p role="status" className="mt-1">
+            <p role="status" className="mt-tight">
               {COPY.weightFluctuation}
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -512,7 +512,7 @@ export default function WeightPage(): ReactElement {
             <p
               role="status"
               data-testid="weight-trend-loading"
-              className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400"
+              className="mt-block px-1 text-sm text-slate-500 dark:text-slate-400"
             >
               {TREND_LOADING}
             </p>
@@ -521,7 +521,7 @@ export default function WeightPage(): ReactElement {
               role="status"
               aria-live="polite"
               data-testid="weight-trend-error"
-              className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              className="mt-block flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
               <span>{TREND_LOAD_ERROR}</span>
               <button
@@ -537,7 +537,7 @@ export default function WeightPage(): ReactElement {
               </button>
             </div>
           ) : points.length === 0 ? (
-            <p className="mt-3 px-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-block px-1 text-sm text-slate-500 dark:text-slate-400">
               {allPoints.length === 0 ? COPY.emptyWeight : COPY.weightRangeEmpty}
             </p>
           ) : (
@@ -579,25 +579,25 @@ export default function WeightPage(): ReactElement {
         <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMin}</dt>
-            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.minKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMax}</dt>
-            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.maxKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatMean}</dt>
-            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatWeightNumber(stats.meanKg, weightUnit)}
             </dd>
           </div>
           <div className="qsh-surface p-3">
             <dt className="text-xs text-slate-500 dark:text-slate-400">{COPY.weightStatChange}</dt>
-            <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+            <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
               {formatSignedWeight(stats.changeKg, weightUnit)}
             </dd>
           </div>
@@ -623,7 +623,7 @@ export default function WeightPage(): ReactElement {
               还没有记录
             </p>
           ) : (
-            <ul className="mt-3 space-y-1.5">
+            <ul className="mt-block space-y-1.5">
               {[...points]
                 .reverse()
                 .slice(0, 8)
@@ -639,7 +639,7 @@ export default function WeightPage(): ReactElement {
                 ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
             参考：{addDays(todayKey(), -6)} 起的 7 日窗口用于计算移动平均。
           </p>
         </div>

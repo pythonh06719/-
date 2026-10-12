@@ -36,7 +36,7 @@ export default function LandingPage(): ReactElement {
           不节食 · 不极端 · 融进日常
         </p>
         <h1 className="mt-4 text-display font-bold text-slate-900 dark:text-slate-100">轻生活</h1>
-        <p className="mx-auto mt-3 max-w-xl text-base text-slate-600 dark:text-slate-400">
+        <p className="mx-auto mt-block max-w-xl text-base text-slate-600 dark:text-slate-400">
           一款把减肥融入日常的中文工具：科学热量预算、低门槛饮食记录、温和的习惯养成。
         </p>
       </header>
@@ -48,7 +48,7 @@ export default function LandingPage(): ReactElement {
             className="qsh-surface p-5"
           >
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
+            <p className="mt-tight text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
           </div>
         ))}
       </section>
@@ -95,7 +95,7 @@ export default function LandingPage(): ReactElement {
         className="mt-10 qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">我们的隐私承诺</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
+        <ul className="mt-block space-y-2 text-sm text-slate-600 dark:text-slate-400">
           <li>· 不出售你的任何数据</li>
           <li>· 不接入广告 SDK</li>
           <li>· 不使用第三方行为分析</li>
@@ -105,7 +105,7 @@ export default function LandingPage(): ReactElement {
 
       <footer className="mt-8 rounded-card bg-cream-200 p-5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/60 dark:text-slate-400">
         <p className="font-medium text-slate-600 dark:text-slate-300">免责声明</p>
-        <p className="mt-1">
+        <p className="mt-tight">
           本产品不提供医疗建议。孕期、哺乳期、疾病治疗期人群不建议使用热量缺口方案，请先咨询专业医师。
           计算结果仅用于健康生活参考，不能替代专业诊断与治疗。
         </p>

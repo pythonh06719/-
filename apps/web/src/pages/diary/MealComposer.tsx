@@ -733,7 +733,7 @@ export default function MealComposer({
    * 而不是另挂一个 aria 属性让读屏念两遍。
    */
   const renderTopList = (items: readonly TopFoodItem[], days: number): ReactElement => (
-    <ul className="mt-3 space-y-2">
+    <ul className="mt-block space-y-2">
       {items.map((item) => {
         // 行内小字与 aria **共用**这一份格式化结果（视觉 == 读屏，NFR-7）
         const lastLoggedMonthDay = topFoodLastLoggedMonthDay(item.lastLoggedDate);
@@ -1011,7 +1011,7 @@ export default function MealComposer({
    * 故不构成「button 套 button」的非法结构。
    */
   const renderFoodList = (items: readonly FoodItem[]): ReactElement => (
-    <ul className="mt-3 space-y-2">
+    <ul className="mt-block space-y-2">
       {items.map((food) => {
         const qualifier = 'qualifier' in food ? (food as FoodSearchHit).qualifier : null;
         const favorited = favoriteIds.has(food.id);
@@ -1147,7 +1147,7 @@ export default function MealComposer({
             关闭
           </button>
         </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{date}</p>
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">{date}</p>
 
         {/* 记录方式标签（「常吃」在数据不足时**整块隐藏**，AC-11.5.2）
 
@@ -1190,7 +1190,7 @@ export default function MealComposer({
 
         {/* C-3 多选模式开关（**正交于来源**：在任何渲染食物行的 tab 下都能开）。
             默认关闭 → 单条快速路径（G1 ≤3 次点击）逐字节不变。 */}
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-block flex items-center justify-between gap-2">
           <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
             <input
               type="checkbox"
@@ -1217,7 +1217,7 @@ export default function MealComposer({
         </div>
 
         {note !== null && (
-          <p role="status" className="mt-3 rounded-card bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+          <p role="status" className="mt-block rounded-card bg-brand-50 px-3 py-2 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
             {note}
           </p>
         )}
@@ -1234,12 +1234,12 @@ export default function MealComposer({
                   setOnlineRequested(false);
                 }}
                 placeholder="如：番茄、米饭、拿铁"
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
 
             {/* 扫码 / 在线兜底入口 */}
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-block flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setScannerOpen(true)}
@@ -1264,7 +1264,7 @@ export default function MealComposer({
             {/* 结果完整性（阶段 2.4）：把服务端的 `total` 如实呈现，并给「加载更多」。
                 顺序完全由服务端相关度决定，前端不重排、不筛选、不做任何评价。 */}
             {searchQuery.data !== undefined && localItems.length > 0 && (
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="mt-block flex items-center justify-between gap-2">
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   共 {searchTotal} 条，已显示 {localItems.length} 条
                 </span>
@@ -1288,7 +1288,7 @@ export default function MealComposer({
               localEmpty &&
               !searchQuery.isFetching &&
               emptyStateTopItems.length > 0 && (
-                <div className="mt-3" data-testid="top-foods-empty-state">
+                <div className="mt-block" data-testid="top-foods-empty-state">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     {COPY.topFoodsTitle}
                   </h3>
@@ -1298,7 +1298,7 @@ export default function MealComposer({
 
             {/* 本地为空 → 在线兜底（Open Food Facts，ODbL 1.0） */}
             {keyword.trim() !== '' && localEmpty && !searchQuery.isFetching && (
-              <div className="mt-3">
+              <div className="mt-block">
                 {liveQuery.isFetching && (
                   <p className="text-xs text-slate-500 dark:text-slate-400">本地没有，正在帮你找在线食物库…</p>
                 )}
@@ -1349,7 +1349,7 @@ export default function MealComposer({
                       {/* 次级文字对比度：slate-400 对白底只有 2.56:1、slate-500 对
                           dark:bg-slate-800 只有 3.08:1，两套主题都不达 AA；署名是本
                           该看清的内容（ODbL 归属），故取深浅各自达标的一档。 */}
-                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="mt-tight text-[11px] text-slate-500 dark:text-slate-400">
                         数据来自 Open Food Facts（ODbL 1.0），加入后会存到你的食物库。
                       </p>
                     </>
@@ -1416,7 +1416,7 @@ export default function MealComposer({
                 仅在**确实有分类可选**时才给这句 —— 否则会变成「一边说挑一个、
                 一边一个都没有」的自相矛盾（分类列表为空走下面那条空态）。 */}
             {selectedCategory === null && orderedCategories.length > 0 && (
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-block flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                 <BrandDecor variant="bloom" className="h-4 w-4 shrink-0 text-brand-300" />
                 {COPY.foodCategoryPrompt}
               </p>
@@ -1425,7 +1425,7 @@ export default function MealComposer({
             {/* **分类列表本身**为空（`/foods/categories` 成功但返回 `[]`）：给一个可行的下一步。
                 interface 失败另走上面的 note（`foodCategoryLoadFailed`），与这里分工明确。 */}
             {categoriesQuery.isLoading === false && orderedCategories.length === 0 && (
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{COPY.foodCategoryListEmpty}</p>
+              <p className="mt-block text-sm text-slate-500 dark:text-slate-400">{COPY.foodCategoryListEmpty}</p>
             )}
 
             {/* 选中后：复用 `renderFoodList` —— 视觉与点击行为（份量确认 → 确认记录）
@@ -1435,12 +1435,12 @@ export default function MealComposer({
             )}
             {selectedCategory !== null && categoryItems.length > 0 && renderFoodList(categoryItems)}
             {categoryEmpty && (
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{COPY.foodCategoryEmpty}</p>
+              <p className="mt-block text-sm text-slate-500 dark:text-slate-400">{COPY.foodCategoryEmpty}</p>
             )}
 
             {/* 完整性：把服务端 `total` 如实呈现 + 「加载更多」（与搜索同款呈现方式） */}
             {selectedCategory !== null && categoryItems.length > 0 && (
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="mt-block flex items-center justify-between gap-2">
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   共 {categoryTotal} 条，已显示 {categoryItems.length} 条
                 </span>
@@ -1516,7 +1516,7 @@ export default function MealComposer({
                   setQuickSkippedSameName(false);
                 }}
                 placeholder="如：楼下麻辣烫"
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="block text-sm text-slate-600 dark:text-slate-300">
@@ -1526,7 +1526,7 @@ export default function MealComposer({
                 value={quickKcal}
                 onChange={(event) => setQuickKcal(event.target.value)}
                 placeholder="如：600"
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.quickAddHint}</p>
@@ -1654,7 +1654,7 @@ export default function MealComposer({
             {lastPortionGrams !== null && (
               <p
                 data-testid="last-portion-hint"
-                className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                className="mt-tight text-xs text-slate-500 dark:text-slate-400"
               >
                 {COPY.lastPortionHint(lastPortionGrams)}
               </p>
@@ -1665,7 +1665,7 @@ export default function MealComposer({
             {sameMealMatches.selected !== null && (
               <p
                 data-testid="same-meal-hint"
-                className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                className="mt-tight text-xs text-slate-500 dark:text-slate-400"
               >
                 {COPY.sameMealHint}
               </p>
@@ -1691,13 +1691,13 @@ export default function MealComposer({
                 </button>
               ))}
             </div>
-            <label className="mt-3 block text-sm text-slate-600 dark:text-slate-300">
+            <label className="mt-block block text-sm text-slate-600 dark:text-slate-300">
               克数
               <input
                 inputMode="decimal"
                 value={grams}
                 onChange={(event) => setGrams(event.target.value)}
-                className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <p className="qsh-tnum mt-2 text-sm text-brand-700 dark:text-brand-200" aria-live="polite">

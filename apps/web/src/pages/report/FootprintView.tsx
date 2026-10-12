@@ -91,7 +91,7 @@ export default function FootprintView(): ReactElement {
       <h2 id="footprint-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
         {COPY.footprintTitle}
       </h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.footprintDesc}</p>
+      <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">{COPY.footprintDesc}</p>
 
       {/* 月份切换：只换「看哪个月」，取数方式不变 */}
       <div className="mt-4 flex items-center justify-between gap-2">
@@ -129,18 +129,18 @@ export default function FootprintView(): ReactElement {
 
       {/* 汇总行：**只有分子，没有分母**（有空分母就会被读成完成度） */}
       {calendarQuery.isSuccess && (
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" data-testid="footprint-summary">
+        <p className="mt-block text-sm text-slate-600 dark:text-slate-300" data-testid="footprint-summary">
           {isEmptyMonth ? COPY.footprintEmptyMonth : footprintMonthSummary(recordedDays)}
         </p>
       )}
 
       {calendarQuery.isLoading && (
-        <StateBlock className="mt-3">{COPY.footprintLoading}</StateBlock>
+        <StateBlock className="mt-block">{COPY.footprintLoading}</StateBlock>
       )}
 
       {/* 读取不顺：软着陆，**不渲染空网格**（否则会把「读不到」误说成「一天没记」） */}
       {calendarQuery.isError && (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" data-testid="footprint-error">
+        <p className="mt-block text-sm text-slate-500 dark:text-slate-400" data-testid="footprint-error">
           {COPY.footprintLoadError}
         </p>
       )}
@@ -151,7 +151,7 @@ export default function FootprintView(): ReactElement {
             role="group"
             aria-label={footprintCalendarAria(monthLabel, recordedDays)}
             data-testid="footprint-grid"
-            className="mt-3 grid grid-cols-7 gap-1.5"
+            className="mt-block grid grid-cols-7 gap-1.5"
           >
             {WEEKDAY_HEADERS.map((label, index) => (
               <span
@@ -204,7 +204,7 @@ export default function FootprintView(): ReactElement {
           </div>
 
           {/* 图例：把「深浅」讲清楚（中性陈述，不评判） */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-block flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
             <span>{COPY.footprintLegendNote}</span>
             <span className="flex items-center gap-2">
               {LEGEND_LEVELS.map((level) => (

@@ -168,28 +168,28 @@ export default function ProfilePage(): ReactElement {
       {budget !== null && (
         <div className="qsh-surface p-5">
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">当前热量预算</h2>
-          <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
+          <dl className="mt-block grid grid-cols-3 gap-3 text-center">
             <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">建议摄入</dt>
-              <dd className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
+              <dd className="qsh-tnum mt-tight font-semibold text-brand-700 dark:text-brand-200">
                 {toDisplayEnergy(budget.intakeRecommended, unit)} {energyLabel(unit)}
               </dd>
             </div>
             <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">BMR</dt>
-              <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.bmr, unit)}
               </dd>
             </div>
             <div className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <dt className="text-xs text-slate-600 dark:text-slate-400">TDEE</dt>
-              <dd className="qsh-tnum mt-1 font-semibold text-slate-800 dark:text-slate-100">
+              <dd className="qsh-tnum mt-tight font-semibold text-slate-800 dark:text-slate-100">
                 {toDisplayEnergy(budget.tdee, unit)}
               </dd>
             </div>
           </dl>
-          {!offline && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">数据来自服务端重算结果</p>}
-          {offline && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">当前展示为本地预览，联网后会自动更新</p>}
+          {!offline && <p className="mt-block text-xs text-slate-500 dark:text-slate-400">数据来自服务端重算结果</p>}
+          {offline && <p className="mt-block text-xs text-slate-500 dark:text-slate-400">当前展示为本地预览，联网后会自动更新</p>}
         </div>
       )}
 
@@ -234,7 +234,7 @@ export default function ProfilePage(): ReactElement {
             <select
               value={edit.gender}
               onChange={(event) => setEdit((prev) => ({ ...prev, gender: event.target.value as Gender }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="female">女</option>
               <option value="male">男</option>
@@ -247,7 +247,7 @@ export default function ProfilePage(): ReactElement {
               max={todayKey()}
               value={edit.birthDate}
               onChange={(event) => setEdit((prev) => ({ ...prev, birthDate: event.target.value }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -256,7 +256,7 @@ export default function ProfilePage(): ReactElement {
               inputMode="decimal"
               value={edit.heightCm}
               onChange={(event) => setEdit((prev) => ({ ...prev, heightCm: event.target.value }))}
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -266,7 +266,7 @@ export default function ProfilePage(): ReactElement {
               onChange={(event) =>
                 setEdit((prev) => ({ ...prev, activityLevel: event.target.value as ActivityLevel }))
               }
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {ACTIVITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -296,8 +296,8 @@ export default function ProfilePage(): ReactElement {
         className="qsh-surface p-5"
       >
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">参考来源</h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
-        <ul className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-xs text-slate-500 dark:text-slate-400">我们的数字都能溯源，欢迎核对。</p>
+        <ul className="mt-block space-y-3 text-sm text-slate-600 dark:text-slate-300">
           <li>
             <strong className="text-slate-800 dark:text-slate-100">Mifflin-St Jeor 公式（1990）</strong>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -317,7 +317,7 @@ export default function ProfilePage(): ReactElement {
             </p>
           </li>
         </ul>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
           安全下限：女性 1200 kcal / 男性 1500 kcal；每日缺口不超过 TDEE 的 30%。
         </p>
       </section>
@@ -352,8 +352,8 @@ export default function ProfilePage(): ReactElement {
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.profileMoreTitle}
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{COPY.profileMoreDesc}</p>
-        <ul className="mt-3 divide-y divide-brand-100 dark:divide-slate-700">
+        <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">{COPY.profileMoreDesc}</p>
+        <ul className="mt-block divide-y divide-brand-100 dark:divide-slate-700">
           {MORE_LINKS.map((link) => (
             <li key={link.to}>
               <Link
@@ -386,7 +386,7 @@ export default function ProfilePage(): ReactElement {
         <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           {COPY.installHintTitle}
         </h2>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+        <p className="mt-tight text-sm leading-relaxed text-slate-600 dark:text-slate-300">
           {COPY.installHintBody}
         </p>
       </section>
@@ -400,7 +400,7 @@ export default function ProfilePage(): ReactElement {
           className="qsh-surface p-5"
         >
           <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">账号</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
             已登录：{user?.email ?? '当前账号'}
           </p>
           <button
@@ -413,7 +413,7 @@ export default function ProfilePage(): ReactElement {
               queryClient.clear();
               setNotice('已经退出登录，随时可以再回来');
             }}
-            className="qsh-touch-target mt-3 w-full rounded-control py-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
+            className="qsh-touch-target mt-block w-full rounded-control py-3 text-sm text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
           >
             退出登录
           </button>

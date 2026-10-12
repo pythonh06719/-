@@ -205,7 +205,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
         </p>
 
         {showVideo && (
-          <div className="mt-3 overflow-hidden rounded-card bg-slate-900">
+          <div className="mt-block overflow-hidden rounded-card bg-slate-900">
             <video
               ref={videoRef}
               className="h-56 w-full object-cover"
@@ -228,7 +228,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
                 setManualError(null);
               }}
               placeholder="如：6901234567890"
-              className="mt-1 w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
           {manualError !== null && (
@@ -244,7 +244,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
           </button>
         </form>
 
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-block text-xs text-slate-500 dark:text-slate-400">
           画面只在你手机上识别，不会上传，也不保存照片。
         </p>
       </div>

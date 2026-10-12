@@ -82,7 +82,7 @@ export default function GoalProgressCard({ progress }: GoalProgressCardProps): R
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{COPY.goalProgressFootnote}</p>
+      <p className="mt-block text-xs text-slate-500 dark:text-slate-400">{COPY.goalProgressFootnote}</p>
     </section>
   );
 }

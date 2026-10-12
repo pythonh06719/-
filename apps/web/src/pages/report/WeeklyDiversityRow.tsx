@@ -46,7 +46,7 @@ export default function WeeklyDiversityRow({ report }: { report: WeeklyReport })
       </button>
 
       {expanded && (
-        <div className="mt-3" data-testid="weekly-diversity-list">
+        <div className="mt-block" data-testid="weekly-diversity-list">
           <p className="text-xs text-slate-500 dark:text-slate-400">{COPY.diversityListTitle}</p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {foods.map((name) => (
