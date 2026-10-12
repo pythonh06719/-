@@ -15,6 +15,7 @@ import { COPY } from '@/lib/copy';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import { todayKey } from '@/lib/format';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
+import SegmentedControl from '@/components/common/SegmentedControl';
 
 type AiTab = 'daily' | 'plan' | 'ask' | 'trace';
 
@@ -519,25 +520,15 @@ export default function AiPage(): ReactElement {
   return (
     // 宽度与留白交给 AppShell（max-w-3xl / px-5 / py-6），此处不再自搞一层宽度与内距
     <div className="flex flex-col gap-4">
-      {/* Tab 切换 */}
-      <div role="tablist" aria-label="AI 助手" className="grid grid-cols-4 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
-        {TABS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.key}
-            onClick={() => setTab(item.key)}
-            className={`qsh-touch-target rounded-control px-3 py-2 text-sm font-medium transition-colors ${
-              tab === item.key
-                ? 'bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300'
-                : 'text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {/* Tab 切换（2026-10-12 UI 评审 P1：从「白底 + shadow-sm」分段控件收敛到
+          全站统一 SegmentedControl —— pill 实心 brand-600 选中态，与 /report 同源） */}
+      <SegmentedControl
+        items={TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="AI 助手"
+        className="flex-wrap"
+      />
 
       {/* 当日剩余次数（B6）：中性陈述，取不到则整行不显示 */}
       <UsageLine usage={usageQuery.data} />

@@ -46,6 +46,7 @@ import { emojiForCategory } from '@/lib/food-emoji';
 import { formatMonthDay, isDateKey } from '@/lib/format';
 import { energyLabel, toDisplayEnergy, useUnitStore } from '@/lib/units';
 import BrandDecor from '@/components/common/BrandDecor';
+import SegmentedControl from '@/components/common/SegmentedControl';
 import FoodHistoryPanel from './FoodHistoryPanel';
 import { MEAL_TYPE_LABELS, computeKcalFromFood, resolveDefaultServing } from './meal-utils';
 
@@ -661,6 +662,13 @@ export default function MealComposer({
    * 故这是**防御性**而非现网可修的 bug —— 但边界校验按项目约定不砍（同 `lib/api.ts`）。
    */
   const topItems: TopFoodItem[] = (topQuery.data?.items ?? []).filter((item) => item.food != null);
+
+  /**
+   * tab 显隐与面板渲染**同源**（都用过滤后的 `topItems`）：BUG-QA-01 ——
+   * 榜单里只有快加条目（food 为 null）时，用未过滤的 items.length 会让 tab
+   * 出现、点进去却是空白面板，违反 AC-11.5.2「不留空卡」。
+   */
+  const visibleTabs = TABS.filter((item) => (item.key === 'top' ? topItems.length > 0 : true));
   /** 搜索空态里置顶的 Top 5（数据不足 → 空数组 → 整块不渲染）。 */
   const emptyStateTopItems = topItems.slice(0, TOP_IN_EMPTY_STATE);
 
@@ -1157,36 +1165,21 @@ export default function MealComposer({
             ① `px-4 → px-3`：单 tab 60px → 52px，6 项合计 342px ≤ 350px，**默认 6 项免横滑**；
             ② 容器补 `pr-2`：**「常吃」出现时是 7 项**（合计 400px，必然溢出），
                右侧留 8px 安全内边距，末项才能被完整横滑出来而不是贴着裁剪边缘。 */}
-        <div
-          role="tablist"
-          aria-label="记录方式"
-          className="mt-4 flex gap-1.5 overflow-x-auto pr-2"
-        >
-          {/* tab 显隐与面板渲染**同源**（都用过滤后的 `topItems`）：BUG-QA-01 ——
-              榜单里只有快加条目（food 为 null）时，旧写法用未过滤的 items.length
-              会让 tab 出现、点进去却是空白面板，违反 AC-11.5.2「不留空卡」。 */}
-          {TABS.filter((item) => (item.key === 'top' ? topItems.length > 0 : true)).map((item) => (
-            <button
-              key={item.key}
-              role="tab"
-              type="button"
-              aria-selected={tab === item.key}
-              onClick={() => {
-                setTab(item.key);
-                setSelected(null);
-                setSelectedSource('search');
-              }}
-              className={[
-                'qsh-touch-target shrink-0 rounded-pill px-3 text-sm transition duration-qsh-fast ease-qsh-out',
-                tab === item.key
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
-              ].join(' ')}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {/* 2026-10-12（UI 评审 P1）：记录方式 tab 收敛到全站统一 SegmentedControl。
+            `dense`（px-3）是 375px「默认 6 项免横滑」的精算值，见上方注释，勿改 px-4；
+            横滑与 pr-2 安全内边距由 className 传入（组件容器只出 flex + gap-1.5）。 */}
+        <SegmentedControl
+          items={visibleTabs}
+          value={tab}
+          ariaLabel="记录方式"
+          dense
+          className="mt-4 overflow-x-auto pr-2"
+          onChange={(key) => {
+            setTab(key);
+            setSelected(null);
+            setSelectedSource('search');
+          }}
+        />
 
         {/* C-3 多选模式开关（**正交于来源**：在任何渲染食物行的 tab 下都能开）。
             默认关闭 → 单条快速路径（G1 ≤3 次点击）逐字节不变。 */}
