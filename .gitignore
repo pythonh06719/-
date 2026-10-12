@@ -71,3 +71,11 @@ _qsh-*
 _r2-shot-*.png
 _v7-*.png
 qa-r26-evidence-*.png
+
+# CFCD（中国食物成分表）个人自用数据 —— 不得随仓库分发（上线前全检 F-001，见 DATA-LICENSE.md）。
+# 采集/转换脚本与中间产物仅保留在本机磁盘；merge-seeds 默认不并入，
+# 仅本地自建库可显式 `npx tsx infra/db/seed/merge-seeds.ts --with-cfcd`（产物不得提交/部署）。
+infra/db/seed/food_items.cfcd.json
+infra/db/seed/food_items.cfcd.raw.json
+infra/db/seed/fetch-cfcd.mjs
+infra/db/seed/import-cfcd.ts

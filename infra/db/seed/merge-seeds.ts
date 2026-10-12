@@ -5,6 +5,8 @@
  * - OFF（source='openfoodfacts'，ODbL 1.0）：中国区/港台区包装食品，署名要求见 README
  * - USDA（source='usda'，public domain）：SR Legacy 精选条目，中文名来自人工翻译映射
  * - CFCD（source='cfcd'）：中国食物成分表（个人非商业自用；来源/许可见 README §8）
+ *   ⚠️ **默认不并入**（上线前全检 F-001：该源不得随仓库 / 部署物分发）；
+ *   仅本地自建库可显式传 `--with-cfcd` 并入，产物**不得提交、不得部署**。
  *
  * 幂等：按名称跨源去重（本地样例优先级最高）。
  *
@@ -12,7 +14,7 @@
  * `@qsh/core` 的 `mapFoodCategory`（唯一真源，见 T1），`.mjs` 无法 import TS，
  * 故改用 `tsx` 运行（仓库根 `node_modules/.bin/tsx` 已可用）。
  *
- * 运行：npx tsx infra/db/seed/merge-seeds.ts
+ * 运行：npx tsx infra/db/seed/merge-seeds.ts [--with-cfcd]
  *
  * 数据质量保障（T4/T6）：
  * - 所有输出条目（含既有 local）一律经 `mapFoodCategory` 归一，杜绝脏分类回灌；
@@ -44,6 +46,14 @@ const OFF_PATH = resolve(here, 'food_items.openfoodfacts.raw.json');
 const USDA_PATH = resolve(here, 'food_items.usda.candidates.json');
 const USDA_MAP_PATH = resolve(here, 'usda_zh_map.json');
 const CFCD_PATH = resolve(here, 'food_items.cfcd.json');
+
+/**
+ * 是否并入 CFCD（中国食物成分表）—— **默认 false**（上线前全检 F-001）。
+ *
+ * 该源为个人非商业自用数据，不得随仓库 / 部署物分发；仅本地自建库显式传
+ * `--with-cfcd` 时才并入，且产物不得提交、不得部署。
+ */
+const withCfcd = process.argv.includes('--with-cfcd');
 
 /**
  * 归一化名称（用于跨源去重比对）—— 复用 `@qsh/core` 的 `foodDedupKey`（**单一真源**）。
@@ -193,11 +203,18 @@ for (const pick of zhMap.picks) {
 // 去重：与「既有种子」按**归一化名**比对（去括号内容 + 空白 + 标点），命中即跳过；
 // 但**不**把 CFCD 自身加入 `seen` —— 平台内部同名不同 foodId（如「鸡蛋(白皮)/(红皮)」）
 // 需全部保留，故仅与既有集合比对。
+//
+// ⚠️ 默认不读取（F-001）：未传 `--with-cfcd` 时整段跳过，种子永不含 cfcd 条目；
+// 显式传旗标 = 知情地把个人自用数据并入**本地**库，产物不得提交 / 部署。
 let cfcdFile: { items: SeedItem[] } = { items: [] };
-try {
-  cfcdFile = JSON.parse(readFileSync(CFCD_PATH, 'utf8')) as { items: SeedItem[] };
-} catch {
-  cfcdFile = { items: [] }; // 尚未抓取 / 转换时静默跳过
+if (withCfcd) {
+  try {
+    cfcdFile = JSON.parse(readFileSync(CFCD_PATH, 'utf8')) as { items: SeedItem[] };
+  } catch {
+    cfcdFile = { items: [] }; // 尚未抓取 / 转换时静默跳过
+  }
+} else {
+  console.log('未传 --with-cfcd：跳过中国食物成分表（个人非商业自用，默认不并入仓库种子）');
 }
 const existingNormalized = new Set(existingBase.map((item) => normalizeName(item.name)));
 const cfcdItems: SeedItem[] = [];
@@ -233,12 +250,16 @@ const sourceCount = countBySource(items);
 
 const merged = {
   _meta: {
-    description: '「轻生活」食物库种子：本地合规样例集 + Open Food Facts + USDA SR Legacy 精选 + 中国食物成分表',
+    description: withCfcd
+      ? '「轻生活」食物库种子：本地合规样例集 + Open Food Facts + USDA SR Legacy 精选 + 中国食物成分表'
+      : '「轻生活」食物库种子：本地合规样例集 + Open Food Facts + USDA SR Legacy 精选',
     dataSource:
       '① 本地样例集：常识级公开营养值（57 条，权威口径）；' +
       '② Open Food Facts：开放许可 ODbL 1.0，© Open Food Facts contributors，采集区域为中国大陆/中国香港/中国台湾地区包装食品；' +
-      '③ USDA FoodData Central SR Legacy：美国农业部公有领域数据，中文名为人工翻译，来源已逐条标注；' +
-      '④ 中国食物成分表（中国营养学会 / 中国疾控中心营养与健康所）：仅个人非商业自用，未经书面允许不得用于商业目的、不得再分发（详见 README §8）',
+      '③ USDA FoodData Central SR Legacy：美国农业部公有领域数据，中文名为人工翻译，来源已逐条标注' +
+      (withCfcd
+        ? '；④ 中国食物成分表（中国营养学会 / 中国疾控中心营养与健康所）：仅个人非商业自用，未经书面允许不得用于商业目的、不得再分发（详见 README §8）'
+        : ''),
     precision:
       '全部为每 100g 数值；样例集取常识中位值，OFF/USDA 为原始测定/申报值（保留 1 位小数）。' +
       '数据用于日常记录参考，不构成营养诊断',
@@ -254,20 +275,28 @@ const merged = {
         license: 'Public Domain（USDA FoodData Central SR Legacy）',
         url: 'https://fdc.nal.usda.gov',
       },
-      cfcd: {
-        count: sourceCount.get('cfcd') ?? 0,
-        license: '个人非商业自用（中国食物成分表，未经书面允许不得用于商业目的；不得再分发）',
-        url: 'https://nlc.chinanutri.cn/fq/',
-      },
+      // cfcd 仅在显式 `--with-cfcd` 时才作为来源出现（F-001：默认不并入、不得分发）
+      ...(withCfcd
+        ? {
+            cfcd: {
+              count: sourceCount.get('cfcd') ?? 0,
+              license: '个人非商业自用（中国食物成分表，未经书面允许不得用于商业目的；不得再分发）',
+              url: 'https://nlc.chinanutri.cn/fq/',
+            },
+          }
+        : {}),
     },
     // `todo` 由**当前真实条数/来源生成**，不再沿用旧种子里过时的「扩充至 ≥500 条」口径
     // （旧实现读 `existing._meta?.todo`，一旦扩量就会永久残留旧的错误文案）。
     todo:
       `食物库现 ${items.length} 条：local ${sourceCount.get('local') ?? 0} / ` +
       `Open Food Facts ${sourceCount.get('openfoodfacts') ?? 0}（ODbL 1.0） / ` +
-      `USDA ${sourceCount.get('usda') ?? 0}（公有领域） / ` +
-      `中国食物成分表 ${sourceCount.get('cfcd') ?? 0}` +
-      `（仅限个人非商业自用，对外分发前须移除 source='cfcd' 条目）。` +
+      `USDA ${sourceCount.get('usda') ?? 0}（公有领域）` +
+      (withCfcd
+        ? ` / 中国食物成分表 ${sourceCount.get('cfcd') ?? 0}` +
+          `（仅限个人非商业自用，对外分发前须移除 source='cfcd' 条目）。`
+        : `。中国食物成分表（source='cfcd'）为个人非商业自用数据，默认不并入本仓库种子` +
+          `（见 DATA-LICENSE.md）；仅本地自用可显式传 --with-cfcd 并入。`) +
       `严禁为凑数编造营养数值。`,
     itemCount: items.length,
   },

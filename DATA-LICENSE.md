@@ -10,6 +10,7 @@
 | `food_items.seed.json` 中 `source: "builtin"` 的条目 | 57 | 本项目自建（依据《中国食物成分表》公开数值等公开资料整理） | **CC BY 4.0** | 署名「轻生活（qingshenghuo）项目」 |
 | `food_items.seed.json` 中 `source: "openfoodfacts"` 的条目<br>`food_items.openfoodfacts.raw.json` | 258 | [Open Food Facts](https://world.openfoodfacts.org) | **ODbL 1.0**（Open Database License） | **必须署名**「© Open Food Facts contributors」<br>**衍生数据库须以 ODbL 1.0 同许可分发** |
 | `food_items.seed.json` 中 `source: "usda"` 的条目<br>`usda_zh_map.json`、`food_items.usda.candidates.json` | 128 | [USDA FoodData Central — SR Legacy](https://fdc.nal.usda.gov) | **公有领域**（美国政府作品） | 无需授权；本项目另行完成中文译名与归类 |
+| `food_items.cfcd.json` / `food_items.cfcd.raw.json`（**已移出仓库**，不随分发） | ~~1330~~ | 中国食物成分表（中国营养学会 / 中国疾病预防控制中心营养与健康所） | **个人非商业自用**（未经书面允许不得商用、**不得再分发**） | **不随本仓库分发**：文件已 gitignore，seed 中条目与向量已剔除；仅本机自用（`--with-cfcd` 显式并入），见下 §3 |
 | `met_activities.*.json`、`habit_templates.*.json` | — | 本项目自建（MET 值参考 Compendium of Physical Activities） | **CC BY 4.0** | 署名「轻生活（qingshenghuo）项目」 |
 
 ## 具体义务（重要）
@@ -32,7 +33,29 @@
 属于美国政府作品，无版权（公有领域）。本项目对其中 128 条完成了**中文译名与中式归类**，
 这部分翻译与归类的著作权归本项目（CC BY 4.0）。使用时不强制署名，但欢迎保留来源说明。
 
-### 3. 医疗免责
+### 3. 中国食物成分表（CFCD）—— 个人自用，**已从分发物中移除**（2026-10-12）
+
+`food_items.cfcd.json` / `food_items.cfcd.raw.json`（各约 1330 条）及其采集 / 转换脚本
+（`fetch-cfcd.mjs` / `import-cfcd.ts`）来源于[中国食物成分表在线查询平台](https://nlc.chinanutri.cn/fq/)
+（中国营养学会 / 中国疾控中心营养与健康所）。许可原文：
+
+> **未经中国营养学会/中国疾病预防控制中心营养与健康所书面允许不得用于商业目的。**
+
+即 **仅限个人非商业自用，不得再分发**。本仓库是公开 Demo（`render.yaml` 自述「公网 Demo 简历项」），
+因此该数据**不在分发物中**（上线前全检 F-001 的整改结果）：
+
+- `food_items.seed.json` 中 `source='cfcd'` 的 1330 条已剔除（**1773 → 443 条**：local 57 + OFF 258 + USDA 128）；
+- `food_embeddings.json` 同步剔除 cfcd 向量（**1773 → 443**）；
+- 四个 cfcd 文件已 `git rm --cached` 并加入 `.gitignore`（仍保留在**本机磁盘**，供个人使用）；
+- `infra/db/seed/merge-seeds.ts` 默认**不并入** cfcd，仅显式 `--with-cfcd` 时并入（本地自建库专用，产物不得提交 / 部署）；
+- `apps/api/prisma/seed.ts` 设有合规闸：即便种子文件混入 cfcd 条目，也不会入库。
+
+> ⚠️ **git 历史残留（未解决）**：上述文件在 2026-10-12 之前的提交历史中仍然可见
+> （`git log --all -- infra/db/seed/food_items.cfcd.json` 可查）。若需彻底清除，须用
+> `git filter-repo` 或 BFG 重写历史并强推 —— 这会改写所有 clone 的 commit hash，
+> 属破坏性操作，需要项目负责人单独决策；本次未执行。
+
+### 4. 医疗免责
 
 本仓库中的任何营养数值与建议**不构成医疗建议**。产品免责声明见 [README](./README.md#免责声明)。
 

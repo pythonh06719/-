@@ -182,10 +182,21 @@ async function seedFoods(prisma: PrismaClient): Promise<void> {
   // 明确报出「第几条 / 哪个字段 / 什么值」，绝不静默入库。
   validateSeedFoods(seed.items);
 
+  // 合规闸（上线前全检 F-001）：cfcd（中国食物成分表）为**个人非商业自用**数据，
+  // 不得随仓库 / 部署物分发。种子文件理应已剔除（merge-seeds 默认不并入 cfcd），
+  // 此处兜底再拦一道：万一本地用 `--with-cfcd` 重新生成过种子，也不会灌进库。
+  const shippable: SeedFoodItem[] = seed.items.filter((item) => item.source !== 'cfcd');
+  if (shippable.length !== seed.items.length) {
+    console.warn(
+      `[seed] 合规闸：跳过 ${seed.items.length - shippable.length} 条 source='cfcd' 条目` +
+        `（个人非商业自用，不随仓库分发，见 DATA-LICENSE.md）`,
+    );
+  }
+
   let created = 0;
   let updated = 0;
 
-  for (const item of seed.items) {
+  for (const item of shippable) {
     const servingUnits: SeedServingUnit[] = item.servingUnits ?? [];
     const defaultUnit: SeedServingUnit | undefined =
       servingUnits.find((u) => u.isDefault === true) ?? servingUnits[0];
@@ -231,7 +242,7 @@ async function seedFoods(prisma: PrismaClient): Promise<void> {
 
   const totalBuiltin: number = await prisma.foodItem.count({ where: { source: 'builtin' } });
   console.log(
-    `[seed] 食物库：created=${created} updated=${updated} 种子条数=${seed.items.length} builtin总数=${totalBuiltin}`,
+    `[seed] 食物库：created=${created} updated=${updated} 种子条数=${shippable.length} builtin总数=${totalBuiltin}`,
   );
 }
 

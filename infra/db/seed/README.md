@@ -3,15 +3,16 @@
 本目录存放**食物库种子** `food_items.seed.json`，由 `apps/api/prisma/seed.ts` 幂等载入数据库表 `food_items`。
 
 > ⚠️ **数字必须可溯源**：**不虚构任何营养数值**。本地手写样例集仅 57 条（「数值广为人知、可公开溯源」的常见中式食物）；
-> 完整种子已通过**公开 / 授权数据源**扩到 **1773 条**（本地 57 + Open Food Facts 258 + USDA SR Legacy 128 + 中国食物成分表 1330），
-> 每条来源与许可逐条标注（见 §6 / §8）。**对外分发前**须先移除 `source='cfcd'` 条目（该源仅限个人非商业，见 §8）。
+> 完整种子现 **443 条**（本地 57 + Open Food Facts 258 + USDA SR Legacy 128），每条来源与许可逐条标注（见 §6 / §8）。
+> 中国食物成分表（cfcd，1330 条）为**个人非商业自用**数据，**已于 2026-10-12 从仓库分发物中移除**
+> （采集/转换脚本与数据文件已 gitignore，仅存本机；见 §8 与 DATA-LICENSE.md）。
 
 ---
 
 ## 1. 本地手写样例集（完整种子的一部分）
 
-> 完整种子 `food_items.seed.json` 当前 **1773 条**。下表描述其中的**本地手写样例**（`source: "local"`）——
-> 另三个来源（OFF / USDA / CFCD）见 §6 与 §8。
+> 完整种子 `food_items.seed.json` 当前 **443 条**。下表描述其中的**本地手写样例**（`source: "local"`）——
+> 另两个来源（OFF / USDA）见 §6；中国食物成分表（CFCD）已从仓库分发物中移除，见 §8。
 
 | 项 | 说明 |
 | --- | --- |
@@ -41,8 +42,9 @@
 
 ## 2. 进一步扩量 / 对外分发所需的数据源与授权要求
 
-> 说明：种子已从最初的 57 条扩到 **1773 条**（OFF / USDA / CFCD，见 §6 / §8）。
-> 本节保留为**继续扩量或对外分发**时的授权清单 —— 尤其 CFCD 数据**仅限个人非商业**，对外分发必须先移除。
+> 说明：种子已从最初的 57 条扩到 **443 条**（OFF / USDA，见 §6）。
+> 本节保留为**继续扩量或对外分发**时的授权清单 —— 尤其 CFCD 数据**仅限个人非商业**，
+> 已于 2026-10-12 从仓库分发物中移除（见 §8）。
 
 对应架构文档 **D6** 与 PRD **Q8**。落地前需客户确认：
 
@@ -153,7 +155,8 @@ npm run db:seed -w @qsh/api
   所以重跑合并不会丢拼音（曾因「先跑 fill-pinyin、后并入 CFCD」导致 cfcd 拼音 0/1245、拼音搜索失效，P2-1）。
   日文/纯英文名**留空**（宁缺勿错）；若主体为英文但括号内有中文译名（如 `Yak Milk Coffee (氂牛奶咖啡)`），
   取括号内中文生成拼音。
-  - **流水线顺序**：`import-cfcd.ts` → `merge-seeds.ts`（**含拼音补全**）→ `db:seed` → 重建 `food_embeddings.json`。
+  - **流水线顺序**（仅分发物）：`merge-seeds.ts`（**含拼音补全**）→ `db:seed` → 重建 `food_embeddings.json`。
+    含 cfcd 的本地流程（`import-cfcd.ts` → `merge-seeds.ts --with-cfcd` → `db:seed`）**不得提交 / 部署产物**。
   - `fill-pinyin.ts` 为**独立修复 CLI**（`npx tsx infra/db/seed/fill-pinyin.ts [--write]`），仅在
     「手工改过 seed.json、想单独补拼音」时用；正常流程**无需**单独跑（merge 已内聚）。
 - **入库校验**（fail-fast）：`merge-seeds.ts` 与 `apps/api/prisma/seed.ts` 均校验
@@ -181,16 +184,25 @@ npm run db:seed -w @qsh/api
 - 本项目对该数据集的定位为 **个人、非商业、自用（本机学习/开发）**。
 - **禁止**：上传到任何联网服务 / 云端同步、**再分发**（含随代码仓库公开）、商业用途。
 - **抓取礼仪**：**串行、每次请求间隔 ≥2s**、失败退避重试、支持断点续抓（避免重复打扰平台）。
-- 若后续需对外分发本仓库，**必须先移除** `food_items.cfcd.raw.json` / `food_items.cfcd.json`
-  及 `food_items.seed.json` 中的 `source='cfcd'` 条目。
+- **已执行（2026-10-12，上线前全检 F-001）**：本仓库为公开 Demo，cfcd 数据**已从分发物中移除** ——
+  `food_items.cfcd.raw.json` / `food_items.cfcd.json` 及采集/转换脚本（`fetch-cfcd.mjs` / `import-cfcd.ts`）
+  已 `git rm --cached` 并写入 `.gitignore`（仍保留在**本机磁盘**供个人使用）；
+  `food_items.seed.json` 中的 `source='cfcd'` 条目已剔除（1773 → 443 条），
+  `food_embeddings.json` 同步剔除 cfcd 向量（1773 → 443），
+  `merge-seeds.ts` 默认**不并入** cfcd（仅显式 `--with-cfcd`），
+  `apps/api/prisma/seed.ts` 另设合规闸（种子混入也不入库）。
+- ⚠️ **git 历史残留**：上述文件在 2026-10-12 之前的提交历史中仍可见。若需彻底清除，
+  须用 `git filter-repo` / BFG 重写历史并强推（破坏性：改写所有 clone 的 commit hash），
+  属项目负责人单独决策项，本次未执行。
+- **抓取礼仪**：**串行、每次请求间隔 ≥2s**、失败退避重试、支持断点续抓（避免重复打扰平台）。
 
 ### 相关文件
 | 文件 | 作用 |
 | --- | --- |
-| `fetch-cfcd.mjs` | 抓取分类树 + 按二级分类串行分页 → `food_items.cfcd.raw.json`（raw 36 字段原样保留，便于审计） |
-| `import-cfcd.ts` | 转换：`kJ/4.184→kcal`、脏值（`—`→null / `Tr`→0）、字段映射、分类映射、名称清洗 → `food_items.cfcd.json` |
+| `fetch-cfcd.mjs`（**已 gitignore，仅本机**） | 抓取分类树 + 按二级分类串行分页 → `food_items.cfcd.raw.json`（raw 36 字段原样保留，便于审计） |
+| `import-cfcd.ts`（**已 gitignore，仅本机**） | 转换：`kJ/4.184→kcal`、脏值（`—`→null / `Tr`→0）、字段映射、分类映射、名称清洗 → `food_items.cfcd.json` |
 | `serving-templates.ts` | 份量模板：覆盖 **81** 个有把握的二级分类；其余（多为「其它」/婴幼儿食品）**兜底 100 克**。平台无份量数据，故不捏造具体份量 |
-| `merge-seeds.ts` | 四源合并（本地/OFF/USDA/CFCD）；CFCD 与既有种子按 `normalizeName` 去重（**保留**形态/口味/部位等有区分意义的括号限定词、**丢弃**标记/数值/品牌产地），并**自动补拼音**写出 |
+| `merge-seeds.ts` | 三源合并（本地/OFF/USDA）+ 可选 CFCD（`--with-cfcd`，默认关闭）；CFCD 与既有种子按 `normalizeName` 去重（**保留**形态/口味/部位等有区分意义的括号限定词、**丢弃**标记/数值/品牌产地），并**自动补拼音**写出 |
 
 ### 转换口径（`import-cfcd.ts`）
 - 能量：平台为 **kJ** → `kcalPer100g = round(kJ / 4.184)`。

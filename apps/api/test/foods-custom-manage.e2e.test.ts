@@ -10,7 +10,7 @@
  * ## 🔴 最重要的一条：越权判定**不能**复用 `visibleFoodWhere`
  *
  * `visibleFoodWhere` 是 **OR** 语义（公开来源 **或** 本人创建）。若改 / 删复用
- * `requireVisibleFood`，用户就能**删掉内置食物**（全库共用的 1773 条种子数据）。
+ * `requireVisibleFood`，用户就能**删掉内置食物**（全库共用的种子数据，现 443 条）。
  * 故改 / 删必须用严格三条件（`id` + `source='user_custom'` + `createdByUserId=当前用户`），
  * 否则 404。本文件用「改 builtin 404 / 删 builtin 404 / 改他人 404 / 删他人 404」四个用例钉死。
  *
@@ -184,7 +184,7 @@ describe('GET /foods/mine 列出本人自建食物（C-4 第二步）', () => {
     // 本人的两条都在
     expect(ids).toContain(mineA.id);
     expect(ids).toContain(mineA2.id);
-    // ★ 不含 builtin 等公开来源（否则「我的食物库」会混进 1773 条种子）
+    // ★ 不含 builtin 等公开来源（否则「我的食物库」会混进种子数据）
     expect(items.every((item) => item.source === 'user_custom')).toBe(true);
     expect(items.every((item) => item.createdByUserId === userAId)).toBe(true);
     expect(ids).not.toContain(builtinFoodId);
