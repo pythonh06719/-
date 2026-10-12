@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DEFAULT_WATER_GOAL_ML } from '@qsh/core';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ERROR_CODES } from '../common/constants/error-codes';
@@ -33,7 +34,7 @@ export class WaterService {
     return {
       date: day,
       totalMl: rows.reduce((sum, row) => sum + row.amountMl, 0),
-      goalMl: settings?.waterGoalMl ?? 2000,
+      goalMl: settings?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
       logs: rows.map((row) => ({ id: row.id, amountMl: row.amountMl, loggedAt: row.loggedAt })),
     };
   }

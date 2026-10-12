@@ -14,7 +14,7 @@
  * ## 与后端的对齐（不许漂移）
  *
  * 合法区间必须与后端两条通道保持一致（`UpdateWaterGoalDto` 与 `UpdateSettingsDto`
- * 的 `@Min(500) @Max(8000)`）；默认值与后端 `water.service.ts` 的 `?? 2000`、
+ * 的 `@Min(500) @Max(8000)`）；默认值与后端 `water.service.ts`（同取本常量）、
  * `schema.prisma` 的 `@default(2000)` 一致。
  *
  * ⚠️ core 不 import shared-types（K12），故此处自带常量，不做任何类型依赖。
@@ -26,7 +26,7 @@ export const WATER_GOAL_MIN_ML = 500;
 /** 每日饮水目标上限（ml）—— 与后端两条通道一致。 */
 export const WATER_GOAL_MAX_ML = 8000;
 
-/** 默认每日饮水目标（ml）—— 与后端 `?? 2000` / DDL `@default(2000)` 一致。 */
+/** 默认每日饮水目标（ml）—— 后端同取本常量 / DDL `@default(2000)`。 */
 export const DEFAULT_WATER_GOAL_ML = 2000;
 
 /**

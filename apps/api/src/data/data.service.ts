@@ -174,7 +174,7 @@ export class DataService {
         darkMode: settings?.darkMode ?? false,
         fastingEnabled: settings?.fastingEnabled ?? false,
         // GAP-3：每日饮水目标随备份导出，使「设置可完整恢复」对饮水目标也成立
-        // （默认值 2000 与 `water.service.ts` 的 `?? 2000`、DDL `@default(2000)` 一致，
+        // （默认值与 core `DEFAULT_WATER_GOAL_ML`、DDL `@default(2000)` 一致，
         //   常量取自 core，避免在多处各写一个字面量）
         waterGoalMl: settings?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
       },

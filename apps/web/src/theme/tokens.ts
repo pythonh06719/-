@@ -60,7 +60,7 @@ export const WATER_ML_PER_CUP = 250;
  * ⚠️ **web 侧不允许再定义同名常量**：这里曾经有一份独立的 `= 2000`（与 core 重复），
  * 于是同一份口径在仓库里有两个作者：改后端要动 core，改这屏（看板的离线兜底）要动这里，
  * 哪天漏了一个，用户就会在同一天看到两个不同的「今日目标」。
- * 现在收敛成一处：`@qsh/core` 与后端 DTO（`?? 2000` / `@default(2000)`）对齐，
+ * 现在收敛成一处：`@qsh/core` 与后端 DTO（同取 core 常量 / `@default(2000)`）对齐，
  * 本文件与 `lib/csv.ts`、`SettingsDataPage` 一律从 core 取。
  *
  * 由 `test/water-goal-constant-guard.test.ts` 静态守卫：web / core 源码里若出现
