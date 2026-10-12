@@ -20,7 +20,12 @@ services:
       # 安全：不再提供默认值 —— 未设置时 compose 直接报错（代码审查 #1）
       JWT_SECRET: ${JWT_SECRET:?请在仓库根 .env 里设置 JWT_SECRET（随机长字符串，勿用示例值）}
       JWT_EXPIRES_IN: 7d
-      # 演示/预发：尚无 SMTP 时置 true 可从容器日志取验证码完成登录；接入 SMTP 后必须保持 false
+      # ⚠️ 隐私权衡（上线前全检 F-011，**有意保留，勿随手改**）：
+      #    true = 验证码随 send-code 响应回显 → 知道任意邮箱即可登录该账号；
+      #    但在**未接 SMTP** 的部署里它是唯一的登录通道（docs/deploy-aliyun.md §取登录验证码、
+      #    docs/deploy-cloudflare-render.md §「不打开谁都登不进」），故演示部署默认按需开启。
+      #    注意插值来源：compose 会读**仓库根 .env** —— 本机开发开着 AUTH_LOG_CODE=true 时，
+      #    同一份 .env 会被带进容器。正式对外前请二选一：接入 SMTP 后置 false，或明确接受该权衡。
       AUTH_LOG_CODE: ${AUTH_LOG_CODE:-false}
       # AI（OpenAI 兼容）：key 仅服务端环境变量，不进入前端产物；留空则走规则兜底
       AI_API_KEY: ${AI_API_KEY:-}

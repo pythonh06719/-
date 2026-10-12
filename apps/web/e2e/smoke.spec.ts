@@ -25,7 +25,9 @@ test.describe('落地页与免注册计算器', () => {
     const height = page.getByLabel(/身高/);
     await height.fill('175');
 
-    const weight = page.getByLabel(/体重/);
+    // ⚠️ 必须精确到「当前体重」：计算器同时有「当前体重」与「目标体重」两个输入，
+    //    用 /体重/ 模糊匹配会撞 Playwright 严格模式（resolved to 2 elements）——上线前全检 E1
+    const weight = page.getByLabel(/当前体重/);
     await weight.fill('70');
 
     // 提交计算

@@ -79,3 +79,7 @@ infra/db/seed/food_items.cfcd.json
 infra/db/seed/food_items.cfcd.raw.json
 infra/db/seed/fetch-cfcd.mjs
 infra/db/seed/import-cfcd.ts
+
+# Playwright 运行产物（可随时重生成）
+apps/web/test-results/
+apps/web/playwright-report/
