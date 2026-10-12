@@ -222,7 +222,7 @@ function InsightCard({ insight }: { insight: { conclusion: string; basis: string
           </li>
         ))}
       </ul>
-      <p className="mt-3 rounded-xl bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
+      <p className="mt-3 rounded-control bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
         {insight.suggestion}
       </p>
       <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{COPY.aiRuleModeNote}</p>
@@ -315,7 +315,7 @@ function FoodRecognizePanel(): ReactElement {
           onChange={(event) => setDescription(event.target.value)}
           placeholder="比如：一个包子、一杯豆浆"
           aria-label={COPY.aiRecognizeTitle}
-          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          className="min-w-0 flex-1 rounded-control border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
         />
         <button
           type="button"
@@ -324,7 +324,7 @@ function FoodRecognizePanel(): ReactElement {
             setSubmitted(description.trim());
           }}
           disabled={description.trim().length === 0 || loading}
-          className="shrink-0 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+          className="shrink-0 rounded-control bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
           找一找
         </button>
@@ -342,7 +342,7 @@ function FoodRecognizePanel(): ReactElement {
               {candidates.map((candidate) => (
                 <li
                   key={candidate.foodId}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700"
+                  className="flex items-center justify-between gap-3 rounded-control bg-slate-50 px-3 py-2.5 dark:bg-slate-700"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100">{candidate.name}</p>
@@ -528,7 +528,7 @@ export default function AiPage(): ReactElement {
             role="tab"
             aria-selected={tab === item.key}
             onClick={() => setTab(item.key)}
-            className={`qsh-touch-target rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+            className={`qsh-touch-target rounded-control px-3 py-2 text-sm font-medium transition-colors ${
               tab === item.key
                 ? 'bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300'
                 : 'text-slate-600 dark:text-slate-400'
@@ -600,7 +600,7 @@ export default function AiPage(): ReactElement {
               onChange={(event) => setQuestion(event.target.value)}
               placeholder={COPY.aiAskPlaceholder}
               aria-label={COPY.aiAskTab}
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+              className="min-w-0 flex-1 rounded-control border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             />
             <button
               type="button"
@@ -610,7 +610,7 @@ export default function AiPage(): ReactElement {
                 void runAsk(text);
               }}
               disabled={question.trim().length === 0 || askQueryLike.isFetching}
-              className="shrink-0 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="shrink-0 rounded-control bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               {COPY.aiAskSend}
             </button>
@@ -676,14 +676,14 @@ export default function AiPage(): ReactElement {
                           confirmMutation.mutate({ traceId: askQueryLike.data!.traceId as number })
                         }
                         disabled={confirmMutation.isPending}
-                        className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+                        className="rounded-control bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
                       >
                         {confirmMutation.isPending ? '记录中…' : '确认记录'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmedTraceId(askQueryLike.data!.traceId as number)}
-                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-300"
+                        className="rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-300"
                       >
                         先不记
                       </button>

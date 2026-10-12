@@ -484,7 +484,7 @@ export default function WeightPage(): ReactElement {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setRangeDays(days)}
-                  className={`qsh-touch-target rounded-full px-3 py-1 text-xs font-medium transition duration-qsh-fast ease-qsh-out ${
+                  className={`qsh-touch-target rounded-pill px-3 py-1 text-xs font-medium transition duration-qsh-fast ease-qsh-out ${
                     active
                       ? 'bg-brand-600 text-white'
                       : 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'

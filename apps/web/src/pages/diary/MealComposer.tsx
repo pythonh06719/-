@@ -122,8 +122,8 @@ const CATEGORY_QUERY_KEYWORD_SENTINEL = '\u0000category';
  * ## 为什么不用浏览器默认方块
  *
  * 全站没有第二处原生 checkbox 可参照，故形态依据取自**同一份设计语言里最接近的两个角色**：
- * ① 记录方式 tab 与分类 chip —— `rounded-full` 胶囊；② 提醒开关（`pages/profile/
- * ReminderSettings.tsx`）—— `rounded-full` 胶囊 + 品牌色实心为「开」。两者都指向
+ * ① 记录方式 tab 与分类 chip —— `rounded-pill` 胶囊；② 提醒开关（`pages/profile/
+ * ReminderSettings.tsx`）—— `rounded-pill` 胶囊 + 品牌色实心为「开」。两者都指向
  * 「圆」而不是「方」。故未选中态做成**描边圆**，选中态做成**品牌色实心圆 + 白色对勾**。
  *
  * ## 实现要点
@@ -1033,7 +1033,7 @@ export default function MealComposer({
                   </span>
                   <span className="min-w-0 truncate">{food.name}</span>
                   {qualifier !== null && (
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    <span className="shrink-0 rounded-pill bg-slate-100 px-2 py-0.5 text-[11px] font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {qualifier}
                     </span>
                   )}
@@ -1177,7 +1177,7 @@ export default function MealComposer({
                 setSelectedSource('search');
               }}
               className={[
-                'qsh-touch-target shrink-0 rounded-full px-3 text-sm transition duration-qsh-fast ease-qsh-out',
+                'qsh-touch-target shrink-0 rounded-pill px-3 text-sm transition duration-qsh-fast ease-qsh-out',
                 tab === item.key
                   ? 'bg-brand-600 text-white'
                   : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -1243,7 +1243,7 @@ export default function MealComposer({
               <button
                 type="button"
                 onClick={() => setScannerOpen(true)}
-                className="qsh-touch-target rounded-full bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                className="qsh-touch-target rounded-pill bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
               >
                 扫码查条码
               </button>
@@ -1251,7 +1251,7 @@ export default function MealComposer({
                 <button
                   type="button"
                   onClick={() => setOnlineRequested(true)}
-                  className="qsh-touch-target rounded-full bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                  className="qsh-touch-target rounded-pill bg-brand-50 px-4 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
                 >
                   搜索在线食物库
                 </button>
@@ -1273,7 +1273,7 @@ export default function MealComposer({
                     type="button"
                     onClick={() => void searchQuery.fetchNextPage()}
                     disabled={searchQuery.isFetchingNextPage}
-                    className="qsh-touch-target shrink-0 rounded-full bg-brand-50 px-4 text-sm text-brand-700 disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
+                    className="qsh-touch-target shrink-0 rounded-pill bg-brand-50 px-4 text-sm text-brand-700 disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
                   >
                     {searchQuery.isFetchingNextPage ? '加载中…' : '加载更多'}
                   </button>
@@ -1315,7 +1315,7 @@ export default function MealComposer({
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">在线结果</h3>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                        <span className="rounded-pill bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-700 dark:text-slate-300">
                           Open Food Facts · ODbL 1.0
                         </span>
                       </div>
@@ -1393,7 +1393,7 @@ export default function MealComposer({
                       setSelectedCategory((current) => (current === category ? null : category))
                     }
                     className={[
-                      'qsh-touch-target shrink-0 rounded-full px-4 text-sm transition duration-qsh-fast ease-qsh-out',
+                      'qsh-touch-target shrink-0 rounded-pill px-4 text-sm transition duration-qsh-fast ease-qsh-out',
                       selectedCategory === category
                         ? 'bg-brand-600 text-white'
                         : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -1449,7 +1449,7 @@ export default function MealComposer({
                     type="button"
                     onClick={() => void categoryQuery.fetchNextPage()}
                     disabled={categoryQuery.isFetchingNextPage}
-                    className="qsh-touch-target shrink-0 rounded-full bg-brand-50 px-4 text-sm text-brand-700 disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
+                    className="qsh-touch-target shrink-0 rounded-pill bg-brand-50 px-4 text-sm text-brand-700 disabled:opacity-60 dark:bg-brand-900/40 dark:text-brand-200"
                   >
                     {categoryQuery.isFetchingNextPage ? '加载中…' : '加载更多'}
                   </button>
@@ -1681,7 +1681,7 @@ export default function MealComposer({
                     setGrams(String(item.grams));
                   }}
                   className={[
-                    'qsh-touch-target rounded-full px-3 text-sm transition duration-qsh-fast ease-qsh-out',
+                    'qsh-touch-target rounded-pill px-3 text-sm transition duration-qsh-fast ease-qsh-out',
                     servingUnit === item.unit
                       ? 'bg-brand-600 text-white'
                       : 'bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300',

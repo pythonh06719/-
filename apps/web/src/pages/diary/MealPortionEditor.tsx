@@ -224,7 +224,7 @@ export default function MealPortionEditor({
                       aria-pressed={servingUnit === item.unit}
                       onClick={() => chooseUnit(item)}
                       className={[
-                        'qsh-touch-target rounded-full px-3 text-sm transition duration-qsh-base ease-qsh-out',
+                        'qsh-touch-target rounded-pill px-3 text-sm transition duration-qsh-base ease-qsh-out',
                         servingUnit === item.unit
                           ? 'bg-brand-600 text-white'
                           : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',

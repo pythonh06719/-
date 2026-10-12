@@ -105,7 +105,7 @@ export default function BackupRestoreCard(): ReactElement {
       <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
         先选择由轻生活导出的 JSON 文件。我们会先展示备份里有什么，只有你再次确认后才会写入。
       </p>
-      <p className="mt-2 rounded-xl bg-brand-50 px-3 py-2 text-xs leading-relaxed text-brand-800 dark:bg-brand-900/40 dark:text-brand-100">
+      <p className="mt-2 rounded-control bg-brand-50 px-3 py-2 text-xs leading-relaxed text-brand-800 dark:bg-brand-900/40 dark:text-brand-100">
         合并口径：备份里出现的日期，会用备份中的同类记录替换；备份未包含的日期会保留。档案、目标和设置会采用备份内容。
       </p>
 
@@ -121,7 +121,7 @@ export default function BackupRestoreCard(): ReactElement {
       </label>
 
       {preview !== null && (
-        <div data-testid="restore-preview" className="mt-4 rounded-xl border border-brand-100 p-3 dark:border-slate-700">
+        <div data-testid="restore-preview" className="mt-4 rounded-control border border-brand-100 p-3 dark:border-slate-700">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">备份里有什么</h3>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {RECORD_LABELS.map(({ key, label }) => (

@@ -169,7 +169,7 @@ export default function PeriodReportView(): ReactElement {
           {/* 体重变化：只有首末两条**不同**记录才渲染；只说方向与差值，不接判断句（QR-4） */}
           {hasWeightDelta && (
             <p
-              className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+              className="mt-4 rounded-control bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
               data-testid="period-weight"
             >
               {weightDeltaKg < 0

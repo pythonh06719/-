@@ -88,7 +88,7 @@ export default function FoodHistoryPanel({ food, expanded, onCollapse }: FoodHis
   return (
     <div
       data-testid={`food-history-${food.id}`}
-      className="mt-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-900/60"
+      className="mt-2 rounded-control bg-slate-50 p-3 dark:bg-slate-900/60"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-200">

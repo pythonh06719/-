@@ -155,7 +155,7 @@ export default function SaveComboDialog({
             {itemNames.map((itemName, index) => (
               <li
                 key={`${itemName}-${index}`}
-                className="rounded-full bg-brand-50 px-2.5 py-1 text-xs text-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-pill bg-brand-50 px-2.5 py-1 text-xs text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 {itemName}
               </li>

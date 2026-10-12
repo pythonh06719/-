@@ -953,9 +953,9 @@ export default function DiaryPage({ initialDate }: DiaryPageProps): ReactElement
         {/* B5：预算**未就绪时不渲染这一段**（加载中不留 0，也不 0 ↔ 真实值闪烁） */}
         {dailyBudget !== null && (
           <div className="mt-3" data-testid="daily-budget">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-brand-100 dark:bg-slate-700">
+            <div className="h-2 w-full overflow-hidden rounded-pill bg-brand-100 dark:bg-slate-700">
               <div
-                className="h-full rounded-full bg-brand-500 transition-all"
+                className="h-full rounded-pill bg-brand-500 transition-all"
                 style={{ width: `${Math.min(progressRatio, 1) * 100}%` }}
               />
             </div>

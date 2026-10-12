@@ -32,7 +32,7 @@ export default function LandingPage(): ReactElement {
           <BrandDecor variant="bloom" className="h-8 w-8 text-brand-400" />
           <BrandDecor variant="leaf" className="h-5 w-5 -scale-x-100 text-brand-300 opacity-70" />
         </div>
-        <p className="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200">
+        <p className="inline-block rounded-pill bg-brand-100 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900 dark:text-brand-200">
           不节食 · 不极端 · 融进日常
         </p>
         <h1 className="mt-4 text-display font-bold text-slate-900 dark:text-slate-100">轻生活</h1>

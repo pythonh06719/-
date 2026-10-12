@@ -140,14 +140,14 @@ function RouteFallback({ reset }: { reset: () => void }): ReactElement {
           <button
             type="button"
             onClick={reset}
-            className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700"
+            className="rounded-control border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-200 dark:hover:bg-slate-700"
           >
             {COPY.pageFallbackRetry}
           </button>
           <button
             type="button"
             onClick={handleHome}
-            className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+            className="rounded-control bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
           >
             {COPY.pageFallbackHome}
           </button>

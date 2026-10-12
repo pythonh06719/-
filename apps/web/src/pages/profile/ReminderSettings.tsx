@@ -64,7 +64,7 @@ export default function ReminderSettings(): ReactElement {
           aria-checked={enabled}
           aria-label={COPY.reminderToggleTitle}
           onClick={() => void handleToggle()}
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+          className={`relative h-6 w-11 shrink-0 rounded-pill transition-colors ${
             enabled ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-600'
           }`}
         >

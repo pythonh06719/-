@@ -185,7 +185,7 @@ export default function FastingPage(): ReactElement {
                 </p>
                 <button
                   type="button"
-                  className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 dark:border-slate-500 dark:text-slate-200"
+                  className="mt-4 w-full rounded-control border border-slate-300 px-4 py-3 font-medium text-slate-700 dark:border-slate-500 dark:text-slate-200"
                   onClick={() => stop.mutate()}
                 >
                   结束这次断食
@@ -194,7 +194,7 @@ export default function FastingPage(): ReactElement {
             ) : (
               <button
                 type="button"
-                className="mt-4 w-full rounded-xl bg-slate-700 px-4 py-3 font-medium text-white"
+                className="mt-4 w-full rounded-control bg-slate-700 px-4 py-3 font-medium text-white"
                 onClick={() => start.mutate()}
                 disabled={start.isPending}
               >
@@ -203,7 +203,7 @@ export default function FastingPage(): ReactElement {
             )}
             <button
               type="button"
-              className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400"
+              className="mt-3 w-full rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400"
               onClick={() => saveSettings.mutate({ enabled: false })}
             >
               关闭断食功能
@@ -216,7 +216,7 @@ export default function FastingPage(): ReactElement {
             </p>
             <button
               type="button"
-              className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 dark:border-slate-500 dark:text-slate-200"
+              className="mt-4 w-full rounded-control border border-slate-300 px-4 py-3 font-medium text-slate-700 dark:border-slate-500 dark:text-slate-200"
               onClick={requestEnable}
             >
               了解并考虑开启（16:8 / 18:6）

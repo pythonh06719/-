@@ -611,11 +611,11 @@ export default function WeightChart({
       {/* 图例 */}
       <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center gap-4 text-[11px] text-slate-600 dark:text-slate-300">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-4 rounded-full" style={{ backgroundColor: WEIGHT_COLOR }} />
+          <span className="inline-block h-0.5 w-4 rounded-pill" style={{ backgroundColor: WEIGHT_COLOR }} />
           体重
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-[3px] w-4 rounded-full" style={{ backgroundColor: AVG_COLOR }} />
+          <span className="inline-block h-[3px] w-4 rounded-pill" style={{ backgroundColor: AVG_COLOR }} />
           7 日均线
         </span>
         {geometry.hasForecast && (

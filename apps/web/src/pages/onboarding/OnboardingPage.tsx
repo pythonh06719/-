@@ -178,14 +178,14 @@ export default function OnboardingPage(): ReactElement {
         <button
           type="button"
           onClick={() => setStep('form')}
-          className="qsh-touch-target mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700"
+          className="qsh-touch-target mt-6 w-full rounded-control bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700"
         >
           我已了解，开始填写
         </button>
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="qsh-touch-target mt-3 w-full rounded-xl py-3 text-sm text-slate-600 dark:text-slate-400"
+          className="qsh-touch-target mt-3 w-full rounded-control py-3 text-sm text-slate-600 dark:text-slate-400"
         >
           再想想，先回首页
         </button>
@@ -238,19 +238,19 @@ export default function OnboardingPage(): ReactElement {
         <section aria-label="宏量营养素建议" className="mt-4 qsh-surface p-5">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
           <ul className="mt-3 grid grid-cols-3 gap-3 text-center">
-            <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">蛋白质</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.proteinG} g
               </p>
             </li>
-            <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">脂肪</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.fatG} g
               </p>
             </li>
-            <li className="rounded-xl bg-brand-50 p-3 dark:bg-brand-900/40">
+            <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">碳水</p>
               <p className="qsh-tnum mt-1 font-semibold text-brand-700 dark:text-brand-200">
                 {preview.macros.carbG} g
@@ -279,14 +279,14 @@ export default function OnboardingPage(): ReactElement {
             type="button"
             onClick={handleSubmit}
             disabled={submit.isPending}
-            className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="qsh-touch-target w-full rounded-control bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
           >
             {submit.isPending ? '正在保存…' : '保存并进入今日看板'}
           </button>
           <button
             type="button"
             onClick={() => setStep('form')}
-            className="qsh-touch-target w-full rounded-xl py-3 text-sm text-slate-600 dark:text-slate-400"
+            className="qsh-touch-target w-full rounded-control py-3 text-sm text-slate-600 dark:text-slate-400"
           >
             返回修改
           </button>
@@ -387,7 +387,7 @@ export default function OnboardingPage(): ReactElement {
             {ACTIVITY_OPTIONS.map((option) => (
               <label
                 key={option.value}
-                className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 hover:bg-brand-50 dark:hover:bg-slate-700"
+                className="flex cursor-pointer items-center gap-3 rounded-control px-2 py-2 hover:bg-brand-50 dark:hover:bg-slate-700"
               >
                 <input
                   type="radio"
@@ -419,7 +419,7 @@ export default function OnboardingPage(): ReactElement {
                   aria-pressed={active}
                   onClick={() => toggleInList('dietaryPreference', item)}
                   className={[
-                    'qsh-touch-target rounded-full px-4 text-sm transition',
+                    'qsh-touch-target rounded-pill px-4 text-sm transition',
                     active
                       ? 'bg-brand-600 text-white'
                       : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -449,7 +449,7 @@ export default function OnboardingPage(): ReactElement {
                   aria-pressed={active}
                   onClick={() => toggleInList('conditions', item)}
                   className={[
-                    'qsh-touch-target rounded-full px-4 text-sm transition',
+                    'qsh-touch-target rounded-pill px-4 text-sm transition',
                     active
                       ? 'bg-coral-500 text-white'
                       : 'bg-brand-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300',
@@ -502,7 +502,7 @@ export default function OnboardingPage(): ReactElement {
         <button
           type="submit"
           disabled={hasRisk || preview === null}
-          className="qsh-touch-target w-full rounded-xl bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="qsh-touch-target w-full rounded-control bg-brand-600 py-3.5 font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           看看我的预算
         </button>

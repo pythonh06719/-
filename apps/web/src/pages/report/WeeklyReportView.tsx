@@ -305,9 +305,9 @@ export default function WeeklyReportView(): ReactElement {
                   <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
                     {reportHabitRateLabel(habitsDoneTotal, habitRate)}
                   </p>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700">
                     <div
-                      className="h-full rounded-full bg-brand-400"
+                      className="h-full rounded-pill bg-brand-400"
                       style={{ width: `${habitRate}%` }}
                       role="meter"
                       aria-valuenow={habitRate}
@@ -363,9 +363,9 @@ export default function WeeklyReportView(): ReactElement {
                           {item.dailyAvg} {item.unit}
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700">
                         <div
-                          className={`h-full rounded-full ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
+                          className={`h-full rounded-pill ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
                           style={{ width: `${barPercent}%` }}
                           role="meter"
                           aria-valuenow={ariaPercent}

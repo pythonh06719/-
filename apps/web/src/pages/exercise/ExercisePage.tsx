@@ -564,7 +564,7 @@ export default function ExercisePage(): ReactElement {
           {waterTotal} / {waterGoal} ml（{waterPercent}%）
         </p>
         <div
-          className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"
+          className="mt-2 h-3 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700"
           role="progressbar"
           aria-valuenow={waterPercent}
           aria-valuemin={0}
@@ -574,7 +574,7 @@ export default function ExercisePage(): ReactElement {
           {/* 进度填充用 brand-500：与 `DiaryPage` 预算条 / `WeeklyReportView` 迷你柱同一档位，
               实测 vs 轨道 3.05:1（浅）/ 3.10:1（深），均过 1.4.11 的 3:1 ——
               改前的冷蓝填充只有 1.96:1（浅色轨道上几乎看不出填充到哪）。 */}
-          <div className="h-full rounded-full bg-brand-500 transition-[width] duration-qsh-slow ease-qsh-out" style={{ width: `${waterPercent}%` }} />
+          <div className="h-full rounded-pill bg-brand-500 transition-[width] duration-qsh-slow ease-qsh-out" style={{ width: `${waterPercent}%` }} />
         </div>
         <div className="mt-4 flex gap-3">
           <button
