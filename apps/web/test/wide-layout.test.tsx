@@ -11,8 +11,9 @@
  * ③ **DOM 结构有序**：三/两栏包裹块的顺序 == DOM 顺序 == 视觉顺序，关键区块（h2 / aria）仍在
  *    且次序不变；
  * ④ **焦点顺序合理（设计不变量）**：各栏 `lg:col-start-N` 在 DOM 顺序上**单调不减**；
- * ⑤ **移动端间距不变**：包裹块沿用与父级同款的纵向间距类（`space-y-6` / `space-y-5` /
- *    `flex flex-col gap-4`），故移动端卡片间距与原实现一致；
+ * ⑤ **移动端间距不变**：包裹块沿用与父级同款的纵向间距类（`space-y-section` /
+ *    `space-y-5` / `flex flex-col gap-4`），故移动端卡片间距与原实现一致；
+ *    （2026-10-12 语义间距迁移：`space-y-6` → `space-y-section`，同值 1.5rem）
  * ⑥ **无障碍不回退**：关键区域的 `role` / `aria-*` 仍在。
  *
  * 真实视觉（宽屏并排、移动端不变）由独立的浏览器截图核对负责，不在本文件内。
@@ -238,7 +239,7 @@ describe('今天页（/dashboard）宽屏三栏', () => {
     expectColumnMajorOrder(section);
   });
 
-  it('★ 移动端间距不变：包裹块沿用父级同款 `space-y-6`（窄屏卡片顺序 / 间距与改动前一致）', async () => {
+  it('★ 移动端间距不变：包裹块沿用父级同款 `space-y-section`（窄屏卡片顺序 / 间距与改动前一致）', async () => {
     const { container } = renderWithShell(<DashboardPage />, true);
     await screen.findByText('今天也照顾好自己');
     const section = container.querySelector('section[aria-labelledby="dashboard-title"]')!;
@@ -249,8 +250,10 @@ describe('今天页（/dashboard）宽屏三栏', () => {
       'DIV',
       'DIV',
     ]);
+    // 「父子同款」：父级 section 与三个包裹块共用同一间距 token（2026-10-12 mt/space 语义化迁移后为 space-y-section）
+    expect(classesOf(section)).toContain('space-y-section');
     for (const col of Array.from(section.querySelectorAll(':scope > div'))) {
-      expect(classesOf(col)).toContain('space-y-6');
+      expect(classesOf(col)).toContain('space-y-section');
     }
     // 关键区块层级 / 归属不变
     expect(section.querySelector('section[aria-label="今天可以做的事"]')).not.toBeNull();
