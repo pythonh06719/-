@@ -350,12 +350,16 @@ try {
     const pad = (value) => String(value).padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   })();
+  // 日期键平移：与 core `shiftLocalDateKey`（`packages/core/src/date/daykey.ts`）**同一口径** ——
+  // 本地时区日历运算。这里不能 import core（package.json 直指 src/index.ts，node 跑不了 TS），
+  // 故按同一约定本地实现；**曾用 `Date.UTC` 版是同一概念的第二份实现**（实测 6400 组
+  // 日期×偏移对照零差异，无活 bug，按「一个概念一份实现」的纪律收敛）。
   const shiftKey = (key, deltaDays) => {
     const [y, m, d] = key.split('-').map(Number);
-    const date = new Date(Date.UTC(y, m - 1, d));
-    date.setUTCDate(date.getUTCDate() + deltaDays);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + deltaDays);
     const pad = (value) => String(value).padStart(2, '0');
-    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   };
   const probeWeightKgByDate = new Map([
     [shiftKey(todayKey, -2), 60.555],
