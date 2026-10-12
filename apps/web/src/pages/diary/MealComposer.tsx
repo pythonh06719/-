@@ -1083,7 +1083,7 @@ export default function MealComposer({
       {/* 底部抽屉/弹窗 → elevation-3（原 shadow-xl 是硬边大阴影，与「柔和」气质冲突） */}
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-sheet">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             记录{MEAL_TYPE_LABELS[mealType]}
           </h2>
           <button

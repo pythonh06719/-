@@ -130,7 +130,7 @@ export default function SaveComboDialog({
     >
       <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-sheet">
         <div className="flex items-center justify-between">
-          <h2 id={titleId} className="text-base font-semibold text-slate-800 dark:text-slate-100">
+          <h2 id={titleId} className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.comboSaveTitle}
           </h2>
           <button

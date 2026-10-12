@@ -188,7 +188,7 @@ export default function BarcodeScanner({ onDetected, onClose }: BarcodeScannerPr
           `animate-fade-in` + `motion-reduce:transition-none` 让进出场有统一动效且尊重减弱动效偏好。 */}
       <div className="max-h-[88vh] w-full max-w-lg animate-fade-in overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 motion-reduce:transition-none dark:bg-slate-800 sm:rounded-sheet">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">扫描条码</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">扫描条码</h2>
           <button
             type="button"
             onClick={onClose}

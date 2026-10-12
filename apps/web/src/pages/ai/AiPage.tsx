@@ -170,7 +170,7 @@ function TracePanel(): ReactElement {
 
   return (
     <section className="qsh-surface p-5" aria-live="polite">
-      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiTraceTitle}</h2>
+      <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.aiTraceTitle}</h2>
       <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.aiTraceDesc}</p>
 
       {tracesQuery.isLoading ? (
@@ -306,7 +306,7 @@ function FoodRecognizePanel(): ReactElement {
 
   return (
     <section className="qsh-surface p-5">
-      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
+      <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">{COPY.aiRecognizeTitle}</h2>
       <p className="mt-tight text-xs text-slate-600 dark:text-slate-400">{COPY.aiRecognizeHint}</p>
       <div className="mt-block flex gap-2">
         <input

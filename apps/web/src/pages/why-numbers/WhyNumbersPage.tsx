@@ -202,7 +202,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-budget-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-budget-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-budget-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ① 热量预算怎么算
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -379,7 +379,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-exercise-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-exercise-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-exercise-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ② 运动消耗怎么算
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -421,7 +421,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-data-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-data-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-data-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ③ 数据来源与许可
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -479,7 +479,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-choice-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-choice-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-choice-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ④ 我们的取舍
         </h2>
         <dl className="mt-2 space-y-3 text-sm">
@@ -515,7 +515,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-goal-progress-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-goal-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-goal-progress-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑤ 目标进度与维持模式怎么判断
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -556,7 +556,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-plateau-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-plateau-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-plateau-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑥ 平台期是怎么判断的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -617,7 +617,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-weight-range-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-weight-range-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-weight-range-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑦ 体重区间（近 7 / 30 / 90 天）怎么统计
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -661,7 +661,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-weekly-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-weekly-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-weekly-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑧ 周报里的对比与达成率怎么读
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -705,7 +705,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-taper-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-taper-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-taper-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑨ 快到目标时，为什么建议会自动变宽松
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -763,7 +763,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-meal-order-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-meal-order-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-meal-order-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑩ 餐次里的顺序是怎么定的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -828,7 +828,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-top-foods-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-top-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-top-foods-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑪ 常吃榜是怎么排出来的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -877,7 +877,7 @@ export default function WhyNumbersPage(): ReactElement {
         aria-labelledby="why-backup-title"
         className="qsh-surface p-5"
       >
-        <h2 id="why-backup-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-backup-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑫ 备份提醒与记录概览
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -929,7 +929,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑬ 阶段回顾的六个数字怎么来（R11.3，T03 同批交付） */}
       <section aria-labelledby="why-period-title" className="qsh-surface p-5">
-        <h2 id="why-period-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-period-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑬「这段时间」里的六个数字怎么来
         </h2>
         <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
@@ -951,7 +951,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑭ 不同食物的种类是怎么数出来的（R11.7 / R11.3 共用口径，T02 同批交付） */}
       <section aria-labelledby="why-distinct-foods-title" className="qsh-surface p-5">
-        <h2 id="why-distinct-foods-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-distinct-foods-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑭ 不同食物的种类是怎么数出来的
         </h2>
         <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
@@ -969,7 +969,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑮ 「体重之外的变化」这个数字怎么用（R11.4，T05 同批交付） */}
       <section aria-labelledby="why-wins-title" className="qsh-surface p-5">
-        <h2 id="why-wins-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-wins-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑮「体重之外的变化」这个数字怎么用
         </h2>
         <dl className="mt-block rounded-control bg-brand-50 p-4 dark:bg-brand-900/40">
@@ -986,7 +986,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑯ 周报里的「饱和脂肪」是怎么来的（CFCD 扩量推算值，NFR-11） */}
       <section aria-labelledby="why-sfa-title" className="qsh-surface p-5">
-        <h2 id="why-sfa-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-sfa-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑯ 周报里的「饱和脂肪」是怎么来的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1032,7 +1032,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑰ AI 剩余次数是怎么算的（B6，同批交付） */}
       <section aria-labelledby="why-ai-usage-title" className="qsh-surface p-5">
-        <h2 id="why-ai-usage-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-ai-usage-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑰ AI 页面那个「还能问 N 次」是怎么算的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1084,7 +1084,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑱ 改份量后，热量是怎么重算的（B3，NFR-11） */}
       <section aria-labelledby="why-portion-title" className="qsh-surface p-5">
-        <h2 id="why-portion-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-portion-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑱ 改份量后，热量是怎么重算的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1143,7 +1143,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑲ JSON 备份恢复预览与合并口径（R10.2 / NFR-11） */}
       <section aria-labelledby="why-restore-title" className="qsh-surface p-5">
-        <h2 id="why-restore-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-restore-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑲ 备份恢复里的数字怎么来
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1166,7 +1166,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ⑳「我的常点」是怎么记住的（C2，同批交付） */}
       <section aria-labelledby="why-tool-memory-title" className="qsh-surface p-5">
-        <h2 id="why-tool-memory-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-tool-memory-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ⑳ 生活化工具里的「我的常点」是怎么记住的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1236,7 +1236,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉑ 待同步条数（GAP-9，NFR-11：新展示的数字必须可解释） */}
       <section aria-labelledby="why-pending-sync-title" className="qsh-surface p-5">
-        <h2 id="why-pending-sync-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-pending-sync-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉑ 顶部那个「还有 N 笔在排队」是怎么来的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1307,7 +1307,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉒ 周报里两处「日均」的分母（缺陷收尾：口径统一，NFR-11） */}
       <section aria-labelledby="why-daily-avg-title" className="qsh-surface p-5">
-        <h2 id="why-daily-avg-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-daily-avg-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉒ 周报里两处「日均」用的是同一个分母
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1358,7 +1358,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉓ 记录足迹日历的颜色深浅是怎么定的（C-1，NFR-11 硬约束） */}
       <section aria-labelledby="why-footprint-title" className="qsh-surface p-5">
-        <h2 id="why-footprint-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-footprint-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉓ 足迹日历里颜色的深浅是怎么定的
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1415,7 +1415,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉔ 断食计时里的小时数（NFR-11：目标、已过与剩余必须可解释） */}
       <section aria-labelledby="why-fasting-title" className="qsh-surface p-5">
-        <h2 id="why-fasting-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-fasting-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉔ 断食计时里的小时数怎么算
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1457,7 +1457,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉕ 习惯连续天数与历史最佳（NFR-11：streak 口径） */}
       <section aria-labelledby="why-habit-streak-title" className="qsh-surface p-5">
-        <h2 id="why-habit-streak-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-habit-streak-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉕ 习惯的当前连续与历史最佳怎么算
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">
@@ -1498,7 +1498,7 @@ export default function WhyNumbersPage(): ReactElement {
 
       {/* ㉖ 饮水目标与百分比（NFR-11：来源优先级与取整） */}
       <section aria-labelledby="why-water-progress-title" className="qsh-surface p-5">
-        <h2 id="why-water-progress-title" className="text-base font-semibold text-slate-800 dark:text-slate-100">
+        <h2 id="why-water-progress-title" className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
           ㉖ 饮水目标与百分比怎么算
         </h2>
         <p className="mt-tight text-sm text-slate-600 dark:text-slate-300">

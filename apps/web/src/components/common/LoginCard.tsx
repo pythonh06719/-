@@ -83,7 +83,7 @@ export default function LoginCard({ onSuccess }: LoginCardProps): ReactElement {
       aria-label="邮箱登录"
       className="qsh-surface p-5"
     >
-      <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">登录后同步你的记录</h2>
+      <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">登录后同步你的记录</h2>
       <p className="mt-tight text-sm text-slate-500 dark:text-slate-400">
         用邮箱 + 验证码登录即可，我们不需要密码。
       </p>

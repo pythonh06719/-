@@ -167,7 +167,7 @@ export default function OnboardingPage(): ReactElement {
           aria-label="免责声明"
           className="qsh-surface mt-6 p-5"
         >
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">免责声明</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">免责声明</h2>
           <ul className="mt-block space-y-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             <li>· 本产品不提供医疗建议，也不能替代专业诊断与治疗。</li>
             <li>· 计算结果仅用于健康生活参考。</li>
@@ -236,7 +236,7 @@ export default function OnboardingPage(): ReactElement {
         </dl>
 
         <section aria-label="宏量营养素建议" className="mt-4 qsh-surface p-5">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
+          <h2 className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">三大营养素参考</h2>
           <ul className="mt-block grid grid-cols-3 gap-3 text-center">
             <li className="rounded-control bg-brand-50 p-3 dark:bg-brand-900/40">
               <p className="text-xs text-slate-600 dark:text-slate-400">蛋白质</p>
