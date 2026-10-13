@@ -290,7 +290,7 @@ describe('D-3 · 离线改体重单位 → 联网补推', () => {
 // ---------------------------------------------------------------------------
 
 describe('D-3 · 顶栏体重单位切换按钮', () => {
-  it('★ 顶栏有三个切换按钮，体重按钮可在 kg ↔ 斤 间切换并写本地偏好', async () => {
+  it('★ 顶栏只剩两个单位切换按钮（深色 2026-10-13 迁至「我的 → 显示」），体重按钮可在 kg ↔ 斤 间切换并写本地偏好', async () => {
     useUnitStore.setState({ unit: 'kcal', weightUnit: 'kg' });
     render(
       <MemoryRouter>
@@ -300,10 +300,10 @@ describe('D-3 · 顶栏体重单位切换按钮', () => {
       </MemoryRouter>,
     );
 
-    // 热量 + 体重 + 深色 三个切换按钮并存
+    // 热量 + 体重两个单位按钮并存；深色按钮已不在顶栏（拆分决策的回归保护）
     expect(screen.getByRole('button', { name: /切换热量单位/ })).toBeDefined();
     const weightButton = screen.getByRole('button', { name: /切换体重单位/ });
-    expect(screen.getByRole('button', { name: /切换到.*模式/ })).toBeDefined();
+    expect(screen.queryByRole('button', { name: /切换到.*模式/ })).toBeNull();
     expect(weightButton.textContent).toBe('kg');
 
     fireEvent.click(weightButton);

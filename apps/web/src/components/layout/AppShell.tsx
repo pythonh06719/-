@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import BrandDecor from '@/components/common/BrandDecor';
-import { useTheme } from '@/theme/useTheme';
 import { energyLabel, useUnitStore, weightLabel } from '@/lib/units';
 import { COPY } from '@/lib/copy';
 import { flushQueue, queueLength, subscribeQueue } from '@/pwa/offline-queue';
@@ -11,7 +10,7 @@ import { flushQueue, queueLength, subscribeQueue } from '@/pwa/offline-queue';
  * 应用外壳（components/layout/AppShell.tsx）。
  *
  * - 移动端：顶部标题栏 + 底部导航；桌面端：内容居中，导航转为胶囊条（响应式）
- * - 全局开关：深色模式（跟随系统 / 手动）、热量单位 kcal ↔ kJ
+ * - 全局开关：热量单位 kcal ↔ kJ、体重单位 斤 ↔ kg（**深色模式在「我的 → 显示」**，2026-10-13 迁入）
  * - 无障碍：跳过导航链接、`main` 语义区、离线状态 `aria-live` 提示（TC-48）
  * - **不发任何用户未开启的通知**（NFR-10）
  * - **GAP-9**：顶部横幅同时承载「离线」与「N 笔待同步」两件事（见 `OfflineSyncBanner`）
@@ -211,7 +210,6 @@ function OfflineSyncBanner({ online }: { online: boolean }): ReactElement | null
 }
 
 export default function AppShell({ children, title = '轻生活', wide = false }: AppShellProps): ReactElement {
-  const { resolved, toggle } = useTheme();
   const unit = useUnitStore((state) => state.unit);
   const toggleUnit = useUnitStore((state) => state.toggle);
   const weightUnit = useUnitStore((state) => state.weightUnit);
@@ -230,7 +228,7 @@ export default function AppShell({ children, title = '轻生活', wide = false }
       </a>
 
       {/* `sticky top-0` 的 header 之前完全无视安全区：iPhone 灵动岛/刘海机型上状态栏会压住标题
-          与三个切换按钮。安全区内边距挂在 **header 自身**而不是内层容器上：内层容器的类名被
+          与两个切换按钮。安全区内边距挂在 **header 自身**而不是内层容器上：内层容器的类名被
           `wide-layout.test.tsx` 逐字钉死（它验证「移动端类名不变」），把 padding 加在内层会让
           那条断言失败，而 padding 的视觉效果与挂在哪一层等价。
           这里是裸 `env()` 而非 `calc()`：因为它**叠加**在子容器原有的 `py-3.5` 之上，
@@ -255,7 +253,9 @@ export default function AppShell({ children, title = '轻生活', wide = false }
               {energyLabel(unit)}
             </button>
             {/* 体重单位切换（D-3）：与热量单位按钮同构 —— 同为「展示换算」，不改变任何存储。
-                顶栏原本已有两个按钮（热量 + 深色），第三个用更紧凑的间距（`gap-1.5`）容纳：
+                顶栏现在正好两个按钮（热量 + 体重单位）：深色模式 2026-10-13 迁至
+                「我的 → 显示」（用户拍板「单位留顶栏、深色进设置」—— 单位看数字时高频，
+                深色设一次就忘，且设置里配齐了「跟随系统」）。
                 按钮本身仍是 ≥44px 的触控目标，窄屏下标题仍占得下。 */}
             <button
               type="button"
@@ -264,14 +264,6 @@ export default function AppShell({ children, title = '轻生活', wide = false }
               aria-label={`切换体重单位为${weightUnit === 'jin' ? '千克' : '斤'}，当前 ${weightLabel(weightUnit)}`}
             >
               {weightLabel(weightUnit)}
-            </button>
-            <button
-              type="button"
-              onClick={toggle}
-              className="qsh-touch-target rounded-control px-3 text-caption font-medium text-slate-600 ring-1 ring-brand-100 transition-colors duration-qsh-fast ease-qsh-out hover:bg-brand-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"
-              aria-label={resolved === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            >
-              {resolved === 'dark' ? '浅色' : '深色'}
             </button>
           </div>
         </div>

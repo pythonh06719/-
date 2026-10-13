@@ -235,7 +235,7 @@ export default function WeightChart({
    *
    * ⭐ 为什么必须**订阅**而不是读一次（2026-10-05 实测踩到）：
    * 最初写成「渲染时读一次 `document.documentElement.classList`」，看起来能用 ——
-   * 但那只是**渲染那一刻的快照**。用户在顶栏点「深色」，`applyTheme()` 改了 class，
+   * 但那只是**渲染那一刻的快照**。用户在设置里切「深色」，`applyTheme()` 改了 class，
    * 而本组件不会重渲染，图表线色**停在旧主题**。
    * 同样的坑本轮取证脚本也踩了一次（截图全浅色却没报错）。
    * → 用 `useSyncExternalStore` 订阅 class 变化，它正是「外部 store 变了就重渲染」的正解。

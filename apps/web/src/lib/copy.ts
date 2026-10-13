@@ -407,6 +407,13 @@ export const COPY = {
   reminderGranted: '好啦，明天见',
   reminderDenied: '通知权限没有打开，想开的时候再来这里就好',
   reminderUnsupported: '这台设备暂时不支持通知，不影响其他功能',
+  /** 显示（深色模式）—— 2026-10-13 从顶栏迁入「我的」页：顶栏只留两个单位开关 */
+  displayTitle: '显示',
+  displayDesc: '深色模式默认跟随系统，也可以手动固定。设置会记住，换设备登录后同样生效',
+  displayThemeLabel: '外观',
+  displayThemeSystem: '跟随系统',
+  displayThemeLight: '浅色',
+  displayThemeDark: '深色',
   /* ---------------------------------------------------------------------------
    * PWA 桌面快捷方式与安装说明（C-2 / GAP-8）—— 语气规范同 §7：平实告知，不催促。
    * ⚠️ 本小节**只追加新键**，不改动相邻的 `reminder*` 区块。

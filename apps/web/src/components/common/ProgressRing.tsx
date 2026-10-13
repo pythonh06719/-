@@ -9,7 +9,7 @@ import { TOKENS } from '@/theme/tokens';
  *
  * ⭐ 关键点：必须**订阅**而非「渲染时读一次」（2026-10-05 实测踩到）。
  * 原实现是 `document.documentElement.classList.contains('dark')` 直接在渲染体里读 ——
- * 那是**渲染那一刻的快照**。用户在顶栏点「深色」，`applyTheme()` 改了 class，
+ * 那是**渲染那一刻的快照**。用户在设置里切「深色」，`applyTheme()` 改了 class，
  * 而本组件不会重渲染 → 渐变停在旧主题。
  * 「删掉 dark prop」只解决了「调用方漏传」，没解决「主题切换后不重绘」——
  * 两个是独立的缺陷，缺一个都会让深色失效。

@@ -21,6 +21,7 @@ import LoginCard from '@/components/common/LoginCard';
 import SafetyBanner from '@/components/feedback/SafetyBanner';
 import ReminderSettings from '@/pages/profile/ReminderSettings';
 import GoalSettingsCard from '@/pages/profile/GoalSettingsCard';
+import DisplaySettings from '@/pages/profile/DisplaySettings';
 
 /**
  * 我的（`/profile`，PRD §6 第 12 行 / R1.4 / R2.9 / US-05 / TC-12 / TC-14）。
@@ -290,6 +291,12 @@ export default function ProfilePage(): ReactElement {
           </p>
         )}
       </form>
+
+      {/* 显示（深色模式）—— 2026-10-13 从顶栏迁入：单位两个开关留顶栏（看数字时高频），
+          深色是「设一次就忘」的偏好，且这里配齐「跟随系统」（顶栏 toggle 离开 system 就回不去）。
+          位置紧挨「基础数据」——两条都是「个人怎么用这个应用」的设置，与下面的
+          参考来源（信息性）、数据管理（动作性）区分开。 */}
+      <DisplaySettings />
 
       {/* 参考来源（R2.9 / TC-14） */}
       <section
