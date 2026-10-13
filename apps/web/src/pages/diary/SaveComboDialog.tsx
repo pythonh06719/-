@@ -126,9 +126,9 @@ export default function SaveComboDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 dark:bg-slate-950/65 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 pb-[var(--qsh-keyboard-inset,0px)] dark:bg-slate-950/65 sm:items-center sm:p-4"
     >
-      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-sheet bg-white p-5 shadow-qsh-3 dark:bg-slate-800 sm:rounded-sheet">
+      <div className="max-h-[calc(88vh_-_var(--qsh-keyboard-inset,0px))] w-full max-w-lg overflow-y-auto rounded-t-sheet bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-qsh-3 dark:bg-slate-800 sm:rounded-sheet sm:pb-5">
         <div className="flex items-center justify-between">
           <h2 id={titleId} className="text-subtitle font-semibold text-slate-800 dark:text-slate-100">
             {COPY.comboSaveTitle}

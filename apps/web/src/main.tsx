@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { COPY } from '@/lib/copy';
+import { initKeyboardInset } from '@/lib/keyboard-inset';
 import { queryClient } from '@/lib/queryClient';
 import { initTheme } from '@/theme/useTheme';
 import { initPwa } from '@/pwa/registerSW';
@@ -17,6 +18,9 @@ import './theme/a11y.css';
 // 尽早应用主题，避免首屏闪烁；注册 PWA 与离线同步（不发任何通知，NFR-10）
 initTheme();
 initPwa();
+// 软键盘弹起时把「布局视口被吃掉的底部高度」写成 CSS 变量 --qsh-keyboard-inset，
+// 供三个底部抽屉抬升防遮挡（iOS Safari 布局视口不随键盘收缩，见 lib/keyboard-inset.ts）
+initKeyboardInset();
 
 const rootElement = document.getElementById('root');
 
