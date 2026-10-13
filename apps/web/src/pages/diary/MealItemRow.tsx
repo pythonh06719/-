@@ -129,7 +129,9 @@ export default function MealItemRow({
             {emojiForFoodName(name)}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm text-slate-800 dark:text-slate-100">{name}</p>
+            <p className="truncate text-sm text-slate-800 dark:text-slate-100" title={name}>
+              {name}
+            </p>
             <p className="qsh-tnum text-xs text-slate-600 dark:text-slate-300">
               {kcalLabel}
               {gramsLabel !== null ? ` · ${gramsLabel}` : ''}

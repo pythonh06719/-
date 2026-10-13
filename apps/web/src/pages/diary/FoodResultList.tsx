@@ -67,7 +67,9 @@ export default function FoodResultList({
                   <span aria-hidden="true" className="text-base">
                     {emojiForCategory(food.category)}
                   </span>
-                  <span className="min-w-0 truncate">{food.name}</span>
+                  <span className="min-w-0 truncate" title={food.name}>
+                    {food.name}
+                  </span>
                   {qualifier !== null && (
                     <span className="shrink-0 rounded-pill bg-slate-100 px-2 py-0.5 text-caption font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {qualifier}

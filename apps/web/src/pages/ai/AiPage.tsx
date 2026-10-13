@@ -346,7 +346,9 @@ function FoodRecognizePanel(): ReactElement {
                   className="flex items-center justify-between gap-3 rounded-control bg-slate-50 px-3 py-2.5 dark:bg-slate-700"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100">{candidate.name}</p>
+                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-100" title={candidate.name}>
+                      {candidate.name}
+                    </p>
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                       每 100g 约 {toDisplayEnergy(candidate.kcalPer100g, unit)} {energyLabel(unit)}
                       {candidate.servingKcal !== null && candidate.servingUnitLabel !== null

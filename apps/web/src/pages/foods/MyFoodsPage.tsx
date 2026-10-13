@@ -146,7 +146,11 @@ export default function MyFoodsPage(): ReactElement {
                 className="flex items-center justify-between gap-3 rounded-control px-3 py-2 ring-1 ring-brand-100 dark:ring-slate-700"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-slate-800 dark:text-slate-100">{food.name}</p>
+                  {/* 自建食物名是用户任意长的输入，单行省略后桌面端靠 title 恢复全名
+                      （读屏不受影响：截断是纯视觉，DOM 文本始终完整）。约定见 VISUAL-SYSTEM.md §5。 */}
+                  <p className="truncate text-sm text-slate-800 dark:text-slate-100" title={food.name}>
+                    {food.name}
+                  </p>
                   <p className="qsh-tnum truncate text-xs text-slate-600 dark:text-slate-300">
                     {foodCategoryLabel(food.category)} · {COPY.myFoodsKcalPer100g(food.kcalPer100g, unit)}
                   </p>

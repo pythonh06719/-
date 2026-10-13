@@ -178,7 +178,7 @@ export default function WhyNumbersToc(): ReactElement {
       */}
       <div className="flex items-baseline gap-2 text-xs leading-4">
         <span className="shrink-0 text-slate-500 dark:text-slate-400">{COPY.whyTocNavLabel}</span>
-        <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
+        <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200" title={active.title}>
           {sectionMarker(active.title)} {sectionLabel(active.title)}
         </span>
         <span className="qsh-tnum shrink-0 text-slate-500 dark:text-slate-400">

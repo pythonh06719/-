@@ -201,7 +201,7 @@ export default function PeriodReportView(): ReactElement {
                 aria-label={topFoodsAria(item.name, item.dayCount, days)}
                 className="flex items-center justify-between gap-3 rounded-control px-4 py-3 ring-1 ring-brand-100 dark:ring-slate-700"
               >
-                <span className="min-w-0 truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                <span className="min-w-0 truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={item.name}>
                   {item.name}
                 </span>
                 <span className="qsh-tnum shrink-0 text-xs text-slate-600 dark:text-slate-300">

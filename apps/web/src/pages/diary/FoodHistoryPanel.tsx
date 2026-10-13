@@ -85,14 +85,17 @@ export default function FoodHistoryPanel({ food, expanded, onCollapse }: FoodHis
   // 绝不把非数组喂给 `.map`（那会让整个记录面板崩掉）。
   const items = Array.isArray(historyQuery.data?.items) ? historyQuery.data.items : [];
 
+  // 面板标题与 title 属性同源（截断时桌面端 hover 恢复全名，约定见 VISUAL-SYSTEM.md §5）。
+  const historyTitle = foodHistoryTitle(food.name);
+
   return (
     <div
       data-testid={`food-history-${food.id}`}
       className="mt-2 rounded-control bg-slate-50 p-3 dark:bg-slate-900/60"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-200">
-          {foodHistoryTitle(food.name)}
+        <p className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-200" title={historyTitle}>
+          {historyTitle}
         </p>
         {/* 收起按钮：整块面板里**唯一**的可点元素，且它只改「看不看」，不写任何数据。
             ⚠️ aria-label 与行内那个开关**刻意不同句**（`关掉…` vs `收起…`）：

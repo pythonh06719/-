@@ -387,7 +387,7 @@ export default function HabitsPage(): ReactElement {
                     <span className="text-xl" aria-hidden="true">
                       {habit.icon ?? '✅'}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
+                    <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100" title={habit.name}>
                       {habit.name}
                     </span>
                     <button

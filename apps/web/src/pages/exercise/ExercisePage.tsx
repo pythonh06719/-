@@ -500,23 +500,27 @@ export default function ExercisePage(): ReactElement {
                 <span>今天还没有记录，散散步也算数</span>
               </li>
             ) : (
-              dayLogs.map((log) => (
-                <li key={log.id} className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate">
-                    {log.activityName} · {log.minutes} 分钟 · 约 {toDisplayEnergy(log.kcalBurned, unit)} {energyLabel(unit)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteExercise.mutate(log.id)}
-                    disabled={deleteExercise.isPending}
-                    aria-label={exerciseDeleteAria(log.activityName, log.minutes)}
-                    data-testid={`exercise-delete-${log.id}`}
-                    className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-slate-600 hover:text-coral-600 disabled:opacity-40 dark:text-slate-300"
-                  >
-                    {COPY.exerciseDelete}
-                  </button>
-                </li>
-              ))
+              dayLogs.map((log) => {
+                // 单行省略时桌面端 hover 恢复全句（title 与可见文本同源，约定见 VISUAL-SYSTEM.md §5）
+                const line = `${log.activityName} · ${log.minutes} 分钟 · 约 ${toDisplayEnergy(log.kcalBurned, unit)} ${energyLabel(unit)}`;
+                return (
+                  <li key={log.id} className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate" title={line}>
+                      {line}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => deleteExercise.mutate(log.id)}
+                      disabled={deleteExercise.isPending}
+                      aria-label={exerciseDeleteAria(log.activityName, log.minutes)}
+                      data-testid={`exercise-delete-${log.id}`}
+                      className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-slate-600 hover:text-coral-600 disabled:opacity-40 dark:text-slate-300"
+                    >
+                      {COPY.exerciseDelete}
+                    </button>
+                  </li>
+                );
+              })
             )}
           </ul>
         </div>

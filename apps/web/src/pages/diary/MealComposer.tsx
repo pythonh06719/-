@@ -770,7 +770,7 @@ export default function MealComposer({
               className="qsh-touch-target flex w-full items-center justify-between gap-3 rounded-control px-4 py-3 text-left ring-1 ring-brand-100 transition duration-qsh-base ease-qsh-out hover:bg-brand-50 dark:ring-slate-700 dark:hover:bg-slate-700"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={item.name}>
                   {item.name}
                 </span>
                 {lastLoggedLine !== '' && (
@@ -1260,9 +1260,9 @@ export default function MealComposer({
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                                  {item.name}
-                                </p>
+                        <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={item.name}>
+                          {item.name}
+                        </p>
                                 <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
                                   {item.brand !== null ? `${item.brand} · ` : ''}每 100g {toDisplayEnergy(item.kcalPer100g, unit)} {energyLabel(unit)}
                                 </p>
@@ -1661,7 +1661,7 @@ export default function MealComposer({
                   key={entry.foodId}
                   className="flex items-center gap-2 rounded-control bg-white px-3 py-2 dark:bg-slate-800"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
+                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100" title={entry.name}>
                     {entry.name}
                   </span>
                   <input
