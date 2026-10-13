@@ -42,6 +42,11 @@ async function bootstrap(): Promise<void> {
    * 攻击者打满 5 次即使全部真实用户收不到验证码。
    * ⚠️ 禁用 `true`：信任整条 `X-Forwarded-For` 链等于允许客户端伪造头、每请求轮换限流桶，
    *    比不修更糟。`1` = 只信最近一跳（Render 的代理），客户端自带的 XFF 头不被采信。
+   *
+   * ⚠️ **必须保持「数字」形式**：数字信任走 Express `compileTrust` 的 hop 计数函数，
+   *    不经 `proxy-addr` 的地址/子网匹配器 —— 后者在 2.0.7 有 IPv4-mapped IPv6 子网误判
+   *    （CVE-2026-90711 / GHSA-jqcg-44mw-7w3h，2.0.8 修）。若将来改成 CIDR / 数组 /
+   *    `'loopback'` 这类字符串信任，必须先确保 proxy-addr ≥ 2.0.8。
    */
   (app.getHttpAdapter().getInstance() as import('express').Express).set('trust proxy', 1);
   /**

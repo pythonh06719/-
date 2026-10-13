@@ -20,6 +20,20 @@ export const NETWORK_ERROR_CODE = 'E_NETWORK';
 /** 401 广播事件名。 */
 export const UNAUTHORIZED_EVENT = 'qsh:unauthorized';
 
+/**
+ * 是否应清会话（唯一判据，两条请求路径共用）。
+ *
+ * - `401`：令牌无效 / 过期；
+ * - `403 + E_AUTH_USER_DISABLED`：账号被停用（F-004 让鉴权层按请求返回 403）。
+ *   若不清会话，被停用用户会停在「已登录」假象里：页面不跳登录、每请求 403、无法自愈。
+ *
+ * `code` 未取到时（如流式响应读不到 body）**只认 401** —— 403 在本应用虽只有「停用」一个语义，
+ * 但拿不到错误码时不做猜测：停用用户的下一个非流式请求会立刻清掉会话。
+ */
+export function shouldClearSession(status: number, code?: string): boolean {
+  return status === 401 || (status === 403 && code === 'E_AUTH_USER_DISABLED');
+}
+
 /** 统一 HTTP 方法集。 */
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
@@ -173,13 +187,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     payload = null;
   }
 
-  if (response.status === 401) {
+  if (shouldClearSession(response.status, payload?.error?.code)) {
     useAuthStore.getState().clear();
     emitUnauthorized();
-    const unauthorizedMessage = payload?.error?.message ?? friendlyMessage(401);
+    const unauthorizedMessage = payload?.error?.message ?? friendlyMessage(response.status);
     throw new ApiClientError({
       code: payload?.error?.code ?? 'E_AUTH_UNAUTHORIZED',
-      status: 401,
+      status: response.status,
       message: unauthorizedMessage,
     });
   }
@@ -299,10 +313,15 @@ export async function postStream(
     throw new ApiClientError({ code: NETWORK_ERROR_CODE, status: 0, message: OFFLINE_MESSAGE, cause });
   }
 
-  if (response.status === 401) {
+  // 流式响应读不到 body → 拿不到错误码，故只认 401（见 shouldClearSession 注释）。
+  if (shouldClearSession(response.status)) {
     useAuthStore.getState().clear();
     emitUnauthorized();
-    throw new ApiClientError({ code: 'E_AUTH_UNAUTHORIZED', status: 401, message: friendlyMessage(401) });
+    throw new ApiClientError({
+      code: 'E_AUTH_UNAUTHORIZED',
+      status: response.status,
+      message: friendlyMessage(response.status),
+    });
   }
 
   if (!response.ok) {

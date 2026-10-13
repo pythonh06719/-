@@ -165,6 +165,22 @@ describe('F-009 安全事件日志', () => {
     expect(hit).toBe(true);
   });
 
+  it('验证码猜错（400 E_AUTH_CODE_INVALID）也落安全事件 —— 6 位码爆破的唯一观测点', async () => {
+    warnSpy.mockClear();
+
+    // 无该邮箱的验证码记录 → 400 E_AUTH_CODE_INVALID（不消耗任何发码/校验配额以外的资源）
+    const res = await request(server as never)
+      .post(`${API}/auth/verify-code`)
+      .send({ email: 'e2e-hardening-code-probe@qinglife.test', code: '000000' });
+    expect(res.status, `响应体：${JSON.stringify(res.body)}`).toBe(400);
+    expect(res.body.error.code).toBe('E_AUTH_CODE_INVALID');
+
+    const hit = warnLines().some(
+      (line) => line.includes('[安全事件]') && line.includes('E_AUTH_CODE_INVALID'),
+    );
+    expect(hit, `捕获到的 warn 行：${JSON.stringify(warnLines().slice(-3))}`).toBe(true);
+  });
+
   it('429 落 warn；正常 200 不产生安全事件噪声', async () => {
     const { token } = await createUserWithToken(USER_LOG_NOISE);
 
@@ -177,5 +193,38 @@ describe('F-009 安全事件日志', () => {
     warnSpy.mockClear();
     await request(server as never).get(`${API}/weights`).expect(401);
     expect(warnLines().some((line) => line.includes('[安全事件]') && line.includes('401'))).toBe(true);
+  });
+});
+
+describe('F-010 姊妹项：body-parser 家族错误归一（此前一律 500 + error 堆栈）', () => {
+  it('不支持的 Content-Encoding → 415（此前 500 E_INTERNAL）', async () => {
+    const res = await request(server as never)
+      .post(`${API}/data/restore/preview`)
+      .set('Content-Encoding', 'br')
+      .send({ content: null });
+    expect(res.status, `响应体：${JSON.stringify(res.body)}`).toBe(415);
+    expect(res.body.data).toBeNull();
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+  });
+
+  it('损坏的压缩体 → 400，且不回显解析器内部细节', async () => {
+    const res = await request(server as never)
+      .post(`${API}/data/restore/preview`)
+      .set('Content-Encoding', 'gzip')
+      .set('Content-Type', 'application/json')
+      .send('definitely-not-gzip');
+    expect(res.status, `响应体：${JSON.stringify(res.body)}`).toBe(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(String(res.body.error.message)).not.toMatch(/unexpected|incorrect header|zlib|gzip/i);
+  });
+
+  it('JSON 语法错 → 400 且文案为通用文案（此前回显 "Unexpected token …"）', async () => {
+    const res = await request(server as never)
+      .post(`${API}/data/restore/preview`)
+      .set('Content-Type', 'application/json')
+      .send('{"content": oops}');
+    expect(res.status, `响应体：${JSON.stringify(res.body)}`).toBe(400);
+    expect(res.body.error.code).toBe('E_VALID_INPUT');
+    expect(res.body.error.message).toBe('请求格式不正确，请检查后再试');
   });
 });
