@@ -198,9 +198,13 @@ describe('F-009 安全事件日志', () => {
 
 describe('F-010 姊妹项：body-parser 家族错误归一（此前一律 500 + error 堆栈）', () => {
   it('不支持的 Content-Encoding → 415（此前 500 E_INTERNAL）', async () => {
+    // ⚠️ 编码选 `snappy` 而非 `br`：body-parser 1.x 只支持 gzip/deflate，`br` 曾落到
+    //    `encoding.unsupported`；2.x（Nest 12 经 express 5 引入）新增 brotli 支持，
+    //    `br` 已进入支持列表 —— 拿 br 当「不支持」会拿到 400（试图解压失败），测试前提过期。
+    //    `snappy` 不在 Node zlib 能力集内，是稳定的「真不支持」样本（实测 415）。
     const res = await request(server as never)
       .post(`${API}/data/restore/preview`)
-      .set('Content-Encoding', 'br')
+      .set('Content-Encoding', 'snappy')
       .send({ content: null });
     expect(res.status, `响应体：${JSON.stringify(res.body)}`).toBe(415);
     expect(res.body.data).toBeNull();

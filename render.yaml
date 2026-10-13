@@ -4,6 +4,13 @@ services:
   - type: web
     name: qingshenghuo-api
     runtime: node
+    # ⚠️ 必须显式钉 Node 大版本：Nest 12 核心包（@nestjs/common/core/platform-express/jwt/passport）
+    #    是 **ESM-only** 发布，而本仓构建产物是 CommonJS —— `require('@nestjs/*')` 依赖 Node 的
+    #    `require(esm)` 能力，该能力自 **Node 20.19.0 / 22.12.0** 起默认开启。
+    #    Render 默认 Node 版本随服务创建时间而不同（老服务可能是 20.x 早期版），
+    #    不钉版本一旦落到 <20.19 的 20.x，生产启动直接 `ERR_REQUIRE_ASYNC_MODULE`。
+    #    "22" = 取最新 22.x（≥22.12 恒成立）。构建侧无此顾虑（@nestjs/cli engines >=20.11）。
+    nodeVersion: "22"
     plan: free
     region: singapore
     # ⚠️ 必须带 --include=dev：下面 envVars 设了 NODE_ENV=production，而该变量对 **build 阶段同样生效**，

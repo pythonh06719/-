@@ -20,7 +20,7 @@
     "preview": "npm run preview -w @qsh/web"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "devDependencies": {
     "pinyin-pro": "^3.29.4",

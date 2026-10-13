@@ -66,6 +66,9 @@ qa-probe-*
 qa-verify/
 tmp-qa/
 _qsh-*
+# 本地一次性工具目录（如 cfcd 清史脚本 purge-cfg/blob-callback、stash 导出补丁；
+# 从未入库，补这条是防并发会话 `git add -A` 误抓——dist_tmp 被误提交过两次的教训）
+_tmp/
 
 # QA/PM 历史轮次的取证截图（playwright 截屏，可随时重生成，不入库）
 _r2-shot-*.png

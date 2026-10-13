@@ -36,7 +36,7 @@
 | 前端 | React 18 + Vite 5 + Tailwind 3 + React Router 6 | ✅ | 移动端优先、构建快、PWA 友好 |
 | 状态/数据 | Zustand + TanStack Query | ✅ | 轻量本地态 + 服务端缓存 |
 | 图表 | **手写 SVG**（原 ECharts 5 已于后续迭代移除） | ✅（体重趋势） | 去掉 `echarts`/`echarts-for-react` 两个依赖，包体降到 KB 级（`WeightChart.tsx` 零图表库依赖，见 §5.4） |
-| 后端 | NestJS 10（Express） | ✅ | 模块化 DI，贴合成长型项目与鉴权分层 |
+| 后端 | NestJS 12（Express 5） | ✅ | 模块化 DI，贴合成长型项目与鉴权分层 |
 | ORM | Prisma 5 | ✅ | 迁移 + 类型安全；SQLite/PG 双 provider 可切换 |
 | 数据库 | **SQLite（MVP 开发）→ PostgreSQL（生产）** | ✅ | 先跑通再上生产库，DDL 双版本已给 |
 | 纯函数包 | `@qsh/core`（零 IO、零运行时依赖） | ✅ | 引擎复用 + 易测；前后端唯一真源 |
@@ -188,7 +188,7 @@ qingshenghuo/
 │     ├─ package.json
 │     └─ src/{index.ts, api.ts, entities.ts, export.ts}
 ├─ apps/
-│  ├─ api/                           # NestJS 10 后端
+│  ├─ api/                           # NestJS 12 后端
 │  │  ├─ package.json · tsconfig.json · nest-cli.json
 │  │  ├─ prisma/
 │  │  │  ├─ schema.prisma            # provider 由环境切换（sqlite / postgresql）
@@ -719,18 +719,19 @@ type CalorieResult = {
 
 | 包 | 版本 | 类型 | 用途 |
 | --- | --- | --- | --- |
-| `@nestjs/common` `@nestjs/core` `@nestjs/platform-express` | `^10.4.1` | deps | Nest 运行时 |
-| `@nestjs/jwt` `@nestjs/passport` `passport` `passport-jwt` | `^10.x` / `^10.x` / `^0.7.0` / `^4.0.1` | deps | JWT 鉴权（R1.7） |
+| `@nestjs/common` `@nestjs/core` `@nestjs/platform-express` | `^12.1.3` | deps | Nest 运行时（ESM-only 包，CJS 产物经 `require(esm)` 加载，需 Node ≥20.19） |
+| `express` | `5.2.1` | deps | HTTP 层（与 platform-express 内嵌版本精确对齐，防双副本） |
+| `@nestjs/jwt` `@nestjs/passport` `passport` `passport-jwt` | `^12.x` / `^12.x` / `^0.7.0` / `^4.0.1` | deps | JWT 鉴权（R1.7） |
 | `bcryptjs` | `^2.4.3` | deps | bcrypt 密码哈希（cost 12；纯 JS，免原生编译） |
 | `class-validator` `class-transformer` | `^0.14.1` / `^0.5.1` | deps | DTO 校验 |
 | `@prisma/client` | `^5.22.0` | deps | ORM 运行时 |
 | `prisma` | `^5.22.0` | dev | 迁移/生成 |
-| `helmet` | `^7.1.0` | deps | 安全头 + CSP（C4） |
+| `helmet` | `^7.2.0` | deps | 安全头 + CSP（C4） |
 | `@nestjs/throttler` | `^6.2.1` | deps | 限流 |
 | `cookie-parser` | `^1.4.6` | deps | Refresh Cookie |
 | `nodemailer` | `^6.9.14` | deps | 验证码邮件（开发环境打印到日志，Q2） |
 | `@qsh/core` `@qsh/shared-types` | `workspace:*` | deps | 共享引擎/契约 |
-| `@nestjs/testing` `vitest` `supertest` | `^10.x` / `^2.0.5` / `^7.0.0` | dev | 接口测试 |
+| `@nestjs/testing` `vitest` `supertest` | `^12.1.3` / `^2.1.9` / `^7.3.1` | dev | 接口测试 |
 
 ### 5.4 `apps/web`
 
