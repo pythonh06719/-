@@ -561,15 +561,17 @@ const tools: Record<string, ToolDef> = {
       type: 'object',
       properties: {
         activity: { type: 'string', description: '运动名称，如「跑步」「快走」「游泳」' },
-        minutes: { type: 'number', description: '时长（分钟，1~600）' },
-        weightKg: { type: 'number', description: '体重 kg（缺省按 60kg）' },
+        minutes: { type: 'number', description: `时长（分钟，1~${MAX_MINUTES}）` },
+        weightKg: { type: 'number', description: `体重 kg（${WEIGHT_MIN}~${WEIGHT_MAX}，缺省按 60kg）` },
       },
       required: ['activity', 'minutes'],
     },
     async run(args) {
       const activity = String(args.activity ?? '').trim();
       const minutes = Number(args.minutes);
-      const weight = Number(args.weightKg ?? 60);
+      // 与 log_weight 同口径校验体重（上线前全检 🟡-3）：此前裸 Number(...) 无边界，
+      // 负体重会算出负 kcal、极端值给出荒谬结果（同工具的 minutes 一直是有边界的）。
+      const weight = optionalNumber(args, 'weightKg', { min: WEIGHT_MIN, max: WEIGHT_MAX }, 60);
       if (activity.length === 0) {
         return text({ error: 'activity 不能为空' }, true);
       }
