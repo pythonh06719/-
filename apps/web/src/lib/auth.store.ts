@@ -12,8 +12,11 @@ import { clearPreferenceKeys } from './settings-storage';
  *    内存态在页面刷新后即失效，攻击面最小（ARCHITECTURE §1.7 明文约定「不落 localStorage」）。
  * 2. **可用性折中**：为保证「同一标签页内刷新不丢登录态」，本实现把 token **镜像**到
  *    `sessionStorage`（关闭标签页即清除，生命周期远短于 localStorage）。
- *    真正的长效登录由后端签发在 **HttpOnly Cookie** 中的 refreshToken 承担（前端不可读），
- *    刷新页面时通过 `GET /api/auth/me` 重新换取 accessToken。
+ *    ⚠️ 现实口径（上线前全检 F-004 校正）：后端**没有** refreshToken / HttpOnly Cookie
+ *    —— accessToken 有效期 2h（`JWT_EXPIRES_IN`），过期后需重新用验证码登录；
+ *    `GET /api/auth/me` 只返回资料，**不换发新 token**。服务端令牌吊销同样未实现，
+ *    因此「登出」= 前端清空本 store（见 `clear()`），服务端不感知。
+ *    要做真正的长效登录，需要先在后端补 refresh 轮换 + 吊销（见 F-004 剩余项）。
  * 3. **可关闭**：`MIRROR_TO_SESSION` 为 `false` 时退化为纯内存，安全性最高。
  */
 
