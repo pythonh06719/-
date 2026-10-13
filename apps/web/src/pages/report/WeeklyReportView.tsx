@@ -364,8 +364,16 @@ export default function WeeklyReportView(): ReactElement {
                         </span>
                       </div>
                       <div className="mt-tight h-2 w-full overflow-hidden rounded-pill bg-slate-100 dark:bg-slate-700">
+                        {/*
+                          偏离参考区间用 coral-300 而非 amber-300：coral 的定义就是
+                          「接近上下限等中性提醒，绝不用刺目的红」（tailwind.config.ts
+                          色板注释 / PRD §7），本 meter 正是 atLeast/atMost 上下限比对；
+                          amber 是 Tailwind 默认色、在语义体系外，且全仓测试把 amber
+                          当警示色禁用于中性表面。coral-300 与在轨的 brand-400 亮度
+                          几乎一致（0.45 vs 0.42），明暗两轨的对比行为相同。
+                        */}
                         <div
-                          className={`h-full rounded-pill ${onTrack ? 'bg-brand-400' : 'bg-amber-300'}`}
+                          className={`h-full rounded-pill ${onTrack ? 'bg-brand-400' : 'bg-coral-300'}`}
                           style={{ width: `${barPercent}%` }}
                           role="meter"
                           aria-valuenow={ariaPercent}
