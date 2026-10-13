@@ -17,6 +17,8 @@ export const ERROR_CODES = {
   VALID_INPUT: 'E_VALID_INPUT',
   VALID_CALORIE: 'E_VALID_CALORIE',
   VALID_DUPLICATE: 'E_VALID_DUPLICATE',
+  // 请求体超过上限（body-parser entity.too.large → 413，上线前全检 F-010）
+  VALID_TOO_LARGE: 'E_VALID_TOO_LARGE',
 
   // 未找到（越权访问他人资源同样返回 NOTFOUND，不泄露存在性）
   NOTFOUND_PROFILE: 'E_NOTFOUND_PROFILE',

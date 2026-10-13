@@ -1,9 +1,11 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import type { DataOverviewResponse, RestorePreviewResponse, RestoreResult } from '@qsh/shared-types';
 
 import { CurrentUser } from '../common/decorators/current-user';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { UserThrottlerGuard } from '../common/guards/user-throttler.guard';
 import { DataService, type ImportResult } from './data.service';
 import { ImportWeightsDto } from './dto/import-weights.dto';
 
@@ -12,6 +14,12 @@ import { ImportWeightsDto } from './dto/import-weights.dto';
  * - 导出：服务端组装 JSON（CSV 由前端按 §9.2 列定义生成，也可复用本 JSON）；
  * - 导入：历史体重，同日覆盖，非法行汇总；
  * - 删除：**账号硬删除**（级联清除全部数据）。
+ *
+ * ⚠️ 两条 **restore** POST 额外挂 `UserThrottlerGuard` + 10 次/分钟（上线前全检 F-010）：
+ * 它们接受最大 10MB 的**任意嵌套 JSON**，解析成本无上界，仅靠 JWT 保护时可被单账号反复巨包拖动 CPU。
+ * `import/weights` **不挂**：其入参已被 `ImportWeightsDto` 的行数上限 + 10MB 体积上限双重约束
+ * （实测满额 2000 行单事务 ~600ms），成本有界；且同一账号连打多轮属正常补录场景。
+ * 守卫顺序由类级 `JwtAuthGuard` 保证在前（`UserThrottlerGuard` 按 `req.user.userId` 计数）。
  */
 @Controller('data')
 @UseGuards(JwtAuthGuard)
@@ -38,6 +46,8 @@ export class DataController {
   /** 第一步：只解析 JSON 备份并返回内容统计，不写入任何数据。 */
   @Post('restore/preview')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(UserThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   previewRestore(
     @CurrentUser() userId: number,
     @Body() payload: { content?: unknown },
@@ -48,6 +58,8 @@ export class DataController {
   /** 第二步：用户确认预览后，在单事务内按“同日覆盖、不同日追加”恢复。 */
   @Post('restore')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(UserThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   restore(
     @CurrentUser() userId: number,
     @Body() payload: { previewToken?: unknown },
