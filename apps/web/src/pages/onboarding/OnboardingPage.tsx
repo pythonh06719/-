@@ -320,7 +320,7 @@ export default function OnboardingPage(): ReactElement {
               <select
                 value={form.gender}
                 onChange={(event) => update('gender', event.target.value as Gender)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               >
                 <option value="female">女</option>
                 <option value="male">男</option>
@@ -333,7 +333,7 @@ export default function OnboardingPage(): ReactElement {
                 max={todayKey()}
                 value={form.birthDate}
                 onChange={(event) => update('birthDate', event.target.value)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -342,7 +342,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.heightCm}
                 onChange={(event) => update('heightCm', event.target.value)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -351,7 +351,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.currentWeightKg}
                 onChange={(event) => update('currentWeightKg', event.target.value)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
           </div>
@@ -366,7 +366,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="decimal"
                 value={form.targetWeightKg}
                 onChange={(event) => update('targetWeightKg', event.target.value)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
             <label className="text-sm text-slate-600 dark:text-slate-300">
@@ -375,7 +375,7 @@ export default function OnboardingPage(): ReactElement {
                 inputMode="numeric"
                 value={form.targetWeeks}
                 onChange={(event) => update('targetWeeks', event.target.value)}
-                className="mt-tight w-full rounded-lg border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                className="mt-tight w-full rounded-control border border-brand-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               />
             </label>
           </div>
@@ -465,7 +465,7 @@ export default function OnboardingPage(): ReactElement {
         {hasRisk && (
           <div
             role="status"
-            className="rounded-2xl border border-coral-200 bg-coral-50 p-4 dark:border-coral-700 dark:bg-coral-900/30"
+            className="rounded-card border border-coral-200 bg-coral-50 p-4 dark:border-coral-700 dark:bg-coral-900/30"
           >
             <p className="text-sm font-medium text-coral-700 dark:text-coral-200">先照顾好自己更重要</p>
             <p className="mt-2 text-sm leading-relaxed text-coral-700 dark:text-coral-100">
@@ -475,7 +475,7 @@ export default function OnboardingPage(): ReactElement {
         )}
 
         {preview !== null && (
-          <div className="rounded-2xl bg-brand-50 p-4 dark:bg-brand-900/30" aria-live="polite">
+          <div className="rounded-card bg-brand-50 p-4 dark:bg-brand-900/30" aria-live="polite">
             <p className="text-sm text-slate-600 dark:text-slate-300">
               实时预览：建议摄入约
               <strong className="mx-1 qsh-tnum text-brand-700 dark:text-brand-200">
@@ -487,7 +487,7 @@ export default function OnboardingPage(): ReactElement {
         )}
 
         {previewErrors.length > 0 && (
-          <div role="status" className="rounded-2xl bg-brand-50 p-4 dark:bg-brand-900/30">
+          <div role="status" className="rounded-card bg-brand-50 p-4 dark:bg-brand-900/30">
             <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
               马上就能算了，帮我们看看：
             </p>

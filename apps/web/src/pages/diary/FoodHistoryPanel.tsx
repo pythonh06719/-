@@ -101,7 +101,7 @@ export default function FoodHistoryPanel({ food, expanded, onCollapse }: FoodHis
           type="button"
           onClick={onCollapse}
           aria-label={foodHistoryCloseAria(food.name)}
-          className="qsh-touch-target shrink-0 rounded-lg px-2 text-xs text-slate-600 dark:text-slate-400"
+          className="qsh-touch-target shrink-0 rounded-control px-2 text-xs text-slate-600 dark:text-slate-400"
         >
           {COPY.foodHistoryCollapse}
         </button>

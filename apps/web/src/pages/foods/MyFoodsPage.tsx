@@ -42,7 +42,7 @@ import type { EditFoodSubmit } from './EditFoodDialog';
  *
  * ## UI 规范自检（`docs/VISUAL-SYSTEM.md`）
  * - 触控：按钮一律 `qsh-touch-target`（≥44×44）；行内动作 `text-slate-600` 静止态、`hover:text-coral-600`；
- * - 圆角 / 动效：语义令牌 `rounded-control` / `rounded-2xl` / `duration-qsh-base` + `ease-qsh-out`；
+ * - 圆角 / 动效：语义令牌 `rounded-control` / `duration-qsh-base` + `ease-qsh-out`；
  * - 对比度：12px（`text-xs`）文字统一 `slate-600` / `dark:slate-300`。
  */
 export default function MyFoodsPage(): ReactElement {

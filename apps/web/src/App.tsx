@@ -130,7 +130,7 @@ function RouteFallback({ reset }: { reset: () => void }): ReactElement {
     <div className="min-h-screen bg-brand-50 px-5 py-8 dark:bg-slate-900">
       <div
         role="alert"
-        className="mx-auto max-w-3xl rounded-2xl bg-white p-6 text-center shadow-sm dark:bg-slate-800"
+        className="mx-auto max-w-3xl rounded-card bg-white p-6 text-center shadow-sm dark:bg-slate-800"
       >
         <p className="text-title font-semibold tracking-tight text-slate-800 dark:text-slate-100">
           {COPY.pageFallbackTitle}

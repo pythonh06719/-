@@ -114,7 +114,7 @@ export default function SafetyBanner({
     <div
       role="status"
       aria-live="polite"
-      className="rounded-2xl border border-coral-200 bg-white px-4 py-3 dark:border-coral-600 dark:bg-slate-800"
+      className="rounded-card border border-coral-200 bg-white px-4 py-3 dark:border-coral-600 dark:bg-slate-800"
     >
       <p className="text-sm font-medium text-coral-700 dark:text-coral-200">给你的小提醒</p>
       {notices.length > 0 && (

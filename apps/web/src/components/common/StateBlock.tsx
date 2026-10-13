@@ -4,7 +4,7 @@ import type { ReactElement, ReactNode } from 'react';
  * 加载 / 失败占位块（components/common/StateBlock.tsx）。
  *
  * 存在的理由：**同一条「正在读数据」的提示此前在 4 个文件里各写了一份**，且都写成
- * `rounded-2xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm`。
+ * `rounded-card bg-white p-6 text-center text-sm text-slate-500 shadow-sm`。
  * 两处问题：
  * ① `p-6` 与真实卡片的 `p-5` 不一致 —— 数据到位那一刻整块「变形」，用户会以为
  *    页面结构变了；

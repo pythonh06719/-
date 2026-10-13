@@ -18,7 +18,7 @@ import EmptyState from '@/components/common/EmptyState';
  * - 只读一个 `GET /api/data/overview`，不产生任何上传类调用（AC-11.6.9）。
  *
  * ## UI 规范自检（`docs/VISUAL-SYSTEM.md`）
- * - 表面：`.qsh-surface`（elevation-1 + `radius-card` + 焦点环），不再另写 `rounded-*` / `shadow-*`；
+ * - 表面：`.qsh-surface`（elevation-1 + `rounded-card` + 焦点环），不再另写 `rounded-*` / `shadow-*`；
  * - 对比度：12px 说明文字用 `slate-600 / dark:slate-300`（§5 的 12px 约束）；
  * - 语义：`<dl>` 左标签（`<dt>`）+ 右事实（`<dd>`），读屏不会读到重复的标签；
  * - 无障碍：本卡**无交互元素**，故无触控目标 / 焦点环 / 动效需求；

@@ -143,8 +143,8 @@ body {
  * 与 `.qsh-surface` 的处理一致（基类同样是「静态表面」，不带可点反馈）。
  * 若将来真出现可点的暖卡，新建修饰符叠加，不要直接给本类加回反馈。
  *
- * 圆角从历史值 `rounded-xl2`（1.75rem）收敛到 `radius-card`：它是**卡片**，
- * 与全站卡片同档；`xl2` 的定义仍保留在 config 中供底部弹层过渡期使用。
+ * 圆角从历史值 `rounded-xl2`（1.75rem）收敛到 `rounded-card`：它是**卡片**，
+ * 与全站卡片同档；`xl2` 定义已随 2026-10-13 圆角清零一并删除（底部弹层用语义 token `rounded-sheet`）。
  */
 .qsh-surface-warm {
   @apply rounded-card bg-cream-100 shadow-qsh-2 ring-1 ring-warm-100;
@@ -173,7 +173,7 @@ body {
  * 行动卡：首页「记一餐 / 喝一杯水 / 动一动」。
  *
  * 保留原有相互手感（hover 微抬 + 位移），只做三件事：
- * ① 圆角接入 `radius-card`；② 阴影换成 elevation token（观感不变，深色下自动可用）；
+ * ① 圆角接入 `rounded-card`；② 阴影换成 elevation token（观感不变，深色下自动可用）；
  * ③ 补上焦点环 —— 原先只有位移、没有描边，键盘用户看不出焦点落在哪。
  * 另外显式补 `focus-visible:rounded-card`：a11y 焦点规则曾把圆角压成 6px，聚焦瞬间会「变形」。
  */

@@ -599,7 +599,7 @@ export default function WeightChart({
       {hoverIndex !== null && hoverDate !== null && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-slate-800/95 px-2.5 py-1.5 text-caption leading-tight text-white shadow-qsh-2 dark:bg-slate-700/95"
+          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-control bg-slate-800/95 px-2.5 py-1.5 text-caption leading-tight text-white shadow-qsh-2 dark:bg-slate-700/95"
           style={{ left: Math.min(Math.max(hoverX, 64), Math.max(size.width - 64, 64)) }}
         >
           <p className="font-medium">{hoverDate}</p>

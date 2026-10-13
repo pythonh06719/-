@@ -116,7 +116,7 @@ function TraceCard({ trace }: { trace: AgentTrace }): ReactElement {
   return (
     <li
       data-testid={`ai-trace-${trace.id}`}
-      className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700"
+      className="rounded-card bg-slate-50 p-4 dark:bg-slate-700"
     >
       <p className="text-sm text-slate-800 dark:text-slate-100">{trace.question}</p>
       <p className="mt-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-600 dark:text-slate-400">
@@ -205,7 +205,7 @@ function errorMessage(error: unknown): string {
 /** `available: false` 时的「暂不可用」提示条（TC-24），下方仍渲染规则兜底内容。 */
 function UnavailableNotice(): ReactElement {
   return (
-    <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+    <p className="rounded-card bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
       {COPY.aiUnavailable}
     </p>
   );
@@ -358,7 +358,7 @@ function FoodRecognizePanel(): ReactElement {
                     type="button"
                     onClick={() => confirmMutation.mutate(candidate)}
                     disabled={confirmMutation.isPending}
-                    className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                    className="shrink-0 rounded-control bg-brand-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
                   >
                     {COPY.aiRecognizeConfirm}
                   </button>
@@ -540,7 +540,7 @@ export default function AiPage(): ReactElement {
             type="button"
             onClick={() => setDailyTrigger((value) => value + 1)}
             disabled={dailyQuery.isFetching}
-            className="rounded-2xl bg-brand-600 px-4 py-3 text-sm font-medium text-white disabled:opacity-40"
+            className="rounded-control bg-brand-600 px-4 py-3 text-sm font-medium text-white disabled:opacity-40"
           >
             {COPY.aiDailyGenerate}
           </button>
@@ -562,7 +562,7 @@ export default function AiPage(): ReactElement {
             type="button"
             onClick={() => setPlanTrigger((value) => value + 1)}
             disabled={planQuery.isFetching}
-            className="rounded-2xl bg-brand-600 px-4 py-3 text-sm font-medium text-white disabled:opacity-40"
+            className="rounded-control bg-brand-600 px-4 py-3 text-sm font-medium text-white disabled:opacity-40"
           >
             {COPY.aiPlanGenerate}
           </button>
@@ -617,7 +617,7 @@ export default function AiPage(): ReactElement {
           {askQueryLike.isFetching && liveSteps.length > 0 && (
             <ul
               aria-label="正在进行的步骤"
-              className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200"
+              className="rounded-card bg-brand-50 p-4 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200"
             >
               {liveSteps.map((step, i) => (
                 <li key={`${step.index}-${i}`} className="flex items-start gap-1.5">
@@ -654,7 +654,7 @@ export default function AiPage(): ReactElement {
                 confirmedTraceId !== askQueryLike.data.traceId && (
                   <div
                     role="status"
-                    className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/50 dark:bg-amber-900/20"
+                    className="rounded-card border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/50 dark:bg-amber-900/20"
                   >
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-200">需要你确认</p>
                     <p className="mt-tight text-sm leading-relaxed text-amber-700 dark:text-amber-100">
@@ -687,7 +687,7 @@ export default function AiPage(): ReactElement {
               {confirmedTraceId !== null &&
                 askQueryLike.data.traceId === confirmedTraceId &&
                 confirmMutation.isSuccess && (
-                  <p className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
+                  <p className="rounded-card bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
                     已按确认记录好了，去饮食日记看看吧。
                   </p>
                 )}

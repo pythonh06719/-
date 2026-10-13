@@ -20,7 +20,7 @@ export default function EncouragementText({ text, live = false }: EncouragementT
 
   return (
     <p
-      className="rounded-2xl bg-brand-50 px-4 py-3 text-center text-sm font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+      className="rounded-card bg-brand-50 px-4 py-3 text-center text-sm font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
       {...(live ? { role: 'status', 'aria-live': 'polite' as const } : {})}
     >
       {content}
