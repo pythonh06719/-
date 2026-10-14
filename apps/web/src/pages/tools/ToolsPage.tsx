@@ -46,6 +46,11 @@ const TABS: Array<{ key: ToolTab; label: string }> = [
  *
  * 全部为**纯前端估算**（数据来自 `@qsh/core` 内置表），不发请求、不落库；
  * 给区间而非精确值，并始终附更轻松的替代建议（语气遵循 PRD §7）。
+ *
+ * ⚠️ 估算结果的大数字用 `text-amber-600 dark:text-amber-400` 是**故意**用
+ * Tailwind 默认色（语义体系外）：这里要的是「醒目地给出估算值」，与同页
+ * 「这样点更轻松」的品牌色标题拉开层次；语义既非警示也非中性提醒，
+ * 故不占 coral / brand 的位置。深色档已配套（提到 amber-400 保对比度）。
  */
 export default function ToolsPage(): ReactElement {
   // 「我的常点」（C2）：只在**挂载时**读一次记忆，用来预选档位。

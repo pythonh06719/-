@@ -30,6 +30,17 @@ const VIEW_H = 96;
 /** 底部基线预留。 */
 const BASELINE_GAP = 2;
 
+/**
+ * 基线色：走 `--qsh-hairline` CSS 变量（浅 `#cbd5e1` / 深 `#3f5a50`）。
+ *
+ * ⚠️ 此前这里硬编码 `rgba(125,148,137,0.35)` —— 全仓唯一一处「活的」SVG 色值
+ * 绕过变量机制（同族的 WeightChart / Sparkline / ProgressRing 全走
+ * `rgb(var(--qsh-*))`）。后果是深色模式下这条线**糊掉**：0.35 透明度的灰绿
+ * 叠在深卡面 `#16241f` 上合成约 `#3a4b44`，对底只有 ~1.5:1，柱子像悬在空中。
+ * 变量注释里本就点名「图表内的细分割线（如运动量柱的基线）」，接回即修。
+ */
+const BASELINE_COLOR = 'rgb(var(--qsh-hairline))';
+
 function safe(value: number): number {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
@@ -78,7 +89,7 @@ export default function IntakeExerciseChart({ days }: IntakeExerciseChartProps):
           y1={baseline}
           x2={VIEW_W}
           y2={baseline}
-          stroke="rgba(125,148,137,0.35)"
+          stroke={BASELINE_COLOR}
           strokeWidth={1}
         />
         {days.map((day, index) => {

@@ -649,7 +649,10 @@ export default function AiPage(): ReactElement {
                   </p>
                 )}
               </div>
-              {/* Agent 写操作待确认卡片（human-in-the-loop）：确认后才落库 */}
+              {/* Agent 写操作待确认卡片（human-in-the-loop）：确认后才落库。
+                  ⚠️ amber 是**故意**用的 Tailwind 默认色（语义体系外）：这里要的是
+                  「等你拍板」的待定感，不是警示 —— coral 的注释明确定位为
+                  「接近上下限等中性提醒」，用它会读成「出问题了」。深色档已配套。 */}
               {askQueryLike.data.pending !== null &&
                 askQueryLike.data.pending !== undefined &&
                 askQueryLike.data.traceId !== undefined &&

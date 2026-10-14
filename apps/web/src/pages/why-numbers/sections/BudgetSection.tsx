@@ -265,6 +265,10 @@ export default function BudgetSection({ id, title }: WhySectionProps): ReactElem
       <h3 className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-100">
         安全网：两道防线
       </h3>
+      {/* ⚠️ amber 是**故意**用的 Tailwind 默认色（语义体系外）：两条防线是
+          「兜底规则」的说明性强调，不是对用户的警告 —— 页面通篇在解释数字怎么来，
+          用 coral（定位是「接近上下限等中性提醒」）会把解释读成告警。
+          深色档已配套（amber-900/30 + amber-200/100）。 */}
       <ul className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-300">
         <li className="rounded-control bg-amber-50 px-4 py-3 dark:bg-amber-900/30">
           <strong className="text-amber-800 dark:text-amber-200">缺口上限 = TDEE × {DEFICIT_CAP_RATIO}（30%）</strong>
