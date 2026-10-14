@@ -11,11 +11,11 @@
   "dependencies": {
     "@qsh/core": "*",
     "@qsh/shared-types": "*",
-    "@tarojs/components": "3.6.23",
-    "@tarojs/react": "3.6.23",
-    "@tarojs/runtime": "3.6.23",
-    "@tarojs/shared": "3.6.23",
-    "@tarojs/taro": "3.6.23",
+    "@tarojs/components": "3.6.40",
+    "@tarojs/react": "3.6.40",
+    "@tarojs/runtime": "3.6.40",
+    "@tarojs/shared": "3.6.40",
+    "@tarojs/taro": "3.6.40",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "zustand": "^4.5.2"
@@ -23,17 +23,17 @@
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@babel/runtime": "^7.24.0",
-    "@tarojs/cli": "3.6.23",
-    "@tarojs/helper": "3.6.23",
-    "@tarojs/plugin-framework-react": "3.6.23",
-    "@tarojs/plugin-platform-weapp": "3.6.23",
-    "@tarojs/webpack5-runner": "3.6.23",
+    "@tarojs/cli": "3.6.40",
+    "@tarojs/helper": "3.6.40",
+    "@tarojs/plugin-framework-react": "3.6.40",
+    "@tarojs/plugin-platform-weapp": "3.6.40",
+    "@tarojs/webpack5-runner": "3.6.40",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@types/webpack-env": "^1.18.0",
-    "babel-preset-taro": "3.6.23",
+    "babel-preset-taro": "3.6.40",
     "typescript": "^5.5.4",
-    "webpack": "5.95.0",
+    "webpack": "5.111.1",
     "webpack-chain": "^6.5.1"
   }
 }
